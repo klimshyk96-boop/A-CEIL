@@ -17216,12 +17216,12 @@ window.A·CEIL_BUILD_LABEL="v3.75 A·CEIL REPORT-REBRAND";
 <!-- v2.19: Safari fix — never reads/writes Window.closed; hardened language switching and translation events. -->
 
 <!-- v2.44: freehand sketch first; manual point placement; no automatic modal; explicit Save point and Save & Done actions. -->
-<!-- A·CEIL shared owner nomenclature access fix v1 -->
-<script id="A·CEIL-shared-owner-nomenclature-v1">
+<!-- A·CEIL shared owner nomenclature access fix v2 -->
+<script id="A·CEIL-shared-owner-nomenclature-v2">
 (function(){
 "use strict";
-if(window.__A_CEIL_SHARED_NOM_V1)return;
-window.__A_CEIL_SHARED_NOM_V1=true;
+if(window.__A_CEIL_SHARED_NOM_V2)return;
+window.__A_CEIL_SHARED_NOM_V2=true;
 
 function sb(){try{return (typeof _sb!=="undefined"&&_sb)||window._sb||null}catch(e){return window._sb||null}}
 function usr(){try{return (typeof _sbUser!=="undefined"&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
@@ -17254,20 +17254,26 @@ function applyNom(data){
   return true;
 }
 
-async function resolveNomOwner(client,user){
-  var target=user.id, shared=false, access=null;
-  try{
-    var ar=await client.from("user_access")
-      .select("owner_id,user_id,nomenclature_access")
-      .eq("user_id",user.id)
-      .eq("nomenclature_access",true)
-      .limit(1)
-      .maybeSingle();
-    if(!ar.error&&ar.data&&ar.data.owner_id&&String(ar.data.owner_id)!==String(user.id)){
-      target=ar.data.owner_id; shared=true; access=ar.data;
-    }
-  }catch(e){window.__diagSilent&&window.__diagSilent(e)}
-  return {targetId:target,shared:shared,access:access};
+async function fetchAccessibleNomenclature(client,user){
+  /* Do not query user_access from the browser. Its RLS is intentionally not
+     exposed to ordinary users. The nomenclature SELECT policy already decides
+     which catalogue rows auth.uid() may read, so ask for accessible rows and
+     choose the shared owner's row when one exists. */
+  var q=client.from("nomenclature")
+    .select("items,groups,wall_presets,light_types,user_id")
+    .limit(10);
+  var res=typeof withTimeout==="function"
+    ? await withTimeout(q,12000,"Завантаження номенклатури")
+    : await q;
+  if(res.error)throw res.error;
+  var rows=Array.isArray(res.data)?res.data:[];
+  if(!rows.length)return {data:null,shared:false,ownerId:user.id};
+  var own=rows.find(function(r){return String(r.user_id)===String(user.id)});
+  var shared=rows.find(function(r){return String(r.user_id)!==String(user.id)});
+  /* If access to an owner's catalogue exists, it is authoritative for a
+     worker account. Otherwise use the user's own catalogue. */
+  var picked=shared||own||rows[0];
+  return {data:picked,shared:String(picked.user_id)!==String(user.id),ownerId:picked.user_id};
 }
 
 var loading=false;
@@ -17277,17 +17283,12 @@ window.forceLoadNomenclature=async function(reason){
   if(!client||!user)return false;
   loading=true; window._nomenclatureLoading=true;
   try{
-    var source=await resolveNomOwner(client,user);
-    var res=await client.from("nomenclature")
-      .select("items,groups,wall_presets,light_types,user_id")
-      .eq("user_id",source.targetId)
-      .maybeSingle();
-    if(res.error)throw res.error;
-    if(!res.data)return false;
-    applyNom(res.data);
+    var source=await fetchAccessibleNomenclature(client,user);
+    if(!source.data)return false;
+    applyNom(source.data);
     window.A_CEIL_NOMENCLATURE_SOURCE={
       userId:user.id,
-      ownerId:source.targetId,
+      ownerId:source.ownerId,
       shared:source.shared,
       loadedAt:Date.now()
     };
