@@ -17415,13 +17415,14 @@ async function load(){
   if(loading)return; loading=true;
   content('<div class="aceil-admin-note">Завантажуємо користувачів…</div>');
   try{
-    if(!(await refreshOwner()))throw new Error("Немає прав owner або акаунт неактивний.");
-    var c=sb(),r=await c.rpc("admin_list_users");
+    var c=sb();
+    if(!c)throw new Error("Supabase client недоступний.");
+    var r=await c.rpc("admin_list_users");
     if(r.error)throw r.error;
     render(r.data);
   }catch(e){
     window.__diagSilent&&window.__diagSilent(e);
-    content('<div class="aceil-admin-error"><b>Не вдалося відкрити дані адмінки.</b><br><br>'+esc(e.message||e)+'<br><br>Якщо HTML уже оновлено, виконайте SQL-файл A-CEIL-admin-v1.sql у Supabase SQL Editor.</div>');
+    content('<div class="aceil-admin-error"><b>Не вдалося відкрити дані адмінки.</b><br><br>'+esc(e.message||e)+'<br><br>Перевірка прав виконується серверною RPC admin_list_users(). Якщо RPC повертає помилку — на екрані буде її точний текст.</div>');
   }finally{loading=false}
 }
 async function setAccess(uid,key,val,input){
