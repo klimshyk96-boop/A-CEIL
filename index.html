@@ -17216,3 +17216,108 @@ window.A·CEIL_BUILD_LABEL="v3.75 A·CEIL REPORT-REBRAND";
 <!-- v2.19: Safari fix — never reads/writes Window.closed; hardened language switching and translation events. -->
 
 <!-- v2.44: freehand sketch first; manual point placement; no automatic modal; explicit Save point and Save & Done actions. -->
+<!-- A·CEIL shared owner nomenclature access fix v1 -->
+<script id="A·CEIL-shared-owner-nomenclature-v1">
+(function(){
+"use strict";
+if(window.__A_CEIL_SHARED_NOM_V1)return;
+window.__A_CEIL_SHARED_NOM_V1=true;
+
+function sb(){try{return (typeof _sb!=="undefined"&&_sb)||window._sb||null}catch(e){return window._sb||null}}
+function usr(){try{return (typeof _sbUser!=="undefined"&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
+function applyNom(data){
+  if(!data)return false;
+  if(Array.isArray(data.groups)) elemGroups=JSON.parse(JSON.stringify(data.groups));
+  if(Array.isArray(data.items)) {
+    elemItems=JSON.parse(JSON.stringify(data.items));
+    elemItems.forEach(function(it){
+      if(!it.unit)it.unit="шт";
+      if(typeof it.groupId==="undefined")it.groupId=null;
+      if(typeof it.price==="undefined")it.price=0;
+      if(!it.inputMode)it.inputMode="manual";
+      if(!it.icon)it.icon="📦";
+    });
+  }
+  if(Array.isArray(data.wall_presets)){
+    try{localStorage.setItem("A·CEIL_wall_presets_v32",JSON.stringify(data.wall_presets))}catch(e){}
+    try{if(typeof window.setWallPresets==="function")window.setWallPresets(data.wall_presets.map(function(p){return p&&p.name?p.name:p}))}catch(e){}
+  }
+  if(Array.isArray(data.light_types)){
+    try{localStorage.setItem("lightTypes_v1",JSON.stringify(data.light_types))}catch(e){}
+    try{lightTypes=JSON.parse(JSON.stringify(data.light_types))}catch(e){window.lightTypes=JSON.parse(JSON.stringify(data.light_types))}
+    try{if(typeof warmSvgCache==="function")warmSvgCache()}catch(e){}
+    try{if(typeof renderLightMenu==="function")renderLightMenu()}catch(e){}
+  }
+  try{if(typeof renderElemList==="function")renderElemList()}catch(e){}
+  try{if(typeof updateElemBadge==="function")updateElemBadge()}catch(e){}
+  try{if(typeof recalcElemTotal==="function")recalcElemTotal()}catch(e){}
+  return true;
+}
+
+async function resolveNomOwner(client,user){
+  var target=user.id, shared=false, access=null;
+  try{
+    var ar=await client.from("user_access")
+      .select("owner_id,user_id,nomenclature_access")
+      .eq("user_id",user.id)
+      .eq("nomenclature_access",true)
+      .limit(1)
+      .maybeSingle();
+    if(!ar.error&&ar.data&&ar.data.owner_id&&String(ar.data.owner_id)!==String(user.id)){
+      target=ar.data.owner_id; shared=true; access=ar.data;
+    }
+  }catch(e){window.__diagSilent&&window.__diagSilent(e)}
+  return {targetId:target,shared:shared,access:access};
+}
+
+var loading=false;
+window.forceLoadNomenclature=async function(reason){
+  if(loading)return false;
+  var client=sb(),user=usr();
+  if(!client||!user)return false;
+  loading=true; window._nomenclatureLoading=true;
+  try{
+    var source=await resolveNomOwner(client,user);
+    var res=await client.from("nomenclature")
+      .select("items,groups,wall_presets,light_types,user_id")
+      .eq("user_id",source.targetId)
+      .maybeSingle();
+    if(res.error)throw res.error;
+    if(!res.data)return false;
+    applyNom(res.data);
+    window.A_CEIL_NOMENCLATURE_SOURCE={
+      userId:user.id,
+      ownerId:source.targetId,
+      shared:source.shared,
+      loadedAt:Date.now()
+    };
+    return true;
+  }catch(e){
+    window.__diagSilent&&window.__diagSilent(e);
+    try{if(typeof showToast==="function")showToast("Не вдалося завантажити номенклатуру: "+(e.message||e),5000)}catch(_){}
+    return false;
+  }finally{
+    loading=false; window._nomenclatureLoading=false;
+    try{if(typeof renderElemList==="function")renderElemList()}catch(e){}
+  }
+};
+try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){}
+
+/* Shared owner's catalogue is read-only in the cloud. Room quantities remain usable. */
+var oldForceSync=window.forceSyncNomenclature||(typeof forceSyncNomenclature==="function"?forceSyncNomenclature:null);
+if(typeof oldForceSync==="function"){
+  window.forceSyncNomenclature=async function(){
+    var src=window.A_CEIL_NOMENCLATURE_SOURCE;
+    if(src&&src.shared){
+      try{if(typeof showToast==="function")showToast("Номенклатура власника доступна лише для використання. Змінювати її може власник.",4500)}catch(e){}
+      return false;
+    }
+    return oldForceSync.apply(this,arguments);
+  };
+  try{forceSyncNomenclature=window.forceSyncNomenclature}catch(e){}
+}
+
+function kick(){setTimeout(function(){window.forceLoadNomenclature("shared-access-fix")},350)}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",kick,{once:true});else kick();
+})();
+</script>
