@@ -17442,10 +17442,10 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 .aceil-admin-overlay.open{display:flex}.aceil-admin-sheet{width:min(100%,620px);max-height:94dvh;background:#f8fafc;border-radius:26px 26px 0 0;overflow:hidden;box-shadow:0 -22px 70px rgba(2,6,23,.35)}
 .aceil-admin-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 18px 14px;background:#fff;border-bottom:1px solid #e2e8f0}.aceil-admin-title{font-size:20px;font-weight:900;color:#0f172a}.aceil-admin-sub{font-size:11px;color:#64748b;margin-top:3px}.aceil-admin-x{width:40px!important;height:40px!important;min-width:40px!important;border:0!important;border-radius:13px!important;background:#eef2f7!important;color:#334155!important;padding:0!important;box-shadow:none!important;font-size:24px!important}
 .aceil-admin-body{padding:14px;overflow:auto;max-height:calc(94dvh - 74px);-webkit-overflow-scrolling:touch}.aceil-admin-toolbar{display:flex;gap:8px;margin-bottom:12px}.aceil-admin-refresh{flex:1;min-height:44px!important;border-radius:13px!important;background:#0f172a!important;color:#fff!important;margin:0!important}
-.aceil-admin-note,.aceil-admin-error{padding:12px 14px;border-radius:14px;font-size:12px;line-height:1.45;margin-bottom:11px}.aceil-admin-note{background:#eff6ff;color:#1d4ed8}.aceil-admin-error{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}.aceil-admin-empty{text-align:center;padding:34px 18px;color:#64748b}
+.aceil-admin-note,.aceil-admin-error{padding:12px 14px;border-radius:14px;font-size:12px;line-height:1.45;margin-bottom:11px}.aceil-admin-note{background:#eff6ff;color:#1d4ed8}.aceil-admin-error{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}.aceil-admin-empty{text-align:center;padding:34px 18px;color:#64748b}.aceil-admin-ownerline{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;color:#64748b;margin:-2px 0 10px 2px}.aceil-admin-ownerline .dot{width:7px;height:7px;border-radius:50%;background:#10b981}.aceil-admin-refresh.busy{opacity:.7}
 .aceil-admin-user{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:0 5px 16px rgba(15,23,42,.04)}.aceil-admin-user.self{border-color:#93c5fd}.aceil-admin-user-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.aceil-admin-name{font-weight:900;color:#0f172a;font-size:15px}.aceil-admin-mail{font-size:11px;color:#64748b;margin-top:2px;word-break:break-all}.aceil-admin-badge{font-size:10px;font-weight:850;padding:5px 8px;border-radius:999px;background:#ecfdf5;color:#047857;white-space:nowrap}.aceil-admin-badge.off{background:#fef2f2;color:#b91c1c}.aceil-admin-badge.owner{background:#eff6ff;color:#1d4ed8}
 .aceil-admin-controls{margin-top:12px;border-top:1px solid #eef2f7;padding-top:6px}.aceil-admin-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0}.aceil-admin-row-text b{display:block;font-size:13px;color:#334155}.aceil-admin-row-text small{display:block;color:#94a3b8;font-size:10px;margin-top:2px}
-.aceil-switch{position:relative;width:46px;height:27px;flex:0 0 46px}.aceil-switch input{opacity:0;width:0;height:0}.aceil-slider{position:absolute;inset:0;border-radius:999px;background:#cbd5e1;transition:.18s}.aceil-slider:before{content:"";position:absolute;width:21px;height:21px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:.18s}.aceil-switch input:checked+.aceil-slider{background:#2563eb}.aceil-switch input:checked+.aceil-slider:before{transform:translateX(19px)}.aceil-switch input:disabled+.aceil-slider{opacity:.4}
+.aceil-switch{position:relative;width:46px;height:27px;flex:0 0 46px}.aceil-switch input{opacity:0;width:0;height:0}.aceil-slider{position:absolute;inset:0;border-radius:999px;background:#cbd5e1;transition:.18s}.aceil-slider:before{content:"";position:absolute;width:21px;height:21px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:.18s}.aceil-switch input:checked+.aceil-slider{background:#2563eb}.aceil-switch input:checked+.aceil-slider:before{transform:translateX(19px)}.aceil-switch input:disabled+.aceil-slider{opacity:.72}.aceil-switch input:checked:disabled+.aceil-slider{opacity:1;background:#2563eb}
 </style>
 
 <div id="aceilAdminModal" class="aceil-admin-overlay" aria-hidden="true">
@@ -17464,7 +17464,8 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 <script id="A-CEIL-admin-v2">
 (function(){
 "use strict";
-var profile=null,loading=false;
+var profile=null,loading=false,lastRows=null;
+var CACHE_KEY="A_CEIL_admin_users_cache_v1";
 
 function sb(){try{return (typeof _sb!=="undefined"&&_sb)||window._sb||null}catch(e){return window._sb||null}}
 function currentUser(){try{return (typeof _sbUser!=="undefined"&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
@@ -17519,35 +17520,48 @@ function reset(){profile=null;visible(false);close()}
 function toggle(uid,key,label,desc,val,disabled){
   return '<div class="aceil-admin-row"><div class="aceil-admin-row-text"><b>'+esc(label)+'</b><small>'+esc(desc)+'</small></div><label class="aceil-switch"><input type="checkbox" '+(val?'checked ':'')+(disabled?'disabled ':'')+'onchange="A_CEIL_Admin.setAccess(\''+esc(uid)+'\',\''+esc(key)+'\',this.checked,this)"><span class="aceil-slider"></span></label></div>';
 }
-function render(rows){
-  rows=Array.isArray(rows)?rows:[];
-  if(!rows.length){content('<div class="aceil-admin-empty">Користувачів не знайдено.</div>');return}
+function cacheRows(rows){try{localStorage.setItem(CACHE_KEY,JSON.stringify({t:Date.now(),rows:rows||[]}))}catch(e){}}
+function cachedRows(){try{var x=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");return x&&Array.isArray(x.rows)?x.rows:null}catch(e){return null}}
+function userRows(rows){
   var me=currentUser();
-  content('<div class="aceil-admin-note">Зміни прав виконуються через захищені Supabase RPC. Приховування кнопки саме по собі не є захистом.</div>'+
+  return (Array.isArray(rows)?rows:[]).filter(function(r){
+    var uid=String(r.user_id||r.id||"");
+    return r.app_role!=="owner" && !(me&&String(me.id)===uid);
+  });
+}
+function render(rows,quiet){
+  rows=userRows(rows); lastRows=rows;
+  var me=currentUser(), ownerLabel=me?(esc((me.email||"").split("@")[0]||"OWNER")+' · OWNER · онлайн'):'OWNER';
+  var ownerLine='<div class="aceil-admin-ownerline"><span class="dot"></span><span>'+ownerLabel+'</span></div>';
+  if(!rows.length){content(ownerLine+'<div class="aceil-admin-empty">Інших користувачів не знайдено.</div>');return}
+  content(ownerLine+
     rows.map(function(r){
-      var uid=String(r.user_id||r.id||""),self=me&&String(me.id)===uid,owner=r.app_role==="owner";
-      var badge=owner?'<span class="aceil-admin-badge owner">OWNER</span>':'<span class="aceil-admin-badge '+(r.is_active===false?'off':'')+'">'+(r.is_active===false?'Заблоковано':'Активний')+'</span>';
-      return '<div class="aceil-admin-user '+(self?'self':'')+'"><div class="aceil-admin-user-top"><div><div class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+(self?' · Ви':'')+'</div><div class="aceil-admin-mail">'+esc(r.email||"")+'</div></div>'+badge+'</div><div class="aceil-admin-controls">'+
-        toggle(uid,"nomenclature_access","Моя номенклатура","Може використовувати номенклатуру owner",!!r.nomenclature_access,owner)+
-        toggle(uid,"projects_access","Мої проєкти","Може бачити проєкти owner",!!r.projects_access,owner)+
-        toggle(uid,"projects_edit","Редагування проєктів","Може змінювати доступні проєкти",!!r.projects_edit,owner)+
-        toggle(uid,"is_active","Активний користувач","Блокування доступу до A·CEIL",r.is_active!==false,owner||self)+
+      var uid=String(r.user_id||r.id||"");
+      var badge='<span class="aceil-admin-badge '+(r.is_active===false?'off':'')+'">'+(r.is_active===false?'Заблоковано':'Активний')+'</span>';
+      return '<div class="aceil-admin-user"><div class="aceil-admin-user-top"><div><div class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+'</div><div class="aceil-admin-mail">'+esc(r.email||"")+'</div></div>'+badge+'</div><div class="aceil-admin-controls">'+
+        toggle(uid,"nomenclature_access","Моя номенклатура","Може використовувати номенклатуру owner",!!r.nomenclature_access,false)+
+        toggle(uid,"projects_access","Мої проєкти","Може бачити проєкти owner",!!r.projects_access,false)+
+        toggle(uid,"projects_edit","Редагування проєктів","Може змінювати доступні проєкти",!!r.projects_edit,false)+
+        toggle(uid,"is_active","Активний користувач","Блокування доступу до A·CEIL",r.is_active!==false,false)+
       '</div></div>';
     }).join(""));
 }
-async function load(){
+function timeout(p,ms){return Promise.race([Promise.resolve(p),new Promise(function(_,rej){setTimeout(function(){rej(new Error("Сервер відповідає надто довго"))},ms)})])}
+async function load(force){
   if(loading)return; loading=true;
-  content('<div class="aceil-admin-note">Завантажуємо користувачів…</div>');
+  var btn=document.querySelector('.aceil-admin-refresh'); if(btn)btn.classList.add('busy');
+  var cached=lastRows||cachedRows();
+  if(cached)render(cached,true); else content('<div class="aceil-admin-note">Завантажуємо користувачів…</div>');
   try{
-    var c=sb();
-    if(!c)throw new Error("Supabase client недоступний.");
-    var r=await c.rpc("admin_list_users");
+    var c=sb(); if(!c)throw new Error("Supabase client недоступний.");
+    var r=await timeout(c.rpc("admin_list_users"),7000);
     if(r.error)throw r.error;
-    render(r.data);
+    cacheRows(r.data); render(r.data);
   }catch(e){
     window.__diagSilent&&window.__diagSilent(e);
-    content('<div class="aceil-admin-error"><b>Не вдалося відкрити дані адмінки.</b><br><br>'+esc(e.message||e)+'<br><br>Перевірка прав виконується серверною RPC admin_list_users(). Якщо RPC повертає помилку — на екрані буде її точний текст.</div>');
-  }finally{loading=false}
+    if(!cached)content('<div class="aceil-admin-error"><b>Не вдалося відкрити дані адмінки.</b><br><br>'+esc(e.message||e)+'</div>');
+    else toast("Не вдалося оновити список. Показано останні дані.");
+  }finally{loading=false;if(btn)btn.classList.remove('busy')}
 }
 async function setAccess(uid,key,val,input){
   if(input)input.disabled=true;
@@ -17561,7 +17575,11 @@ async function setAccess(uid,key,val,input){
     if(r.error)throw r.error;
     if(r.data!==true)throw new Error("RPC не підтвердила зміну доступу.");
     toast("✓ Доступ оновлено");
-    await load();
+    if(input)input.disabled=false;
+    if(lastRows){
+      lastRows.forEach(function(r){if(String(r.user_id||r.id||"")===String(uid))r[key]=!!val});
+      cacheRows(lastRows);
+    }
   }catch(e){
     if(input){input.checked=!val;input.disabled=false}
     try{console.error("A·CEIL admin_set_user_access failed:",e)}catch(_){}
