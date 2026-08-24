@@ -5449,6 +5449,15 @@ function _nomenV339CaptureCatalog(){
 }
 async function saveNomenclatureToCloud(){
   if(!window._nomenCloudLoaded)return;
+  /* Only the owner may persist the global nomenclature catalogue.
+     Worker/user accounts must never copy a shared catalogue into their own row. */
+  try{
+    if(_sbUser&&_sb){
+      const roleRes=await _sb.from("profiles").select("app_role").eq("id",_sbUser.id).maybeSingle();
+      const role=roleRes&&roleRes.data&&roleRes.data.app_role;
+      if(role!=="owner")return;
+    }
+  }catch(_roleErr){return;}
   var catalog=_nomenV339CaptureCatalog();
   if((!catalog.items.length)&&(!catalog.groups.length))return;
   if(_sbUser&&_sb)try{
@@ -17287,10 +17296,15 @@ function applyNom(data){
 }
 
 async function fetchAccessibleNomenclature(client,user){
-  /* Do not query user_access from the browser. Its RLS is intentionally not
-     exposed to ordinary users. The nomenclature SELECT policy already decides
-     which catalogue rows auth.uid() may read, so ask for accessible rows and
-     choose the shared owner's row when one exists. */
+  /* Determine account role first. A normal user must NEVER fall back to a
+     nomenclature row stored under their own user_id. Only owner owns a catalog. */
+  var roleRes=await client.from("profiles")
+    .select("app_role")
+    .eq("id",user.id)
+    .maybeSingle();
+  if(roleRes.error)throw roleRes.error;
+  var appRole=roleRes.data&&roleRes.data.app_role||"user";
+
   var q=client.from("nomenclature")
     .select("items,groups,wall_presets,light_types,user_id")
     .limit(10);
@@ -17299,29 +17313,17 @@ async function fetchAccessibleNomenclature(client,user){
     : await q;
   if(res.error)throw res.error;
   var rows=Array.isArray(res.data)?res.data:[];
-  /* TEMP DIAGNOSTIC: show exactly what Supabase returned under this session. */
-  try{
-    window.A_CEIL_NOMEN_DIAG={
-      authUserId:user&&user.id||null,
-      authEmail:user&&user.email||null,
-      returnedUserIds:rows.map(function(r){return r&&r.user_id}),
-      rowCount:rows.length,
-      checkedAt:new Date().toISOString()
-    };
-    var msg="NOM DEBUG\n"+
-      "email: "+(user&&user.email||"—")+"\n"+
-      "auth uid: "+(user&&user.id||"—")+"\n"+
-      "rows: "+rows.length+"\n"+
-      "returned user_id:\n"+(rows.length?rows.map(function(r){return String(r.user_id)}).join("\n"):"NONE");
-    setTimeout(function(){try{alert(msg)}catch(_){try{if(typeof showToast==="function")showToast(msg,12000)}catch(__){}}},100);
-  }catch(_diag){}
-  if(!rows.length)return {data:null,shared:false,ownerId:user.id};
-  var own=rows.find(function(r){return String(r.user_id)===String(user.id)});
+
+  if(appRole==="owner"){
+    var own=rows.find(function(r){return String(r.user_id)===String(user.id)});
+    return {data:own||null,shared:false,ownerId:own?own.user_id:user.id,role:appRole};
+  }
+
+  /* For worker/user accounts only a different user_id is a shared owner
+     catalogue. Their own legacy row is deliberately ignored. If access is OFF,
+     RLS returns only that own row (or nothing), therefore the UI becomes empty. */
   var shared=rows.find(function(r){return String(r.user_id)!==String(user.id)});
-  /* If access to an owner's catalogue exists, it is authoritative for a
-     worker account. Otherwise use the user's own catalogue. */
-  var picked=shared||own||rows[0];
-  return {data:picked,shared:String(picked.user_id)!==String(user.id),ownerId:picked.user_id};
+  return {data:shared||null,shared:!!shared,ownerId:shared?shared.user_id:null,role:appRole};
 }
 
 var loading=false;
