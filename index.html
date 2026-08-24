@@ -17316,7 +17316,20 @@ window.forceLoadNomenclature=async function(reason){
   loading=true; window._nomenclatureLoading=true;
   try{
     var source=await fetchAccessibleNomenclature(client,user);
-    if(!source.data)return false;
+    if(!source.data){
+      /* No catalogue is readable under current RLS. Never leave a catalogue
+         from a previous user/access grant visible in memory or local room state. */
+      try{ elemItems=[]; elemGroups=[]; }catch(_){
+        try{ window.elemItems=[]; window.elemGroups=[]; }catch(__){}
+      }
+      try{ window.A_CEIL_NOMENCLATURE_SOURCE={
+        userId:user.id, ownerId:null, shared:false, denied:true, loadedAt:Date.now()
+      }; }catch(_){}
+      try{ if(typeof renderElemList==="function")renderElemList(); }catch(_){}
+      try{ if(typeof updateElemBadge==="function")updateElemBadge(); }catch(_){}
+      try{ if(typeof recalcElemTotal==="function")recalcElemTotal(); }catch(_){}
+      return false;
+    }
     applyNom(source.data);
     window.A_CEIL_NOMENCLATURE_SOURCE={
       userId:user.id,
