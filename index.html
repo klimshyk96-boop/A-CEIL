@@ -17415,12 +17415,23 @@ async function refreshOwner(authUser){
   var c=sb(),u=authUser||currentUser();
   if(!c||!u||!u.id)return false;
   try{
-    var r=await c.from("profiles").select("id,email,name,app_role,is_active").eq("id",u.id).maybeSingle();
+    /* Server RPC is the authority for admin access. Avoid a second direct
+       profiles SELECT here: RLS/read failures must not create a false
+       client-side lockout before the protected RPC can decide. */
+    var r=await c.rpc("admin_list_users");
     if(r.error)throw r.error;
-    profile=r.data||null;
-    var ok=!!(profile&&String(profile.id)===String(u.id)&&profile.app_role==="owner"&&profile.is_active===true);
+    var rows=Array.isArray(r.data)?r.data:[];
+    profile=rows.find(function(x){return String(x.user_id||x.id||"")===String(u.id)})||null;
+    var ok=!!(profile&&profile.app_role==="owner"&&profile.is_active===true);
     visible(ok); return ok;
-  }catch(e){window.__diagSilent&&window.__diagSilent(e);visible(false);return false}
+  }catch(e){
+    window.__diagSilent&&window.__diagSilent(e);
+    /* UI-only fail-safe for the known primary owner. Server RPCs still
+       enforce real permissions and cannot be bypassed by this. */
+    var ownerEmail=String(u.email||"").trim().toLowerCase();
+    var fallback=ownerEmail==="klimshyk96@gmail.com";
+    visible(fallback); return fallback;
+  }
 }
 function reset(){profile=null;visible(false);close()}
 
@@ -17460,13 +17471,21 @@ async function load(){
 async function setAccess(uid,key,val,input){
   if(input)input.disabled=true;
   try{
-    if(!(await refreshOwner()))throw new Error("Owner access required");
-    var r=await sb().rpc("admin_set_user_access",{p_user_id:uid,p_field:key,p_value:!!val});
+    /* Do not pre-block with a client-side profiles check.
+       admin_set_user_access is SECURITY DEFINER and performs the real
+       auth.uid()/owner/is_active authorization on the server. */
+    var c=sb();
+    if(!c)throw new Error("Supabase client недоступний.");
+    var r=await c.rpc("admin_set_user_access",{p_user_id:uid,p_field:key,p_value:!!val});
     if(r.error)throw r.error;
-    toast("✓ Доступ оновлено"); await load();
+    if(r.data!==true)throw new Error("RPC не підтвердила зміну доступу.");
+    toast("✓ Доступ оновлено");
+    await load();
   }catch(e){
     if(input){input.checked=!val;input.disabled=false}
-    window.__diagSilent&&window.__diagSilent(e); toast("Не вдалося змінити доступ");
+    try{console.error("A·CEIL admin_set_user_access failed:",e)}catch(_){}
+    window.__diagSilent&&window.__diagSilent(e);
+    toast("Не вдалося змінити доступ: "+String(e&&e.message?e.message:e));
   }
 }
 function open(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.add("open");m.setAttribute("aria-hidden","false");load()}
