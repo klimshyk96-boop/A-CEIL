@@ -17582,3 +17582,54 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&currentUser())setTimeout(function(){refreshOwner(currentUser())},250)});
 })();
 </script>
+
+
+<!-- A·CEIL access UX + shared nomenclature refresh hotfix 2026-08-24 -->
+<style id="A-CEIL-access-ux-hotfix">
+/* A checked switch must stay visually clear even while the RPC request is pending. */
+.aceil-switch input:disabled + .aceil-slider{opacity:1!important;cursor:wait}
+.aceil-switch input:checked + .aceil-slider{background:#2563eb!important;box-shadow:0 0 0 3px rgba(37,99,235,.14)}
+.aceil-switch input:not(:checked) + .aceil-slider{background:#cbd5e1!important}
+.aceil-switch input:disabled + .aceil-slider:after{content:"";position:absolute;inset:-4px;border-radius:999px;border:2px solid rgba(37,99,235,.16);pointer-events:none}
+</style>
+<script id="A-CEIL-shared-nomenclature-refresh-hotfix">
+(function(){
+"use strict";
+if(window.__A_CEIL_NOM_REFRESH_HOTFIX)return;
+window.__A_CEIL_NOM_REFRESH_HOTFIX=true;
+
+var lastKick=0, busy=false;
+function user(){try{return (typeof _sbUser!=="undefined"&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
+function kick(reason,force){
+  var u=user();
+  if(!u||typeof window.forceLoadNomenclature!=="function")return;
+  var now=Date.now();
+  if(!force && now-lastKick<2500)return;
+  if(busy)return;
+  lastKick=now;busy=true;
+  Promise.resolve(window.forceLoadNomenclature(reason||"access-refresh"))
+    .catch(function(e){window.__diagSilent&&window.__diagSilent(e)})
+    .finally(function(){busy=false});
+}
+
+/* Access changes are server-side. Re-check them when a worker returns to the app,
+   without requiring logout/login or clearing local data. */
+window.addEventListener("focus",function(){setTimeout(function(){kick("window-focus",true)},120)});
+document.addEventListener("visibilitychange",function(){
+  if(document.visibilityState==="visible")setTimeout(function(){kick("visible",true)},180);
+});
+window.addEventListener("pageshow",function(){setTimeout(function(){kick("pageshow",true)},220)});
+
+/* Opening Elements is an explicit request for the current catalogue, so always
+   refresh current RLS visibility first. */
+document.addEventListener("click",function(e){
+  var t=e.target&&e.target.closest?e.target.closest("#openElementsBtn,[onclick*='openElementsModal'],[onclick*='openElements']"):null;
+  if(t)setTimeout(function(){kick("open-elements-access",true)},40);
+},true);
+
+/* Small safety poll while the app is open: makes an owner permission change
+   appear on the worker device without a new login. */
+setInterval(function(){if(document.visibilityState==="visible")kick("access-poll",false)},15000);
+setTimeout(function(){kick("hotfix-start",true)},600);
+})();
+</script>
