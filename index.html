@@ -5449,15 +5449,6 @@ function _nomenV339CaptureCatalog(){
 }
 async function saveNomenclatureToCloud(){
   if(!window._nomenCloudLoaded)return;
-  /* Only the owner may persist the global nomenclature catalogue.
-     Worker/user accounts must never copy a shared catalogue into their own row. */
-  try{
-    if(_sbUser&&_sb){
-      const roleRes=await _sb.from("profiles").select("app_role").eq("id",_sbUser.id).maybeSingle();
-      const role=roleRes&&roleRes.data&&roleRes.data.app_role;
-      if(role!=="owner")return;
-    }
-  }catch(_roleErr){return;}
   var catalog=_nomenV339CaptureCatalog();
   if((!catalog.items.length)&&(!catalog.groups.length))return;
   if(_sbUser&&_sb)try{
@@ -5962,40 +5953,7 @@ localStorage: lightTypes_v1
 Визначає: _nomenclatureLoading; _sb; _sbUser; forceLoadNomenclature; lightTypes [застаріла, див. #136]; loadProjectsFromCloud; openElementsModal [ФІНАЛЬНА; було в: #033]; renderElemList; rpcUpdate [застаріла, див. #062]
 localStorage: lightTypes_v1, A·CEIL_wall_presets_v32
 -->
-<script>!function(){let nomLoading=!1,nomLoadedAt=0;function gid(id){return document.getElementById(id)}function refreshNomenclatureUI(){try{"function"==typeof updateElemBadge&&updateElemBadge()}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}try{"function"==typeof recalcElemTotal&&recalcElemTotal()}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}try{(function(){const m=gid("elementsModal");return!(!m||!m.classList.contains("open"))})()&&"function"==typeof renderElemList&&renderElemList()}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}try{"function"==typeof rpcUpdate&&setTimeout(()=>rpcUpdate(),20)}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}async function forceLoadNomenclature(reason){
-if(nomLoading)return false;
-window._sb||"undefined"==typeof _sb||(window._sb=_sb),window._sbUser||"undefined"==typeof _sbUser||(window._sbUser=_sbUser);
-const sb="undefined"!=typeof _sb?_sb:window._sb,user="undefined"!=typeof _sbUser?_sbUser:window._sbUser;
-if(!sb||!user)return false;
-nomLoading=!0;window._nomenclatureLoading=!0;refreshNomenclatureUI();
-try{
-  const pr=await sb.from("profiles").select("app_role").eq("id",user.id).maybeSingle();
-  if(pr.error)throw pr.error;
-  const role=pr.data&&pr.data.app_role||"user";
-  const rr=await sb.from("nomenclature").select("items, groups, wall_presets, light_types, user_id").limit(10);
-  if(rr.error)throw rr.error;
-  const rows=Array.isArray(rr.data)?rr.data:[];
-  let data=null;
-  if(role==="owner") data=rows.find(r=>String(r.user_id)===String(user.id))||null;
-  else data=rows.find(r=>String(r.user_id)!==String(user.id))||null;
-  if(!data){
-    elemItems=[];elemGroups=[];nomLoadedAt=Date.now();
-    window.A_CEIL_NOMENCLATURE_SOURCE={userId:user.id,ownerId:null,shared:false,denied:true,loadedAt:nomLoadedAt};
-    refreshNomenclatureUI();
-    return false;
-  }
-  elemGroups=Array.isArray(data.groups)?JSON.parse(JSON.stringify(data.groups)):[];
-  elemItems=Array.isArray(data.items)?JSON.parse(JSON.stringify(data.items)):[];
-  elemItems.forEach(it=>{it.unit||(it.unit="шт"),void 0===it.groupId&&(it.groupId=null),void 0===it.price&&(it.price=0),it.inputMode||(it.inputMode="manual"),it.icon||(it.icon="📦")});
-  if(Array.isArray(data.wall_presets)){localStorage.setItem("A·CEIL_wall_presets_v32",JSON.stringify(data.wall_presets));"function"==typeof window.setWallPresets&&window.setWallPresets(data.wall_presets.map(p=>p.name||p))}
-  if(Array.isArray(data.light_types)){localStorage.setItem("lightTypes_v1",JSON.stringify(data.light_types));try{lightTypes=data.light_types}catch{window.lightTypes=data.light_types}"function"==typeof warmSvgCache&&warmSvgCache(),"function"==typeof renderLightMenu&&renderLightMenu()}
-  nomLoadedAt=Date.now();
-  window.A_CEIL_NOMENCLATURE_SOURCE={userId:user.id,ownerId:data.user_id,shared:String(data.user_id)!==String(user.id),denied:false,loadedAt:nomLoadedAt};
-  refreshNomenclatureUI();
-  return true;
-}catch(e){window.__diagSilent&&window.__diagSilent(e);return false}
-finally{nomLoading=!1;window._nomenclatureLoading=!1;refreshNomenclatureUI()}
-}window.forceLoadNomenclature=forceLoadNomenclature;try{forceLoadNomenclature=window.forceLoadNomenclature}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}const oldRender=window.renderElemList||("undefined"!=typeof renderElemList?renderElemList:null);if("function"==typeof oldRender&&!oldRender.__nomReady3623){const wrapped=function(){try{const empty=!(Array.isArray(elemGroups)&&elemGroups.length||Array.isArray(elemItems)&&elemItems.length),user="undefined"!=typeof _sbUser?_sbUser:window._sbUser,sb="undefined"!=typeof _sb?_sb:window._sb;if(empty&&(nomLoading||window._nomenclatureLoading||user&&sb&&!nomLoadedAt)){const el=gid("elemList");if(el)return el.innerHTML='<div style="text-align:center;padding:30px 16px;color:#94a3b8;"><div style="font-size:36px;margin-bottom:8px">⏳</div><div style="font-weight:700;font-size:14px;">Завантаження номенклатури…</div><div style="font-size:12px;margin-top:4px;">Дані підтягуються з хмари</div></div>',void setTimeout(()=>forceLoadNomenclature("render-empty"),80)}}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}return oldRender.apply(this,arguments)};wrapped.__nomReady3623=!0,window.renderElemList=wrapped;try{renderElemList=wrapped}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}const oldOpen=window.openElementsModal||("undefined"!=typeof openElementsModal?openElementsModal:null);if("function"==typeof oldOpen&&!oldOpen.__nomReady3623){const wrapped=function(){const r=oldOpen.apply(this,arguments);return forceLoadNomenclature("open-elements"),setTimeout(refreshNomenclatureUI,120),setTimeout(refreshNomenclatureUI,700),r};wrapped.__nomReady3623=!0,window.openElementsModal=wrapped;try{openElementsModal=wrapped}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}const oldLoadProjects=window.loadProjectsFromCloud||("undefined"!=typeof loadProjectsFromCloud?loadProjectsFromCloud:null);if("function"==typeof oldLoadProjects&&!oldLoadProjects.__nomReady3623){const wrapped=async function(){const r=await oldLoadProjects.apply(this,arguments);return await forceLoadNomenclature("after-projects"),refreshNomenclatureUI(),r};wrapped.__nomReady3623=!0,window.loadProjectsFromCloud=wrapped;try{loadProjectsFromCloud=wrapped}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}function scheduleInitialLoads(){setTimeout(()=>forceLoadNomenclature("startup-1"),250),setTimeout(()=>forceLoadNomenclature("startup-2"),1200),setTimeout(refreshNomenclatureUI,1800)}function syncDotOnly(){const st=gid("rpcStatus");if(!st)return;const cloud=(gid("cloudStatus")?.textContent||st.textContent||"").toLowerCase();let cls="",title="Синхронізовано";cloud.includes("помил")||cloud.includes("офлайн")||cloud.includes("нема")||cloud.includes("error")?(cls="sync-bad",title="Помилка синхронізації"):(cloud.includes("локаль")||cloud.includes("очіку")||cloud.includes("потріб")||cloud.includes("завантаж")||cloud.includes("підключ")||cloud.includes("збереження"))&&(cls="sync-warn",title="Очікує синхронізації");(st.__rmSyncCls!==cls||st.title!==title)&&(st.__rmSyncCls=cls,st.classList.remove("sync-warn","sync-bad"),cls&&st.classList.add(cls),st.title=title);st.textContent&&(st.textContent="")}const oldRpc=window.rpcUpdate||("undefined"!=typeof rpcUpdate?rpcUpdate:null);if("function"==typeof oldRpc&&!oldRpc.__syncDot3623){window.rpcUpdate=function(){const r=oldRpc.apply(this,arguments);return syncDotOnly(),r},window.rpcUpdate.__syncDot3623=!0;try{rpcUpdate=window.rpcUpdate}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}rmOnReady(()=>{scheduleInitialLoads(),syncDotOnly()}),setTimeout(scheduleInitialLoads,200);
+<script>!function(){let nomLoading=!1,nomLoadedAt=0;function gid(id){return document.getElementById(id)}function refreshNomenclatureUI(){try{"function"==typeof updateElemBadge&&updateElemBadge()}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}try{"function"==typeof recalcElemTotal&&recalcElemTotal()}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}try{(function(){const m=gid("elementsModal");return!(!m||!m.classList.contains("open"))})()&&"function"==typeof renderElemList&&renderElemList()}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}try{"function"==typeof rpcUpdate&&setTimeout(()=>rpcUpdate(),20)}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}async function forceLoadNomenclature(reason){if(nomLoading)return;window._sb||"undefined"==typeof _sb||(window._sb=_sb),window._sbUser||"undefined"==typeof _sbUser||(window._sbUser=_sbUser);const sb="undefined"!=typeof _sb?_sb:window._sb,user="undefined"!=typeof _sbUser?_sbUser:window._sbUser;if(sb&&user){nomLoading=!0,window._nomenclatureLoading=!0,refreshNomenclatureUI();try{let data=null,error=null;if("function"==typeof withTimeout){const res=await withTimeout(sb.from("nomenclature").select("items, groups, wall_presets, light_types").eq("user_id",user.id).maybeSingle(),12e3,"Завантаження номенклатури");data=res.data,error=res.error}else{const res=await sb.from("nomenclature").select("items, groups, wall_presets, light_types").eq("user_id",user.id).maybeSingle();data=res.data,error=res.error}if(error)throw error;if(data){if(Array.isArray(data.groups)&&data.groups.length&&(elemGroups=data.groups),Array.isArray(data.items)&&data.items.length&&(elemItems=data.items,elemItems.forEach(it=>{it.unit||(it.unit="шт"),void 0===it.groupId&&(it.groupId=null),void 0===it.price&&(it.price=0),it.inputMode||(it.inputMode="manual"),it.icon||(it.icon="📦")})),data.wall_presets&&Array.isArray(data.wall_presets)&&data.wall_presets.length&&(localStorage.setItem("A·CEIL_wall_presets_v32",JSON.stringify(data.wall_presets)),"function"==typeof window.setWallPresets&&window.setWallPresets(data.wall_presets.map(p=>p.name||p))),data.light_types&&Array.isArray(data.light_types)&&data.light_types.length){localStorage.setItem("lightTypes_v1",JSON.stringify(data.light_types));try{lightTypes=data.light_types}catch{window.lightTypes=data.light_types}"function"==typeof warmSvgCache&&warmSvgCache(),"function"==typeof renderLightMenu&&renderLightMenu()}nomLoadedAt=Date.now();try{saveState()}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}finally{nomLoading=!1,window._nomenclatureLoading=!1,refreshNomenclatureUI()}}}window.forceLoadNomenclature=forceLoadNomenclature;try{forceLoadNomenclature=window.forceLoadNomenclature}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}const oldRender=window.renderElemList||("undefined"!=typeof renderElemList?renderElemList:null);if("function"==typeof oldRender&&!oldRender.__nomReady3623){const wrapped=function(){try{const empty=!(Array.isArray(elemGroups)&&elemGroups.length||Array.isArray(elemItems)&&elemItems.length),user="undefined"!=typeof _sbUser?_sbUser:window._sbUser,sb="undefined"!=typeof _sb?_sb:window._sb;if(empty&&(nomLoading||window._nomenclatureLoading||user&&sb&&!nomLoadedAt)){const el=gid("elemList");if(el)return el.innerHTML='<div style="text-align:center;padding:30px 16px;color:#94a3b8;"><div style="font-size:36px;margin-bottom:8px">⏳</div><div style="font-weight:700;font-size:14px;">Завантаження номенклатури…</div><div style="font-size:12px;margin-top:4px;">Дані підтягуються з хмари</div></div>',void setTimeout(()=>forceLoadNomenclature("render-empty"),80)}}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}return oldRender.apply(this,arguments)};wrapped.__nomReady3623=!0,window.renderElemList=wrapped;try{renderElemList=wrapped}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}const oldOpen=window.openElementsModal||("undefined"!=typeof openElementsModal?openElementsModal:null);if("function"==typeof oldOpen&&!oldOpen.__nomReady3623){const wrapped=function(){const r=oldOpen.apply(this,arguments);return forceLoadNomenclature("open-elements"),setTimeout(refreshNomenclatureUI,120),setTimeout(refreshNomenclatureUI,700),r};wrapped.__nomReady3623=!0,window.openElementsModal=wrapped;try{openElementsModal=wrapped}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}const oldLoadProjects=window.loadProjectsFromCloud||("undefined"!=typeof loadProjectsFromCloud?loadProjectsFromCloud:null);if("function"==typeof oldLoadProjects&&!oldLoadProjects.__nomReady3623){const wrapped=async function(){const r=await oldLoadProjects.apply(this,arguments);return await forceLoadNomenclature("after-projects"),refreshNomenclatureUI(),r};wrapped.__nomReady3623=!0,window.loadProjectsFromCloud=wrapped;try{loadProjectsFromCloud=wrapped}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}function scheduleInitialLoads(){setTimeout(()=>forceLoadNomenclature("startup-1"),250),setTimeout(()=>forceLoadNomenclature("startup-2"),1200),setTimeout(refreshNomenclatureUI,1800)}function syncDotOnly(){const st=gid("rpcStatus");if(!st)return;const cloud=(gid("cloudStatus")?.textContent||st.textContent||"").toLowerCase();let cls="",title="Синхронізовано";cloud.includes("помил")||cloud.includes("офлайн")||cloud.includes("нема")||cloud.includes("error")?(cls="sync-bad",title="Помилка синхронізації"):(cloud.includes("локаль")||cloud.includes("очіку")||cloud.includes("потріб")||cloud.includes("завантаж")||cloud.includes("підключ")||cloud.includes("збереження"))&&(cls="sync-warn",title="Очікує синхронізації");(st.__rmSyncCls!==cls||st.title!==title)&&(st.__rmSyncCls=cls,st.classList.remove("sync-warn","sync-bad"),cls&&st.classList.add(cls),st.title=title);st.textContent&&(st.textContent="")}const oldRpc=window.rpcUpdate||("undefined"!=typeof rpcUpdate?rpcUpdate:null);if("function"==typeof oldRpc&&!oldRpc.__syncDot3623){window.rpcUpdate=function(){const r=oldRpc.apply(this,arguments);return syncDotOnly(),r},window.rpcUpdate.__syncDot3623=!0;try{rpcUpdate=window.rpcUpdate}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}rmOnReady(()=>{scheduleInitialLoads(),syncDotOnly()}),setTimeout(scheduleInitialLoads,200);
 (function(){
   var pending=false;
   function queue(){if(pending)return;pending=true;requestAnimationFrame(function(){pending=false;syncDotOnly();});}
@@ -17329,15 +17287,10 @@ function applyNom(data){
 }
 
 async function fetchAccessibleNomenclature(client,user){
-  /* Determine account role first. A normal user must NEVER fall back to a
-     nomenclature row stored under their own user_id. Only owner owns a catalog. */
-  var roleRes=await client.from("profiles")
-    .select("app_role")
-    .eq("id",user.id)
-    .maybeSingle();
-  if(roleRes.error)throw roleRes.error;
-  var appRole=roleRes.data&&roleRes.data.app_role||"user";
-
+  /* Do not query user_access from the browser. Its RLS is intentionally not
+     exposed to ordinary users. The nomenclature SELECT policy already decides
+     which catalogue rows auth.uid() may read, so ask for accessible rows and
+     choose the shared owner's row when one exists. */
   var q=client.from("nomenclature")
     .select("items,groups,wall_presets,light_types,user_id")
     .limit(10);
@@ -17346,17 +17299,13 @@ async function fetchAccessibleNomenclature(client,user){
     : await q;
   if(res.error)throw res.error;
   var rows=Array.isArray(res.data)?res.data:[];
-
-  if(appRole==="owner"){
-    var own=rows.find(function(r){return String(r.user_id)===String(user.id)});
-    return {data:own||null,shared:false,ownerId:own?own.user_id:user.id,role:appRole};
-  }
-
-  /* For worker/user accounts only a different user_id is a shared owner
-     catalogue. Their own legacy row is deliberately ignored. If access is OFF,
-     RLS returns only that own row (or nothing), therefore the UI becomes empty. */
+  if(!rows.length)return {data:null,shared:false,ownerId:user.id};
+  var own=rows.find(function(r){return String(r.user_id)===String(user.id)});
   var shared=rows.find(function(r){return String(r.user_id)!==String(user.id)});
-  return {data:shared||null,shared:!!shared,ownerId:shared?shared.user_id:null,role:appRole};
+  /* If access to an owner's catalogue exists, it is authoritative for a
+     worker account. Otherwise use the user's own catalogue. */
+  var picked=shared||own||rows[0];
+  return {data:picked,shared:String(picked.user_id)!==String(user.id),ownerId:picked.user_id};
 }
 
 var loading=false;
@@ -17367,20 +17316,7 @@ window.forceLoadNomenclature=async function(reason){
   loading=true; window._nomenclatureLoading=true;
   try{
     var source=await fetchAccessibleNomenclature(client,user);
-    if(!source.data){
-      /* No catalogue is readable under current RLS. Never leave a catalogue
-         from a previous user/access grant visible in memory or local room state. */
-      try{ elemItems=[]; elemGroups=[]; }catch(_){
-        try{ window.elemItems=[]; window.elemGroups=[]; }catch(__){}
-      }
-      try{ window.A_CEIL_NOMENCLATURE_SOURCE={
-        userId:user.id, ownerId:null, shared:false, denied:true, loadedAt:Date.now()
-      }; }catch(_){}
-      try{ if(typeof renderElemList==="function")renderElemList(); }catch(_){}
-      try{ if(typeof updateElemBadge==="function")updateElemBadge(); }catch(_){}
-      try{ if(typeof recalcElemTotal==="function")recalcElemTotal(); }catch(_){}
-      return false;
-    }
+    if(!source.data)return false;
     applyNom(source.data);
     window.A_CEIL_NOMENCLATURE_SOURCE={
       userId:user.id,
@@ -17419,33 +17355,17 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 })();
 </script>
 
-
-<!-- A·CEIL nomenclature denied-state UI guard v3 -->
-<script id="A-CEIL-nom-denied-guard-v3">
-(function(){
- function clearIfDenied(){
-   var src=window.A_CEIL_NOMENCLATURE_SOURCE;
-   if(!src||!src.denied)return;
-   try{elemItems=[];elemGroups=[]}catch(e){try{window.elemItems=[];window.elemGroups=[]}catch(_){}}
-   try{if(typeof renderElemList==="function")renderElemList()}catch(e){}
-   try{if(typeof updateElemBadge==="function")updateElemBadge()}catch(e){}
-   try{if(typeof recalcElemTotal==="function")recalcElemTotal()}catch(e){}
- }
- document.addEventListener("click",function(){setTimeout(clearIfDenied,0)},true);
- window.addEventListener("focus",function(){clearIfDenied();try{window.forceLoadNomenclature&&window.forceLoadNomenclature("focus-access-check")}catch(e){}});
- setInterval(clearIfDenied,1500);
-})();
-</script>
 <!-- A·CEIL ADMIN v2: owner menu + secure RPC UI -->
 <style id="A-CEIL-admin-v2-style">
 .aceil-admin-overlay{position:fixed;inset:0;z-index:15000;background:rgba(2,6,23,.64);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:flex-end;justify-content:center;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 .aceil-admin-overlay.open{display:flex}.aceil-admin-sheet{width:min(100%,620px);max-height:94dvh;background:#f8fafc;border-radius:26px 26px 0 0;overflow:hidden;box-shadow:0 -22px 70px rgba(2,6,23,.35)}
 .aceil-admin-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 18px 14px;background:#fff;border-bottom:1px solid #e2e8f0}.aceil-admin-title{font-size:20px;font-weight:900;color:#0f172a}.aceil-admin-sub{font-size:11px;color:#64748b;margin-top:3px}.aceil-admin-x{width:40px!important;height:40px!important;min-width:40px!important;border:0!important;border-radius:13px!important;background:#eef2f7!important;color:#334155!important;padding:0!important;box-shadow:none!important;font-size:24px!important}
 .aceil-admin-body{padding:14px;overflow:auto;max-height:calc(94dvh - 74px);-webkit-overflow-scrolling:touch}.aceil-admin-toolbar{display:flex;gap:8px;margin-bottom:12px}.aceil-admin-refresh{flex:1;min-height:44px!important;border-radius:13px!important;background:#0f172a!important;color:#fff!important;margin:0!important}
-.aceil-admin-note,.aceil-admin-error{padding:12px 14px;border-radius:14px;font-size:12px;line-height:1.45;margin-bottom:11px}.aceil-admin-note{background:#eff6ff;color:#1d4ed8}.aceil-admin-error{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}.aceil-admin-empty{text-align:center;padding:34px 18px;color:#64748b}.aceil-admin-ownerline{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;color:#64748b;margin:-2px 0 10px 2px}.aceil-admin-ownerline .dot{width:7px;height:7px;border-radius:50%;background:#10b981}.aceil-admin-refresh.busy{opacity:.7}
+.aceil-admin-note,.aceil-admin-error{padding:12px 14px;border-radius:14px;font-size:12px;line-height:1.45;margin-bottom:11px}.aceil-admin-note{background:#eff6ff;color:#1d4ed8}.aceil-admin-error{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}.aceil-admin-empty{text-align:center;padding:34px 18px;color:#64748b}
 .aceil-admin-user{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:0 5px 16px rgba(15,23,42,.04)}.aceil-admin-user.self{border-color:#93c5fd}.aceil-admin-user-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.aceil-admin-name{font-weight:900;color:#0f172a;font-size:15px}.aceil-admin-mail{font-size:11px;color:#64748b;margin-top:2px;word-break:break-all}.aceil-admin-badge{font-size:10px;font-weight:850;padding:5px 8px;border-radius:999px;background:#ecfdf5;color:#047857;white-space:nowrap}.aceil-admin-badge.off{background:#fef2f2;color:#b91c1c}.aceil-admin-badge.owner{background:#eff6ff;color:#1d4ed8}
 .aceil-admin-controls{margin-top:12px;border-top:1px solid #eef2f7;padding-top:6px}.aceil-admin-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0}.aceil-admin-row-text b{display:block;font-size:13px;color:#334155}.aceil-admin-row-text small{display:block;color:#94a3b8;font-size:10px;margin-top:2px}
-.aceil-switch{position:relative;width:46px;height:27px;flex:0 0 46px}.aceil-switch input{opacity:0;width:0;height:0}.aceil-slider{position:absolute;inset:0;border-radius:999px;background:#cbd5e1;transition:.18s}.aceil-slider:before{content:"";position:absolute;width:21px;height:21px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:.18s}.aceil-switch input:checked+.aceil-slider{background:#2563eb}.aceil-switch input:checked+.aceil-slider:before{transform:translateX(19px)}.aceil-switch input:disabled+.aceil-slider{opacity:.72}.aceil-switch input:checked:disabled+.aceil-slider{opacity:1;background:#2563eb}
+.aceil-switch{position:relative;width:46px;height:27px;flex:0 0 46px}.aceil-switch input{opacity:0;width:0;height:0}.aceil-slider{position:absolute;inset:0;border-radius:999px;background:#cbd5e1;transition:.18s}.aceil-slider:before{content:"";position:absolute;width:21px;height:21px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:.18s}.aceil-switch input:checked+.aceil-slider{background:#2563eb}.aceil-switch input:checked+.aceil-slider:before{transform:translateX(19px)}.aceil-switch input:disabled+.aceil-slider{opacity:.4}
+.aceil-temp-access{margin-top:10px;padding:11px 0 2px;border-top:1px solid #eef2f7}.aceil-temp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}.aceil-temp-title{font-size:13px;font-weight:850;color:#334155}.aceil-temp-status{font-size:10px;color:#64748b;margin-top:2px}.aceil-temp-status.active{color:#047857;font-weight:750}.aceil-temp-buttons{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.aceil-temp-btn{min-height:36px!important;margin:0!important;padding:7px 5px!important;border:1px solid #cbd5e1!important;border-radius:10px!important;background:#f8fafc!important;color:#334155!important;font-size:11px!important;font-weight:800!important;box-shadow:none!important}.aceil-temp-btn:active{background:#e2e8f0!important}.aceil-temp-cancel{margin-top:7px!important;width:100%!important;min-height:34px!important;padding:6px 10px!important;border:1px solid #fecaca!important;border-radius:10px!important;background:#fff7f7!important;color:#b91c1c!important;font-size:11px!important;font-weight:800!important;box-shadow:none!important}@media(max-width:390px){.aceil-temp-buttons{grid-template-columns:repeat(2,1fr)}}
 </style>
 
 <div id="aceilAdminModal" class="aceil-admin-overlay" aria-hidden="true">
@@ -17464,8 +17384,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 <script id="A-CEIL-admin-v2">
 (function(){
 "use strict";
-var profile=null,loading=false,lastRows=null;
-var CACHE_KEY="A_CEIL_admin_users_cache_v1";
+var profile=null,loading=false;
 
 function sb(){try{return (typeof _sb!=="undefined"&&_sb)||window._sb||null}catch(e){return window._sb||null}}
 function currentUser(){try{return (typeof _sbUser!=="undefined"&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
@@ -17520,48 +17439,52 @@ function reset(){profile=null;visible(false);close()}
 function toggle(uid,key,label,desc,val,disabled){
   return '<div class="aceil-admin-row"><div class="aceil-admin-row-text"><b>'+esc(label)+'</b><small>'+esc(desc)+'</small></div><label class="aceil-switch"><input type="checkbox" '+(val?'checked ':'')+(disabled?'disabled ':'')+'onchange="A_CEIL_Admin.setAccess(\''+esc(uid)+'\',\''+esc(key)+'\',this.checked,this)"><span class="aceil-slider"></span></label></div>';
 }
-function cacheRows(rows){try{localStorage.setItem(CACHE_KEY,JSON.stringify({t:Date.now(),rows:rows||[]}))}catch(e){}}
-function cachedRows(){try{var x=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");return x&&Array.isArray(x.rows)?x.rows:null}catch(e){return null}}
-function userRows(rows){
-  var me=currentUser();
-  return (Array.isArray(rows)?rows:[]).filter(function(r){
-    var uid=String(r.user_id||r.id||"");
-    return r.app_role!=="owner" && !(me&&String(me.id)===uid);
-  });
+function expiryValue(r){return r&&(r.access_until||r.access_expires_at||r.access_expiry||r.expires_at)||null}
+function expiryInfo(r){
+  var raw=expiryValue(r); if(!raw)return {active:false,text:"Без обмеження часу"};
+  var d=new Date(raw); if(isNaN(d.getTime()))return {active:false,text:"Без обмеження часу"};
+  var active=d.getTime()>Date.now();
+  var txt;
+  try{txt=new Intl.DateTimeFormat("uk-UA",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}).format(d)}catch(e){txt=d.toLocaleString()}
+  return {active:active,text:(active?"Доступ до: ":"Термін минув: ")+txt};
 }
-function render(rows,quiet){
-  rows=userRows(rows); lastRows=rows;
-  var me=currentUser(), ownerLabel=me?(esc((me.email||"").split("@")[0]||"OWNER")+' · OWNER · онлайн'):'OWNER';
-  var ownerLine='<div class="aceil-admin-ownerline"><span class="dot"></span><span>'+ownerLabel+'</span></div>';
-  if(!rows.length){content(ownerLine+'<div class="aceil-admin-empty">Інших користувачів не знайдено.</div>');return}
-  content(ownerLine+
+function tempAccess(uid,r,disabled){
+  if(disabled)return "";
+  var x=expiryInfo(r), dis=disabled?' disabled':'';
+  return '<div class="aceil-temp-access"><div class="aceil-temp-head"><div><div class="aceil-temp-title">Тимчасовий доступ</div><div class="aceil-temp-status '+(x.active?'active':'')+'">'+esc(x.text)+'</div></div></div><div class="aceil-temp-buttons">'+
+    [1,3,8,24].map(function(h){return '<button type="button" class="aceil-temp-btn"'+dis+' onclick="A_CEIL_Admin.setExpiry(\''+esc(uid)+'\','+h+',this)">'+h+' год</button>'}).join('')+
+    '</div>'+(x.active?'<button type="button" class="aceil-temp-cancel" onclick="A_CEIL_Admin.setExpiry(\''+esc(uid)+'\',0,this)">Скасувати тимчасовий доступ</button>':'')+'</div>';
+}
+function render(rows){
+  rows=Array.isArray(rows)?rows:[];
+  if(!rows.length){content('<div class="aceil-admin-empty">Користувачів не знайдено.</div>');return}
+  var me=currentUser();
+  content('<div class="aceil-admin-note">Зміни прав виконуються через захищені Supabase RPC. Приховування кнопки саме по собі не є захистом.</div>'+
     rows.map(function(r){
-      var uid=String(r.user_id||r.id||"");
-      var badge='<span class="aceil-admin-badge '+(r.is_active===false?'off':'')+'">'+(r.is_active===false?'Заблоковано':'Активний')+'</span>';
-      return '<div class="aceil-admin-user"><div class="aceil-admin-user-top"><div><div class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+'</div><div class="aceil-admin-mail">'+esc(r.email||"")+'</div></div>'+badge+'</div><div class="aceil-admin-controls">'+
-        toggle(uid,"nomenclature_access","Моя номенклатура","Може використовувати номенклатуру owner",!!r.nomenclature_access,false)+
-        toggle(uid,"projects_access","Мої проєкти","Може бачити проєкти owner",!!r.projects_access,false)+
-        toggle(uid,"projects_edit","Редагування проєктів","Може змінювати доступні проєкти",!!r.projects_edit,false)+
-        toggle(uid,"is_active","Активний користувач","Блокування доступу до A·CEIL",r.is_active!==false,false)+
+      var uid=String(r.user_id||r.id||""),self=me&&String(me.id)===uid,owner=r.app_role==="owner";
+      var badge=owner?'<span class="aceil-admin-badge owner">OWNER</span>':'<span class="aceil-admin-badge '+(r.is_active===false?'off':'')+'">'+(r.is_active===false?'Заблоковано':'Активний')+'</span>';
+      return '<div class="aceil-admin-user '+(self?'self':'')+'"><div class="aceil-admin-user-top"><div><div class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+(self?' · Ви':'')+'</div><div class="aceil-admin-mail">'+esc(r.email||"")+'</div></div>'+badge+'</div><div class="aceil-admin-controls">'+
+        toggle(uid,"nomenclature_access","Моя номенклатура","Може використовувати номенклатуру owner",!!r.nomenclature_access,owner)+
+        toggle(uid,"projects_access","Мої проєкти","Може бачити проєкти owner",!!r.projects_access,owner)+
+        toggle(uid,"projects_edit","Редагування проєктів","Може змінювати доступні проєкти",!!r.projects_edit,owner)+
+        toggle(uid,"is_active","Активний користувач","Блокування доступу до A·CEIL",r.is_active!==false,owner||self)+
+        tempAccess(uid,r,owner||self)+
       '</div></div>';
     }).join(""));
 }
-function timeout(p,ms){return Promise.race([Promise.resolve(p),new Promise(function(_,rej){setTimeout(function(){rej(new Error("Сервер відповідає надто довго"))},ms)})])}
-async function load(force){
+async function load(){
   if(loading)return; loading=true;
-  var btn=document.querySelector('.aceil-admin-refresh'); if(btn)btn.classList.add('busy');
-  var cached=lastRows||cachedRows();
-  if(cached)render(cached,true); else content('<div class="aceil-admin-note">Завантажуємо користувачів…</div>');
+  content('<div class="aceil-admin-note">Завантажуємо користувачів…</div>');
   try{
-    var c=sb(); if(!c)throw new Error("Supabase client недоступний.");
-    var r=await timeout(c.rpc("admin_list_users"),7000);
+    var c=sb();
+    if(!c)throw new Error("Supabase client недоступний.");
+    var r=await c.rpc("admin_list_users");
     if(r.error)throw r.error;
-    cacheRows(r.data); render(r.data);
+    render(r.data);
   }catch(e){
     window.__diagSilent&&window.__diagSilent(e);
-    if(!cached)content('<div class="aceil-admin-error"><b>Не вдалося відкрити дані адмінки.</b><br><br>'+esc(e.message||e)+'</div>');
-    else toast("Не вдалося оновити список. Показано останні дані.");
-  }finally{loading=false;if(btn)btn.classList.remove('busy')}
+    content('<div class="aceil-admin-error"><b>Не вдалося відкрити дані адмінки.</b><br><br>'+esc(e.message||e)+'<br><br>Перевірка прав виконується серверною RPC admin_list_users(). Якщо RPC повертає помилку — на екрані буде її точний текст.</div>');
+  }finally{loading=false}
 }
 async function setAccess(uid,key,val,input){
   if(input)input.disabled=true;
@@ -17575,11 +17498,7 @@ async function setAccess(uid,key,val,input){
     if(r.error)throw r.error;
     if(r.data!==true)throw new Error("RPC не підтвердила зміну доступу.");
     toast("✓ Доступ оновлено");
-    if(input)input.disabled=false;
-    if(lastRows){
-      lastRows.forEach(function(r){if(String(r.user_id||r.id||"")===String(uid))r[key]=!!val});
-      cacheRows(lastRows);
-    }
+    await load();
   }catch(e){
     if(input){input.checked=!val;input.disabled=false}
     try{console.error("A·CEIL admin_set_user_access failed:",e)}catch(_){}
@@ -17587,10 +17506,27 @@ async function setAccess(uid,key,val,input){
     toast("Не вдалося змінити доступ: "+String(e&&e.message?e.message:e));
   }
 }
+async function setExpiry(uid,hours,button){
+  if(button)button.disabled=true;
+  try{
+    var c=sb();
+    if(!c)throw new Error("Supabase client недоступний.");
+    var r=await c.rpc("admin_set_access_expiry",{p_user_id:uid,p_hours:Number(hours)||0});
+    if(r.error)throw r.error;
+    if(r.data===false)throw new Error("RPC не підтвердила зміну терміну доступу.");
+    toast(hours>0?"✓ Тимчасовий доступ: "+hours+" год":"✓ Тимчасовий доступ скасовано");
+    await load();
+  }catch(e){
+    if(button)button.disabled=false;
+    try{console.error("A·CEIL admin_set_access_expiry failed:",e)}catch(_){}
+    window.__diagSilent&&window.__diagSilent(e);
+    toast("Не вдалося змінити термін доступу: "+String(e&&e.message?e.message:e));
+  }
+}
 function open(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.add("open");m.setAttribute("aria-hidden","false");load()}
 function close(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 
-window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,refreshOwner:refreshOwner,reset:reset};
+window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,setExpiry:setExpiry,refreshOwner:refreshOwner,reset:reset};
 
 function boot(){
   ensureMenuItem();
@@ -17598,56 +17534,5 @@ function boot(){
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&currentUser())setTimeout(function(){refreshOwner(currentUser())},250)});
-})();
-</script>
-
-
-<!-- A·CEIL access UX + shared nomenclature refresh hotfix 2026-08-24 -->
-<style id="A-CEIL-access-ux-hotfix">
-/* A checked switch must stay visually clear even while the RPC request is pending. */
-.aceil-switch input:disabled + .aceil-slider{opacity:1!important;cursor:wait}
-.aceil-switch input:checked + .aceil-slider{background:#2563eb!important;box-shadow:0 0 0 3px rgba(37,99,235,.14)}
-.aceil-switch input:not(:checked) + .aceil-slider{background:#cbd5e1!important}
-.aceil-switch input:disabled + .aceil-slider:after{content:"";position:absolute;inset:-4px;border-radius:999px;border:2px solid rgba(37,99,235,.16);pointer-events:none}
-</style>
-<script id="A-CEIL-shared-nomenclature-refresh-hotfix">
-(function(){
-"use strict";
-if(window.__A_CEIL_NOM_REFRESH_HOTFIX)return;
-window.__A_CEIL_NOM_REFRESH_HOTFIX=true;
-
-var lastKick=0, busy=false;
-function user(){try{return (typeof _sbUser!=="undefined"&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
-function kick(reason,force){
-  var u=user();
-  if(!u||typeof window.forceLoadNomenclature!=="function")return;
-  var now=Date.now();
-  if(!force && now-lastKick<2500)return;
-  if(busy)return;
-  lastKick=now;busy=true;
-  Promise.resolve(window.forceLoadNomenclature(reason||"access-refresh"))
-    .catch(function(e){window.__diagSilent&&window.__diagSilent(e)})
-    .finally(function(){busy=false});
-}
-
-/* Access changes are server-side. Re-check them when a worker returns to the app,
-   without requiring logout/login or clearing local data. */
-window.addEventListener("focus",function(){setTimeout(function(){kick("window-focus",true)},120)});
-document.addEventListener("visibilitychange",function(){
-  if(document.visibilityState==="visible")setTimeout(function(){kick("visible",true)},180);
-});
-window.addEventListener("pageshow",function(){setTimeout(function(){kick("pageshow",true)},220)});
-
-/* Opening Elements is an explicit request for the current catalogue, so always
-   refresh current RLS visibility first. */
-document.addEventListener("click",function(e){
-  var t=e.target&&e.target.closest?e.target.closest("#openElementsBtn,[onclick*='openElementsModal'],[onclick*='openElements']"):null;
-  if(t)setTimeout(function(){kick("open-elements-access",true)},40);
-},true);
-
-/* Small safety poll while the app is open: makes an owner permission change
-   appear on the worker device without a new login. */
-setInterval(function(){if(document.visibilityState==="visible")kick("access-poll",false)},15000);
-setTimeout(function(){kick("hotfix-start",true)},600);
 })();
 </script>
