@@ -17299,6 +17299,22 @@ async function fetchAccessibleNomenclature(client,user){
     : await q;
   if(res.error)throw res.error;
   var rows=Array.isArray(res.data)?res.data:[];
+  /* TEMP DIAGNOSTIC: show exactly what Supabase returned under this session. */
+  try{
+    window.A_CEIL_NOMEN_DIAG={
+      authUserId:user&&user.id||null,
+      authEmail:user&&user.email||null,
+      returnedUserIds:rows.map(function(r){return r&&r.user_id}),
+      rowCount:rows.length,
+      checkedAt:new Date().toISOString()
+    };
+    var msg="NOM DEBUG\n"+
+      "email: "+(user&&user.email||"—")+"\n"+
+      "auth uid: "+(user&&user.id||"—")+"\n"+
+      "rows: "+rows.length+"\n"+
+      "returned user_id:\n"+(rows.length?rows.map(function(r){return String(r.user_id)}).join("\n"):"NONE");
+    setTimeout(function(){try{alert(msg)}catch(_){try{if(typeof showToast==="function")showToast(msg,12000)}catch(__){}}},100);
+  }catch(_diag){}
   if(!rows.length)return {data:null,shared:false,ownerId:user.id};
   var own=rows.find(function(r){return String(r.user_id)===String(user.id)});
   var shared=rows.find(function(r){return String(r.user_id)!==String(user.id)});
