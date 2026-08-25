@@ -17244,6 +17244,108 @@ window.A·CEIL_BUILD_LABEL="v3.75 A·CEIL REPORT-REBRAND";
 })();
 </script>
 <!-- /A·CEIL LIGHT MODULE v3.62 -->
+
+
+<!-- A·CEIL ACCESS ENFORCEMENT v3: purge stale local/shared cache after RLS -->
+<script id="A-CEIL-access-enforcement-v3">
+(function(){
+"use strict";
+if(window.__A_CEIL_ACCESS_ENFORCEMENT_V3)return;
+window.__A_CEIL_ACCESS_ENFORCEMENT_V3=true;
+
+function client(){try{return (typeof _sb!=="undefined"&&_sb)||window._sb||null}catch(e){return window._sb||null}}
+function user(){try{return (typeof _sbUser!=="undefined"&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
+function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
+function toast(t){try{if(typeof showToast==="function")showToast(t,3000)}catch(e){}}
+
+/* RLS is the authority. If it returns no nomenclature rows, old elemItems from
+   localStorage / a previous account must not remain visible. */
+async function enforceNomenclature(){
+  var c=client(),u=user(); if(!c||!u)return false;
+  try{
+    var r=await c.from("nomenclature").select("items,groups,wall_presets,light_types,user_id").limit(10);
+    if(r.error)throw r.error;
+    var rows=Array.isArray(r.data)?r.data:[];
+    if(!rows.length){
+      try{elemItems=[]}catch(e){window.elemItems=[]}
+      try{elemGroups=[]}catch(e){window.elemGroups=[]}
+      try{localStorage.removeItem("A·CEIL_wall_presets_v32");localStorage.removeItem("lightTypes_v1")}catch(e){}
+      window.A_CEIL_NOMENCLATURE_SOURCE={userId:u.id,ownerId:null,shared:false,denied:true,loadedAt:Date.now()};
+      try{if(typeof renderElemList==="function")renderElemList()}catch(e){}
+      try{if(typeof updateElemBadge==="function")updateElemBadge()}catch(e){}
+      try{if(typeof recalcElemTotal==="function")recalcElemTotal()}catch(e){}
+      return false;
+    }
+    var own=rows.find(function(x){return String(x.user_id)===String(u.id)});
+    var shared=rows.find(function(x){return String(x.user_id)!==String(u.id)});
+    var picked=shared||own||rows[0];
+    if(Array.isArray(picked.groups)){try{elemGroups=clone(picked.groups)}catch(e){window.elemGroups=clone(picked.groups)}}
+    if(Array.isArray(picked.items)){try{elemItems=clone(picked.items)}catch(e){window.elemItems=clone(picked.items)}}
+    window.A_CEIL_NOMENCLATURE_SOURCE={userId:u.id,ownerId:picked.user_id,shared:String(picked.user_id)!==String(u.id),denied:false,loadedAt:Date.now()};
+    try{if(typeof renderElemList==="function")renderElemList()}catch(e){}
+    try{if(typeof updateElemBadge==="function")updateElemBadge()}catch(e){}
+    try{if(typeof recalcElemTotal==="function")recalcElemTotal()}catch(e){}
+    return true;
+  }catch(e){window.__diagSilent&&window.__diagSilent(e);return false}
+}
+
+function cloudToLocal(p){
+  var stateObj={};try{stateObj=typeof p.state==="string"?JSON.parse(p.state):p.state||{}}catch(e){}
+  var multi=stateObj.multiRoom===true;
+  return {id:p.id,_dbId:p.id,name:p.name,addr:p.addr||"",phone:p.phone||"",comment:p.comment||"",area:p.area||"",per:p.per||"",inC:p.in_corners||"",outC:p.out_corners||"",thumb:p.thumb||"",date:p.created_at?new Date(p.created_at).toLocaleDateString("uk-UA"):"",multiRoom:multi,rooms:multi?(stateObj.rooms||[]):undefined,state:multi?null:(typeof p.state==="string"?p.state:JSON.stringify(stateObj))};
+}
+
+/* Replace the synced portion with exactly what Projects RLS returns. This is
+   what makes OFF / selected / all take effect immediately and removes projects
+   cached from another account. Unsynced local drafts are preserved. */
+async function enforceProjects(){
+  var c=client(),u=user(); if(!c||!u)return false;
+  try{
+    var r=await c.from("projects").select("*").order("created_at",{ascending:false});
+    if(r.error)throw r.error;
+    var cloud=(r.data||[]).map(cloudToLocal);
+    var local=[];try{local=typeof getProjects==="function"?(getProjects()||[]):[]}catch(e){}
+    var drafts=local.filter(function(p){return !p._dbId || String(p.id||"").indexOf("obj_")===0 || p._syncStatus==="pending_create"});
+    var merged=cloud.concat(drafts.filter(function(d){return !cloud.some(function(x){return String(x.id)===String(d.id)||String(x._dbId)===String(d._dbId)})}));
+    try{
+      if(window.A·CEIL&&window.A·CEIL.ProjectRepository)window.A·CEIL.ProjectRepository.replaceAll(merged);
+      else if(typeof setProjects==="function")setProjects(merged);
+    }catch(e){}
+    try{var m=document.getElementById("projectsModal");if(m&&m.classList.contains("open")&&typeof renderProjects==="function")renderProjects()}catch(e){}
+    return true;
+  }catch(e){window.__diagSilent&&window.__diagSilent(e);return false}
+}
+
+async function refreshAccess(reason){
+  if(!user())return false;
+  await Promise.all([enforceNomenclature(),enforceProjects()]);
+  return true;
+}
+window.A_CEIL_refreshAccess=refreshAccess;
+
+/* Override the old shared-nomenclature loader: zero RLS rows now means zero
+   visible catalogue, not "keep whatever was already in local memory". */
+window.forceLoadNomenclature=async function(){return enforceNomenclature()};
+try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){}
+
+/* Refresh after login, returning to the app, and after admin changes. */
+function kick(){setTimeout(function(){refreshAccess("boot")},700)}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",kick,{once:true});else kick();
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")setTimeout(function(){refreshAccess("visible")},300)});
+
+/* Make admin changes refresh the current account's RLS-backed data too. */
+var wait=setInterval(function(){
+  if(!window.A_CEIL_Admin)return;
+  clearInterval(wait);
+  ["setAccess","setScope","setProject","setExpiry","clearExpiry"].forEach(function(k){
+    var old=window.A_CEIL_Admin[k];if(typeof old!=="function"||old.__accessV3)return;
+    var wrapped=async function(){var out=await old.apply(this,arguments);setTimeout(function(){refreshAccess("admin-"+k)},250);return out};
+    wrapped.__accessV3=true;window.A_CEIL_Admin[k]=wrapped;
+  });
+},200);
+})();
+</script>
+<!-- /A·CEIL ACCESS ENFORCEMENT v3 -->
 </body></html> 
 <!-- v2.19: Safari fix — never reads/writes Window.closed; hardened language switching and translation events. -->
 
