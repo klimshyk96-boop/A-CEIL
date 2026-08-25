@@ -17366,6 +17366,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 .aceil-admin-controls{margin-top:12px;border-top:1px solid #eef2f7;padding-top:6px}.aceil-admin-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0}.aceil-admin-row-text b{display:block;font-size:13px;color:#334155}.aceil-admin-row-text small{display:block;color:#94a3b8;font-size:10px;margin-top:2px}
 .aceil-switch{position:relative;width:46px;height:27px;flex:0 0 46px}.aceil-switch input{opacity:0;width:0;height:0}.aceil-slider{position:absolute;inset:0;border-radius:999px;background:#cbd5e1;transition:.18s}.aceil-slider:before{content:"";position:absolute;width:21px;height:21px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:.18s}.aceil-switch input:checked+.aceil-slider{background:#2563eb}.aceil-switch input:checked+.aceil-slider:before{transform:translateX(19px)}.aceil-switch input:disabled+.aceil-slider{opacity:.4}
 .aceil-temp-access{margin:8px 0;padding:12px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff}.aceil-temp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}.aceil-temp-title{font-size:13px;font-weight:900;color:#1e3a8a}.aceil-temp-status{font-size:10px;color:#64748b;margin-top:2px}.aceil-temp-status.active{color:#047857;font-weight:750}.aceil-temp-buttons{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.aceil-temp-btn{min-height:36px!important;margin:0!important;padding:7px 5px!important;border:1px solid #cbd5e1!important;border-radius:10px!important;background:#f8fafc!important;color:#334155!important;font-size:11px!important;font-weight:800!important;box-shadow:none!important}.aceil-temp-btn:active{background:#e2e8f0!important}.aceil-temp-cancel{margin-top:7px!important;width:100%!important;min-height:34px!important;padding:6px 10px!important;border:1px solid #fecaca!important;border-radius:10px!important;background:#fff7f7!important;color:#b91c1c!important;font-size:11px!important;font-weight:800!important;box-shadow:none!important}@media(max-width:390px){.aceil-temp-buttons{grid-template-columns:repeat(2,1fr)}}
+.aceil-project-scope{margin:8px 0;padding:12px;border:1px solid #e2e8f0;border-radius:14px;background:#fafafa}.aceil-project-scope-title{font-size:13px;font-weight:900;color:#334155;margin-bottom:8px}.aceil-scope-buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px}.aceil-scope-btn{min-height:38px!important;margin:0!important;padding:7px 8px!important;border:1px solid #cbd5e1!important;border-radius:10px!important;background:#fff!important;color:#475569!important;font-size:11px!important;font-weight:850!important;box-shadow:none!important}.aceil-scope-btn.active{background:#dbeafe!important;border-color:#60a5fa!important;color:#1d4ed8!important}.aceil-project-picker-btn{width:100%!important;margin:8px 0 0!important;min-height:38px!important;border-radius:10px!important;background:#0f172a!important;color:#fff!important;font-size:11px!important;font-weight:850!important}.aceil-project-list{margin-top:8px;border-top:1px solid #e2e8f0;padding-top:6px}.aceil-project-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid #eef2f7}.aceil-project-item:last-child{border-bottom:0}.aceil-project-name{font-size:12px;font-weight:750;color:#334155;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aceil-project-loading,.aceil-project-empty{font-size:11px;color:#64748b;padding:10px 2px}.aceil-project-error{font-size:11px;color:#b91c1c;padding:10px 2px}
 </style>
 
 <div id="aceilAdminModal" class="aceil-admin-overlay" aria-hidden="true">
@@ -17443,90 +17444,85 @@ function expiryValue(r){return r&&(r.access_until||r.access_expires_at||r.access
 function expiryInfo(r){
   var raw=expiryValue(r); if(!raw)return {active:false,text:"Без обмеження часу"};
   var d=new Date(raw); if(isNaN(d.getTime()))return {active:false,text:"Без обмеження часу"};
-  var active=d.getTime()>Date.now();
-  var txt;
+  var active=d.getTime()>Date.now(),txt;
   try{txt=new Intl.DateTimeFormat("uk-UA",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}).format(d)}catch(e){txt=d.toLocaleString()}
   return {active:active,text:(active?"Доступ до: ":"Термін минув: ")+txt};
 }
-function tempAccess(uid,r,disabled){
-  if(disabled)return "";
-  var x=expiryInfo(r), dis=disabled?' disabled':'';
+function tempAccess(uid,r){
+  var x=expiryInfo(r);
   return '<div class="aceil-temp-access"><div class="aceil-temp-head"><div><div class="aceil-temp-title">Тимчасовий доступ</div><div class="aceil-temp-status '+(x.active?'active':'')+'">'+esc(x.text)+'</div></div></div><div class="aceil-temp-buttons">'+
-    [1,3,8,24].map(function(h){return '<button type="button" class="aceil-temp-btn"'+dis+' onclick="A_CEIL_Admin.setExpiry(\''+esc(uid)+'\','+h+',this)">'+h+' год</button>'}).join('')+
-    '</div>'+(x.active?'<button type="button" class="aceil-temp-cancel" onclick="A_CEIL_Admin.setExpiry(\''+esc(uid)+'\',0,this)">Скасувати тимчасовий доступ</button>':'')+'</div>';
+    [1,3,8,24].map(function(h){return '<button type="button" class="aceil-temp-btn" onclick="A_CEIL_Admin.setExpiry(\''+esc(uid)+'\','+h+',this)">'+h+' год</button>'}).join('')+
+    '</div>'+(x.active?'<button type="button" class="aceil-temp-cancel" onclick="A_CEIL_Admin.clearExpiry(\''+esc(uid)+'\',this)">Скасувати тимчасовий доступ</button>':'')+'</div>';
+}
+function projectScope(uid,r){
+  var scope=(r.projects_scope==='all'?'all':'selected');
+  return '<div class="aceil-project-scope"><div class="aceil-project-scope-title">Проєкти</div><div class="aceil-scope-buttons">'+
+    '<button type="button" class="aceil-scope-btn '+(scope==='selected'?'active':'')+'" onclick="A_CEIL_Admin.setScope(\''+esc(uid)+'\',\'selected\',this)">Вибрані</button>'+
+    '<button type="button" class="aceil-scope-btn '+(scope==='all'?'active':'')+'" onclick="A_CEIL_Admin.setScope(\''+esc(uid)+'\',\'all\',this)">Усі мої</button></div>'+
+    (scope==='selected'?'<button type="button" class="aceil-project-picker-btn" onclick="A_CEIL_Admin.toggleProjects(\''+esc(uid)+'\',this)">Вибрати проєкти</button><div id="aceilProjects_'+esc(uid)+'" class="aceil-project-list" style="display:none"></div>':'')+
+    '</div>';
 }
 function render(rows){
-  rows=Array.isArray(rows)?rows:[];
+  rows=(Array.isArray(rows)?rows:[]).filter(function(r){return String(r.app_role||'').toLowerCase()!=='owner'});
   if(!rows.length){content('<div class="aceil-admin-empty">Користувачів не знайдено.</div>');return}
-  var me=currentUser();
-  content('<div class="aceil-admin-note">Зміни прав виконуються через захищені Supabase RPC. Приховування кнопки саме по собі не є захистом.</div>'+
-    rows.map(function(r){
-      var uid=String(r.user_id||r.id||""),self=me&&String(me.id)===uid,owner=r.app_role==="owner";
-      var badge=owner?'<span class="aceil-admin-badge owner">OWNER</span>':'<span class="aceil-admin-badge '+(r.is_active===false?'off':'')+'">'+(r.is_active===false?'Заблоковано':'Активний')+'</span>';
-      return '<div class="aceil-admin-user '+(self?'self':'')+'"><div class="aceil-admin-user-top"><div><div class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+(self?' · Ви':'')+'</div><div class="aceil-admin-mail">'+esc(r.email||"")+'</div></div>'+badge+'</div><div class="aceil-admin-controls">'+
-        toggle(uid,"nomenclature_access","Моя номенклатура","Може використовувати номенклатуру owner",!!r.nomenclature_access,owner)+
-        toggle(uid,"projects_access","Мої проєкти","Може бачити проєкти owner",!!r.projects_access,owner)+
-        toggle(uid,"projects_edit","Редагування проєктів","Може змінювати доступні проєкти",!!r.projects_edit,owner)+
-        tempAccess(uid,r,owner||self)+
-        toggle(uid,"is_active","Активний користувач","Блокування доступу до A·CEIL",r.is_active!==false,owner||self)+
+  content('<div class="aceil-admin-note">Права застосовуються сервером. Для проєктів можна дати доступ до вибраних або до всіх проєктів owner.</div>'+rows.map(function(r){
+      var uid=String(r.user_id||r.id||"");
+      var badge='<span class="aceil-admin-badge '+(r.is_active===false?'off':'')+'">'+(r.is_active===false?'Заблоковано':'Активний')+'</span>';
+      return '<div class="aceil-admin-user"><div class="aceil-admin-user-top"><div><div class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+'</div><div class="aceil-admin-mail">'+esc(r.email||"")+'</div></div>'+badge+'</div><div class="aceil-admin-controls">'+
+        toggle(uid,"nomenclature_access","Моя номенклатура","Може використовувати номенклатуру owner",!!r.nomenclature_access,false)+
+        toggle(uid,"projects_access","Мої проєкти","Доступ до проєктів owner",!!r.projects_access,false)+
+        (r.projects_access?projectScope(uid,r):'')+
+        toggle(uid,"projects_edit","Редагування проєктів","Може змінювати доступні проєкти",!!r.projects_edit,!r.projects_access)+
+        tempAccess(uid,r)+
+        toggle(uid,"is_active","Активний користувач","Блокування доступу до A·CEIL",r.is_active!==false,false)+
       '</div></div>';
     }).join(""));
 }
 async function load(){
   if(loading)return; loading=true;
   content('<div class="aceil-admin-note">Завантажуємо користувачів…</div>');
-  try{
-    var c=sb();
-    if(!c)throw new Error("Supabase client недоступний.");
-    var r=await c.rpc("admin_list_users");
-    if(r.error)throw r.error;
-    render(r.data);
-  }catch(e){
-    window.__diagSilent&&window.__diagSilent(e);
-    content('<div class="aceil-admin-error"><b>Не вдалося відкрити дані адмінки.</b><br><br>'+esc(e.message||e)+'<br><br>Перевірка прав виконується серверною RPC admin_list_users(). Якщо RPC повертає помилку — на екрані буде її точний текст.</div>');
-  }finally{loading=false}
+  try{var c=sb();if(!c)throw new Error("Supabase client недоступний.");var r=await c.rpc("admin_list_users");if(r.error)throw r.error;render(r.data)}
+  catch(e){window.__diagSilent&&window.__diagSilent(e);content('<div class="aceil-admin-error"><b>Не вдалося відкрити дані адмінки.</b><br><br>'+esc(e.message||e)+'</div>')}
+  finally{loading=false}
 }
 async function setAccess(uid,key,val,input){
   if(input)input.disabled=true;
-  try{
-    /* Do not pre-block with a client-side profiles check.
-       admin_set_user_access is SECURITY DEFINER and performs the real
-       auth.uid()/owner/is_active authorization on the server. */
-    var c=sb();
-    if(!c)throw new Error("Supabase client недоступний.");
-    var r=await c.rpc("admin_set_user_access",{p_user_id:uid,p_field:key,p_value:!!val});
-    if(r.error)throw r.error;
-    if(r.data!==true)throw new Error("RPC не підтвердила зміну доступу.");
-    toast("✓ Доступ оновлено");
-    await load();
-  }catch(e){
-    if(input){input.checked=!val;input.disabled=false}
-    try{console.error("A·CEIL admin_set_user_access failed:",e)}catch(_){}
-    window.__diagSilent&&window.__diagSilent(e);
-    toast("Не вдалося змінити доступ: "+String(e&&e.message?e.message:e));
-  }
+  try{var c=sb();if(!c)throw new Error("Supabase client недоступний.");var r=await c.rpc("admin_set_user_access",{p_user_id:uid,p_field:key,p_value:!!val});if(r.error)throw r.error;if(r.data!==true)throw new Error("RPC не підтвердила зміну доступу.");toast("✓ Доступ оновлено");await load()}
+  catch(e){if(input){input.checked=!val;input.disabled=false}window.__diagSilent&&window.__diagSilent(e);toast("Не вдалося змінити доступ: "+String(e&&e.message?e.message:e))}
+}
+async function setScope(uid,scope,button){
+  if(button)button.disabled=true;
+  try{var c=sb();var r=await c.rpc("admin_set_projects_scope",{p_user_id:uid,p_scope:scope});if(r.error)throw r.error;toast(scope==='all'?"✓ Доступ до всіх проєктів":"✓ Доступ до вибраних проєктів");await load()}
+  catch(e){if(button)button.disabled=false;toast("Не вдалося змінити режим проєктів: "+String(e&&e.message?e.message:e))}
+}
+async function toggleProjects(uid,button){
+  var box=document.getElementById('aceilProjects_'+uid);if(!box)return;
+  if(box.style.display!=='none'){box.style.display='none';button.textContent='Вибрати проєкти';return}
+  box.style.display='block';button.textContent='Сховати проєкти';box.innerHTML='<div class="aceil-project-loading">Завантаження…</div>';
+  try{var c=sb();var r=await c.rpc('admin_list_user_projects',{p_user_id:uid});if(r.error)throw r.error;var rows=Array.isArray(r.data)?r.data:[];
+    if(!rows.length){box.innerHTML='<div class="aceil-project-empty">У вас ще немає проєктів.</div>';return}
+    box.innerHTML=rows.map(function(p){return '<div class="aceil-project-item"><div class="aceil-project-name">'+esc(p.project_name||'Без назви')+'</div><label class="aceil-switch"><input type="checkbox" '+(p.selected?'checked ':'')+'onchange="A_CEIL_Admin.setProject(\''+esc(uid)+'\',\''+esc(p.project_id)+'\',this.checked,this)"><span class="aceil-slider"></span></label></div>'}).join('');
+  }catch(e){box.innerHTML='<div class="aceil-project-error">'+esc(e.message||e)+'</div>'}
+}
+async function setProject(uid,pid,val,input){
+  if(input)input.disabled=true;
+  try{var c=sb();var r=await c.rpc('admin_set_user_project_access',{p_user_id:uid,p_project_id:pid,p_value:!!val});if(r.error)throw r.error;toast(val?'✓ Проєкт надано':'✓ Доступ до проєкту забрано');input.disabled=false}
+  catch(e){input.checked=!val;input.disabled=false;toast('Не вдалося змінити проєкт: '+String(e&&e.message?e.message:e))}
 }
 async function setExpiry(uid,hours,button){
   if(button)button.disabled=true;
-  try{
-    var c=sb();
-    if(!c)throw new Error("Supabase client недоступний.");
-    var r=await c.rpc("admin_set_access_expiry",{p_user_id:uid,p_hours:Number(hours)||0});
-    if(r.error)throw r.error;
-    if(r.data===false)throw new Error("RPC не підтвердила зміну терміну доступу.");
-    toast(hours>0?"✓ Тимчасовий доступ: "+hours+" год":"✓ Тимчасовий доступ скасовано");
-    await load();
-  }catch(e){
-    if(button)button.disabled=false;
-    try{console.error("A·CEIL admin_set_access_expiry failed:",e)}catch(_){}
-    window.__diagSilent&&window.__diagSilent(e);
-    toast("Не вдалося змінити термін доступу: "+String(e&&e.message?e.message:e));
-  }
+  try{var c=sb();var r=await c.rpc("admin_set_access_expiry",{p_user_id:uid,p_hours:Number(hours)});if(r.error)throw r.error;toast("✓ Тимчасовий доступ: "+hours+" год");await load()}
+  catch(e){if(button)button.disabled=false;toast("Не вдалося змінити термін доступу: "+String(e&&e.message?e.message:e))}
+}
+async function clearExpiry(uid,button){
+  if(button)button.disabled=true;
+  try{var c=sb();var r=await c.rpc('admin_clear_access_expiry',{p_user_id:uid});if(r.error)throw r.error;toast('✓ Тимчасовий доступ скасовано');await load()}
+  catch(e){if(button)button.disabled=false;toast('Не вдалося скасувати термін: '+String(e&&e.message?e.message:e))}
 }
 function open(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.add("open");m.setAttribute("aria-hidden","false");load()}
 function close(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 
-window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,setExpiry:setExpiry,refreshOwner:refreshOwner,reset:reset};
+window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset};
 
 function boot(){
   ensureMenuItem();
