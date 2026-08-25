@@ -17634,3 +17634,46 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&currentUser())setTimeout(function(){refreshOwner(currentUser())},250)});
 })();
 </script>
+
+<!-- A·CEIL ACCESS FINAL OVERRIDE v4 — MUST remain last -->
+<script id="A-CEIL-access-final-override-v4">
+(function(){
+'use strict';
+function sb(){try{return (typeof _sb!=='undefined'&&_sb)||window._sb||null}catch(e){return window._sb||null}}
+function usr(){try{return (typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
+function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
+function clearNom(){
+  try{elemItems=[]}catch(e){window.elemItems=[]}
+  try{elemGroups=[]}catch(e){window.elemGroups=[]}
+  try{lightTypes=[]}catch(e){window.lightTypes=[]}
+  try{localStorage.removeItem('A·CEIL_wall_presets_v32');localStorage.removeItem('lightTypes_v1')}catch(e){}
+  try{if(typeof renderElemList==='function')renderElemList()}catch(e){}
+  try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){}
+  try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){}
+}
+async function loadNom(){
+  var c=sb(),u=usr(); if(!c||!u)return false;
+  try{
+    var r=await c.from('nomenclature').select('items,groups,wall_presets,light_types,user_id').limit(20);
+    if(r.error)throw r.error;
+    var rows=Array.isArray(r.data)?r.data:[];
+    if(!rows.length){clearNom();window.A_CEIL_NOMENCLATURE_SOURCE={denied:true,userId:u.id};return false}
+    var shared=rows.find(function(x){return String(x.user_id)!==String(u.id)}), own=rows.find(function(x){return String(x.user_id)===String(u.id)}), p=shared||own||rows[0];
+    try{elemGroups=clone(p.groups||[])}catch(e){window.elemGroups=clone(p.groups||[])}
+    try{elemItems=clone(p.items||[])}catch(e){window.elemItems=clone(p.items||[])}
+    if(Array.isArray(p.light_types)){try{lightTypes=clone(p.light_types)}catch(e){window.lightTypes=clone(p.light_types)}}
+    window.A_CEIL_NOMENCLATURE_SOURCE={denied:false,userId:u.id,ownerId:p.user_id,shared:String(p.user_id)!==String(u.id)};
+    try{if(typeof renderElemList==='function')renderElemList()}catch(e){}
+    try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){}
+    try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){}
+    return true;
+  }catch(e){window.__diagSilent&&window.__diagSilent(e);return false}
+}
+window.forceLoadNomenclature=loadNom;try{forceLoadNomenclature=loadNom}catch(e){}
+async function refresh(){try{await loadNom()}catch(e){} try{if(typeof window.A_CEIL_refreshAccess==='function')await window.A_CEIL_refreshAccess('final-v4')}catch(e){}}
+window.A_CEIL_forceAccessRefresh=refresh;
+function kick(){setTimeout(refresh,1200)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kick,{once:true});else kick();
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(refresh,300)});
+})();
+</script>
