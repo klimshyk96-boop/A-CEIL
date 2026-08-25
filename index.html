@@ -17247,288 +17247,43 @@ window.A·CEIL_BUILD_LABEL="v3.75 A·CEIL REPORT-REBRAND";
 
 
 <!-- A·CEIL ACCESS ENFORCEMENT v3: purge stale local/shared cache after RLS -->
-<script id="A-CEIL-access-enforcement-v3">
-(function(){
-"use strict";
-if(window.__A_CEIL_ACCESS_ENFORCEMENT_V3)return;
-window.__A_CEIL_ACCESS_ENFORCEMENT_V3=true;
-
-function client(){try{return (typeof _sb!=="undefined"&&_sb)||window._sb||null}catch(e){return window._sb||null}}
-function user(){try{return (typeof _sbUser!=="undefined"&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
-function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
-function toast(t){try{if(typeof showToast==="function")showToast(t,3000)}catch(e){}}
-
-/* RLS is the authority. If it returns no nomenclature rows, old elemItems from
-   localStorage / a previous account must not remain visible. */
-async function enforceNomenclature(){
-  var c=client(),u=user(); if(!c||!u)return false;
-  try{
-    var r=await c.from("nomenclature").select("items,groups,wall_presets,light_types,user_id").limit(10);
-    if(r.error)throw r.error;
-    var rows=Array.isArray(r.data)?r.data:[];
-    if(!rows.length){
-      try{elemItems=[]}catch(e){window.elemItems=[]}
-      try{elemGroups=[]}catch(e){window.elemGroups=[]}
-      try{localStorage.removeItem("A·CEIL_wall_presets_v32");localStorage.removeItem("lightTypes_v1")}catch(e){}
-      window.A_CEIL_NOMENCLATURE_SOURCE={userId:u.id,ownerId:null,shared:false,denied:true,loadedAt:Date.now()};
-      try{if(typeof renderElemList==="function")renderElemList()}catch(e){}
-      try{if(typeof updateElemBadge==="function")updateElemBadge()}catch(e){}
-      try{if(typeof recalcElemTotal==="function")recalcElemTotal()}catch(e){}
-      return false;
-    }
-    var own=rows.find(function(x){return String(x.user_id)===String(u.id)});
-    var shared=rows.find(function(x){return String(x.user_id)!==String(u.id)});
-    var picked=shared||own||rows[0];
-    if(Array.isArray(picked.groups)){try{elemGroups=clone(picked.groups)}catch(e){window.elemGroups=clone(picked.groups)}}
-    if(Array.isArray(picked.items)){try{elemItems=clone(picked.items)}catch(e){window.elemItems=clone(picked.items)}}
-    window.A_CEIL_NOMENCLATURE_SOURCE={userId:u.id,ownerId:picked.user_id,shared:String(picked.user_id)!==String(u.id),denied:false,loadedAt:Date.now()};
-    try{if(typeof renderElemList==="function")renderElemList()}catch(e){}
-    try{if(typeof updateElemBadge==="function")updateElemBadge()}catch(e){}
-    try{if(typeof recalcElemTotal==="function")recalcElemTotal()}catch(e){}
-    return true;
-  }catch(e){window.__diagSilent&&window.__diagSilent(e);return false}
-}
-
-function cloudToLocal(p){
-  var stateObj={};try{stateObj=typeof p.state==="string"?JSON.parse(p.state):p.state||{}}catch(e){}
-  var multi=stateObj.multiRoom===true;
-  return {id:p.id,_dbId:p.id,name:p.name,addr:p.addr||"",phone:p.phone||"",comment:p.comment||"",area:p.area||"",per:p.per||"",inC:p.in_corners||"",outC:p.out_corners||"",thumb:p.thumb||"",date:p.created_at?new Date(p.created_at).toLocaleDateString("uk-UA"):"",multiRoom:multi,rooms:multi?(stateObj.rooms||[]):undefined,state:multi?null:(typeof p.state==="string"?p.state:JSON.stringify(stateObj))};
-}
-
-/* Replace the synced portion with exactly what Projects RLS returns. This is
-   what makes OFF / selected / all take effect immediately and removes projects
-   cached from another account. Unsynced local drafts are preserved. */
-async function enforceProjects(){
-  var c=client(),u=user(); if(!c||!u)return false;
-  try{
-    var r=await c.from("projects").select("*").order("created_at",{ascending:false});
-    if(r.error)throw r.error;
-    var cloud=(r.data||[]).map(cloudToLocal);
-    var local=[];try{local=typeof getProjects==="function"?(getProjects()||[]):[]}catch(e){}
-    var drafts=local.filter(function(p){return !p._dbId || String(p.id||"").indexOf("obj_")===0 || p._syncStatus==="pending_create"});
-    var merged=cloud.concat(drafts.filter(function(d){return !cloud.some(function(x){return String(x.id)===String(d.id)||String(x._dbId)===String(d._dbId)})}));
-    try{
-      if(window.A·CEIL&&window.A·CEIL.ProjectRepository)window.A·CEIL.ProjectRepository.replaceAll(merged);
-      else if(typeof setProjects==="function")setProjects(merged);
-    }catch(e){}
-    try{var m=document.getElementById("projectsModal");if(m&&m.classList.contains("open")&&typeof renderProjects==="function")renderProjects()}catch(e){}
-    return true;
-  }catch(e){window.__diagSilent&&window.__diagSilent(e);return false}
-}
-
-async function refreshAccess(reason){
-  if(!user())return false;
-  await Promise.all([enforceNomenclature(),enforceProjects()]);
-  return true;
-}
-window.A_CEIL_refreshAccess=refreshAccess;
-
-/* Override the old shared-nomenclature loader: zero RLS rows now means zero
-   visible catalogue, not "keep whatever was already in local memory". */
-window.forceLoadNomenclature=async function(){return enforceNomenclature()};
-try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){}
-
-/* Refresh after login, returning to the app, and after admin changes. */
-function kick(){setTimeout(function(){refreshAccess("boot")},700)}
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",kick,{once:true});else kick();
-document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")setTimeout(function(){refreshAccess("visible")},300)});
-
-/* Make admin changes refresh the current account's RLS-backed data too. */
-var wait=setInterval(function(){
-  if(!window.A_CEIL_Admin)return;
-  clearInterval(wait);
-  ["setAccess","setScope","setProject","setExpiry","clearExpiry"].forEach(function(k){
-    var old=window.A_CEIL_Admin[k];if(typeof old!=="function"||old.__accessV3)return;
-    var wrapped=async function(){var out=await old.apply(this,arguments);setTimeout(function(){refreshAccess("admin-"+k)},250);return out};
-    wrapped.__accessV3=true;window.A_CEIL_Admin[k]=wrapped;
-  });
-},200);
-})();
-</script>
 <!-- /A·CEIL ACCESS ENFORCEMENT v3 -->
 
 
 <!-- A·CEIL ACCESS v7 — explicit server rights, UI guards, authoritative cloud projects -->
-<script id="A-CEIL-access-v7">
+\n<!-- A·CEIL ACCESS CLEAN v1 — single authority, 2026-08-25 -->
+<script id="A-CEIL-access-clean-v1">
 (function(){
 'use strict';
+var busy=false, ACCESS=null;
 function sb(){try{return (typeof _sb!=='undefined'&&_sb)||window._sb||null}catch(e){return window._sb||null}}
 function usr(){try{return (typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
-function toast(t){try{if(typeof showToast==='function')showToast(t,3500)}catch(e){}}
 function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
-function setG(n,v){try{window[n]=v}catch(e){};try{if(n==='elemItems')elemItems=v;if(n==='elemGroups')elemGroups=v;if(n==='lightTypes')lightTypes=v}catch(e){}}
-function renderNom(){try{if(typeof renderElemList==='function')renderElemList()}catch(e){};try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){};try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){}}
-function clearNom(){setG('elemItems',[]);setG('elemGroups',[]);setG('lightTypes',[]);renderNom()}
+function setGlobal(n,v){try{window[n]=v}catch(e){};try{if(n==='elemItems')elemItems=v;if(n==='elemGroups')elemGroups=v;if(n==='lightTypes')lightTypes=v}catch(e){}}
+function refreshNomUI(){try{if(typeof renderElemList==='function')renderElemList()}catch(e){};try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){};try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){};try{if(typeof renderLightMenu==='function')renderLightMenu()}catch(e){}}
+function clearNom(){setGlobal('elemItems',[]);setGlobal('elemGroups',[]);setGlobal('lightTypes',[]);refreshNomUI()}
+async function rights(){var c=sb(),u=usr();if(!c||!u)return null;var r=await c.rpc('get_my_access');if(r.error)throw r.error;var a=Array.isArray(r.data)?r.data[0]:r.data;if(!a)return null;ACCESS=a;window.A_CEIL_MY_ACCESS=a;return a}
+async function loadNom(a){var c=sb(),u=usr();if(!c||!u)return false;var owner=String(a&&a.app_role||'').toLowerCase()==='owner';if(!owner&&(!a||a.nomenclature_access!==true)){clearNom();return false}var source=owner?u.id:a.owner_id;if(!source){clearNom();return false}var r=await c.from('nomenclature').select('user_id,items,groups,wall_presets,light_types').eq('user_id',source).maybeSingle();if(r.error)throw r.error;if(!r.data){clearNom();return false}var d=r.data;setGlobal('elemGroups',clone(Array.isArray(d.groups)?d.groups:[]));var items=clone(Array.isArray(d.items)?d.items:[]);items.forEach(function(it){if(!it||typeof it!=='object')return;if(!it.unit)it.unit='шт';if(it.groupId===undefined)it.groupId=null;if(it.price===undefined)it.price=0;if(!it.inputMode)it.inputMode='manual';if(!it.icon)it.icon='📦';it.qty=0;it.manualQtyOverride=false});setGlobal('elemItems',items);if(Array.isArray(d.light_types))setGlobal('lightTypes',clone(d.light_types));refreshNomUI();return true}
 function mapProject(p){var st={};try{st=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){};var multi=st.multiRoom===true;return {id:p.id,_dbId:p.id,name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',multiRoom:multi,rooms:multi?(st.rooms||[]):undefined,state:multi?null:(typeof p.state==='string'?p.state:JSON.stringify(st))}}
-var RIGHTS=null, loading=false;
-async function getRights(){
- var c=sb(),u=usr(); if(!c||!u)return null;
- var r=await c.rpc('get_my_access'); if(r.error)throw r.error;
- var row=Array.isArray(r.data)?r.data[0]:r.data;
- if(!row)throw new Error('Немає активного доступу');
- RIGHTS=row; window.A_CEIL_MY_ACCESS=row; return row;
-}
-function applyUI(a){
- var nom=!!a.nomenclature_access, proj=!!a.projects_access;
- var tile=document.getElementById('elemTileBtn'); if(tile){tile.style.display='';tile.setAttribute('aria-hidden','false')}
- document.querySelectorAll('.projects-btn').forEach(function(x){x.style.display=proj?'':'none'});
- window.A_CEIL_MY_ACCESS=a;
-}
-async function loadNom(a){
- var c=sb(),u=usr(); if(!a.nomenclature_access){clearNom();return false}
- var sourceId=(String(a.app_role||'').toLowerCase()==='owner'?u.id:a.owner_id);
- if(!sourceId){clearNom();return false}
- var r=await c.from('nomenclature').select('user_id,items,groups,wall_presets,light_types').eq('user_id',sourceId).maybeSingle();
- if(r.error)throw r.error; if(!r.data){clearNom();return false}
- var d=r.data, groups=clone(Array.isArray(d.groups)?d.groups:[]), items=clone(Array.isArray(d.items)?d.items:[]);
- items.forEach(function(it){if(!it||typeof it!=='object')return;if(!it.unit)it.unit='шт';if(it.groupId===undefined)it.groupId=null;if(it.price===undefined)it.price=0;if(!it.inputMode)it.inputMode='manual';if(!it.icon)it.icon='📦';it.qty=0;it.manualQtyOverride=false});
- setG('elemGroups',groups);setG('elemItems',items);if(Array.isArray(d.light_types))setG('lightTypes',clone(d.light_types));renderNom();return true;
-}
-function unsynced(p){if(!p)return false;var id=String(p.id||p._localId||''),st=String(p._syncStatus||'');return !!(p._dirty||p._localUpdatedAt||st.indexOf('pending')===0||st.indexOf('error')===0||st.indexOf('failed')===0||id.indexOf('local_')===0||id.indexOf('obj_')===0)}
-function replaceProjects(rows){
- var local=[];try{local=window.A·CEIL.ProjectRepository.list({clone:true})||[]}catch(e){}
- var keep=local.filter(unsynced), cloud=(rows||[]).map(mapProject), ids=new Set(); cloud.forEach(function(p){ids.add(String(p.id));ids.add(String(p._dbId||''))});
- keep.forEach(function(p){var id=String(p.id||p._dbId||'');if(!ids.has(id))cloud.push(clone(p))});
- try{window.A·CEIL.ProjectRepository.replaceAll(cloud)}catch(e){}
- try{var m=document.getElementById('projectsModal');if(m&&m.classList.contains('open')&&typeof renderProjects==='function')renderProjects()}catch(e){}
-}
-async function loadProjects(a){
- var c=sb(); if(!a.projects_access){replaceProjects([]);return false}
- var r=await c.from('projects').select('*').order('created_at',{ascending:false}); if(r.error)throw r.error; replaceProjects(r.data||[]); return true;
-}
-async function refresh(){
- if(loading)return; var c=sb(),u=usr();if(!c||!u)return; loading=true;
- try{var a=await getRights();applyUI(a);await Promise.all([loadNom(a),loadProjects(a)])}
- catch(e){try{window.__diagSilent&&window.__diagSilent(e)}catch(_){};toast('Помилка перевірки доступу: '+(e.message||e))}
- finally{loading=false}
-}
-/* Hard UI guards: stale project state/localStorage cannot reopen a forbidden section. */
-var oldNom=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);
-function guardedNom(){return oldNom&&oldNom.apply(this,arguments)}
-window.openElementsModal=guardedNom;try{openElementsModal=guardedNom}catch(e){}
-var oldProj=window.openProjectsModal||(typeof openProjectsModal==='function'?openProjectsModal:null);
-function guardedProj(){var a=window.A_CEIL_MY_ACCESS;if(!a||!a.projects_access){toast('Немає доступу до проєктів');return false}return oldProj&&oldProj.apply(this,arguments)}
-window.openProjectsModal=guardedProj;try{openProjectsModal=guardedProj}catch(e){}
-/* Override legacy cloud loaders with the explicit rights-aware versions. */
-window.forceLoadNomenclature=async function(){var a=RIGHTS||await getRights();applyUI(a);return loadNom(a)};
-try{forceLoadNomenclature=window.forceLoadNomenclature;loadNomenclatureFromCloud=window.forceLoadNomenclature}catch(e){}
+function replaceProjects(rows){var mapped=(rows||[]).map(mapProject);try{if(window.A·CEIL&&window.A·CEIL.ProjectRepository)window.A·CEIL.ProjectRepository.replaceAll(mapped);else if(typeof setProjects==='function')setProjects(mapped)}catch(e){};try{if(typeof renderProjects==='function')renderProjects()}catch(e){}}
+async function loadProjects(a){var c=sb(),u=usr();if(!c||!u)return false;var owner=String(a&&a.app_role||'').toLowerCase()==='owner';if(!owner&&(!a||a.projects_access!==true)){replaceProjects([]);return false}/* IMPORTANT: no .eq(user_id, current user). RLS decides own/shared/all/selected. */var r=await c.from('projects').select('*').order('created_at',{ascending:false});if(r.error)throw r.error;replaceProjects(r.data||[]);return true}
+async function refresh(){if(busy)return false;var c=sb(),u=usr();if(!c||!u)return false;busy=true;try{var a=await rights();if(!a)return false;await Promise.all([loadNom(a),loadProjects(a)]);return true}catch(e){console.error('[A·CEIL access]',e);try{if(typeof showToast==='function')showToast('Помилка доступу: '+(e.message||e),4500)}catch(_){};return false}finally{busy=false}}
+/* Elements/Nomenclature UI itself always remains available; only owner's catalogue data is gated. */
+var oldElements=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);if(typeof oldElements==='function'){var openElementsClean=async function(){try{var a=ACCESS||await rights();await loadNom(a)}catch(e){}return oldElements.apply(this,arguments)};window.openElementsModal=openElementsClean;try{openElementsModal=openElementsClean}catch(e){}}
+/* Projects are refreshed from Supabase immediately before opening the modal. */
+var oldProjects=window.openProjectsModal||(typeof openProjectsModal==='function'?openProjectsModal:null);if(typeof oldProjects==='function'){var openProjectsClean=async function(){try{var a=await rights();await loadProjects(a)}catch(e){console.error('[A·CEIL projects]',e)}return oldProjects.apply(this,arguments)};window.openProjectsModal=openProjectsClean;try{openProjectsModal=openProjectsClean}catch(e){}}
+window.forceLoadNomenclature=async function(){var a=await rights();return loadNom(a)};try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){};try{loadNomenclatureFromCloud=window.forceLoadNomenclature}catch(e){}
 window.A_CEIL_forceAccessRefresh=refresh;
-function kick(){setTimeout(refresh,700)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kick,{once:true});else kick();
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(refresh,250)});
+function boot(n){if(n>20)return;setTimeout(async function(){if(await refresh())return;boot(n+1)},300)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){boot(0)},{once:true});else boot(0);
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(refresh,200)});
 })();
 </script>
-</body></html> 
+<!-- /A·CEIL ACCESS CLEAN v1 -->\n</body></html> 
 <!-- v2.19: Safari fix — never reads/writes Window.closed; hardened language switching and translation events. -->
 
 <!-- v2.44: freehand sketch first; manual point placement; no automatic modal; explicit Save point and Save & Done actions. -->
 <!-- A·CEIL shared owner nomenclature access fix v2 -->
-<script id="A·CEIL-shared-owner-nomenclature-v2">
-(function(){
-"use strict";
-if(window.__A_CEIL_SHARED_NOM_V2)return;
-window.__A_CEIL_SHARED_NOM_V2=true;
-
-function sb(){try{return (typeof _sb!=="undefined"&&_sb)||window._sb||null}catch(e){return window._sb||null}}
-function usr(){try{return (typeof _sbUser!=="undefined"&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
-function applyNom(data){
-  if(!data)return false;
-  if(Array.isArray(data.groups)) elemGroups=JSON.parse(JSON.stringify(data.groups));
-  if(Array.isArray(data.items)) {
-    elemItems=JSON.parse(JSON.stringify(data.items));
-    elemItems.forEach(function(it){
-      if(!it.unit)it.unit="шт";
-      if(typeof it.groupId==="undefined")it.groupId=null;
-      if(typeof it.price==="undefined")it.price=0;
-      if(!it.inputMode)it.inputMode="manual";
-      if(!it.icon)it.icon="📦";
-    });
-  }
-  if(Array.isArray(data.wall_presets)){
-    try{localStorage.setItem("A·CEIL_wall_presets_v32",JSON.stringify(data.wall_presets))}catch(e){}
-    try{if(typeof window.setWallPresets==="function")window.setWallPresets(data.wall_presets.map(function(p){return p&&p.name?p.name:p}))}catch(e){}
-  }
-  if(Array.isArray(data.light_types)){
-    try{localStorage.setItem("lightTypes_v1",JSON.stringify(data.light_types))}catch(e){}
-    try{lightTypes=JSON.parse(JSON.stringify(data.light_types))}catch(e){window.lightTypes=JSON.parse(JSON.stringify(data.light_types))}
-    try{if(typeof warmSvgCache==="function")warmSvgCache()}catch(e){}
-    try{if(typeof renderLightMenu==="function")renderLightMenu()}catch(e){}
-  }
-  try{if(typeof renderElemList==="function")renderElemList()}catch(e){}
-  try{if(typeof updateElemBadge==="function")updateElemBadge()}catch(e){}
-  try{if(typeof recalcElemTotal==="function")recalcElemTotal()}catch(e){}
-  return true;
-}
-
-async function fetchAccessibleNomenclature(client,user){
-  /* Do not query user_access from the browser. Its RLS is intentionally not
-     exposed to ordinary users. The nomenclature SELECT policy already decides
-     which catalogue rows auth.uid() may read, so ask for accessible rows and
-     choose the shared owner's row when one exists. */
-  var q=client.from("nomenclature")
-    .select("items,groups,wall_presets,light_types,user_id")
-    .limit(10);
-  var res=typeof withTimeout==="function"
-    ? await withTimeout(q,12000,"Завантаження номенклатури")
-    : await q;
-  if(res.error)throw res.error;
-  var rows=Array.isArray(res.data)?res.data:[];
-  if(!rows.length)return {data:null,shared:false,ownerId:user.id};
-  var own=rows.find(function(r){return String(r.user_id)===String(user.id)});
-  var shared=rows.find(function(r){return String(r.user_id)!==String(user.id)});
-  /* If access to an owner's catalogue exists, it is authoritative for a
-     worker account. Otherwise use the user's own catalogue. */
-  var picked=shared||own||rows[0];
-  return {data:picked,shared:String(picked.user_id)!==String(user.id),ownerId:picked.user_id};
-}
-
-var loading=false;
-window.forceLoadNomenclature=async function(reason){
-  if(loading)return false;
-  var client=sb(),user=usr();
-  if(!client||!user)return false;
-  loading=true; window._nomenclatureLoading=true;
-  try{
-    var source=await fetchAccessibleNomenclature(client,user);
-    if(!source.data)return false;
-    applyNom(source.data);
-    window.A_CEIL_NOMENCLATURE_SOURCE={
-      userId:user.id,
-      ownerId:source.ownerId,
-      shared:source.shared,
-      loadedAt:Date.now()
-    };
-    return true;
-  }catch(e){
-    window.__diagSilent&&window.__diagSilent(e);
-    try{if(typeof showToast==="function")showToast("Не вдалося завантажити номенклатуру: "+(e.message||e),5000)}catch(_){}
-    return false;
-  }finally{
-    loading=false; window._nomenclatureLoading=false;
-    try{if(typeof renderElemList==="function")renderElemList()}catch(e){}
-  }
-};
-try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){}
-
-/* Shared owner's catalogue is read-only in the cloud. Room quantities remain usable. */
-var oldForceSync=window.forceSyncNomenclature||(typeof forceSyncNomenclature==="function"?forceSyncNomenclature:null);
-if(typeof oldForceSync==="function"){
-  window.forceSyncNomenclature=async function(){
-    var src=window.A_CEIL_NOMENCLATURE_SOURCE;
-    if(src&&src.shared){
-      try{if(typeof showToast==="function")showToast("Номенклатура власника доступна лише для використання. Змінювати її може власник.",4500)}catch(e){}
-      return false;
-    }
-    return oldForceSync.apply(this,arguments);
-  };
-  try{forceSyncNomenclature=window.forceSyncNomenclature}catch(e){}
-}
-
-function kick(){setTimeout(function(){window.forceLoadNomenclature("shared-access-fix")},350)}
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",kick,{once:true});else kick();
-})();
-</script>
-
 <!-- A·CEIL ADMIN v2: owner menu + secure RPC UI -->
 <style id="A-CEIL-admin-v2-style">
 .aceil-admin-overlay{position:fixed;inset:0;z-index:15000;background:rgba(2,6,23,.64);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:flex-end;justify-content:center;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
@@ -17709,127 +17464,4 @@ document.addEventListener("visibilitychange",function(){if(document.visibilitySt
 
 <!-- A·CEIL ACCESS FINAL OVERRIDE v4 — MUST remain last -->
 <!-- A·CEIL ACCESS AUTHORITY v6 — MUST remain last -->
-<script id="A-CEIL-access-authority-v6">
-(function(){
-'use strict';
-function sb(){try{return (typeof _sb!=='undefined'&&_sb)||window._sb||null}catch(e){return window._sb||null}}
-function usr(){try{return (typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
-function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
-function setGlobal(name,value){try{window[name]=value}catch(e){};try{if(name==='elemItems')elemItems=value;if(name==='elemGroups')elemGroups=value;if(name==='lightTypes')lightTypes=value}catch(e){}}
-function refreshNomUI(){
-  try{if(typeof renderElemList==='function')renderElemList()}catch(e){}
-  try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){}
-  try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){}
-  try{if(typeof renderLightMenu==='function')renderLightMenu()}catch(e){}
-}
-function clearNom(){
-  setGlobal('elemItems',[]);setGlobal('elemGroups',[]);setGlobal('lightTypes',[]);
-  try{localStorage.removeItem('A·CEIL_wall_presets_v32');localStorage.removeItem('lightTypes_v1')}catch(e){}
-  window.A_CEIL_NOMENCLATURE_SOURCE={allowed:false};refreshNomUI();
-}
-async function currentRole(c,u){
-  try{var r=await c.from('profiles').select('app_role,is_active').eq('id',u.id).maybeSingle();if(!r.error&&r.data)return String(r.data.app_role||'').toLowerCase()}catch(e){}
-  return String(u.email||'').toLowerCase()==='klimshyk96@gmail.com'?'owner':'user';
-}
-async function authoritativeNomenclature(){
-  var c=sb(),u=usr();if(!c||!u)return false;
-  try{
-    var role=await currentRole(c,u);
-    if(role!=='owner'){
-      var ar=await c.rpc('get_my_access');
-      if(ar.error)throw ar.error;
-      var access=Array.isArray(ar.data)?ar.data[0]:ar.data;
-      window.A_CEIL_MY_ACCESS=access||null;
-      if(!access||access.nomenclature_access!==true){clearNom();return false;}
-    }
-    var r=await c.from('nomenclature').select('user_id,items,groups,wall_presets,light_types');
-    if(r.error)throw r.error;
-    var rows=Array.isArray(r.data)?r.data:[];
-    var row=null;
-    if(role==='owner') row=rows.find(function(x){return String(x.user_id)===String(u.id)})||null;
-    else row=rows.find(function(x){return String(x.user_id)!==String(u.id)})||null;
-    /* Critical rule: a worker's own nomenclature is NEVER a substitute for owner's shared nomenclature. */
-    if(!row){clearNom();return false;}
-    var groups=clone(Array.isArray(row.groups)?row.groups:[]),items=clone(Array.isArray(row.items)?row.items:[]);
-    items.forEach(function(it){if(!it||typeof it!=='object')return;if(!it.unit)it.unit='шт';if(it.groupId===undefined)it.groupId=null;if(it.price===undefined)it.price=0;if(!it.inputMode)it.inputMode='manual';if(!it.icon)it.icon='📦';it.qty=0;it.manualQtyOverride=false});
-    setGlobal('elemGroups',groups);setGlobal('elemItems',items);
-    if(Array.isArray(row.light_types)){setGlobal('lightTypes',clone(row.light_types));try{localStorage.setItem('lightTypes_v1',JSON.stringify(row.light_types))}catch(e){}}
-    if(Array.isArray(row.wall_presets)){try{localStorage.setItem('A·CEIL_wall_presets_v32',JSON.stringify(row.wall_presets))}catch(e){};try{if(typeof window.setWallPresets==='function')window.setWallPresets(row.wall_presets.map(function(p){return p&&p.name?p.name:p}))}catch(e){}}
-    window.A_CEIL_NOMENCLATURE_SOURCE={allowed:true,role:role,userId:u.id,sourceUserId:row.user_id,shared:String(row.user_id)!==String(u.id)};
-    refreshNomUI();return true;
-  }catch(e){try{window.__diagSilent&&window.__diagSilent(e)}catch(_){};return false}
-}
-window.forceLoadNomenclature=authoritativeNomenclature;
-try{forceLoadNomenclature=authoritativeNomenclature}catch(e){}
-try{loadNomenclatureFromCloud=authoritativeNomenclature}catch(e){}
-
-function keys(p){var a=[];if(!p||typeof p!=='object')return a;[p.id,p._dbId,p._localId].forEach(function(v){if(v!=null&&String(v)!=='')a.push(String(v))});return a}
-function unsynced(p){if(!p)return false;var id=String(p.id||p._localId||''),st=String(p._syncStatus||'');return !!(p._dirty||p._localUpdatedAt||st.indexOf('pending')===0||st.indexOf('error')===0||st.indexOf('failed')===0||id.indexOf('local_')===0||id.indexOf('obj_')===0)}
-function strictCloudMerge(cloud){
-  cloud=Array.isArray(cloud)?cloud:[];
-  var local=[];try{local=window.A·CEIL.ProjectRepository.list({clone:true})||[]}catch(e){}
-  var q=[];try{q=typeof getPendingQueue==='function'?getPendingQueue():[]}catch(e){}
-  var pending=new Set();q.forEach(function(op){var p=op&&op.payload||{};if(p.localId!=null)pending.add(String(p.localId));if(p.dbId!=null)pending.add(String(p.dbId))});
-  var keep=local.filter(function(p){return unsynced(p)||keys(p).some(function(k){return pending.has(k)})});
-  var out=cloud.map(clone),seen=new Set();out.forEach(function(p){keys(p).forEach(function(k){seen.add(k)})});
-  keep.forEach(function(p){if(!keys(p).some(function(k){return seen.has(k)})){out.push(clone(p));keys(p).forEach(function(k){seen.add(k)})}});
-  try{window.A·CEIL.ProjectRepository.replaceAll(out)}catch(e){}
-  return out;
-}
-window.A·CEILMergeCloudProjects=strictCloudMerge;
-try{A·CEILMergeCloudProjects=strictCloudMerge}catch(e){}
-
-async function refreshAll(){
-  var c=sb(),u=usr();if(!c||!u)return;
-  var access=null;
-  try{var ar=await c.rpc('get_my_access');if(!ar.error){access=Array.isArray(ar.data)?ar.data[0]:ar.data;window.A_CEIL_MY_ACCESS=access||null;}}catch(e){}
-  try{await authoritativeNomenclature()}catch(e){}
-  try{
-    if(access&&access.projects_access===false){strictCloudMerge([]);return;}
-    var r=await c.from('projects').select('*').order('created_at',{ascending:false});
-    if(!r.error){var rows=(r.data||[]).map(function(p){var st={};try{st=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){};var multi=st.multiRoom===true;return {id:p.id,_dbId:p.id,name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',multiRoom:multi,rooms:multi?(st.rooms||[]):undefined,state:multi?null:(typeof p.state==='string'?p.state:JSON.stringify(st))}});strictCloudMerge(rows);try{var m=document.getElementById('projectsModal');if(m&&m.classList.contains('open')&&typeof renderProjects==='function')renderProjects()}catch(e){}}
-  }catch(e){try{window.__diagSilent&&window.__diagSilent(e)}catch(_){}}
-}
-window.A_CEIL_forceAccessRefresh=refreshAll;
-function kick(){setTimeout(refreshAll,500)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kick,{once:true});else kick();
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(refreshAll,250)});
-})();
-</script>
-
 <!-- A·CEIL ACCESS REAL FIX v8 — final authority -->
-<script id="A-CEIL-access-realfix-v8">
-(function(){
-'use strict';
-function access(){return window.A_CEIL_MY_ACCESS||null}
-function clearOwnerNom(){
-  try{window.elemItems=[];window.elemGroups=[]}catch(e){}
-  try{elemItems=[];elemGroups=[]}catch(e){}
-  try{if(typeof renderElemList==='function')renderElemList()}catch(e){}
-  try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){}
-  try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){}
-}
-/* IMPORTANT: "Елементи" tile stays visible. When owner nomenclature access is
-   disabled, stale cached owner catalogue is purged every time the modal opens. */
-var oldOpenElements=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);
-if(typeof oldOpenElements==='function'){
-  var openElementsFixed=function(){
-    var a=access();
-    if(a && a.app_role!=='owner' && a.nomenclature_access!==true) clearOwnerNom();
-    return oldOpenElements.apply(this,arguments);
-  };
-  window.openElementsModal=openElementsFixed;
-  try{openElementsModal=openElementsFixed}catch(e){}
-}
-/* Never hide the Elements tile. */
-function keepElementsTile(){var b=document.getElementById('elemTileBtn');if(b){b.style.display='';b.hidden=false;b.removeAttribute('aria-hidden')}}
-keepElementsTile();
-new MutationObserver(keepElementsTile).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['style','hidden','aria-hidden']});
-
-/* Re-render Projects after the authoritative access refresh. */
-var oldRefresh=window.A_CEIL_forceAccessRefresh;
-if(typeof oldRefresh==='function'){
-  window.A_CEIL_forceAccessRefresh=async function(){var r=await oldRefresh.apply(this,arguments);try{if(typeof renderProjects==='function')renderProjects()}catch(e){};keepElementsTile();return r};
-}
-})();
-</script>
