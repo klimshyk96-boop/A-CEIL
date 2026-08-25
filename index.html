@@ -17635,36 +17635,82 @@ document.addEventListener("visibilitychange",function(){if(document.visibilitySt
 })();
 </script>
 
-\n<!-- A·CEIL ACCESS CONTROL v5 authoritative -->
-<script id="A-CEIL-access-control-v5">
+<!-- A·CEIL ACCESS FINAL OVERRIDE v4 — MUST remain last -->
+<!-- A·CEIL ACCESS AUTHORITY v6 — MUST remain last -->
+<script id="A-CEIL-access-authority-v6">
 (function(){
 'use strict';
-if(window.__ACEIL_ACCESS_V5)return; window.__ACEIL_ACCESS_V5=true;
 function sb(){try{return (typeof _sb!=='undefined'&&_sb)||window._sb||null}catch(e){return window._sb||null}}
 function usr(){try{return (typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
 function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
+function setGlobal(name,value){try{window[name]=value}catch(e){};try{if(name==='elemItems')elemItems=value;if(name==='elemGroups')elemGroups=value;if(name==='lightTypes')lightTypes=value}catch(e){}}
+function refreshNomUI(){
+  try{if(typeof renderElemList==='function')renderElemList()}catch(e){}
+  try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){}
+  try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){}
+  try{if(typeof renderLightMenu==='function')renderLightMenu()}catch(e){}
+}
 function clearNom(){
- try{elemItems=[]}catch(e){window.elemItems=[]} try{elemGroups=[]}catch(e){window.elemGroups=[]} try{lightTypes=[]}catch(e){window.lightTypes=[]}
- try{localStorage.removeItem('A·CEIL_wall_presets_v32');localStorage.removeItem('lightTypes_v1')}catch(e){}
- ['renderElemList','updateElemBadge','recalcElemTotal','renderLightMenu'].forEach(function(n){try{if(typeof window[n]==='function')window[n]()}catch(e){}});
- window.A_CEIL_NOMENCLATURE_SOURCE={denied:true,loadedAt:Date.now()};
+  setGlobal('elemItems',[]);setGlobal('elemGroups',[]);setGlobal('lightTypes',[]);
+  try{localStorage.removeItem('A·CEIL_wall_presets_v32');localStorage.removeItem('lightTypes_v1')}catch(e){}
+  window.A_CEIL_NOMENCLATURE_SOURCE={allowed:false};refreshNomUI();
 }
-function applyNom(p,u,a){
- try{elemGroups=clone(p.groups||[])}catch(e){window.elemGroups=clone(p.groups||[])}
- try{elemItems=clone(p.items||[])}catch(e){window.elemItems=clone(p.items||[])}
- if(Array.isArray(p.light_types)){try{lightTypes=clone(p.light_types)}catch(e){window.lightTypes=clone(p.light_types)};try{localStorage.setItem('lightTypes_v1',JSON.stringify(p.light_types))}catch(e){}}
- if(Array.isArray(p.wall_presets))try{localStorage.setItem('A·CEIL_wall_presets_v32',JSON.stringify(p.wall_presets))}catch(e){}
- ['renderElemList','updateElemBadge','recalcElemTotal','renderLightMenu'].forEach(function(n){try{if(typeof window[n]==='function')window[n]()}catch(e){}});
- window.A_CEIL_NOMENCLATURE_SOURCE={denied:false,userId:u.id,ownerId:p.user_id,shared:String(p.user_id)!==String(u.id),loadedAt:Date.now()};
+async function currentRole(c,u){
+  try{var r=await c.from('profiles').select('app_role,is_active').eq('id',u.id).maybeSingle();if(!r.error&&r.data)return String(r.data.app_role||'').toLowerCase()}catch(e){}
+  return String(u.email||'').toLowerCase()==='klimshyk96@gmail.com'?'owner':'user';
 }
-function cloudToLocal(p){var st={};try{st=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){};var m=st.multiRoom===true;return {id:p.id,_dbId:p.id,name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',multiRoom:m,rooms:m?(st.rooms||[]):undefined,state:m?null:(typeof p.state==='string'?p.state:JSON.stringify(st))}}
-async function getAccess(){var c=sb(),u=usr();if(!c||!u)return null;var r=await c.rpc('get_my_access');if(r.error)throw r.error;var a=Array.isArray(r.data)?r.data[0]:r.data;window.A_CEIL_MY_ACCESS=a||null;return a||null}
-async function loadNom(a){var c=sb(),u=usr();if(!c||!u)return false;if(!a||a.app_role!=='owner'&&!a.nomenclature_access){clearNom();return false}var q=c.from('nomenclature').select('items,groups,wall_presets,light_types,user_id');if(a.app_role!=='owner'&&a.owner_id)q=q.eq('user_id',a.owner_id);else q=q.eq('user_id',u.id);var r=await q.limit(1);if(r.error)throw r.error;if(!r.data||!r.data.length){clearNom();return false}applyNom(r.data[0],u,a);return true}
-async function loadProjects(a){var c=sb(),u=usr();if(!c||!u)return false;var r=await c.from('projects').select('*').order('created_at',{ascending:false});if(r.error)throw r.error;var cloud=(r.data||[]).map(cloudToLocal);var local=[];try{local=typeof getProjects==='function'?(getProjects()||[]):[]}catch(e){};var drafts=local.filter(function(p){return !p._dbId&&String(p.id||'').indexOf('obj_')===0});var merged=cloud.concat(drafts);try{if(window.A·CEIL&&window.A·CEIL.ProjectRepository)window.A·CEIL.ProjectRepository.replaceAll(merged);else if(typeof setProjects==='function')setProjects(merged)}catch(e){};try{if(typeof renderProjects==='function')renderProjects()}catch(e){};return true}
-var busy=false;async function refresh(reason){if(busy)return false;busy=true;try{var a=await getAccess();await loadNom(a);await loadProjects(a);return true}catch(e){window.__diagSilent&&window.__diagSilent(e);try{if(typeof showToast==='function')showToast('Помилка перевірки доступу: '+(e.message||e),5000)}catch(_){ }return false}finally{busy=false}}
-window.A_CEIL_refreshAccessV5=refresh;window.forceLoadNomenclature=async function(){var a=await getAccess();return loadNom(a)};try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){}
-// Keep this authoritative even if older delayed modules try to restore their loaders.
-var keep=setInterval(function(){try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){}},1000);setTimeout(function(){clearInterval(keep)},15000);
-function kick(){setTimeout(function(){refresh('boot')},700)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kick,{once:true});else kick();document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(function(){refresh('visible')},250)});
+async function authoritativeNomenclature(){
+  var c=sb(),u=usr();if(!c||!u)return false;
+  try{
+    var role=await currentRole(c,u);
+    var r=await c.from('nomenclature').select('user_id,items,groups,wall_presets,light_types');
+    if(r.error)throw r.error;
+    var rows=Array.isArray(r.data)?r.data:[];
+    var row=null;
+    if(role==='owner') row=rows.find(function(x){return String(x.user_id)===String(u.id)})||null;
+    else row=rows.find(function(x){return String(x.user_id)!==String(u.id)})||null;
+    /* Critical rule: a worker's own nomenclature is NEVER a substitute for owner's shared nomenclature. */
+    if(!row){clearNom();return false;}
+    var groups=clone(Array.isArray(row.groups)?row.groups:[]),items=clone(Array.isArray(row.items)?row.items:[]);
+    items.forEach(function(it){if(!it||typeof it!=='object')return;if(!it.unit)it.unit='шт';if(it.groupId===undefined)it.groupId=null;if(it.price===undefined)it.price=0;if(!it.inputMode)it.inputMode='manual';if(!it.icon)it.icon='📦';it.qty=0;it.manualQtyOverride=false});
+    setGlobal('elemGroups',groups);setGlobal('elemItems',items);
+    if(Array.isArray(row.light_types)){setGlobal('lightTypes',clone(row.light_types));try{localStorage.setItem('lightTypes_v1',JSON.stringify(row.light_types))}catch(e){}}
+    if(Array.isArray(row.wall_presets)){try{localStorage.setItem('A·CEIL_wall_presets_v32',JSON.stringify(row.wall_presets))}catch(e){};try{if(typeof window.setWallPresets==='function')window.setWallPresets(row.wall_presets.map(function(p){return p&&p.name?p.name:p}))}catch(e){}}
+    window.A_CEIL_NOMENCLATURE_SOURCE={allowed:true,role:role,userId:u.id,sourceUserId:row.user_id,shared:String(row.user_id)!==String(u.id)};
+    refreshNomUI();return true;
+  }catch(e){try{window.__diagSilent&&window.__diagSilent(e)}catch(_){};return false}
+}
+window.forceLoadNomenclature=authoritativeNomenclature;
+try{forceLoadNomenclature=authoritativeNomenclature}catch(e){}
+try{loadNomenclatureFromCloud=authoritativeNomenclature}catch(e){}
+
+function keys(p){var a=[];if(!p||typeof p!=='object')return a;[p.id,p._dbId,p._localId].forEach(function(v){if(v!=null&&String(v)!=='')a.push(String(v))});return a}
+function unsynced(p){if(!p)return false;var id=String(p.id||p._localId||''),st=String(p._syncStatus||'');return !!(p._dirty||p._localUpdatedAt||st.indexOf('pending')===0||st.indexOf('error')===0||st.indexOf('failed')===0||id.indexOf('local_')===0||id.indexOf('obj_')===0)}
+function strictCloudMerge(cloud){
+  cloud=Array.isArray(cloud)?cloud:[];
+  var local=[];try{local=window.A·CEIL.ProjectRepository.list({clone:true})||[]}catch(e){}
+  var q=[];try{q=typeof getPendingQueue==='function'?getPendingQueue():[]}catch(e){}
+  var pending=new Set();q.forEach(function(op){var p=op&&op.payload||{};if(p.localId!=null)pending.add(String(p.localId));if(p.dbId!=null)pending.add(String(p.dbId))});
+  var keep=local.filter(function(p){return unsynced(p)||keys(p).some(function(k){return pending.has(k)})});
+  var out=cloud.map(clone),seen=new Set();out.forEach(function(p){keys(p).forEach(function(k){seen.add(k)})});
+  keep.forEach(function(p){if(!keys(p).some(function(k){return seen.has(k)})){out.push(clone(p));keys(p).forEach(function(k){seen.add(k)})}});
+  try{window.A·CEIL.ProjectRepository.replaceAll(out)}catch(e){}
+  return out;
+}
+window.A·CEILMergeCloudProjects=strictCloudMerge;
+try{A·CEILMergeCloudProjects=strictCloudMerge}catch(e){}
+
+async function refreshAll(){
+  var c=sb(),u=usr();if(!c||!u)return;
+  try{await authoritativeNomenclature()}catch(e){}
+  try{
+    var r=await c.from('projects').select('*').order('created_at',{ascending:false});
+    if(!r.error){var rows=(r.data||[]).map(function(p){var st={};try{st=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){};var multi=st.multiRoom===true;return {id:p.id,_dbId:p.id,name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',multiRoom:multi,rooms:multi?(st.rooms||[]):undefined,state:multi?null:(typeof p.state==='string'?p.state:JSON.stringify(st))}});strictCloudMerge(rows);try{var m=document.getElementById('projectsModal');if(m&&m.classList.contains('open')&&typeof renderProjects==='function')renderProjects()}catch(e){}}
+  }catch(e){try{window.__diagSilent&&window.__diagSilent(e)}catch(_){}}
+}
+window.A_CEIL_forceAccessRefresh=refreshAll;
+function kick(){setTimeout(refreshAll,500)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kick,{once:true});else kick();
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(refreshAll,250)});
 })();
 </script>
