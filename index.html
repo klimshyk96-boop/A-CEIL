@@ -17346,6 +17346,78 @@ var wait=setInterval(function(){
 })();
 </script>
 <!-- /A·CEIL ACCESS ENFORCEMENT v3 -->
+
+
+<!-- A·CEIL ACCESS v7 — explicit server rights, UI guards, authoritative cloud projects -->
+<script id="A-CEIL-access-v7">
+(function(){
+'use strict';
+function sb(){try{return (typeof _sb!=='undefined'&&_sb)||window._sb||null}catch(e){return window._sb||null}}
+function usr(){try{return (typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
+function toast(t){try{if(typeof showToast==='function')showToast(t,3500)}catch(e){}}
+function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
+function setG(n,v){try{window[n]=v}catch(e){};try{if(n==='elemItems')elemItems=v;if(n==='elemGroups')elemGroups=v;if(n==='lightTypes')lightTypes=v}catch(e){}}
+function renderNom(){try{if(typeof renderElemList==='function')renderElemList()}catch(e){};try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){};try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){}}
+function clearNom(){setG('elemItems',[]);setG('elemGroups',[]);setG('lightTypes',[]);renderNom()}
+function mapProject(p){var st={};try{st=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){};var multi=st.multiRoom===true;return {id:p.id,_dbId:p.id,name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',multiRoom:multi,rooms:multi?(st.rooms||[]):undefined,state:multi?null:(typeof p.state==='string'?p.state:JSON.stringify(st))}}
+var RIGHTS=null, loading=false;
+async function getRights(){
+ var c=sb(),u=usr(); if(!c||!u)return null;
+ var r=await c.rpc('get_my_access'); if(r.error)throw r.error;
+ var row=Array.isArray(r.data)?r.data[0]:r.data;
+ if(!row)throw new Error('Немає активного доступу');
+ RIGHTS=row; window.A_CEIL_MY_ACCESS=row; return row;
+}
+function applyUI(a){
+ var nom=!!a.nomenclature_access, proj=!!a.projects_access;
+ var tile=document.getElementById('elemTileBtn'); if(tile){tile.style.display=nom?'':'none';tile.setAttribute('aria-hidden',nom?'false':'true')}
+ document.querySelectorAll('.projects-btn').forEach(function(x){x.style.display=proj?'':'none'});
+ window.A_CEIL_MY_ACCESS=a;
+}
+async function loadNom(a){
+ var c=sb(),u=usr(); if(!a.nomenclature_access){clearNom();return false}
+ var sourceId=(String(a.app_role||'').toLowerCase()==='owner'?u.id:a.owner_id);
+ if(!sourceId){clearNom();return false}
+ var r=await c.from('nomenclature').select('user_id,items,groups,wall_presets,light_types').eq('user_id',sourceId).maybeSingle();
+ if(r.error)throw r.error; if(!r.data){clearNom();return false}
+ var d=r.data, groups=clone(Array.isArray(d.groups)?d.groups:[]), items=clone(Array.isArray(d.items)?d.items:[]);
+ items.forEach(function(it){if(!it||typeof it!=='object')return;if(!it.unit)it.unit='шт';if(it.groupId===undefined)it.groupId=null;if(it.price===undefined)it.price=0;if(!it.inputMode)it.inputMode='manual';if(!it.icon)it.icon='📦';it.qty=0;it.manualQtyOverride=false});
+ setG('elemGroups',groups);setG('elemItems',items);if(Array.isArray(d.light_types))setG('lightTypes',clone(d.light_types));renderNom();return true;
+}
+function unsynced(p){if(!p)return false;var id=String(p.id||p._localId||''),st=String(p._syncStatus||'');return !!(p._dirty||p._localUpdatedAt||st.indexOf('pending')===0||st.indexOf('error')===0||st.indexOf('failed')===0||id.indexOf('local_')===0||id.indexOf('obj_')===0)}
+function replaceProjects(rows){
+ var local=[];try{local=window.A·CEIL.ProjectRepository.list({clone:true})||[]}catch(e){}
+ var keep=local.filter(unsynced), cloud=(rows||[]).map(mapProject), ids=new Set(); cloud.forEach(function(p){ids.add(String(p.id));ids.add(String(p._dbId||''))});
+ keep.forEach(function(p){var id=String(p.id||p._dbId||'');if(!ids.has(id))cloud.push(clone(p))});
+ try{window.A·CEIL.ProjectRepository.replaceAll(cloud)}catch(e){}
+ try{var m=document.getElementById('projectsModal');if(m&&m.classList.contains('open')&&typeof renderProjects==='function')renderProjects()}catch(e){}
+}
+async function loadProjects(a){
+ var c=sb(); if(!a.projects_access){replaceProjects([]);return false}
+ var r=await c.from('projects').select('*').order('created_at',{ascending:false}); if(r.error)throw r.error; replaceProjects(r.data||[]); return true;
+}
+async function refresh(){
+ if(loading)return; var c=sb(),u=usr();if(!c||!u)return; loading=true;
+ try{var a=await getRights();applyUI(a);await Promise.all([loadNom(a),loadProjects(a)])}
+ catch(e){try{window.__diagSilent&&window.__diagSilent(e)}catch(_){};toast('Помилка перевірки доступу: '+(e.message||e))}
+ finally{loading=false}
+}
+/* Hard UI guards: stale project state/localStorage cannot reopen a forbidden section. */
+var oldNom=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);
+function guardedNom(){var a=window.A_CEIL_MY_ACCESS;if(!a||!a.nomenclature_access){toast('Немає доступу до номенклатури');return false}return oldNom&&oldNom.apply(this,arguments)}
+window.openElementsModal=guardedNom;try{openElementsModal=guardedNom}catch(e){}
+var oldProj=window.openProjectsModal||(typeof openProjectsModal==='function'?openProjectsModal:null);
+function guardedProj(){var a=window.A_CEIL_MY_ACCESS;if(!a||!a.projects_access){toast('Немає доступу до проєктів');return false}return oldProj&&oldProj.apply(this,arguments)}
+window.openProjectsModal=guardedProj;try{openProjectsModal=guardedProj}catch(e){}
+/* Override legacy cloud loaders with the explicit rights-aware versions. */
+window.forceLoadNomenclature=async function(){var a=RIGHTS||await getRights();applyUI(a);return loadNom(a)};
+try{forceLoadNomenclature=window.forceLoadNomenclature;loadNomenclatureFromCloud=window.forceLoadNomenclature}catch(e){}
+window.A_CEIL_forceAccessRefresh=refresh;
+function kick(){setTimeout(refresh,700)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kick,{once:true});else kick();
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(refresh,250)});
+})();
+</script>
 </body></html> 
 <!-- v2.19: Safari fix — never reads/writes Window.closed; hardened language switching and translation events. -->
 
