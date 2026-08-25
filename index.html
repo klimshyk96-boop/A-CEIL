@@ -17252,25 +17252,29 @@ window.A·CEIL_BUILD_LABEL="v3.75 A·CEIL REPORT-REBRAND";
 
 <!-- A·CEIL ACCESS v7 — explicit server rights, UI guards, authoritative cloud projects -->
 \n<!-- A·CEIL ACCESS CLEAN v1 — single authority, 2026-08-25 -->
-<script id="A-CEIL-access-clean-v1">
+<script id="A-CEIL-access-clean-v2">
 (function(){
 'use strict';
-var busy=false, ACCESS=null;
+var busy=false, ACCESS=null, NOM_DENIED=false;
 function sb(){try{return (typeof _sb!=='undefined'&&_sb)||window._sb||null}catch(e){return window._sb||null}}
 function usr(){try{return (typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
 function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
 function setGlobal(n,v){try{window[n]=v}catch(e){};try{if(n==='elemItems')elemItems=v;if(n==='elemGroups')elemGroups=v;if(n==='lightTypes')lightTypes=v}catch(e){}}
 function refreshNomUI(){try{if(typeof renderElemList==='function')renderElemList()}catch(e){};try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){};try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){};try{if(typeof renderLightMenu==='function')renderLightMenu()}catch(e){}}
 function clearNom(){setGlobal('elemItems',[]);setGlobal('elemGroups',[]);setGlobal('lightTypes',[]);refreshNomUI()}
-async function rights(){var c=sb(),u=usr();if(!c||!u)return null;var r=await c.rpc('get_my_access');if(r.error)throw r.error;var a=Array.isArray(r.data)?r.data[0]:r.data;if(!a)return null;ACCESS=a;window.A_CEIL_MY_ACCESS=a;return a}
-async function loadNom(a){var c=sb(),u=usr();if(!c||!u)return false;var owner=String(a&&a.app_role||'').toLowerCase()==='owner';if(!owner&&(!a||a.nomenclature_access!==true)){clearNom();return false}var source=owner?u.id:a.owner_id;if(!source){clearNom();return false}var r=await c.from('nomenclature').select('user_id,items,groups,wall_presets,light_types').eq('user_id',source).maybeSingle();if(r.error)throw r.error;if(!r.data){clearNom();return false}var d=r.data;setGlobal('elemGroups',clone(Array.isArray(d.groups)?d.groups:[]));var items=clone(Array.isArray(d.items)?d.items:[]);items.forEach(function(it){if(!it||typeof it!=='object')return;if(!it.unit)it.unit='шт';if(it.groupId===undefined)it.groupId=null;if(it.price===undefined)it.price=0;if(!it.inputMode)it.inputMode='manual';if(!it.icon)it.icon='📦';it.qty=0;it.manualQtyOverride=false});setGlobal('elemItems',items);if(Array.isArray(d.light_types))setGlobal('lightTypes',clone(d.light_types));refreshNomUI();return true}
+function applyNomGate(a){var owner=String(a&&a.app_role||'').toLowerCase()==='owner';NOM_DENIED=!owner&&(!a||a.nomenclature_access!==true);window.A_CEIL_NOMENCLATURE_DENIED=NOM_DENIED;if(NOM_DENIED)clearNom();return NOM_DENIED}
+async function rights(){var c=sb(),u=usr();if(!c||!u)return null;var r=await c.rpc('get_my_access');if(r.error)throw r.error;var a=Array.isArray(r.data)?r.data[0]:r.data;if(!a)return null;ACCESS=a;window.A_CEIL_MY_ACCESS=a;applyNomGate(a);return a}
+async function loadNom(a){var c=sb(),u=usr();if(!c||!u)return false;if(applyNomGate(a))return false;var owner=String(a&&a.app_role||'').toLowerCase()==='owner';var source=owner?u.id:a.owner_id;if(!source){clearNom();return false}var r=await c.from('nomenclature').select('user_id,items,groups,wall_presets,light_types').eq('user_id',source).maybeSingle();if(r.error)throw r.error;if(!r.data){clearNom();return false}var d=r.data;setGlobal('elemGroups',clone(Array.isArray(d.groups)?d.groups:[]));var items=clone(Array.isArray(d.items)?d.items:[]);items.forEach(function(it){if(!it||typeof it!=='object')return;if(!it.unit)it.unit='шт';if(it.groupId===undefined)it.groupId=null;if(it.price===undefined)it.price=0;if(!it.inputMode)it.inputMode='manual';if(!it.icon)it.icon='📦';it.qty=0;it.manualQtyOverride=false});setGlobal('elemItems',items);if(Array.isArray(d.light_types))setGlobal('lightTypes',clone(d.light_types));refreshNomUI();return true}
 function mapProject(p){var st={};try{st=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){};var multi=st.multiRoom===true;return {id:p.id,_dbId:p.id,name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',multiRoom:multi,rooms:multi?(st.rooms||[]):undefined,state:multi?null:(typeof p.state==='string'?p.state:JSON.stringify(st))}}
 function replaceProjects(rows){var mapped=(rows||[]).map(mapProject);try{if(window.A·CEIL&&window.A·CEIL.ProjectRepository)window.A·CEIL.ProjectRepository.replaceAll(mapped);else if(typeof setProjects==='function')setProjects(mapped)}catch(e){};try{if(typeof renderProjects==='function')renderProjects()}catch(e){}}
-async function loadProjects(a){var c=sb(),u=usr();if(!c||!u)return false;var owner=String(a&&a.app_role||'').toLowerCase()==='owner';if(!owner&&(!a||a.projects_access!==true)){replaceProjects([]);return false}/* IMPORTANT: no .eq(user_id, current user). RLS decides own/shared/all/selected. */var r=await c.from('projects').select('*').order('created_at',{ascending:false});if(r.error)throw r.error;replaceProjects(r.data||[]);return true}
-async function refresh(){if(busy)return false;var c=sb(),u=usr();if(!c||!u)return false;busy=true;try{var a=await rights();if(!a)return false;await Promise.all([loadNom(a),loadProjects(a)]);return true}catch(e){console.error('[A·CEIL access]',e);try{if(typeof showToast==='function')showToast('Помилка доступу: '+(e.message||e),4500)}catch(_){};return false}finally{busy=false}}
-/* Elements/Nomenclature UI itself always remains available; only owner's catalogue data is gated. */
-var oldElements=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);if(typeof oldElements==='function'){var openElementsClean=async function(){try{var a=ACCESS||await rights();await loadNom(a)}catch(e){}return oldElements.apply(this,arguments)};window.openElementsModal=openElementsClean;try{openElementsModal=openElementsClean}catch(e){}}
-/* Projects are refreshed from Supabase immediately before opening the modal. */
+async function loadProjects(a){var c=sb(),u=usr();if(!c||!u)return false;var owner=String(a&&a.app_role||'').toLowerCase()==='owner';if(!owner&&(!a||a.projects_access!==true)){replaceProjects([]);return false}var r=await c.from('projects').select('*').order('created_at',{ascending:false});if(r.error)throw r.error;replaceProjects(r.data||[]);return true}
+async function refresh(){if(busy)return false;var c=sb(),u=usr();if(!c||!u)return false;busy=true;try{var a=await rights();if(!a)return false;await Promise.all([loadNom(a),loadProjects(a)]);applyNomGate(a);return true}catch(e){console.error('[A·CEIL access]',e);try{if(typeof showToast==='function')showToast('Помилка доступу: '+(e.message||e),4500)}catch(_){};return false}finally{busy=false}}
+/* Nomenclature window remains available. OFF means its catalogue is empty for a non-owner. */
+var oldElements=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);if(typeof oldElements==='function'){var openElementsClean=async function(){var a=null;try{a=await rights();await loadNom(a)}catch(e){};var r=oldElements.apply(this,arguments);if(applyNomGate(a))setTimeout(clearNom,0);return r};window.openElementsModal=openElementsClean;try{openElementsModal=openElementsClean}catch(e){}}
+/* Prevent room/project snapshots from resurrecting catalogue rows while access is OFF. */
+var oldRoomLoad=window._loadRoomToCanvas||(typeof _loadRoomToCanvas==='function'?_loadRoomToCanvas:null);if(typeof oldRoomLoad==='function'){var roomLoadGated=function(){var r=oldRoomLoad.apply(this,arguments);if(NOM_DENIED){clearNom();setTimeout(clearNom,0)}return r};window._loadRoomToCanvas=roomLoadGated;try{_loadRoomToCanvas=roomLoadGated}catch(e){}}
+/* If any older module adds an item later (lights, room restore, local state), purge it before nomenclature renders. */
+var oldRender=window.renderElemList||(typeof renderElemList==='function'?renderElemList:null);if(typeof oldRender==='function'){var renderGated=function(){if(NOM_DENIED){setGlobal('elemItems',[]);setGlobal('elemGroups',[])}return oldRender.apply(this,arguments)};window.renderElemList=renderGated;try{renderElemList=renderGated}catch(e){}}
 var oldProjects=window.openProjectsModal||(typeof openProjectsModal==='function'?openProjectsModal:null);if(typeof oldProjects==='function'){var openProjectsClean=async function(){try{var a=await rights();await loadProjects(a)}catch(e){console.error('[A·CEIL projects]',e)}return oldProjects.apply(this,arguments)};window.openProjectsModal=openProjectsClean;try{openProjectsModal=openProjectsClean}catch(e){}}
 window.forceLoadNomenclature=async function(){var a=await rights();return loadNom(a)};try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){};try{loadNomenclatureFromCloud=window.forceLoadNomenclature}catch(e){}
 window.A_CEIL_forceAccessRefresh=refresh;
@@ -17280,39 +17284,6 @@ document.addEventListener('visibilitychange',function(){if(document.visibilitySt
 })();
 </script>
 <!-- /A·CEIL ACCESS CLEAN v1 -->\n
-<script id="A-CEIL-access-diagnostic-20260825">
-(function(){
-'use strict';
-function esc(v){return String(v==null?'null':v).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
-function sb(){try{return (typeof _sb!=='undefined'&&_sb)||window._sb||null}catch(e){return window._sb||null}}
-function usr(){try{return (typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
-function val(name){try{return typeof window[name]!=='undefined'?window[name]:(eval('typeof '+name+'!=="undefined"?'+name+':undefined'))}catch(e){return undefined}}
-function count(v){return Array.isArray(v)?v.length:'n/a'}
-function ownerIds(rows){return [...new Set((rows||[]).map(function(x){return x&&x.user_id}).filter(Boolean))]}
-async function runDiag(){
- var box=document.getElementById('aceilDiagBox'), pre=document.getElementById('aceilDiagPre');
- if(!box||!pre)return; box.style.display='flex'; pre.textContent='Діагностика…';
- var lines=[]; function add(k,v){lines.push(k+': '+(typeof v==='object'?JSON.stringify(v,null,2):String(v)))}
- try{
-  var c=sb(), u=usr(); add('CLIENT',!!c); add('_sbUser UID',u&&u.id); add('_sbUser email',u&&u.email);
-  if(!c){pre.textContent=lines.join('\n');return}
-  var gu=await c.auth.getUser(); add('auth.getUser error',gu.error&&gu.error.message||null); add('AUTH UID',gu.data&&gu.data.user&&gu.data.user.id); add('AUTH email',gu.data&&gu.data.user&&gu.data.user.email);
-  var ar=await c.rpc('get_my_access'); add('get_my_access error',ar.error&&ar.error.message||null); add('ACCESS',ar.data);
-  var a=Array.isArray(ar.data)?ar.data[0]:ar.data;
-  var nq=await c.from('nomenclature').select('user_id'); add('NOM SELECT error',nq.error&&nq.error.message||null); add('NOM rows',nq.data?nq.data.length:null); add('NOM user_ids',ownerIds(nq.data));
-  if(a&&a.owner_id){var no=await c.from('nomenclature').select('user_id').eq('user_id',a.owner_id);add('NOM OWNER rows',no.data?no.data.length:null);add('NOM OWNER error',no.error&&no.error.message||null)}
-  var pq=await c.from('projects').select('id,user_id,name,created_at').order('created_at',{ascending:false}); add('PROJECT SELECT error',pq.error&&pq.error.message||null); add('PROJECT rows',pq.data?pq.data.length:null); add('PROJECT user_ids',ownerIds(pq.data)); add('PROJECT first names',(pq.data||[]).slice(0,5).map(function(x){return x.name}));
-  add('UI elemItems count',count(val('elemItems'))); add('UI elemGroups count',count(val('elemGroups')));
-  try{var repo=window.A·CEIL&&window.A·CEIL.ProjectRepository; add('ProjectRepository exists',!!repo); if(repo){var arr=typeof repo.getAll==='function'?repo.getAll():typeof repo.all==='function'?repo.all():null; add('ProjectRepository count',count(arr))}}catch(e){add('ProjectRepository inspect error',e.message)}
-  try{var lp=localStorage.getItem('A·CEIL_projects_v32')||localStorage.getItem('projects');add('local project cache chars',lp?lp.length:0)}catch(e){}
- }catch(e){add('FATAL',e.message||e);add('STACK',e.stack||'')}
- pre.textContent=lines.join('\n');
-}
-var style=document.createElement('style');style.textContent='#aceilDiagBtn{position:fixed;right:12px;bottom:12px;z-index:2147483646;background:#dc2626;color:white;border:0;border-radius:12px;padding:11px 14px;font:700 13px system-ui;box-shadow:0 8px 24px #0005}#aceilDiagBox{display:none;position:fixed;inset:0;z-index:2147483647;background:#000b;align-items:center;justify-content:center;padding:12px}#aceilDiagCard{width:min(760px,100%);max-height:90vh;overflow:auto;background:#0b1220;color:#e5eefc;border-radius:16px;padding:14px;box-shadow:0 20px 60px #0008}#aceilDiagCard header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}#aceilDiagCard h3{margin:0;font:800 16px system-ui}#aceilDiagCard button{border:0;border-radius:9px;padding:8px 10px;font-weight:800}#aceilDiagPre{white-space:pre-wrap;word-break:break-word;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}';document.head.appendChild(style);
-var btn=document.createElement('button');btn.id='aceilDiagBtn';btn.textContent='ДІАГНОСТИКА';btn.onclick=runDiag;document.body.appendChild(btn);
-var box=document.createElement('div');box.id='aceilDiagBox';box.innerHTML='<div id="aceilDiagCard"><header><h3>A·CEIL — доступ Supabase</h3><div><button id="aceilDiagRerun">Оновити</button> <button id="aceilDiagClose">Закрити</button></div></header><pre id="aceilDiagPre"></pre></div>';document.body.appendChild(box);document.getElementById('aceilDiagClose').onclick=function(){box.style.display='none'};document.getElementById('aceilDiagRerun').onclick=runDiag;
-})();
-</script>
 </body></html> 
 <!-- v2.19: Safari fix — never reads/writes Window.closed; hardened language switching and translation events. -->
 
