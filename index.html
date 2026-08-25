@@ -17281,6 +17281,39 @@ window.A_CEIL_forceAccessRefresh=refresh;
 function boot(n){if(n>20)return;setTimeout(async function(){if(await refresh())return;boot(n+1)},300)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){boot(0)},{once:true});else boot(0);
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(refresh,200)});
+
+/* LIVE ACCESS — Supabase Realtime. Rights changes on another device are applied immediately. */
+var liveChannel=null, liveTimer=null, liveUid=null;
+function scheduleLiveRefresh(){
+  clearTimeout(liveTimer);
+  liveTimer=setTimeout(async function(){
+    try{
+      var a=await rights();
+      if(!a){ clearNom(); replaceProjects([]); return; }
+      await Promise.all([loadNom(a),loadProjects(a)]);
+      applyNomGate(a);
+    }catch(e){ console.error('[A·CEIL realtime access]',e); }
+  },60);
+}
+function startLiveAccess(n){
+  n=n||0;
+  var c=sb(),u=usr();
+  if(!c||!u||!u.id){ if(n<30)setTimeout(function(){startLiveAccess(n+1)},300); return; }
+  if(liveChannel && liveUid===u.id)return;
+  try{ if(liveChannel)c.removeChannel(liveChannel) }catch(e){}
+  liveUid=u.id;
+  liveChannel=c.channel('aceil-access-'+u.id+'-'+Date.now())
+    .on('postgres_changes',{event:'*',schema:'public',table:'user_access',filter:'user_id=eq.'+u.id},scheduleLiveRefresh)
+    .on('postgres_changes',{event:'*',schema:'public',table:'project_access',filter:'user_id=eq.'+u.id},scheduleLiveRefresh)
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'id=eq.'+u.id},scheduleLiveRefresh)
+    .subscribe(function(status){
+      if(status==='SUBSCRIBED')scheduleLiveRefresh();
+      if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')setTimeout(function(){try{c.removeChannel(liveChannel)}catch(e){};liveChannel=null;startLiveAccess(0)},1000);
+    });
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){startLiveAccess(0)},{once:true});else startLiveAccess(0);
+/* Session changes (login/logout/account switch) rebuild the live subscription. */
+try{var _liveSb=sb();if(_liveSb&&_liveSb.auth&&_liveSb.auth.onAuthStateChange)_liveSb.auth.onAuthStateChange(function(){try{if(liveChannel)_liveSb.removeChannel(liveChannel)}catch(e){};liveChannel=null;liveUid=null;setTimeout(function(){startLiveAccess(0)},100)})}catch(e){}
 })();
 </script>
 <!-- /A·CEIL ACCESS CLEAN v1 -->\n
