@@ -17635,95 +17635,36 @@ document.addEventListener("visibilitychange",function(){if(document.visibilitySt
 })();
 </script>
 
-<!-- A·CEIL ACCESS FINAL OVERRIDE v4 — MUST remain last -->
-<script id="A-CEIL-access-final-override-v4">
+\n<!-- A·CEIL ACCESS CONTROL v5 authoritative -->
+<script id="A-CEIL-access-control-v5">
 (function(){
 'use strict';
+if(window.__ACEIL_ACCESS_V5)return; window.__ACEIL_ACCESS_V5=true;
 function sb(){try{return (typeof _sb!=='undefined'&&_sb)||window._sb||null}catch(e){return window._sb||null}}
 function usr(){try{return (typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
 function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
 function clearNom(){
-  try{elemItems=[]}catch(e){window.elemItems=[]}
-  try{elemGroups=[]}catch(e){window.elemGroups=[]}
-  try{lightTypes=[]}catch(e){window.lightTypes=[]}
-  try{localStorage.removeItem('A·CEIL_wall_presets_v32');localStorage.removeItem('lightTypes_v1')}catch(e){}
-  try{if(typeof renderElemList==='function')renderElemList()}catch(e){}
-  try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){}
-  try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){}
+ try{elemItems=[]}catch(e){window.elemItems=[]} try{elemGroups=[]}catch(e){window.elemGroups=[]} try{lightTypes=[]}catch(e){window.lightTypes=[]}
+ try{localStorage.removeItem('A·CEIL_wall_presets_v32');localStorage.removeItem('lightTypes_v1')}catch(e){}
+ ['renderElemList','updateElemBadge','recalcElemTotal','renderLightMenu'].forEach(function(n){try{if(typeof window[n]==='function')window[n]()}catch(e){}});
+ window.A_CEIL_NOMENCLATURE_SOURCE={denied:true,loadedAt:Date.now()};
 }
-async function loadNom(){
-  var c=sb(),u=usr(); if(!c||!u)return false;
-  try{
-    var r=await c.from('nomenclature').select('items,groups,wall_presets,light_types,user_id').limit(20);
-    if(r.error)throw r.error;
-    var rows=Array.isArray(r.data)?r.data:[];
-    if(!rows.length){clearNom();window.A_CEIL_NOMENCLATURE_SOURCE={denied:true,userId:u.id};return false}
-    var shared=rows.find(function(x){return String(x.user_id)!==String(u.id)}), own=rows.find(function(x){return String(x.user_id)===String(u.id)}), p=shared||own||rows[0];
-    try{elemGroups=clone(p.groups||[])}catch(e){window.elemGroups=clone(p.groups||[])}
-    try{elemItems=clone(p.items||[])}catch(e){window.elemItems=clone(p.items||[])}
-    if(Array.isArray(p.light_types)){try{lightTypes=clone(p.light_types)}catch(e){window.lightTypes=clone(p.light_types)}}
-    window.A_CEIL_NOMENCLATURE_SOURCE={denied:false,userId:u.id,ownerId:p.user_id,shared:String(p.user_id)!==String(u.id)};
-    try{if(typeof renderElemList==='function')renderElemList()}catch(e){}
-    try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){}
-    try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){}
-    return true;
-  }catch(e){window.__diagSilent&&window.__diagSilent(e);return false}
+function applyNom(p,u,a){
+ try{elemGroups=clone(p.groups||[])}catch(e){window.elemGroups=clone(p.groups||[])}
+ try{elemItems=clone(p.items||[])}catch(e){window.elemItems=clone(p.items||[])}
+ if(Array.isArray(p.light_types)){try{lightTypes=clone(p.light_types)}catch(e){window.lightTypes=clone(p.light_types)};try{localStorage.setItem('lightTypes_v1',JSON.stringify(p.light_types))}catch(e){}}
+ if(Array.isArray(p.wall_presets))try{localStorage.setItem('A·CEIL_wall_presets_v32',JSON.stringify(p.wall_presets))}catch(e){}
+ ['renderElemList','updateElemBadge','recalcElemTotal','renderLightMenu'].forEach(function(n){try{if(typeof window[n]==='function')window[n]()}catch(e){}});
+ window.A_CEIL_NOMENCLATURE_SOURCE={denied:false,userId:u.id,ownerId:p.user_id,shared:String(p.user_id)!==String(u.id),loadedAt:Date.now()};
 }
-window.forceLoadNomenclature=loadNom;try{forceLoadNomenclature=loadNom}catch(e){}
-async function refresh(){try{await loadNom()}catch(e){} try{if(typeof window.A_CEIL_refreshAccess==='function')await window.A_CEIL_refreshAccess('final-v4')}catch(e){}}
-window.A_CEIL_forceAccessRefresh=refresh;
-function kick(){setTimeout(refresh,1200)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kick,{once:true});else kick();
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(refresh,300)});
+function cloudToLocal(p){var st={};try{st=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){};var m=st.multiRoom===true;return {id:p.id,_dbId:p.id,name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',multiRoom:m,rooms:m?(st.rooms||[]):undefined,state:m?null:(typeof p.state==='string'?p.state:JSON.stringify(st))}}
+async function getAccess(){var c=sb(),u=usr();if(!c||!u)return null;var r=await c.rpc('get_my_access');if(r.error)throw r.error;var a=Array.isArray(r.data)?r.data[0]:r.data;window.A_CEIL_MY_ACCESS=a||null;return a||null}
+async function loadNom(a){var c=sb(),u=usr();if(!c||!u)return false;if(!a||a.app_role!=='owner'&&!a.nomenclature_access){clearNom();return false}var q=c.from('nomenclature').select('items,groups,wall_presets,light_types,user_id');if(a.app_role!=='owner'&&a.owner_id)q=q.eq('user_id',a.owner_id);else q=q.eq('user_id',u.id);var r=await q.limit(1);if(r.error)throw r.error;if(!r.data||!r.data.length){clearNom();return false}applyNom(r.data[0],u,a);return true}
+async function loadProjects(a){var c=sb(),u=usr();if(!c||!u)return false;var r=await c.from('projects').select('*').order('created_at',{ascending:false});if(r.error)throw r.error;var cloud=(r.data||[]).map(cloudToLocal);var local=[];try{local=typeof getProjects==='function'?(getProjects()||[]):[]}catch(e){};var drafts=local.filter(function(p){return !p._dbId&&String(p.id||'').indexOf('obj_')===0});var merged=cloud.concat(drafts);try{if(window.A·CEIL&&window.A·CEIL.ProjectRepository)window.A·CEIL.ProjectRepository.replaceAll(merged);else if(typeof setProjects==='function')setProjects(merged)}catch(e){};try{if(typeof renderProjects==='function')renderProjects()}catch(e){};return true}
+var busy=false;async function refresh(reason){if(busy)return false;busy=true;try{var a=await getAccess();await loadNom(a);await loadProjects(a);return true}catch(e){window.__diagSilent&&window.__diagSilent(e);try{if(typeof showToast==='function')showToast('Помилка перевірки доступу: '+(e.message||e),5000)}catch(_){ }return false}finally{busy=false}}
+window.A_CEIL_refreshAccessV5=refresh;window.forceLoadNomenclature=async function(){var a=await getAccess();return loadNom(a)};try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){}
+// Keep this authoritative even if older delayed modules try to restore their loaders.
+var keep=setInterval(function(){try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){}},1000);setTimeout(function(){clearInterval(keep)},15000);
+function kick(){setTimeout(function(){refresh('boot')},700)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kick,{once:true});else kick();document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(function(){refresh('visible')},250)});
 })();
 </script>
-
-<!-- A·CEIL ACCESS FINAL v4 — RLS is authoritative; purge stale cached owner data -->
-<script id="A-CEIL-access-final-v4">
-(function(){
-'use strict';
-if(window.__A_CEIL_ACCESS_FINAL_V4)return;
-window.__A_CEIL_ACCESS_FINAL_V4=true;
-function sb(){try{return (typeof _sb!=='undefined'&&_sb)||window._sb||null}catch(e){return window._sb||null}}
-function usr(){try{return (typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
-function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
-function refreshNomUI(){try{if(typeof renderElemList==='function')renderElemList()}catch(e){}try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){}try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){}}
-function clearNom(){try{elemItems=[]}catch(e){window.elemItems=[]}try{elemGroups=[]}catch(e){window.elemGroups=[]}try{localStorage.removeItem('A·CEIL_wall_presets_v32');localStorage.removeItem('lightTypes_v1')}catch(e){}refreshNomUI()}
-async function loadNom(){
- var c=sb(),u=usr();if(!c||!u)return false;
- try{
-  var r=await c.from('nomenclature').select('items,groups,wall_presets,light_types,user_id').limit(20);if(r.error)throw r.error;
-  var rows=Array.isArray(r.data)?r.data:[];
-  if(!rows.length){clearNom();window.A_CEIL_NOMENCLATURE_SOURCE={userId:u.id,ownerId:null,shared:false,denied:true,loadedAt:Date.now()};return false}
-  var own=rows.find(x=>String(x.user_id)===String(u.id)),shared=rows.find(x=>String(x.user_id)!==String(u.id)),p=shared||own||rows[0];
-  try{elemGroups=Array.isArray(p.groups)?clone(p.groups):[]}catch(e){window.elemGroups=Array.isArray(p.groups)?clone(p.groups):[]}
-  try{elemItems=Array.isArray(p.items)?clone(p.items):[]}catch(e){window.elemItems=Array.isArray(p.items)?clone(p.items):[]}
-  if(Array.isArray(p.wall_presets))try{localStorage.setItem('A·CEIL_wall_presets_v32',JSON.stringify(p.wall_presets))}catch(e){}
-  if(Array.isArray(p.light_types)){try{lightTypes=clone(p.light_types)}catch(e){window.lightTypes=clone(p.light_types)}try{localStorage.setItem('lightTypes_v1',JSON.stringify(p.light_types))}catch(e){}}
-  window.A_CEIL_NOMENCLATURE_SOURCE={userId:u.id,ownerId:p.user_id,shared:String(p.user_id)!==String(u.id),denied:false,loadedAt:Date.now()};refreshNomUI();return true;
- }catch(e){window.__diagSilent&&window.__diagSilent(e);return false}
-}
-function cloudLocal(p){var s={};try{s=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){}var m=s.multiRoom===true;return{id:p.id,_dbId:p.id,name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',multiRoom:m,rooms:m?(s.rooms||[]):undefined,state:m?null:(typeof p.state==='string'?p.state:JSON.stringify(s))}}
-async function loadProjectsAuthoritative(){
- var c=sb(),u=usr();if(!c||!u)return false;
- try{
-  var r=await c.from('projects').select('*').order('created_at',{ascending:false});if(r.error)throw r.error;
-  var cloud=(r.data||[]).map(cloudLocal),local=[];try{local=typeof getProjects==='function'?(getProjects()||[]):[]}catch(e){}
-  var drafts=local.filter(p=>!p._dbId||String(p.id||'').indexOf('obj_')===0||p._syncStatus==='pending_create');
-  var merged=cloud.concat(drafts.filter(d=>!cloud.some(x=>String(x.id)===String(d.id)||String(x._dbId)===String(d._dbId))));
-  try{if(window.A·CEIL&&window.A·CEIL.ProjectRepository)window.A·CEIL.ProjectRepository.replaceAll(merged);else if(typeof setProjects==='function')setProjects(merged)}catch(e){}
-  try{var m=document.getElementById('projectsModal');if(m&&m.classList.contains('open')&&typeof renderProjects==='function')renderProjects()}catch(e){}
-  return true;
- }catch(e){window.__diagSilent&&window.__diagSilent(e);return false}
-}
-window.forceLoadNomenclature=loadNom;try{forceLoadNomenclature=loadNom}catch(e){}
-window.A_CEIL_refreshAccess=async function(){await Promise.all([loadNom(),loadProjectsAuthoritative()]);return true};
-var oldLP=window.loadProjectsFromCloud||(typeof loadProjectsFromCloud==='function'?loadProjectsFromCloud:null);
-if(typeof oldLP==='function'){var wrapped=async function(){var r=await oldLP.apply(this,arguments);await loadProjectsAuthoritative();await loadNom();return r};window.loadProjectsFromCloud=wrapped;try{loadProjectsFromCloud=wrapped}catch(e){}}
-var oldOpen=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);if(typeof oldOpen==='function'){var oe=function(){var r=oldOpen.apply(this,arguments);setTimeout(loadNom,0);return r};window.openElementsModal=oe;try{openElementsModal=oe}catch(e){}}
-function kick(){setTimeout(()=>window.A_CEIL_refreshAccess(),250)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kick,{once:true});else kick();
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(()=>window.A_CEIL_refreshAccess(),150)});
-})();
-</script>
-<!-- /A·CEIL ACCESS FINAL v4 -->
