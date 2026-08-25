@@ -17279,7 +17279,41 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(refresh,200)});
 })();
 </script>
-<!-- /A·CEIL ACCESS CLEAN v1 -->\n</body></html> 
+<!-- /A·CEIL ACCESS CLEAN v1 -->\n
+<script id="A-CEIL-access-diagnostic-20260825">
+(function(){
+'use strict';
+function esc(v){return String(v==null?'null':v).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
+function sb(){try{return (typeof _sb!=='undefined'&&_sb)||window._sb||null}catch(e){return window._sb||null}}
+function usr(){try{return (typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
+function val(name){try{return typeof window[name]!=='undefined'?window[name]:(eval('typeof '+name+'!=="undefined"?'+name+':undefined'))}catch(e){return undefined}}
+function count(v){return Array.isArray(v)?v.length:'n/a'}
+function ownerIds(rows){return [...new Set((rows||[]).map(function(x){return x&&x.user_id}).filter(Boolean))]}
+async function runDiag(){
+ var box=document.getElementById('aceilDiagBox'), pre=document.getElementById('aceilDiagPre');
+ if(!box||!pre)return; box.style.display='flex'; pre.textContent='Діагностика…';
+ var lines=[]; function add(k,v){lines.push(k+': '+(typeof v==='object'?JSON.stringify(v,null,2):String(v)))}
+ try{
+  var c=sb(), u=usr(); add('CLIENT',!!c); add('_sbUser UID',u&&u.id); add('_sbUser email',u&&u.email);
+  if(!c){pre.textContent=lines.join('\n');return}
+  var gu=await c.auth.getUser(); add('auth.getUser error',gu.error&&gu.error.message||null); add('AUTH UID',gu.data&&gu.data.user&&gu.data.user.id); add('AUTH email',gu.data&&gu.data.user&&gu.data.user.email);
+  var ar=await c.rpc('get_my_access'); add('get_my_access error',ar.error&&ar.error.message||null); add('ACCESS',ar.data);
+  var a=Array.isArray(ar.data)?ar.data[0]:ar.data;
+  var nq=await c.from('nomenclature').select('user_id'); add('NOM SELECT error',nq.error&&nq.error.message||null); add('NOM rows',nq.data?nq.data.length:null); add('NOM user_ids',ownerIds(nq.data));
+  if(a&&a.owner_id){var no=await c.from('nomenclature').select('user_id').eq('user_id',a.owner_id);add('NOM OWNER rows',no.data?no.data.length:null);add('NOM OWNER error',no.error&&no.error.message||null)}
+  var pq=await c.from('projects').select('id,user_id,name,created_at').order('created_at',{ascending:false}); add('PROJECT SELECT error',pq.error&&pq.error.message||null); add('PROJECT rows',pq.data?pq.data.length:null); add('PROJECT user_ids',ownerIds(pq.data)); add('PROJECT first names',(pq.data||[]).slice(0,5).map(function(x){return x.name}));
+  add('UI elemItems count',count(val('elemItems'))); add('UI elemGroups count',count(val('elemGroups')));
+  try{var repo=window.A·CEIL&&window.A·CEIL.ProjectRepository; add('ProjectRepository exists',!!repo); if(repo){var arr=typeof repo.getAll==='function'?repo.getAll():typeof repo.all==='function'?repo.all():null; add('ProjectRepository count',count(arr))}}catch(e){add('ProjectRepository inspect error',e.message)}
+  try{var lp=localStorage.getItem('A·CEIL_projects_v32')||localStorage.getItem('projects');add('local project cache chars',lp?lp.length:0)}catch(e){}
+ }catch(e){add('FATAL',e.message||e);add('STACK',e.stack||'')}
+ pre.textContent=lines.join('\n');
+}
+var style=document.createElement('style');style.textContent='#aceilDiagBtn{position:fixed;right:12px;bottom:12px;z-index:2147483646;background:#dc2626;color:white;border:0;border-radius:12px;padding:11px 14px;font:700 13px system-ui;box-shadow:0 8px 24px #0005}#aceilDiagBox{display:none;position:fixed;inset:0;z-index:2147483647;background:#000b;align-items:center;justify-content:center;padding:12px}#aceilDiagCard{width:min(760px,100%);max-height:90vh;overflow:auto;background:#0b1220;color:#e5eefc;border-radius:16px;padding:14px;box-shadow:0 20px 60px #0008}#aceilDiagCard header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}#aceilDiagCard h3{margin:0;font:800 16px system-ui}#aceilDiagCard button{border:0;border-radius:9px;padding:8px 10px;font-weight:800}#aceilDiagPre{white-space:pre-wrap;word-break:break-word;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}';document.head.appendChild(style);
+var btn=document.createElement('button');btn.id='aceilDiagBtn';btn.textContent='ДІАГНОСТИКА';btn.onclick=runDiag;document.body.appendChild(btn);
+var box=document.createElement('div');box.id='aceilDiagBox';box.innerHTML='<div id="aceilDiagCard"><header><h3>A·CEIL — доступ Supabase</h3><div><button id="aceilDiagRerun">Оновити</button> <button id="aceilDiagClose">Закрити</button></div></header><pre id="aceilDiagPre"></pre></div>';document.body.appendChild(box);document.getElementById('aceilDiagClose').onclick=function(){box.style.display='none'};document.getElementById('aceilDiagRerun').onclick=runDiag;
+})();
+</script>
+</body></html> 
 <!-- v2.19: Safari fix — never reads/writes Window.closed; hardened language switching and translation events. -->
 
 <!-- v2.44: freehand sketch first; manual point placement; no automatic modal; explicit Save point and Save & Done actions. -->
