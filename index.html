@@ -17370,7 +17370,7 @@ async function getRights(){
 }
 function applyUI(a){
  var nom=!!a.nomenclature_access, proj=!!a.projects_access;
- var tile=document.getElementById('elemTileBtn'); if(tile){tile.style.display=nom?'':'none';tile.setAttribute('aria-hidden',nom?'false':'true')}
+ var tile=document.getElementById('elemTileBtn'); if(tile){tile.style.display='';tile.setAttribute('aria-hidden','false')}
  document.querySelectorAll('.projects-btn').forEach(function(x){x.style.display=proj?'':'none'});
  window.A_CEIL_MY_ACCESS=a;
 }
@@ -17404,7 +17404,7 @@ async function refresh(){
 }
 /* Hard UI guards: stale project state/localStorage cannot reopen a forbidden section. */
 var oldNom=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);
-function guardedNom(){var a=window.A_CEIL_MY_ACCESS;if(!a||!a.nomenclature_access){toast('Немає доступу до номенклатури');return false}return oldNom&&oldNom.apply(this,arguments)}
+function guardedNom(){return oldNom&&oldNom.apply(this,arguments)}
 window.openElementsModal=guardedNom;try{openElementsModal=guardedNom}catch(e){}
 var oldProj=window.openProjectsModal||(typeof openProjectsModal==='function'?openProjectsModal:null);
 function guardedProj(){var a=window.A_CEIL_MY_ACCESS;if(!a||!a.projects_access){toast('Немає доступу до проєктів');return false}return oldProj&&oldProj.apply(this,arguments)}
@@ -17661,7 +17661,7 @@ async function load(){
 }
 async function setAccess(uid,key,val,input){
   if(input)input.disabled=true;
-  try{var c=sb();if(!c)throw new Error("Supabase client недоступний.");var r=await c.rpc("admin_set_user_access",{p_user_id:uid,p_field:key,p_value:!!val});if(r.error)throw r.error;if(r.data!==true)throw new Error("RPC не підтвердила зміну доступу.");toast("✓ Доступ оновлено");await load()}
+  try{var c=sb();if(!c)throw new Error("Supabase client недоступний.");var r=await c.rpc("admin_set_user_access",{p_user_id:uid,p_field:key,p_value:!!val});if(r.error)throw r.error;if(r.data!==true)throw new Error("RPC не підтвердила зміну доступу.");if(key==='projects_access'&&val===true){var sr=await c.rpc('admin_set_projects_scope',{p_user_id:uid,p_scope:'all'});if(sr.error)throw sr.error}toast("✓ Доступ оновлено");await load()}
   catch(e){if(input){input.checked=!val;input.disabled=false}window.__diagSilent&&window.__diagSilent(e);toast("Не вдалося змінити доступ: "+String(e&&e.message?e.message:e))}
 }
 async function setScope(uid,scope,button){
@@ -17735,6 +17735,13 @@ async function authoritativeNomenclature(){
   var c=sb(),u=usr();if(!c||!u)return false;
   try{
     var role=await currentRole(c,u);
+    if(role!=='owner'){
+      var ar=await c.rpc('get_my_access');
+      if(ar.error)throw ar.error;
+      var access=Array.isArray(ar.data)?ar.data[0]:ar.data;
+      window.A_CEIL_MY_ACCESS=access||null;
+      if(!access||access.nomenclature_access!==true){clearNom();return false;}
+    }
     var r=await c.from('nomenclature').select('user_id,items,groups,wall_presets,light_types');
     if(r.error)throw r.error;
     var rows=Array.isArray(r.data)?r.data:[];
@@ -17774,8 +17781,11 @@ try{A·CEILMergeCloudProjects=strictCloudMerge}catch(e){}
 
 async function refreshAll(){
   var c=sb(),u=usr();if(!c||!u)return;
+  var access=null;
+  try{var ar=await c.rpc('get_my_access');if(!ar.error){access=Array.isArray(ar.data)?ar.data[0]:ar.data;window.A_CEIL_MY_ACCESS=access||null;}}catch(e){}
   try{await authoritativeNomenclature()}catch(e){}
   try{
+    if(access&&access.projects_access===false){strictCloudMerge([]);return;}
     var r=await c.from('projects').select('*').order('created_at',{ascending:false});
     if(!r.error){var rows=(r.data||[]).map(function(p){var st={};try{st=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){};var multi=st.multiRoom===true;return {id:p.id,_dbId:p.id,name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',multiRoom:multi,rooms:multi?(st.rooms||[]):undefined,state:multi?null:(typeof p.state==='string'?p.state:JSON.stringify(st))}});strictCloudMerge(rows);try{var m=document.getElementById('projectsModal');if(m&&m.classList.contains('open')&&typeof renderProjects==='function')renderProjects()}catch(e){}}
   }catch(e){try{window.__diagSilent&&window.__diagSilent(e)}catch(_){}}
