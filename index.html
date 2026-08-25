@@ -17365,16 +17365,32 @@ try{var _liveSb=sb();if(_liveSb&&_liveSb.auth&&_liveSb.auth.onAuthStateChange)_l
       <button type="button" class="aceil-admin-x" onclick="A_CEIL_Admin.close()">×</button>
     </div>
     <div class="aceil-admin-body">
-      <div id="aceilAdminSummary"></div>
-      <div class="aceil-admin-tools">
-        <label class="aceil-search-wrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><input id="aceilAdminSearch" class="aceil-admin-search" type="search" placeholder="Пошук користувача…" oninput="A_CEIL_Admin.filterUsers(this.value)"></label>
-        <button type="button" class="aceil-admin-refresh" onclick="A_CEIL_Admin.load()" aria-label="Оновити">↻</button>
+      <div class="aceil-admin-tabs">
+        <button type="button" class="active" data-tab="users" onclick="A_CEIL_Admin.showTab('users',this)">♙ <span>Користувачі</span></button>
+        <button type="button" data-tab="activity" onclick="A_CEIL_Admin.showTab('activity',this)">⌁ <span>Активність</span></button>
+        <button type="button" data-tab="settings" onclick="A_CEIL_Admin.showTab('settings',this)">⚙ <span>Налаштування</span></button>
       </div>
-      <div id="aceilAdminContent"><div class="aceil-admin-note">Завантаження…</div></div>
+      <div id="aceilUsersPane">
+        <div id="aceilAdminSummary"></div>
+        <div class="aceil-admin-actionbar"><div class="aceil-admin-section-title">Керування доступом</div><button type="button" class="aceil-admin-refresh2" onclick="A_CEIL_Admin.load()">↻ Оновити</button></div>
+        <div id="aceilAdminContent"><div class="aceil-admin-note">Завантаження…</div></div>
+      </div>
+      <div id="aceilActivityPane" class="aceil-tab-pane" style="display:none"></div>
+      <div id="aceilSettingsPane" class="aceil-tab-pane" style="display:none"><div class="aceil-coming-card"><b>⚙️ Налаштування доступу</b><span>Права користувачів змінюються у вкладці «Користувачі». Системні налаштування сюди можна додати окремо.</span></div></div>
     </div>
   </div>
 </div>
 
+
+<style id="A-CEIL-admin-premium-20260825">
+.aceil-admin-sheet{background:#f8fafc!important}.aceil-admin-head{background:#fff!important;padding-left:24px!important;padding-right:24px!important}.aceil-admin-title{font-size:24px!important}.aceil-admin-body{padding:16px 22px calc(110px + env(safe-area-inset-bottom))!important}
+.aceil-admin-tabs{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border:1px solid #e2e8f0;border-radius:16px;margin:0 0 18px;overflow:hidden;box-shadow:0 4px 18px rgba(15,23,42,.035)}.aceil-admin-tabs button{height:54px;border:0;background:transparent;color:#475569;font-weight:800;font-size:12px;position:relative}.aceil-admin-tabs button.active{color:#2563eb;background:#f8fbff}.aceil-admin-tabs button.active:after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:3px;background:#2563eb;border-radius:3px 3px 0 0}.aceil-admin-tabs button span{margin-left:5px}
+.aceil-admin-dashboard{gap:10px!important;margin-bottom:16px!important}.aceil-stat{min-height:118px;padding:16px!important;position:relative;background:linear-gradient(145deg,#fff,#f6f9ff)!important}.aceil-stat.good{background:linear-gradient(145deg,#fff,#f1fcf7)!important}.aceil-stat.bad{background:linear-gradient(145deg,#fff,#fff5f5)!important}.aceil-stat i{font-style:normal;font-size:20px;display:block;margin-bottom:8px;color:#2563eb}.aceil-stat.good i,.aceil-stat.good small{color:#059669}.aceil-stat.bad i,.aceil-stat.bad small{color:#dc2626}.aceil-stat b{font-size:28px!important}.aceil-stat span{font-size:11px!important}.aceil-stat small{display:block;margin-top:5px;font-size:10px;font-weight:850;color:#64748b}
+.aceil-admin-actionbar{display:flex;align-items:center;justify-content:space-between;margin:2px 0 12px}.aceil-admin-section-title{font-size:14px;font-weight:900;color:#0f172a}.aceil-admin-refresh2{border:1px solid #dbe3ee;background:#fff;color:#2563eb;border-radius:12px;padding:9px 12px;font-weight:850}.aceil-admin-tools{display:none!important}
+.aceil-admin-user{border-radius:20px!important;margin-bottom:12px!important}.aceil-admin-user-top{padding:16px!important}.aceil-user-avatar{border-radius:50%!important;width:46px!important;height:46px!important;flex-basis:46px!important}.aceil-admin-name{font-size:15px!important}.aceil-quick-rights{padding:0 16px 14px!important}.aceil-admin-controls{padding:12px 16px 16px!important;background:#fff!important}.aceil-admin-user.expanded{box-shadow:0 12px 34px rgba(15,23,42,.08)!important}.aceil-admin-user.expanded .aceil-quick-rights{display:none}.aceil-admin-user.expanded .aceil-admin-controls{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.aceil-admin-user.expanded .aceil-admin-row{border:1px solid #e5eaf1;border-radius:15px;padding:13px!important;min-height:76px;align-items:flex-end}.aceil-admin-user.expanded .aceil-project-scope,.aceil-admin-user.expanded .aceil-temp-access{grid-column:1/-1;margin:0!important}.aceil-admin-user.expanded .aceil-admin-row:last-child{grid-column:1/-1;border-color:#fecaca;background:#fffafa}.aceil-admin-row-text b{font-size:12px!important}.aceil-admin-row-text small{font-size:9px!important}.aceil-project-scope-title{font-size:14px!important}.aceil-temp-title{font-size:14px!important}.aceil-project-picker-btn{background:#2563eb!important}
+.aceil-tab-pane{padding-top:2px}.aceil-coming-card,.aceil-activity-head{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:18px;margin-bottom:12px}.aceil-coming-card b,.aceil-activity-head b{display:block;color:#0f172a;font-size:15px}.aceil-coming-card span,.aceil-activity-head span{display:block;color:#64748b;font-size:11px;margin-top:5px}.aceil-activity-row{display:flex;align-items:center;gap:11px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:14px;margin-bottom:9px}.aceil-activity-row .dot{width:9px;height:9px;border-radius:50%;background:#10b981;flex:0 0 9px}.aceil-activity-row .dot.off{background:#ef4444}.aceil-activity-row div{min-width:0;flex:1}.aceil-activity-row b{display:block;font-size:12px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aceil-activity-row small{display:block;font-size:10px;color:#64748b;margin-top:3px}.aceil-activity-row em{font-style:normal;font-size:9px;font-weight:800;color:#475569;background:#f1f5f9;padding:5px 7px;border-radius:999px}
+@media(max-width:430px){.aceil-admin-body{padding-left:14px!important;padding-right:14px!important}.aceil-admin-tabs button{font-size:11px}.aceil-stat{min-height:105px;padding:13px!important}.aceil-stat b{font-size:24px!important}.aceil-admin-user.expanded .aceil-admin-controls{grid-template-columns:1fr 1fr}.aceil-admin-user.expanded .aceil-admin-row{min-height:82px}.aceil-temp-buttons{grid-template-columns:repeat(4,1fr)!important}}
+</style>
 <script id="A-CEIL-admin-v2">
 (function(){
 "use strict";
@@ -17460,7 +17476,7 @@ function initials(r){var x=String((r&&r.name)||r.email||'?').trim();return (x[0]
 function renderSummary(rows){
   var box=document.getElementById('aceilAdminSummary');if(!box)return;
   var total=rows.length,active=rows.filter(function(r){return r.is_active!==false}).length,blocked=total-active;
-  box.innerHTML='<div class="aceil-admin-dashboard"><div class="aceil-stat"><b>'+total+'</b><span>Користувачів</span></div><div class="aceil-stat good"><b>'+active+'</b><span>Активних</span></div><div class="aceil-stat bad"><b>'+blocked+'</b><span>Заблоковано</span></div></div>';
+  box.innerHTML='<div class="aceil-admin-dashboard"><div class="aceil-stat"><i>♙</i><b>'+total+'</b><span>Користувачів</span><small>Всього</small></div><div class="aceil-stat good"><i>♢</i><b>'+active+'</b><span>Активних</span><small>'+(total?Math.round(active*100/total):0)+'%</small></div><div class="aceil-stat bad"><i>♙</i><b>'+blocked+'</b><span>Заблоковано</span><small>'+(total?Math.round(blocked*100/total):0)+'%</small></div></div>';
 }
 function render(rows){
   rows=(Array.isArray(rows)?rows:[]).filter(function(r){return String(r.app_role||'').toLowerCase()!=='owner'});adminRows=rows.slice();renderSummary(rows);
@@ -17469,7 +17485,7 @@ function render(rows){
       var uid=String(r.user_id||r.id||""), active=r.is_active!==false;
       var badge='<span class="aceil-admin-badge '+(!active?'off':'')+'">'+(!active?'Заблоковано':'Активний')+'</span>';
       var quick='<div class="aceil-quick-rights"><span class="aceil-quick-pill '+(r.nomenclature_access?'on':'')+'">Номенклатура</span><span class="aceil-quick-pill '+(r.projects_access?'on':'')+'">Проєкти</span><span class="aceil-quick-pill edit '+(r.projects_edit?'on':'')+'">Редагування</span></div>';
-      return '<div class="aceil-admin-user" data-search="'+esc(String(r.name||'')+' '+String(r.email||''))+'"><div class="aceil-admin-user-top" onclick="A_CEIL_Admin.toggleCard(this)"><div class="aceil-user-avatar">'+esc(initials(r))+'</div><div class="aceil-user-ident"><div class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+'</div><div class="aceil-admin-mail">'+esc(r.email||"")+'</div></div>'+badge+'<span class="aceil-user-chevron">⌄</span></div>'+quick+'<div class="aceil-admin-controls">'+
+      return '<div class="aceil-admin-user '+(i===0?'expanded':'')+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||''))+'"><div class="aceil-admin-user-top" onclick="A_CEIL_Admin.toggleCard(this)"><div class="aceil-user-avatar">'+esc(initials(r))+'</div><div class="aceil-user-ident"><div class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+'</div><div class="aceil-admin-mail">'+esc(r.email||"")+'</div></div>'+badge+'<span class="aceil-user-chevron">⌄</span></div>'+quick+'<div class="aceil-admin-controls">'+
         toggle(uid,"nomenclature_access","Моя номенклатура","Використовувати номенклатуру owner",!!r.nomenclature_access,false)+
         toggle(uid,"projects_access","Мої проєкти","Доступ до проєктів owner",!!r.projects_access,false)+
         (r.projects_access?projectScope(uid,r):'')+
@@ -17522,10 +17538,16 @@ async function clearExpiry(uid,button){
   try{var c=sb();var r=await c.rpc('admin_clear_access_expiry',{p_user_id:uid});if(r.error)throw r.error;toast('✓ Тимчасовий доступ скасовано');await load()}
   catch(e){if(button)button.disabled=false;toast('Не вдалося скасувати термін: '+String(e&&e.message?e.message:e))}
 }
+function showTab(name,btn){
+  document.querySelectorAll('.aceil-admin-tabs button').forEach(function(b){b.classList.toggle('active',b===btn)});
+  var up=document.getElementById('aceilUsersPane'),ap=document.getElementById('aceilActivityPane'),sp=document.getElementById('aceilSettingsPane');
+  if(up)up.style.display=name==='users'?'block':'none'; if(ap)ap.style.display=name==='activity'?'block':'none'; if(sp)sp.style.display=name==='settings'?'block':'none';
+  if(name==='activity'&&ap){var rows=adminRows||[],a=rows.filter(function(r){return r.is_active!==false}),b=rows.filter(function(r){return r.is_active===false});ap.innerHTML='<div class="aceil-activity-head"><b>Активність доступів</b><span>Поточний стан облікових записів</span></div>'+rows.map(function(r){return '<div class="aceil-activity-row"><span class="dot '+(r.is_active===false?'off':'')+'"></span><div><b>'+esc(r.email||r.name||'Користувач')+'</b><small>'+(r.is_active===false?'Доступ заблоковано':'Обліковий запис активний')+'</small></div><em>'+(r.projects_access?'Проєкти':'Без проєктів')+'</em></div>'}).join('');}
+}
 function open(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.add("open");m.setAttribute("aria-hidden","false");load()}
 function close(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 
-window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers};
+window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab};
 
 function boot(){
   ensureMenuItem();
