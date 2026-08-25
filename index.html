@@ -17796,3 +17796,40 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(refreshAll,250)});
 })();
 </script>
+
+<!-- A·CEIL ACCESS REAL FIX v8 — final authority -->
+<script id="A-CEIL-access-realfix-v8">
+(function(){
+'use strict';
+function access(){return window.A_CEIL_MY_ACCESS||null}
+function clearOwnerNom(){
+  try{window.elemItems=[];window.elemGroups=[]}catch(e){}
+  try{elemItems=[];elemGroups=[]}catch(e){}
+  try{if(typeof renderElemList==='function')renderElemList()}catch(e){}
+  try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){}
+  try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){}
+}
+/* IMPORTANT: "Елементи" tile stays visible. When owner nomenclature access is
+   disabled, stale cached owner catalogue is purged every time the modal opens. */
+var oldOpenElements=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);
+if(typeof oldOpenElements==='function'){
+  var openElementsFixed=function(){
+    var a=access();
+    if(a && a.app_role!=='owner' && a.nomenclature_access!==true) clearOwnerNom();
+    return oldOpenElements.apply(this,arguments);
+  };
+  window.openElementsModal=openElementsFixed;
+  try{openElementsModal=openElementsFixed}catch(e){}
+}
+/* Never hide the Elements tile. */
+function keepElementsTile(){var b=document.getElementById('elemTileBtn');if(b){b.style.display='';b.hidden=false;b.removeAttribute('aria-hidden')}}
+keepElementsTile();
+new MutationObserver(keepElementsTile).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['style','hidden','aria-hidden']});
+
+/* Re-render Projects after the authoritative access refresh. */
+var oldRefresh=window.A_CEIL_forceAccessRefresh;
+if(typeof oldRefresh==='function'){
+  window.A_CEIL_forceAccessRefresh=async function(){var r=await oldRefresh.apply(this,arguments);try{if(typeof renderProjects==='function')renderProjects()}catch(e){};keepElementsTile();return r};
+}
+})();
+</script>
