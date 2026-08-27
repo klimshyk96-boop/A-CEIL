@@ -4558,8 +4558,7 @@ wallElementPresets_v1  ->  #043
   #aceilAdminSummary .aceil-fun-icon svg{width:17px!important;height:17px!important}
 }
 </style>
-
-\n<style id="A-CEIL-admin-svg-icons-stable-final-20260827">\n#aceilAdminModal .aceil-svg,\n#aceilAdminModal .aceil-title-icon,\n#aceilAdminModal .aceil-access-icon svg{\n  fill:none!important;\n  stroke:currentColor!important;\n  stroke-linecap:round!important;\n  stroke-linejoin:round!important;\n}\n#aceilAdminModal .aceil-svg *,\n#aceilAdminModal .aceil-title-icon *{fill:none!important;stroke:currentColor!important}\n#aceilAdminModal .aceil-admin-tabs button{color:#64748b!important}\n#aceilAdminModal .aceil-admin-tabs button.active{color:#2563eb!important}\n#aceilAdminModal .aceil-admin-tabs .aceil-svg{width:20px!important;height:20px!important;stroke-width:1.9!important;vertical-align:-5px!important}\n#aceilAdminSummary .aceil-stat i{display:flex!important;align-items:center!important;justify-content:center!important;width:28px!important;height:28px!important;border-radius:9px!important}\n#aceilAdminSummary .aceil-stat i .aceil-svg{width:18px!important;height:18px!important;stroke-width:1.9!important}\n#aceilAdminSummary .aceil-stat:nth-child(1) i{background:#eef4ff!important;color:#2563eb!important}\n#aceilAdminSummary .aceil-stat.good i{background:#ecfdf5!important;color:#059669!important}\n#aceilAdminSummary .aceil-stat.bad i{background:#fff1f2!important;color:#dc2626!important}\n@media(max-width:520px){\n #aceilAdminModal .aceil-admin-tabs .aceil-svg{width:18px!important;height:18px!important}\n #aceilAdminSummary .aceil-stat i{width:26px!important;height:26px!important;border-radius:8px!important}\n #aceilAdminSummary .aceil-stat i .aceil-svg{width:17px!important;height:17px!important}\n}\n</style>\n
+<style id="A-CEIL-admin-svg-icons-stable-final-20260827">\n#aceilAdminModal .aceil-svg,\n#aceilAdminModal .aceil-title-icon,\n#aceilAdminModal .aceil-access-icon svg{\n  fill:none!important;\n  stroke:currentColor!important;\n  stroke-linecap:round!important;\n  stroke-linejoin:round!important;\n}\n#aceilAdminModal .aceil-svg *,\n#aceilAdminModal .aceil-title-icon *{fill:none!important;stroke:currentColor!important}\n#aceilAdminModal .aceil-admin-tabs button{color:#64748b!important}\n#aceilAdminModal .aceil-admin-tabs button.active{color:#2563eb!important}\n#aceilAdminModal .aceil-admin-tabs .aceil-svg{width:20px!important;height:20px!important;stroke-width:1.9!important;vertical-align:-5px!important}\n#aceilAdminSummary .aceil-stat i{display:flex!important;align-items:center!important;justify-content:center!important;width:28px!important;height:28px!important;border-radius:9px!important}\n#aceilAdminSummary .aceil-stat i .aceil-svg{width:18px!important;height:18px!important;stroke-width:1.9!important}\n#aceilAdminSummary .aceil-stat:nth-child(1) i{background:#eef4ff!important;color:#2563eb!important}\n#aceilAdminSummary .aceil-stat.good i{background:#ecfdf5!important;color:#059669!important}\n#aceilAdminSummary .aceil-stat.bad i{background:#fff1f2!important;color:#dc2626!important}\n@media(max-width:520px){\n #aceilAdminModal .aceil-admin-tabs .aceil-svg{width:18px!important;height:18px!important}\n #aceilAdminSummary .aceil-stat i{width:26px!important;height:26px!important;border-radius:8px!important}\n #aceilAdminSummary .aceil-stat i .aceil-svg{width:17px!important;height:17px!important}\n}\n</style>
 <style id="A-CEIL-admin-delete-rpc-final-20260827">
 #aceilAdminModal .aceil-delete-user-btn{
   display:flex!important;align-items:center!important;justify-content:center!important;gap:7px!important
@@ -18465,6 +18464,89 @@ if(typeof old==="function"&&!old.__elementsReadonlyV1){
 }
 })();
 </script>
+
+
+<style id="A-CEIL-admin-svg-real-markup-fix-20260827">
+/* Final override: actual admin SVG markup */
+#aceilAdminModal .aceil-admin-tabs svg.aceil-svg,
+#aceilAdminModal #aceilAdminSummary svg.aceil-svg,
+#aceilAdminModal .aceil-delete-user-btn svg.aceil-svg{
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:1.9!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+
+/* Tabs */
+#aceilAdminModal .aceil-admin-tabs button{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+}
+#aceilAdminModal .aceil-admin-tabs svg.aceil-svg{
+  width:20px!important;
+  height:20px!important;
+  flex:0 0 20px!important;
+  color:#64748b!important;
+}
+#aceilAdminModal .aceil-admin-tabs button.active svg.aceil-svg{
+  color:#2563eb!important;
+}
+
+/* Three summary cards */
+#aceilAdminModal #aceilAdminSummary .aceil-stat i{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:28px!important;
+  height:28px!important;
+  margin:0 0 4px!important;
+  border-radius:9px!important;
+  font-size:0!important;
+}
+#aceilAdminModal #aceilAdminSummary .aceil-stat i svg.aceil-svg{
+  width:18px!important;
+  height:18px!important;
+}
+#aceilAdminModal #aceilAdminSummary .aceil-stat:nth-child(1) i{
+  background:#eef4ff!important;
+  color:#2563eb!important;
+}
+#aceilAdminModal #aceilAdminSummary .aceil-stat:nth-child(2) i{
+  background:#ecfdf5!important;
+  color:#059669!important;
+}
+#aceilAdminModal #aceilAdminSummary .aceil-stat:nth-child(3) i{
+  background:#fff1f2!important;
+  color:#dc2626!important;
+}
+
+/* Trash button */
+#aceilAdminModal .aceil-delete-user-btn svg.aceil-svg{
+  width:17px!important;
+  height:17px!important;
+  color:currentColor!important;
+}
+
+@media(max-width:520px){
+  #aceilAdminModal .aceil-admin-tabs svg.aceil-svg{
+    width:18px!important;
+    height:18px!important;
+    flex-basis:18px!important;
+  }
+  #aceilAdminModal #aceilAdminSummary .aceil-stat i{
+    width:26px!important;
+    height:26px!important;
+    border-radius:8px!important;
+  }
+  #aceilAdminModal #aceilAdminSummary .aceil-stat i svg.aceil-svg{
+    width:17px!important;
+    height:17px!important;
+  }
+}
+</style>
 
 </body></html> 
 <!-- A·CEIL 2026-08-27: manager report compact trigger + back + cloud share -->
