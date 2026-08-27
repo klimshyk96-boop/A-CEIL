@@ -6379,7 +6379,7 @@ localStorage: lightTypes_v1
 Тип: обгортка (викликає попередню версію функції)
 Визначає: __A·CEILReportMeta; _modernOpenPreview [застаріла, див. #125]; generateModernObjectReport [ФІНАЛЬНА; було в: #034, #087]; generateModernSingleReport [ФІНАЛЬНА; було в: #034, #087]; A·CEILPdfReport; A·CEILPreparePdf; A·CEILPublishReport
 -->
-<script id="A·CEIL-pdf-cloud-report-v1">!function(){"use strict";const registry=new Map;let seq=0;function clean(v){return String(null==v?"":v).trim()}function currentMeta(){return{name:clean("undefined"!=typeof _currentProjName&&_currentProjName||document.getElementById("projName")?.value||"Звіт A·CEIL"),address:clean("undefined"!=typeof _currentProjAddr&&_currentProjAddr||document.getElementById("projAddr")?.value||""),phone:clean("undefined"!=typeof _currentProjPhone&&_currentProjPhone||document.getElementById("projPhone")?.value||""),comment:clean("undefined"!=typeof _currentProjComment&&_currentProjComment||document.getElementById("projComment")?.value||"")}}function activeLocation(){const api=window.A·CEILLocation;return api?.normalize?api.normalize(window.__A·CEILReportLocation):null}function routeUrl(loc){return window.A·CEILLocation?.routeUrl?window.A·CEILLocation.routeUrl(loc):""}function safeBase(v){return clean(v||"A·CEIL-report").replace(/\.[^.]+$/,"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9_-]+/g,"_").replace(/^_+|_+$/g,"").toLowerCase()||"A·CEIL-report"}function reportStatus(button,text,isError){try{const doc=button?.ownerDocument,el=doc?.getElementById("reportStatus");el&&(el.textContent=text||"",el.style.color=isError?"#b91c1c":"#475569")}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}function setBusy(button,busy,text){button&&(busy?(button.dataset.oldText=button.textContent,button.disabled=!0,button.textContent=text||"⏳ Зачекайте…"):(button.disabled=!1,button.dataset.oldText&&(button.textContent=button.dataset.oldText,delete button.dataset.oldText)))}function getReport(id){const r=registry.get(id);if(!r)throw new Error("Звіт застарів. Згенеруйте його ще раз.");return r}async function pdfBlob(report){var src,test;await(src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js",test=()=>!!window.jspdf?.jsPDF,new Promise((resolve,reject)=>{if(test())return resolve();const old=[...document.scripts].find(x=>x.src===src);if(old)return old.addEventListener("load",resolve,{once:!0}),void old.addEventListener("error",reject,{once:!0});const sc=document.createElement("script");sc.src=src,sc.onload=resolve,sc.onerror=()=>reject(new Error("Не вдалося завантажити бібліотеку PDF")),document.head.appendChild(sc)}));const{jsPDF:jsPDF}=window.jspdf,pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4",compress:!0}),c=report.canvas,pxPerMm=c.width/194,slicePx=Math.max(1,Math.floor(281*pxPerMm));let y=0,page=0;for(;y<c.height;){page++&&pdf.addPage();const h=Math.min(slicePx,c.height-y),part=document.createElement("canvas");part.width=c.width,part.height=h,part.getContext("2d").drawImage(c,0,y,c.width,h,0,0,c.width,h);const img=part.toDataURL("image/jpeg",.92),drawH=h/pxPerMm;pdf.addImage(img,"JPEG",8,8,194,drawH,void 0,"FAST"),y+=h}const m=report.meta||{},loc=report.location,url=routeUrl(loc),phone=clean(m.phone).replace(/[^+\d]/g,"")||"";if(url||phone||m.address||m.comment){pdf.addPage(),pdf.setFont("helvetica","bold"),pdf.setFontSize(20),pdf.text("Installation details",16,24),pdf.setFont("helvetica","normal"),pdf.setFontSize(11);let yy=38;if(m.name&&(pdf.setFont("helvetica","bold"),pdf.text("Project:",16,yy),pdf.setFont("helvetica","normal"),pdf.text(clean(m.name),44,yy),yy+=10),m.address){pdf.setFont("helvetica","bold"),pdf.text("Address:",16,yy),pdf.setFont("helvetica","normal");const lines=pdf.splitTextToSize(clean(m.address),145);pdf.text(lines,44,yy),yy+=6*lines.length+5}phone&&(pdf.setFillColor(239,246,255),pdf.roundedRect(16,yy,178,16,3,3,"F"),pdf.setTextColor(29,78,216),pdf.textWithLink("Call client: "+phone,22,yy+10,{url:"tel:"+phone}),pdf.setTextColor(0,0,0),yy+=24),url&&(pdf.setFillColor(220,252,231),pdf.roundedRect(16,yy,178,18,3,3,"F"),pdf.setTextColor(4,120,87),pdf.setFont("helvetica","bold"),pdf.textWithLink("Open route in Google Maps",22,yy+11,{url:url}),pdf.link(16,yy,178,18,{url:url}),pdf.setTextColor(0,0,0),pdf.setFont("helvetica","normal"),yy+=26,pdf.setFontSize(9),pdf.setTextColor(100,116,139),pdf.text("GPS: "+loc.latitude.toFixed(6)+", "+loc.longitude.toFixed(6)+(loc.accuracy?"  accuracy ±"+Math.round(loc.accuracy)+" m":""),16,yy),pdf.setTextColor(0,0,0),yy+=12),m.comment&&(pdf.setFont("helvetica","bold"),pdf.setFontSize(11),pdf.text("Comment:",16,yy),pdf.setFont("helvetica","normal"),pdf.text(pdf.splitTextToSize(clean(m.comment),178),16,yy+7))}return pdf.output("blob")}window.A·CEILPreparePdf=async function(id,button){const r=getReport(id);if(r.pdfFile&&r.pdfUrl)return{file:r.pdfFile,url:r.pdfUrl,report:r};setBusy(button,!0,"⏳ Генерується PDF…"),reportStatus(button,"Генерація PDF може тривати кілька секунд…");try{const blob=await pdfBlob(r),name=safeBase(r.fileName)+".pdf",file=new File([blob],name,{type:"application/pdf"}),url=URL.createObjectURL(blob);if(r.pdfUrl)try{URL.revokeObjectURL(r.pdfUrl)}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}return r.pdfUrl=url,r.pdfFile=file,{file:file,url:url,report:r}}finally{setBusy(button,!1)}},window.A·CEILPdfReport=async function(id,share,button){try{const r=getReport(id),cachedUrl=r.pdfUrl,cachedFile=r.pdfFile;if(share&&cachedFile){if(!navigator.share||navigator.canShare&&!navigator.canShare({files:[cachedFile]})){const a=button.ownerDocument.createElement("a");a.href=cachedUrl,a.download=cachedFile.name,button.ownerDocument.body.appendChild(a),a.click(),a.remove()}else await async function(payload,button){if("1"===button?.dataset.shareBusy)return!1;button&&(button.dataset.shareBusy="1",button.disabled=!0),reportStatus(button,"Відкривається PDF…");try{return await navigator.share(payload),reportStatus(button,"Готово."),!0}catch(e){if("AbortError"===e?.name)return reportStatus(button,"Надсилання скасовано."),!1;if("InvalidStateError"===e?.name||/already in progress/i.test(String(e?.message||e)))return reportStatus(button,"Системне меню ще зайняте. Зачекайте секунду й повторіть.",!0),!1;throw e}finally{button&&(delete button.dataset.shareBusy,setTimeout(()=>{button.disabled=!1},300))}}({files:[cachedFile],title:r.meta?.name||"Звіт A·CEIL"},button);return}if(!share&&cachedUrl)return void(window.open(cachedUrl,"_blank")||(button.ownerDocument.location.href=cachedUrl));setBusy(button,!0,share?"⏳ Готується PDF…":"⏳ Генерується PDF…"),reportStatus(button,"Генерація PDF може тривати кілька секунд…");const blob=await pdfBlob(r),name=safeBase(r.fileName)+".pdf",file=new File([blob],name,{type:"application/pdf"}),url=URL.createObjectURL(blob);if(r.pdfUrl)try{URL.revokeObjectURL(r.pdfUrl)}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}r.pdfUrl=url,r.pdfFile=file,setBusy(button,!1),button.textContent=share?"📤 Поділитися PDF":"📄 Відкрити PDF",button.classList.add("ready"),reportStatus(button,"PDF готовий. Натисніть кнопку ще раз.")}catch(e){setBusy(button,!1),reportStatus(button,"PDF: "+(e?.message||e),!0)}},window.A·CEILPublishReport=async function(id,button){try{const r=getReport(id);if(setBusy(button,!0,"⏳ Завантаження…"),reportStatus(button,"Завантаження звіту в хмару…"),!window._sb)throw new Error("Supabase ще не підключений");if(!window._sbUser?.id)throw new Error("Потрібна авторизація");const payload={version:1,createdAt:(new Date).toISOString(),meta:r.meta||{},location:r.location||null,image:r.canvas.toDataURL("image/png")},blob=new Blob([JSON.stringify(payload)],{type:"application/json"}),token=function(){const bytes=new Uint8Array(10);try{crypto.getRandomValues(bytes)}catch{for(let i=0;i<bytes.length;i++)bytes[i]=Math.floor(256*Math.random())}return[...bytes].map(x=>x.toString(16).padStart(2,"0")).join("")}(),path="r/"+token+".json",result=await window._sb.storage.from("roomator-reports").upload(path,blob,{contentType:"application/json",upsert:!1,cacheControl:"3600"});if(result.error)throw result.error;const pub="https://a-ceil.pp.ua/report/"+encodeURIComponent(token);button.dataset.reportUrl=pub,setBusy(button,!1),button.style.display="none";const doc=button.ownerDocument,panel=doc.getElementById("cloudReady"),input=doc.getElementById("cloudUrl");panel&&(panel.hidden=!1,panel.dataset.url=pub),input&&(input.value=pub),reportStatus(button,"Хмарний звіт готовий. Оберіть дію нижче.")}catch(e){const msg=String(e?.message||e);setBusy(button,!1),/bucket|not found|row-level|policy|storage/i.test(msg)?reportStatus(button,"Supabase Storage: "+msg,!0):reportStatus(button,"Хмарний звіт: "+msg,!0)}};const previousSingle=window.generateModernSingleReport;if("function"==typeof previousSingle){window.generateModernSingleReport=async function(rs){return window.__A·CEILReportMeta=currentMeta(),previousSingle.apply(this,arguments)};try{generateModernSingleReport=window.generateModernSingleReport}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}const previousObject=window.generateModernObjectReport;if("function"==typeof previousObject){window.generateModernObjectReport=async function(obj,rs){return window.__A·CEILReportMeta=function(obj){return{name:clean((obj=obj||{}).name||"Звіт A·CEIL"),address:clean(obj.addr||obj.address||""),phone:clean(obj.phone||""),comment:clean(obj.comment||"")}}(obj),previousObject.apply(this,arguments)};try{generateModernObjectReport=window.generateModernObjectReport}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}window._modernOpenPreview=function(out,fileName){const id=function(canvas,fileName){const id="r"+Date.now().toString(36)+ ++seq;return registry.set(id,{canvas:canvas,fileName:fileName,meta:Object.assign({},currentMeta(),window.__A·CEILReportMeta||{}),location:activeLocation()}),setTimeout(()=>registry.delete(id),18e5),id}(out,fileName),r=getReport(id),data=out.toDataURL("image/png"),url=routeUrl(r.location),win=window.open();if(!win){try{showToast("Дозвольте спливаючі вікна")}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}return}JSON.stringify(id),JSON.stringify(String(fileName||"A·CEIL-report.png")),JSON.stringify(url),win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Звіт A·CEIL</title><style>body{margin:0;padding:12px 12px 176px;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}img{display:block;max-width:100%;height:auto;border-radius:18px;box-shadow:0 10px 36px rgba(15,23,42,.22);margin:0 auto}.bar{position:fixed;z-index:9999;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e2e8f0;padding:10px 10px max(18px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,1fr);gap:8px;pointer-events:auto}.btn{position:relative;z-index:10000;pointer-events:auto;touch-action:manipulation;-webkit-appearance:none;padding:11px 5px;border-radius:13px;font-size:12px;font-weight:850;border:none;cursor:pointer}.png{background:#f1f5f9;color:#1e293b}.pdf{background:#fee2e2;color:#b91c1c}.share{background:#dbeafe;color:#1d4ed8}.cloud{background:linear-gradient(135deg,#0f172a,#2563eb);color:#fff}.map{background:#dcfce7;color:#047857}.wide{grid-column:span 2}.status{grid-column:1/-1;min-height:18px;text-align:center;font-size:11px;font-weight:700;color:#475569;padding:2px 4px}.cloud-ready{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;padding-top:2px}.cloud-ready[hidden]{display:none!important}.cloud-url{grid-column:1/-1;width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:11px;padding:8px 9px;font-size:10px;color:#334155;background:#f8fafc}.cloud-action{min-height:38px;border:0;border-radius:11px;font-size:11px;font-weight:850;touch-action:manipulation}.cloud-copy{background:#eef2ff;color:#3730a3}.cloud-share{background:#dbeafe;color:#1d4ed8}.cloud-open{background:#dcfce7;color:#047857}@media(max-width:380px){.btn{font-size:11px;padding:10px 3px}.cloud-action{font-size:10px;padding:7px 2px}}</style>
+<script id="A·CEIL-pdf-cloud-report-v1">!function(){"use strict";const registry=new Map;let seq=0;function clean(v){return String(null==v?"":v).trim()}function currentMeta(){return{name:clean("undefined"!=typeof _currentProjName&&_currentProjName||document.getElementById("projName")?.value||"Звіт A·CEIL"),address:clean("undefined"!=typeof _currentProjAddr&&_currentProjAddr||document.getElementById("projAddr")?.value||""),phone:clean("undefined"!=typeof _currentProjPhone&&_currentProjPhone||document.getElementById("projPhone")?.value||""),comment:clean("undefined"!=typeof _currentProjComment&&_currentProjComment||document.getElementById("projComment")?.value||"")}}function activeLocation(){const api=window.A·CEILLocation;return api?.normalize?api.normalize(window.__A·CEILReportLocation):null}function routeUrl(loc){return window.A·CEILLocation?.routeUrl?window.A·CEILLocation.routeUrl(loc):""}function safeBase(v){return clean(v||"A·CEIL-report").replace(/\.[^.]+$/,"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9_-]+/g,"_").replace(/^_+|_+$/g,"").toLowerCase()||"A·CEIL-report"}function reportStatus(button,text,isError){try{const doc=button?.ownerDocument,el=doc?.getElementById("reportStatus");el&&(el.textContent=text||"",el.style.color=isError?"#b91c1c":"#475569")}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}function setBusy(button,busy,text){button&&(busy?(button.dataset.oldText=button.textContent,button.disabled=!0,button.textContent=text||"⏳ Зачекайте…"):(button.disabled=!1,button.dataset.oldText&&(button.textContent=button.dataset.oldText,delete button.dataset.oldText)))}function getReport(id){const r=registry.get(id);if(!r)throw new Error("Звіт застарів. Згенеруйте його ще раз.");return r}async function pdfBlob(report){var src,test;await(src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js",test=()=>!!window.jspdf?.jsPDF,new Promise((resolve,reject)=>{if(test())return resolve();const old=[...document.scripts].find(x=>x.src===src);if(old)return old.addEventListener("load",resolve,{once:!0}),void old.addEventListener("error",reject,{once:!0});const sc=document.createElement("script");sc.src=src,sc.onload=resolve,sc.onerror=()=>reject(new Error("Не вдалося завантажити бібліотеку PDF")),document.head.appendChild(sc)}));const{jsPDF:jsPDF}=window.jspdf,pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4",compress:!0}),c=report.canvas,pxPerMm=c.width/194,slicePx=Math.max(1,Math.floor(281*pxPerMm));let y=0,page=0;for(;y<c.height;){page++&&pdf.addPage();const h=Math.min(slicePx,c.height-y),part=document.createElement("canvas");part.width=c.width,part.height=h,part.getContext("2d").drawImage(c,0,y,c.width,h,0,0,c.width,h);const img=part.toDataURL("image/jpeg",.92),drawH=h/pxPerMm;pdf.addImage(img,"JPEG",8,8,194,drawH,void 0,"FAST"),y+=h}const m=report.meta||{},loc=report.location,url=routeUrl(loc),phone=clean(m.phone).replace(/[^+\d]/g,"")||"";if(url||phone||m.address||m.comment){pdf.addPage(),pdf.setFont("helvetica","bold"),pdf.setFontSize(20),pdf.text("Installation details",16,24),pdf.setFont("helvetica","normal"),pdf.setFontSize(11);let yy=38;if(m.name&&(pdf.setFont("helvetica","bold"),pdf.text("Project:",16,yy),pdf.setFont("helvetica","normal"),pdf.text(clean(m.name),44,yy),yy+=10),m.address){pdf.setFont("helvetica","bold"),pdf.text("Address:",16,yy),pdf.setFont("helvetica","normal");const lines=pdf.splitTextToSize(clean(m.address),145);pdf.text(lines,44,yy),yy+=6*lines.length+5}phone&&(pdf.setFillColor(239,246,255),pdf.roundedRect(16,yy,178,16,3,3,"F"),pdf.setTextColor(29,78,216),pdf.textWithLink("Call client: "+phone,22,yy+10,{url:"tel:"+phone}),pdf.setTextColor(0,0,0),yy+=24),url&&(pdf.setFillColor(220,252,231),pdf.roundedRect(16,yy,178,18,3,3,"F"),pdf.setTextColor(4,120,87),pdf.setFont("helvetica","bold"),pdf.textWithLink("Open route in Google Maps",22,yy+11,{url:url}),pdf.link(16,yy,178,18,{url:url}),pdf.setTextColor(0,0,0),pdf.setFont("helvetica","normal"),yy+=26,pdf.setFontSize(9),pdf.setTextColor(100,116,139),pdf.text("GPS: "+loc.latitude.toFixed(6)+", "+loc.longitude.toFixed(6)+(loc.accuracy?"  accuracy ±"+Math.round(loc.accuracy)+" m":""),16,yy),pdf.setTextColor(0,0,0),yy+=12),m.comment&&(pdf.setFont("helvetica","bold"),pdf.setFontSize(11),pdf.text("Comment:",16,yy),pdf.setFont("helvetica","normal"),pdf.text(pdf.splitTextToSize(clean(m.comment),178),16,yy+7))}return pdf.output("blob")}window.A·CEILPreparePdf=async function(id,button){const r=getReport(id);if(r.pdfFile&&r.pdfUrl)return{file:r.pdfFile,url:r.pdfUrl,report:r};setBusy(button,!0,"⏳ Генерується PDF…"),reportStatus(button,"Генерація PDF може тривати кілька секунд…");try{const blob=await pdfBlob(r),name=safeBase(r.fileName)+".pdf",file=new File([blob],name,{type:"application/pdf"}),url=URL.createObjectURL(blob);if(r.pdfUrl)try{URL.revokeObjectURL(r.pdfUrl)}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}return r.pdfUrl=url,r.pdfFile=file,{file:file,url:url,report:r}}finally{setBusy(button,!1)}},window.A·CEILPdfReport=async function(id,share,button){try{const r=getReport(id),cachedUrl=r.pdfUrl,cachedFile=r.pdfFile;if(share&&cachedFile){if(!navigator.share||navigator.canShare&&!navigator.canShare({files:[cachedFile]})){const a=button.ownerDocument.createElement("a");a.href=cachedUrl,a.download=cachedFile.name,button.ownerDocument.body.appendChild(a),a.click(),a.remove()}else await async function(payload,button){if("1"===button?.dataset.shareBusy)return!1;button&&(button.dataset.shareBusy="1",button.disabled=!0),reportStatus(button,"Відкривається PDF…");try{return await navigator.share(payload),reportStatus(button,"Готово."),!0}catch(e){if("AbortError"===e?.name)return reportStatus(button,"Надсилання скасовано."),!1;if("InvalidStateError"===e?.name||/already in progress/i.test(String(e?.message||e)))return reportStatus(button,"Системне меню ще зайняте. Зачекайте секунду й повторіть.",!0),!1;throw e}finally{button&&(delete button.dataset.shareBusy,setTimeout(()=>{button.disabled=!1},300))}}({files:[cachedFile],title:r.meta?.name||"Звіт A·CEIL"},button);return}if(!share&&cachedUrl)return void(window.open(cachedUrl,"_blank")||(button.ownerDocument.location.href=cachedUrl));setBusy(button,!0,share?"⏳ Готується PDF…":"⏳ Генерується PDF…"),reportStatus(button,"Генерація PDF може тривати кілька секунд…");const blob=await pdfBlob(r),name=safeBase(r.fileName)+".pdf",file=new File([blob],name,{type:"application/pdf"}),url=URL.createObjectURL(blob);if(r.pdfUrl)try{URL.revokeObjectURL(r.pdfUrl)}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}r.pdfUrl=url,r.pdfFile=file,setBusy(button,!1),button.textContent=share?"📤 Поділитися PDF":"📄 Відкрити PDF",button.classList.add("ready"),reportStatus(button,"PDF готовий. Натисніть кнопку ще раз.")}catch(e){setBusy(button,!1),reportStatus(button,"PDF: "+(e?.message||e),!0)}},window.A·CEILPublishReport=async function(id,button){try{const r=getReport(id);if(setBusy(button,!0,"⏳ Завантаження…"),reportStatus(button,"Завантаження звіту в хмару…"),!window._sb)throw new Error("Supabase ще не підключений");if(!window._sbUser?.id)throw new Error("Потрібна авторизація");const structured=r.structured||null;structured&&"single"===structured.type&&window.A_CEIL_cloudPlanImage&&(structured.drawing=window.A_CEIL_cloudPlanImage(r.canvas));const payload={version:2,createdAt:(new Date).toISOString(),meta:r.meta||{},location:r.location||null,structured:structured,image:r.canvas.toDataURL("image/png")},blob=new Blob([JSON.stringify(payload)],{type:"application/json"}),token=function(){const bytes=new Uint8Array(10);try{crypto.getRandomValues(bytes)}catch{for(let i=0;i<bytes.length;i++)bytes[i]=Math.floor(256*Math.random())}return[...bytes].map(x=>x.toString(16).padStart(2,"0")).join("")}(),path="r/"+token+".json",result=await window._sb.storage.from("roomator-reports").upload(path,blob,{contentType:"application/json",upsert:!1,cacheControl:"3600"});if(result.error)throw result.error;const pub="https://a-ceil.pp.ua/report/"+encodeURIComponent(token);button.dataset.reportUrl=pub,setBusy(button,!1),button.style.display="none";const doc=button.ownerDocument,panel=doc.getElementById("cloudReady"),input=doc.getElementById("cloudUrl");panel&&(panel.hidden=!1,panel.dataset.url=pub),input&&(input.value=pub),reportStatus(button,"Хмарний звіт готовий. Оберіть дію нижче.")}catch(e){const msg=String(e?.message||e);setBusy(button,!1),/bucket|not found|row-level|policy|storage/i.test(msg)?reportStatus(button,"Supabase Storage: "+msg,!0):reportStatus(button,"Хмарний звіт: "+msg,!0)}};const previousSingle=window.generateModernSingleReport;if("function"==typeof previousSingle){window.generateModernSingleReport=async function(rs){return window.__A·CEILReportMeta=currentMeta(),previousSingle.apply(this,arguments)};try{generateModernSingleReport=window.generateModernSingleReport}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}const previousObject=window.generateModernObjectReport;if("function"==typeof previousObject){window.generateModernObjectReport=async function(obj,rs){return window.__A·CEILReportMeta=function(obj){return{name:clean((obj=obj||{}).name||"Звіт A·CEIL"),address:clean(obj.addr||obj.address||""),phone:clean(obj.phone||""),comment:clean(obj.comment||"")}}(obj),previousObject.apply(this,arguments)};try{generateModernObjectReport=window.generateModernObjectReport}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}window._modernOpenPreview=function(out,fileName){const id=function(canvas,fileName){const id="r"+Date.now().toString(36)+ ++seq;return registry.set(id,{canvas:canvas,fileName:fileName,meta:Object.assign({},currentMeta(),window.__A·CEILReportMeta||{}),location:activeLocation(),structured:window.A_CEIL_buildCloudStructuredReport?window.A_CEIL_buildCloudStructuredReport(fileName):null}),setTimeout(()=>registry.delete(id),18e5),id}(out,fileName),r=getReport(id),data=out.toDataURL("image/png"),url=routeUrl(r.location),win=window.open();if(!win){try{showToast("Дозвольте спливаючі вікна")}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}return}JSON.stringify(id),JSON.stringify(String(fileName||"A·CEIL-report.png")),JSON.stringify(url),win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Звіт A·CEIL</title><style>body{margin:0;padding:12px 12px 176px;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}img{display:block;max-width:100%;height:auto;border-radius:18px;box-shadow:0 10px 36px rgba(15,23,42,.22);margin:0 auto}.bar{position:fixed;z-index:9999;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e2e8f0;padding:10px 10px max(18px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,1fr);gap:8px;pointer-events:auto}.btn{position:relative;z-index:10000;pointer-events:auto;touch-action:manipulation;-webkit-appearance:none;padding:11px 5px;border-radius:13px;font-size:12px;font-weight:850;border:none;cursor:pointer}.png{background:#f1f5f9;color:#1e293b}.pdf{background:#fee2e2;color:#b91c1c}.share{background:#dbeafe;color:#1d4ed8}.cloud{background:linear-gradient(135deg,#0f172a,#2563eb);color:#fff}.map{background:#dcfce7;color:#047857}.wide{grid-column:span 2}.status{grid-column:1/-1;min-height:18px;text-align:center;font-size:11px;font-weight:700;color:#475569;padding:2px 4px}.cloud-ready{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;padding-top:2px}.cloud-ready[hidden]{display:none!important}.cloud-url{grid-column:1/-1;width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:11px;padding:8px 9px;font-size:10px;color:#334155;background:#f8fafc}.cloud-action{min-height:38px;border:0;border-radius:11px;font-size:11px;font-weight:850;touch-action:manipulation}.cloud-copy{background:#eef2ff;color:#3730a3}.cloud-share{background:#dbeafe;color:#1d4ed8}.cloud-open{background:#dcfce7;color:#047857}@media(max-width:380px){.btn{font-size:11px;padding:10px 3px}.cloud-action{font-size:10px;padding:7px 2px}}</style>
 <style id="A·CEIL-nomenclature-readable-v82">
 /* v3.41 — читабельна номенклатура: назва товару має пріоритет над службовими полями. */
 #elementsModal .em-row{
@@ -6473,7 +6473,7 @@ localStorage: lightTypes_v1
 <!--
 === БЛОК #089 ===
 -->
-<script id="A·CEIL-public-report-page-v1">!function(){"use strict";const params=new URLSearchParams(location.search),legacyShortId=params.get("r"),legacySource=params.get("A·CEILPublicReport"),pathMatch=location.pathname.match(/^\/report\/([a-f0-9]{20})\/?$/i),shortId=pathMatch?pathMatch[1]:legacyShortId;let source=legacySource||"";if(shortId){if(!/^[a-f0-9]{20}$/i.test(shortId))return;source=SUPABASE_URL+"/storage/v1/object/public/roomator-reports/r/"+shortId+".json"}if(!source)return;function esc(v){return String(null==v?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}async function start(){const overlay=document.createElement("div");overlay.id="A·CEILPublicReportView",overlay.innerHTML='<div class="rpr-loading">⏳ Завантаження звіту…</div>',document.body.appendChild(overlay);try{const res=await fetch(source,{cache:"no-store"});if(!res.ok)throw new Error("HTTP "+res.status);const data=await res.json(),m=data.meta||{},loc=data.location||null,p=(v=m.phone,String(v||"").replace(/[^+\d]/g,"")),route=function(l){if(window.A·CEILLocation?.routeUrl)return window.A·CEILLocation.routeUrl(l);if(!l)return"";const u=String(l.mapUrl||"").trim();if(u)return u;const a=Number(l.latitude??l.lat),b=Number(l.longitude??l.lng);return Number.isFinite(a)&&Number.isFinite(b)?"https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(a+","+b):""}(loc);overlay.innerHTML='<header class="rpr-head"><div><b>A·CEIL PRO</b><h1>'+esc(m.name||"Монтажний звіт")+'</h1></div><span>Монтажний лист</span></header><section class="rpr-info">'+(m.address?"<div>📍 "+esc(m.address)+"</div>":"")+(p?"<div>📞 "+esc(p)+"</div>":"")+(m.comment?"<div>💬 "+esc(m.comment)+"</div>":"")+'</section><div class="rpr-actions">'+(route?'<a href="'+esc(route)+'">🧭 Прокласти маршрут</a>':"")+(p?'<a href="tel:'+esc(p)+'">📞 Подзвонити клієнту</a>':"")+'</div><img class="rpr-image" src="'+esc(data.image||"")+'" alt="Звіт A·CEIL">'}catch(e){overlay.innerHTML='<div class="rpr-error">Не вдалося відкрити звіт.<br><small>'+esc(e?.message||e)+"</small></div>"}var v}const st=document.createElement("style");st.textContent="#A·CEILPublicReportView{position:fixed;inset:0;z-index:2147483647;overflow:auto;background:#eef4ff;color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:14px;box-sizing:border-box}.rpr-loading,.rpr-error{max-width:620px;margin:20vh auto;background:#fff;border-radius:22px;padding:24px;text-align:center;font-weight:800;box-shadow:0 18px 50px rgba(15,23,42,.15)}.rpr-error{color:#b91c1c}.rpr-head{max-width:920px;margin:auto;display:flex;justify-content:space-between;align-items:flex-start;background:#fff;border-radius:20px 20px 0 0;padding:18px 18px 12px}.rpr-head b{color:#2563eb}.rpr-head h1{margin:5px 0 0;font-size:23px}.rpr-head span{font-size:12px;font-weight:800;color:#64748b}.rpr-info{max-width:920px;margin:auto;background:#fff;padding:0 18px 12px;line-height:1.55;color:#475569}.rpr-actions{max-width:920px;margin:auto;background:#fff;padding:0 18px 16px;display:grid;grid-template-columns:1fr 1fr;gap:9px}.rpr-actions a{min-height:48px;border-radius:14px;text-decoration:none;display:flex;align-items:center;justify-content:center;font-weight:850;background:#dcfce7;color:#047857}.rpr-actions a+ a{background:#dbeafe;color:#1d4ed8}.rpr-image{display:block;width:min(100%,920px);height:auto;margin:0 auto 28px;border-radius:0 0 18px 18px;box-shadow:0 18px 50px rgba(15,23,42,.16)}@media(max-width:560px){#A·CEILPublicReportView{padding:0}.rpr-head{border-radius:0}.rpr-actions{grid-template-columns:1fr}.rpr-image{border-radius:0}}",document.head.appendChild(st),"loading"===document.readyState?document.addEventListener("DOMContentLoaded",start,{once:!0}):start()}()</script> <style>.rwe-pcolor-row{display:flex;gap:8px;margin:0 0 12px}.rwe-pcolor-btn{flex:1;padding:10px 6px;border-radius:12px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#334155;font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:none;text-align:center}.rwe-pcolor-btn.active{border-color:#2563eb;background:#eff6ff;color:#1d4ed8}.rwe-pcolor-btn:active{transform:scale(.96)}</style> 
+<script id="A·CEIL-public-report-page-v1">!function(){"use strict";const params=new URLSearchParams(location.search),legacyShortId=params.get("r"),legacySource=params.get("A·CEILPublicReport"),pathMatch=location.pathname.match(/^\/report\/([a-f0-9]{20})\/?$/i),shortId=pathMatch?pathMatch[1]:legacyShortId;let source=legacySource||"";if(shortId){if(!/^[a-f0-9]{20}$/i.test(shortId))return;source=SUPABASE_URL+"/storage/v1/object/public/roomator-reports/r/"+shortId+".json"}if(!source)return;function esc(v){return String(null==v?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}async function start(){const overlay=document.createElement("div");overlay.id="A·CEILPublicReportView",overlay.innerHTML='<div class="rpr-loading">⏳ Завантаження звіту…</div>',document.body.appendChild(overlay);try{const res=await fetch(source,{cache:"no-store"});if(!res.ok)throw new Error("HTTP "+res.status);const data=await res.json();if(data.structured&&window.A_CEIL_renderStructuredCloudReport){window.A_CEIL_renderStructuredCloudReport(overlay,data);return}const m=data.meta||{},loc=data.location||null,p=(v=m.phone,String(v||"").replace(/[^+\d]/g,"")),route=function(l){if(window.A·CEILLocation?.routeUrl)return window.A·CEILLocation.routeUrl(l);if(!l)return"";const u=String(l.mapUrl||"").trim();if(u)return u;const a=Number(l.latitude??l.lat),b=Number(l.longitude??l.lng);return Number.isFinite(a)&&Number.isFinite(b)?"https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(a+","+b):""}(loc);overlay.innerHTML='<header class="rpr-head"><div><b>A·CEIL PRO</b><h1>'+esc(m.name||"Монтажний звіт")+'</h1></div><span>Монтажний лист</span></header><section class="rpr-info">'+(m.address?"<div>📍 "+esc(m.address)+"</div>":"")+(p?"<div>📞 "+esc(p)+"</div>":"")+(m.comment?"<div>💬 "+esc(m.comment)+"</div>":"")+'</section><div class="rpr-actions">'+(route?'<a href="'+esc(route)+'">🧭 Прокласти маршрут</a>':"")+(p?'<a href="tel:'+esc(p)+'">📞 Подзвонити клієнту</a>':"")+'</div><img class="rpr-image" src="'+esc(data.image||"")+'" alt="Звіт A·CEIL">'}catch(e){overlay.innerHTML='<div class="rpr-error">Не вдалося відкрити звіт.<br><small>'+esc(e?.message||e)+"</small></div>"}var v}const st=document.createElement("style");st.textContent="#A·CEILPublicReportView{position:fixed;inset:0;z-index:2147483647;overflow:auto;background:#eef4ff;color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:14px;box-sizing:border-box}.rpr-loading,.rpr-error{max-width:620px;margin:20vh auto;background:#fff;border-radius:22px;padding:24px;text-align:center;font-weight:800;box-shadow:0 18px 50px rgba(15,23,42,.15)}.rpr-error{color:#b91c1c}.rpr-head{max-width:920px;margin:auto;display:flex;justify-content:space-between;align-items:flex-start;background:#fff;border-radius:20px 20px 0 0;padding:18px 18px 12px}.rpr-head b{color:#2563eb}.rpr-head h1{margin:5px 0 0;font-size:23px}.rpr-head span{font-size:12px;font-weight:800;color:#64748b}.rpr-info{max-width:920px;margin:auto;background:#fff;padding:0 18px 12px;line-height:1.55;color:#475569}.rpr-actions{max-width:920px;margin:auto;background:#fff;padding:0 18px 16px;display:grid;grid-template-columns:1fr 1fr;gap:9px}.rpr-actions a{min-height:48px;border-radius:14px;text-decoration:none;display:flex;align-items:center;justify-content:center;font-weight:850;background:#dcfce7;color:#047857}.rpr-actions a+ a{background:#dbeafe;color:#1d4ed8}.rpr-image{display:block;width:min(100%,920px);height:auto;margin:0 auto 28px;border-radius:0 0 18px 18px;box-shadow:0 18px 50px rgba(15,23,42,.16)}@media(max-width:560px){#A·CEILPublicReportView{padding:0}.rpr-head{border-radius:0}.rpr-actions{grid-template-columns:1fr}.rpr-image{border-radius:0}}",document.head.appendChild(st),"loading"===document.readyState?document.addEventListener("DOMContentLoaded",start,{once:!0}):start()}()</script> <style>.rwe-pcolor-row{display:flex;gap:8px;margin:0 0 12px}.rwe-pcolor-btn{flex:1;padding:10px 6px;border-radius:12px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#334155;font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:none;text-align:center}.rwe-pcolor-btn.active{border-color:#2563eb;background:#eff6ff;color:#1d4ed8}.rwe-pcolor-btn:active{transform:scale(.96)}</style> 
 <!--
 === БЛОК #090 ===
 Тип: обгортка (викликає попередню версію функції)
@@ -17382,6 +17382,284 @@ try{var _liveSb=sb();if(_liveSb&&_liveSb.auth&&_liveSb.auth.onAuthStateChange)_l
 .aceil-admin-dashboard{gap:8px!important;margin-bottom:14px!important}.aceil-stat{min-height:86px!important;padding:11px 12px!important;border-radius:16px!important;display:grid!important;grid-template-columns:26px 1fr!important;grid-template-rows:auto auto!important;column-gap:5px!important;align-content:center!important}.aceil-stat i{grid-row:1/3!important;margin:0!important;align-self:start!important}.aceil-stat i .aceil-svg{width:19px;height:19px}.aceil-stat b{font-size:23px!important;line-height:1!important}.aceil-stat span{font-size:9.5px!important;line-height:1.15!important}.aceil-stat small{grid-column:2!important;font-size:8.5px!important;margin-top:3px!important}.aceil-admin-head{padding-top:14px!important;padding-bottom:12px!important}.aceil-admin-title{font-size:22px!important}.aceil-admin-tabs{margin-bottom:13px!important}.aceil-admin-tabs button{height:48px!important}
 @media(max-width:430px){.aceil-admin-dashboard{gap:7px!important}.aceil-stat{min-height:78px!important;padding:9px!important;grid-template-columns:22px 1fr!important}.aceil-stat b{font-size:21px!important}.aceil-stat i .aceil-svg{width:17px;height:17px}.aceil-stat span{font-size:8.8px!important}.aceil-stat small{font-size:8px!important}}
 </style>
+
+<script id="A-CEIL-cloud-html-report-v2">
+(function(){
+"use strict";
+
+function clone(v){
+  try{return JSON.parse(JSON.stringify(v));}catch(_){return null}
+}
+function esc(v){
+  return String(v==null?"":v).replace(/[&<>"']/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+function num(v){
+  var n=parseFloat(v); return Number.isFinite(n)?n:0;
+}
+function money(v){
+  return new Intl.NumberFormat("uk-UA",{maximumFractionDigits:2}).format(num(v));
+}
+function safeState(st){
+  try{
+    if(typeof st==="string") return JSON.parse(st)||{};
+    return st&&typeof st==="object"?st:{};
+  }catch(_){return{}}
+}
+function reportGroups(st){
+  try{
+    if(typeof _modernGetNomenclatureGroupsFromState==="function"){
+      return clone(_modernGetNomenclatureGroupsFromState(st||{}))||[];
+    }
+  }catch(_){}
+  var items=(st&&Array.isArray(st.elemItems)?st.elemItems:[])||[];
+  var groups=(st&&Array.isArray(st.elemGroups)?st.elemGroups:[])||[];
+  var active=items.filter(function(i){return num(i&&i.qty)>0}), used={}, out=[];
+  groups.forEach(function(g){
+    var arr=active.filter(function(i){return String(i.groupId||"")===String(g.id||"")});
+    if(arr.length){arr.forEach(function(i){used[String(i.id)]=1});out.push({name:g.name||"Група",items:arr})}
+  });
+  var rest=active.filter(function(i){return !used[String(i.id)]});
+  if(rest.length) out.push({name:"Інше",items:rest});
+  return clone(out)||[];
+}
+function cleanGroups(groups){
+  return (groups||[]).map(function(g){
+    return {
+      name:String(g&&g.name||"Група"),
+      items:(g&&g.items||[]).filter(function(i){return num(i&&i.qty)>0}).map(function(i){
+        var q=num(i.qty), p=num(i.price);
+        return {
+          name:String(i.name||"Позиція"),
+          icon:String(i.icon||""),
+          qty:q,
+          unit:String(i.unit||"шт"),
+          price:p,
+          total:q*p
+        };
+      })
+    };
+  }).filter(function(g){return g.items.length});
+}
+function totalGroups(groups){
+  var t=0;(groups||[]).forEach(function(g){(g.items||[]).forEach(function(i){t+=num(i.total)})});return t;
+}
+function currentState(){
+  var st={};
+  try{st.pts=clone(typeof pts!=="undefined"?pts:[])||[]}catch(_){st.pts=[]}
+  try{st.lengths=clone(typeof lengths!=="undefined"?lengths:[])||[]}catch(_){st.lengths=[]}
+  try{st.realPts=clone(typeof realPts!=="undefined"?realPts:[])||[]}catch(_){st.realPts=[]}
+  try{st.lightMarks=clone(typeof lightMarks!=="undefined"?lightMarks:[])||[]}catch(_){st.lightMarks=[]}
+  try{st.wallMarks=clone(typeof wallMarks!=="undefined"?wallMarks:[])||[]}catch(_){st.wallMarks=[]}
+  try{st.elemItems=clone(typeof elemItems!=="undefined"?elemItems:[])||[]}catch(_){st.elemItems=[]}
+  try{st.elemGroups=clone(typeof elemGroups!=="undefined"?elemGroups:[])||[]}catch(_){st.elemGroups=[]}
+  try{st.circleMode=!!(typeof circleMode!=="undefined"&&circleMode)}catch(_){st.circleMode=false}
+  try{st.circleDiamCm=typeof circleDiamCm!=="undefined"?circleDiamCm:null}catch(_){st.circleDiamCm=null}
+  return st;
+}
+function linesFor(st,kind){
+  try{
+    if(kind==="dimensions"&&typeof _allWallDimensionLines==="function") return clone(_allWallDimensionLines(st||{}))||[];
+    if(kind==="walls"&&typeof getWallCoordLines==="function") return clone(getWallCoordLines(st||{}))||[];
+    if(kind==="lights"&&typeof getLightCoordLines==="function"){
+      var cp=clone(st)||{};
+      if(Array.isArray(cp.lightMarks)&&window.rmIsFixtureMarkV326) cp.lightMarks=cp.lightMarks.filter(function(m){return window.rmIsFixtureMarkV326(m)});
+      return clone(getLightCoordLines(cp))||[];
+    }
+    if(kind==="ceilings"&&window.getCeilingElementCoordLinesV326) return clone(window.getCeilingElementCoordLinesV326(st||{}))||[];
+    if(kind==="exhausts"&&typeof getExhaustCoordLines==="function") return clone(getExhaustCoordLines(st||{}))||[];
+  }catch(_){}
+  return [];
+}
+function fixtureCount(st){
+  try{
+    var a=(st&&st.lightMarks)||[];
+    return window.A·CEILFixtureLightCount?window.A·CEILFixtureLightCount(a):a.length;
+  }catch(_){return 0}
+}
+function roomSnapshot(name,st,fallback){
+  st=safeState(st);
+  var groups=cleanGroups(reportGroups(st));
+  var area=(fallback&&fallback.area)||"";
+  var per=(fallback&&fallback.per)||"";
+  var inC=(fallback&&fallback.inC)||"";
+  var outC=(fallback&&fallback.outC)||"";
+  try{
+    if(!area&&typeof _modernRoomStatsFromCurrent==="function"&&(!st.pts||!st.pts.length)){
+      var x=_modernRoomStatsFromCurrent(); area=x.area;per=x.per;inC=x.inC;outC=x.outC;
+    }
+  }catch(_){}
+  return {
+    name:String(name||"Кімната"),
+    area:String(area||"—"),
+    per:String(per||"—"),
+    inC:String(inC||"—"),
+    outC:String(outC||"—"),
+    lights:fixtureCount(st),
+    dimensions:linesFor(st,"dimensions"),
+    walls:linesFor(st,"walls"),
+    lightLines:linesFor(st,"lights"),
+    ceilingLines:linesFor(st,"ceilings"),
+    exhaustLines:linesFor(st,"exhausts"),
+    groups:groups,
+    total:totalGroups(groups)
+  };
+}
+function activeObject(){
+  try{
+    var ps=typeof getProjects==="function"?getProjects():[];
+    var id=null;
+    if(typeof _activeObjectId!=="undefined"&&_activeObjectId!=null) id=_activeObjectId;
+    if(id==null&&typeof _currentProjectId!=="undefined"&&_currentProjectId!=null) id=_currentProjectId;
+    if(id!=null) return ps.find(function(p){
+      return [p&&p.id,p&&p._dbId,p&&p._localId].some(function(v){return v!=null&&String(v)===String(id)});
+    })||null;
+  }catch(_){}
+  return null;
+}
+window.A_CEIL_buildCloudStructuredReport=function(fileName){
+  var obj=activeObject(), meta={
+    name:"",
+    address:"",
+    phone:"",
+    comment:""
+  };
+  try{meta.name=String(typeof _currentProjName!=="undefined"&&_currentProjName||obj&&obj.name||"Звіт A·CEIL")}catch(_){}
+  try{meta.address=String(typeof _currentProjAddr!=="undefined"&&_currentProjAddr||obj&&obj.addr||"")}catch(_){}
+  try{meta.phone=String(typeof _currentProjPhone!=="undefined"&&_currentProjPhone||obj&&obj.phone||"")}catch(_){}
+  try{meta.comment=String(typeof _currentProjComment!=="undefined"&&_currentProjComment||obj&&obj.comment||"")}catch(_){}
+
+  if(obj&&obj.multiRoom&&Array.isArray(obj.rooms)&&obj.rooms.length){
+    var rooms=obj.rooms.map(function(r){
+      return roomSnapshot(r.name||"Кімната",safeState(r.state),r);
+    });
+    return {type:"object",meta:meta,rooms:rooms,total:rooms.reduce(function(s,r){return s+num(r.total)},0)};
+  }
+
+  var st=currentState(), stats={};
+  try{
+    if(typeof _modernRoomStatsFromCurrent==="function") stats=_modernRoomStatsFromCurrent()||{};
+  }catch(_){}
+  var room=roomSnapshot(meta.name||"Кімната",st,{
+    area:stats.area||document.getElementById("area")&&document.getElementById("area").textContent||"",
+    per:stats.per||document.getElementById("per")&&document.getElementById("per").textContent||"",
+    inC:stats.inC||document.getElementById("inCorners")&&document.getElementById("inCorners").textContent||"",
+    outC:stats.outC||document.getElementById("outCorners")&&document.getElementById("outCorners").textContent||""
+  });
+  return {type:"single",meta:meta,rooms:[room],total:room.total};
+};
+
+window.A_CEIL_cloudPlanImage=function(canvas){
+  try{
+    if(!canvas) return "";
+    var s=parseFloat(canvas.dataset&&canvas.dataset.hdScale)||1;
+    var logicalW=parseFloat(canvas.dataset&&canvas.dataset.logicalWidth)||1080;
+    var x=28,y=200,w=640,h=590;
+    if(logicalW!==1080) return "";
+    var out=document.createElement("canvas");
+    out.width=Math.max(1,Math.round(w*s));
+    out.height=Math.max(1,Math.round(h*s));
+    var c=out.getContext("2d");
+    c.imageSmoothingEnabled=true;
+    c.imageSmoothingQuality="high";
+    c.drawImage(canvas,Math.round(x*s),Math.round(y*s),Math.round(w*s),Math.round(h*s),0,0,out.width,out.height);
+    return out.toDataURL("image/png");
+  }catch(_){return ""}
+};
+
+function renderList(title,arr){
+  if(!arr||!arr.length) return "";
+  return '<section class="chr-card"><h3>'+esc(title)+'</h3><div class="chr-list">'+arr.map(function(x){
+    return '<div>'+esc(String(x).replace(/^•\s*/,""))+'</div>';
+  }).join("")+'</div></section>';
+}
+function renderEstimate(groups,total){
+  if(!groups||!groups.length) return "";
+  var html='<section class="chr-card chr-est"><h3>6. Кошторис</h3>';
+  groups.forEach(function(g){
+    html+='<div class="chr-group"><b>'+esc(g.name)+'</b></div>';
+    g.items.forEach(function(i){
+      html+='<div class="chr-row"><div class="chr-item">'+
+        (i.icon?'<span>'+esc(i.icon)+'</span> ':'')+'<strong>'+esc(i.name)+'</strong>'+
+        '<small>К-ть: '+esc(i.qty)+' '+esc(i.unit)+' &nbsp; Ціна: '+money(i.price)+'</small></div>'+
+        '<div class="chr-sum">'+money(i.total)+' грн</div></div>';
+    });
+  });
+  html+='<div class="chr-total"><span>ДО СПЛАТИ</span><strong>'+money(total)+' грн</strong></div></section>';
+  return html;
+}
+function routeUrl(loc){
+  try{
+    if(window.A·CEILLocation&&window.A·CEILLocation.routeUrl) return window.A·CEILLocation.routeUrl(loc);
+  }catch(_){}
+  if(!loc) return "";
+  var a=Number(loc.latitude!=null?loc.latitude:loc.lat),b=Number(loc.longitude!=null?loc.longitude:loc.lng);
+  return Number.isFinite(a)&&Number.isFinite(b)?"https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(a+","+b):String(loc.mapUrl||"");
+}
+
+window.A_CEIL_renderStructuredCloudReport=function(overlay,data){
+  var s=data.structured||{}, meta=Object.assign({},data.meta||{},s.meta||{}), rooms=s.rooms||[];
+  var phone=String(meta.phone||"").replace(/[^+\d]/g,""), route=routeUrl(data.location);
+  var roomHtml=rooms.map(function(r,idx){
+    var summary='<div class="chr-stats">'+
+      '<div><small>ПЛОЩА</small><b>'+esc(r.area)+' м²</b></div>'+
+      '<div><small>ПЕРИМЕТР</small><b>'+esc(r.per)+' м</b></div>'+
+      '<div><small>КУТИ</small><b>'+esc(r.inC)+' / '+esc(r.outC)+'</b></div>'+
+      '<div><small>СВІТЛО</small><b>'+esc(r.lights)+'</b></div></div>';
+    var drawing=(idx===0&&s.drawing)?'<section class="chr-card chr-plan"><h3>1. План приміщення</h3><img src="'+esc(s.drawing)+'" alt="План приміщення"></section>':'';
+    return '<article class="chr-room">'+
+      (rooms.length>1?'<h2>'+esc(r.name||("Кімната "+(idx+1)))+'</h2>':'')+
+      drawing+
+      '<section class="chr-card"><h3>2. Основна інформація</h3>'+summary+'</section>'+
+      renderList("3. Розміри стін",r.dimensions)+
+      renderList("4. Розташування елементів",r.walls)+
+      renderList("5. Світло",r.lightLines)+
+      renderList("Елементи стелі",r.ceilingLines)+
+      renderList("Витяжка",r.exhaustLines)+
+      renderEstimate(r.groups,r.total)+
+      '</article>';
+  }).join("");
+
+  var fullImage=data.image?'<details class="chr-original"><summary>Відкрити повний графічний макет</summary><img src="'+esc(data.image)+'" alt="Повний звіт"></details>':'';
+  overlay.innerHTML=
+    '<div class="chr-shell">'+
+      '<header class="chr-head"><div class="chr-logo">A·CEIL <span>PRO</span></div><div><h1>'+esc(meta.name||"Монтажний звіт")+'</h1><p>Хмарний монтажний звіт</p></div></header>'+
+      ((meta.address||meta.comment)?'<section class="chr-meta">'+
+        (meta.address?'<div>📍 '+esc(meta.address)+'</div>':'')+
+        (meta.comment?'<div>💬 '+esc(meta.comment)+'</div>':'')+
+      '</section>':'')+
+      ((route||phone)?'<div class="chr-actions">'+
+        (route?'<a href="'+esc(route)+'">🧭 Маршрут</a>':'')+
+        (phone?'<a href="tel:'+esc(phone)+'">📞 Подзвонити</a>':'')+
+      '</div>':'')+
+      roomHtml+
+      (rooms.length>1?'<div class="chr-grand"><span>ЗАГАЛОМ ДО СПЛАТИ</span><strong>'+money(s.total)+' грн</strong></div>':'')+
+      fullImage+
+    '</div>';
+
+  var style=document.getElementById("A-CEIL-cloud-html-style");
+  if(!style){
+    style=document.createElement("style");style.id="A-CEIL-cloud-html-style";
+    style.textContent=
+      '#A·CEILPublicReportView{position:fixed;inset:0;z-index:2147483647;overflow:auto;background:#eef4fb;color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:0!important;box-sizing:border-box}' +
+      '.chr-shell{width:min(100%,1040px);margin:0 auto;padding:18px 14px 44px;box-sizing:border-box}' +
+      '.chr-head{display:flex;gap:16px;align-items:center;background:#0f172a;color:#fff;padding:20px;border-radius:22px;margin-bottom:12px;box-shadow:0 12px 34px rgba(15,23,42,.16)}' +
+      '.chr-logo{font-weight:950;font-size:20px;white-space:nowrap}.chr-logo span{color:#60a5fa}.chr-head h1{font-size:23px;line-height:1.1;margin:0 0 5px}.chr-head p{margin:0;color:#cbd5e1;font-size:13px}' +
+      '.chr-meta,.chr-card,.chr-original{background:#fff;border:1px solid #dbe4ef;border-radius:20px;padding:16px;margin:12px 0;box-shadow:0 7px 22px rgba(15,23,42,.05)}' +
+      '.chr-meta{display:grid;gap:7px;color:#475569;font-weight:650}.chr-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0}.chr-actions a{display:flex;min-height:48px;align-items:center;justify-content:center;border-radius:15px;text-decoration:none;font-weight:850;background:#dcfce7;color:#047857}.chr-actions a+ a{background:#dbeafe;color:#1d4ed8}' +
+      '.chr-room>h2{font-size:22px;margin:24px 4px 8px}.chr-card h3{margin:0 0 13px;color:#0755bd;font-size:18px}.chr-plan img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid #e2e8f0}' +
+      '.chr-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.chr-stats>div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:11px}.chr-stats small{display:block;color:#64748b;font-size:10px;font-weight:900;letter-spacing:.06em}.chr-stats b{display:block;font-size:17px;margin-top:5px}' +
+      '.chr-list{display:grid;gap:0}.chr-list>div{padding:10px 2px;border-bottom:1px solid #edf2f7;font-size:15px;line-height:1.35}.chr-list>div:last-child{border-bottom:0}' +
+      '.chr-est{overflow:hidden}.chr-group{background:#eaf2ff;color:#0755bd;font-size:14px;font-weight:900;padding:9px 10px;margin:12px -4px 0}.chr-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:11px 2px;border-bottom:1px solid #edf2f7}.chr-item strong{font-size:15px}.chr-item small{display:block;color:#64748b;font-size:12px;margin-top:5px}.chr-sum{color:#079447;font-weight:900;font-size:14px;white-space:nowrap}.chr-total,.chr-grand{display:flex;align-items:center;justify-content:space-between;gap:12px;border:2px solid #22c55e;background:#f0fdf4;border-radius:15px;padding:13px 14px;margin-top:14px}.chr-total span,.chr-grand span{font-size:12px;font-weight:900;color:#15803d}.chr-total strong,.chr-grand strong{font-size:21px;color:#15803d}.chr-grand{margin:18px 0;background:#0755bd;border-color:#0755bd;color:#fff}.chr-grand span,.chr-grand strong{color:#fff}' +
+      '.chr-original summary{cursor:pointer;font-weight:850;color:#475569}.chr-original img{display:block;width:100%;height:auto;margin-top:12px;border-radius:12px}' +
+      '@media(max-width:600px){.chr-shell{padding:10px 8px 30px}.chr-head{border-radius:18px;padding:16px 14px}.chr-logo{font-size:16px}.chr-head h1{font-size:19px}.chr-stats{grid-template-columns:1fr 1fr}.chr-actions{grid-template-columns:1fr}.chr-card,.chr-meta,.chr-original{border-radius:16px;padding:13px}.chr-row{grid-template-columns:1fr}.chr-sum{text-align:left}.chr-total strong,.chr-grand strong{font-size:18px}}';
+    document.head.appendChild(style);
+  }
+};
+})();
+</script>
+
 </body></html> 
 <!-- v2.19: Safari fix — never reads/writes Window.closed; hardened language switching and translation events. -->
 
