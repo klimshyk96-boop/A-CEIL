@@ -6459,6 +6459,162 @@ localStorage: lightTypes_v1
   }
 }
 </style>
+
+<style id="A-CEIL-compact-report-window-v1">
+/* Compact report settings window.
+   Report logic/types are untouched: existing client + installer workflow stays as-is. */
+#reportSettingsModal.rspro-modal{
+  padding:12px!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+#reportSettingsModal .rspro-sheet{
+  width:min(92vw,460px)!important;
+  height:auto!important;
+  max-height:84vh!important;
+  margin:3vh auto 0!important;
+  border-radius:24px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+}
+#reportSettingsModal .rspro-handle{
+  margin:9px auto 2px!important;
+  width:38px!important;
+  height:4px!important;
+}
+#reportSettingsModal .rspro-head{
+  padding:10px 14px 9px!important;
+  flex:0 0 auto!important;
+}
+#reportSettingsModal .rspro-title{
+  font-size:18px!important;
+  line-height:1.1!important;
+}
+#reportSettingsModal .rspro-sub{
+  font-size:11px!important;
+  margin-top:3px!important;
+}
+#reportSettingsModal .rspro-body{
+  padding:9px 10px!important;
+  gap:8px!important;
+  overflow:auto!important;
+  flex:1 1 auto!important;
+  min-height:0!important;
+}
+#reportSettingsModal .rspro-mini-actions{
+  gap:6px!important;
+  margin-bottom:0!important;
+}
+#reportSettingsModal .rspro-mini-actions button{
+  min-height:32px!important;
+  border-radius:11px!important;
+  font-size:11px!important;
+  padding:6px 8px!important;
+}
+#reportSettingsModal .rspro-card{
+  border-radius:17px!important;
+  padding:8px!important;
+}
+#reportSettingsModal .rspro-card-title{
+  font-size:12.5px!important;
+  margin-bottom:6px!important;
+  gap:6px!important;
+}
+#reportSettingsModal .rspro-card-title small{
+  font-size:9px!important;
+}
+#reportSettingsModal .rspro-grid{
+  gap:5px!important;
+}
+#reportSettingsModal .rspro-toggle{
+  min-height:39px!important;
+  padding:6px 8px!important;
+  border-radius:13px!important;
+  gap:8px!important;
+}
+#reportSettingsModal .rspro-toggle span{
+  font-size:12px!important;
+}
+#reportSettingsModal .rspro-toggle em{
+  font-size:9.5px!important;
+  margin-top:1px!important;
+}
+#reportSettingsModal .rspro-switch{
+  width:39px!important;
+  height:23px!important;
+}
+#reportSettingsModal .rspro-slider:before{
+  width:18px!important;
+  height:18px!important;
+  left:2.5px!important;
+  top:2.5px!important;
+}
+#reportSettingsModal .rspro-switch input:checked+.rspro-slider:before{
+  transform:translateX(16px)!important;
+}
+#reportSettingsModal .rspro-input,
+#reportSettingsModal .rspro-select{
+  height:39px!important;
+  border-radius:12px!important;
+  padding:7px 10px!important;
+  font-size:13px!important;
+}
+#reportSettingsModal .rspro-fields{
+  gap:6px!important;
+}
+#reportSettingsModal .rspro-actions{
+  padding:8px 10px 10px!important;
+  gap:6px!important;
+  grid-template-columns:1fr 110px!important;
+  flex:0 0 auto!important;
+}
+#reportSettingsModal .rspro-primary,
+#reportSettingsModal .rspro-secondary{
+  min-height:42px!important;
+  border-radius:14px!important;
+  font-size:13px!important;
+  padding:8px!important;
+}
+
+/* Important: on iPhone do NOT turn the sheet into full-screen. */
+@media (max-width:520px){
+  #reportSettingsModal.rspro-modal{
+    padding:10px!important;
+  }
+  #reportSettingsModal .rspro-sheet{
+    width:min(94vw,440px)!important;
+    height:auto!important;
+    max-height:82vh!important;
+    margin:5vh auto 0!important;
+    border-radius:23px!important;
+  }
+  #reportSettingsModal .rspro-body{
+    padding:8px!important;
+  }
+  #reportSettingsModal .rspro-head{
+    padding:9px 12px 8px!important;
+  }
+  #reportSettingsModal .rspro-title{
+    font-size:17px!important;
+  }
+  #reportSettingsModal .rspro-card{
+    border-radius:15px!important;
+    padding:7px!important;
+  }
+  #reportSettingsModal .rspro-toggle{
+    min-height:37px!important;
+    padding:5px 7px!important;
+  }
+  #reportSettingsModal .rspro-toggle span{
+    font-size:11.5px!important;
+  }
+  #reportSettingsModal .rspro-toggle em{
+    font-size:9px!important;
+  }
+}
+</style>
+
 </head><body><img src="${data}" id="img"><div class="bar"><button type="button" class="btn png" id="png">⬇ PNG</button><button type="button" class="btn pdf" id="pdf">📄 PDF</button><button type="button" class="btn share" id="pdfShare">📤 PDF</button><button type="button" class="btn cloud wide" id="cloud">🔗 Хмарне посилання</button>${url?'<button type="button" class="btn map" id="map">📍 Карта</button>':""}<div class="cloud-ready" id="cloudReady" hidden><input class="cloud-url" id="cloudUrl" readonly><button type="button" class="cloud-action cloud-copy" id="cloudCopy">📋 Копіювати</button><button type="button" class="cloud-action cloud-share" id="cloudShare">📤 Поділитися</button><button type="button" class="cloud-action cloud-open" id="cloudOpen">🌍 Відкрити</button></div><div class="status" id="reportStatus"></div></div>
 
 
@@ -17909,127 +18065,6 @@ if(typeof prevSaveProject==="function"&&!prevSaveProject.__memoryHeadroomFix){
 
 })();
 </script>
-
-
-
-<style id="A-CEIL-manager-report-ui-css">
-#A_CEIL_ManagerReportCard{margin:12px 0;padding:14px;border:1.5px solid #bfdbfe;border-radius:18px;background:linear-gradient(135deg,#eff6ff,#f8fbff)}
-#A_CEIL_ManagerReportCard .mr-kicker{font-size:11px;font-weight:950;letter-spacing:.08em;color:#2563eb;text-transform:uppercase}
-#A_CEIL_ManagerReportCard .mr-title{font-size:17px;font-weight:950;color:#0f172a;margin-top:4px}
-#A_CEIL_ManagerReportCard .mr-sub{font-size:12px;font-weight:700;color:#64748b;line-height:1.35;margin:5px 0 11px}
-#A_CEIL_ManagerReportCard button{width:100%;min-height:48px;border:0;border-radius:15px;background:linear-gradient(135deg,#0f5bd7,#2563eb);color:#fff;font-size:15px;font-weight:950;box-shadow:0 8px 22px rgba(37,99,235,.2)}
-</style>
-
-<script id="A-CEIL-manager-report-v2">
-(function(){
-"use strict";
-if(window.__A_CEIL_ManagerReportV2)return;
-window.__A_CEIL_ManagerReportV2=true;
-
-function clone(v){try{return JSON.parse(JSON.stringify(v));}catch(_){return v}}
-function parse(v){try{return typeof v==="string"?JSON.parse(v||"{}"):(v&&typeof v==="object"?v:{});}catch(_){return{}}}
-function n(v){var x=parseFloat(String(v==null?"":v).replace(/\s/g,"").replace(",",".").replace(/[^\d.-]/g,""));return Number.isFinite(x)?x:0}
-function fmt(v,d){return new Intl.NumberFormat("uk-UA",{minimumFractionDigits:d||0,maximumFractionDigits:d==null?2:d}).format(n(v))}
-function money(v){return fmt(v,2)+" грн"}
-function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
-function projects(){try{return window.A·CEIL.ProjectRepository.list({clone:true})}catch(_){try{return clone(getProjects())||[]}catch(__){return[]}}}
-function match(p,id){return !!p&&id!=null&&[p.id,p._dbId,p._localId].some(function(v){return v!=null&&String(v)===String(id)})}
-function activeObject(){
-  var id=null;try{id=typeof _activeObjectId!=="undefined"?_activeObjectId:null}catch(_){}
-  return projects().find(function(p){return match(p,id)})||null;
-}
-function groupRows(st){
-  try{if(typeof _modernGetNomenclatureGroupsFromState==="function")return clone(_modernGetNomenclatureGroupsFromState(st||{}))||[]}catch(_){}
-  var items=Array.isArray(st&&st.elemItems)?st.elemItems:[],groups=Array.isArray(st&&st.elemGroups)?st.elemGroups:[],by={},out=[];
-  items.filter(function(i){return n(i&&i.qty)>0}).forEach(function(it){var gid=String(it.groupId||"_none");(by[gid]||(by[gid]=[])).push(it)});
-  groups.forEach(function(g){if(by[String(g.id)]&&by[String(g.id)].length)out.push({name:g.name||"Група",items:by[String(g.id)]})});
-  if(by._none&&by._none.length)out.push({name:"Інше",items:by._none});
-  return out;
-}
-function category(groupName,itemName){
-  var s=(String(groupName||"")+" "+String(itemName||"")).toLowerCase();
-  if(/проф|карниз|багет|тіньов|парящ|паряч|shadow/.test(s))return"profiles";
-  if(/плів|полотн|premium|msd|teqtum|pongs|clipso|ткан/.test(s))return"canvas";
-  if(/встав|шнур|маскув/.test(s))return"insert";
-  if(/освіт|світ|люстр|трек|бра|led|ламп|світиль|точков/.test(s))return"lighting";
-  return"other";
-}
-function unitNorm(v){return String(v||"шт").replace(/\s+/g," ").trim()}
-function addAgg(map,key,row){
-  var k=String(key||"Позиція").trim()+"|"+unitNorm(row.unit);
-  if(!map[k])map[k]={name:String(key||"Позиція"),unit:unitNorm(row.unit),qty:0,sum:0};
-  map[k].qty+=n(row.qty);map[k].sum+=n(row.total);
-}
-function vals(map){return Object.keys(map).map(function(k){return map[k]}).sort(function(a,b){return b.qty-a.qty})}
-function roomStats(room){
-  var st=parse(room&&room.state),area=n(room&&room.area),per=n(room&&room.per),inC=n(room&&room.inC),outC=n(room&&room.outC);
-  var groups=groupRows(st),total=0,profiles={},canvas={},insert={},lighting={},other={};
-  groups.forEach(function(g){(g.items||[]).forEach(function(it){var qty=n(it.qty),price=n(it.price),sum=qty*price;if(qty<=0)return;total+=sum;var row={qty:qty,unit:it.unit||"шт",total:sum},c=category(g.name,it.name);addAgg(c==="profiles"?profiles:c==="canvas"?canvas:c==="insert"?insert:c==="lighting"?lighting:other,it.name,row)})});
-  var lightCount=0;try{lightCount=window.A·CEILFixtureLightCount?window.A·CEILFixtureLightCount(st.lightMarks||[]):(st.lightMarks||[]).length}catch(_){}
-  return{name:String(room&&room.name||"Кімната"),area:area,per:per,corners:inC+outC,lights:lightCount,total:total,profiles:profiles,canvas:canvas,insert:insert,lighting:lighting,other:other};
-}
-function aggregate(obj){
-  var rooms=(obj.rooms||[]).map(roomStats),a={area:0,per:0,corners:0,lights:0,total:0,profiles:{},canvas:{},insert:{},lighting:{},other:{}};
-  rooms.forEach(function(r){a.area+=r.area;a.per+=r.per;a.corners+=r.corners;a.lights+=r.lights;a.total+=r.total;["profiles","canvas","insert","lighting","other"].forEach(function(k){Object.keys(r[k]).forEach(function(key){var row=r[k][key];addAgg(a[k],row.name,row)})})});
-  return{rooms:rooms,total:a};
-}
-function block(title,map,totalLabel){
-  var rows=vals(map),total=rows.reduce(function(s,r){return s+r.qty},0),max=rows.reduce(function(m,r){return Math.max(m,r.qty)},0)||1;
-  return '<section class="md-card"><div class="md-card-title">'+esc(title)+(totalLabel?'<small>'+esc(totalLabel)+'</small>':'')+'</div>'+
-    (rows.length?rows.map(function(r){
-      var pct=Math.max(4,Math.round(r.qty/max*100));
-      return '<div class="md-metric-row"><div><strong>'+esc(r.name)+'</strong><div class="md-bar"><i style="width:'+pct+'%"></i></div></div><b>'+fmt(r.qty,2)+' '+esc(r.unit)+'</b></div>';
-    }).join(""):'<div class="md-empty">Немає даних</div>')+
-    (rows.length?'<div class="md-card-total"><span>Разом</span><b>'+fmt(total,2)+'</b></div>':'')+'</section>';
-}
-function makeHtml(obj,data){
-  var a=data.total,rooms=data.rooms;
-  var fin=[
-    ["Профілі",vals(a.profiles).reduce(function(s,x){return s+x.sum},0),"#3b82f6"],
-    ["Полотно",vals(a.canvas).reduce(function(s,x){return s+x.sum},0),"#22c55e"],
-    ["Освітлення",vals(a.lighting).reduce(function(s,x){return s+x.sum},0),"#f59e0b"],
-    ["Інше",vals(a.insert).concat(vals(a.other)).reduce(function(s,x){return s+x.sum},0),"#8b5cf6"]
-  ].filter(function(x){return x[1]>0});
-  var finTotal=fin.reduce(function(s,x){return s+x[1]},0)||1;
-  var roomsHtml=rooms.map(function(r,i){
-    var prof=vals(r.profiles).reduce(function(s,x){return s+x.qty},0);
-    return '<div class="md-room"><div class="md-room-num">'+(i+1)+'</div><div class="md-room-name">'+esc(r.name)+'</div><div><small>Площа</small><b>'+fmt(r.area,2)+' м²</b></div><div><small>Периметр</small><b>'+fmt(r.per,2)+' м</b></div><div><small>Світло</small><b>'+fmt(r.lights,0)+' шт</b></div><div><small>Профілі</small><b>'+fmt(prof,2)+' м</b></div><div class="md-room-sum">'+money(r.total)+'</div></div>';
-  }).join("");
-  var finLegend=fin.map(function(x){return '<div class="md-fin-item"><i style="background:'+x[2]+'"></i><span>'+esc(x[0])+'</span><b>'+money(x[1])+'</b><small>'+Math.round(x[1]/finTotal*100)+'%</small></div>'}).join("");
-  var lightingRows=vals(a.lighting).slice(0,8).map(function(r){return '<div class="md-simple-row"><span>'+esc(r.name)+'</span><b>'+fmt(r.qty,2)+' '+esc(r.unit)+'</b></div>'}).join("")||'<div class="md-empty">Немає даних</div>';
-  var otherRows=vals(a.insert).concat(vals(a.other)).slice(0,8).map(function(r){return '<div class="md-simple-row"><span>'+esc(r.name)+'</span><b>'+fmt(r.qty,2)+' '+esc(r.unit)+'</b></div>'}).join("")||'<div class="md-empty">Немає даних</div>';
-
-  return '<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Менеджерський звіт</title><style>'+
-  '*{box-sizing:border-box}body{margin:0;background:#f7f9fc;color:#111827;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.md-wrap{max-width:1180px;margin:auto;padding:18px}.md-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.md-brand{font-weight:950;font-size:22px}.md-brand b{color:#2563eb}.md-top h1{font-size:24px;margin:0}.md-actions{display:flex;gap:8px}.md-actions button{border:1px solid #dbe4ef;background:#fff;border-radius:12px;padding:10px 13px;font-weight:850}.md-actions .blue{background:#2563eb;color:#fff;border-color:#2563eb}.md-object{background:#fff;border:1px solid #dbe4ef;border-radius:20px;padding:18px;display:grid;grid-template-columns:1.4fr repeat(4,.7fr);gap:16px;align-items:center}.md-object-main small,.md-object div small{display:block;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase}.md-object-main h2{margin:4px 0 4px;font-size:23px}.md-object-main p{margin:2px 0;color:#64748b}.md-object b{display:block;margin-top:4px}.md-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}.md-kpi{background:#fff;border:1px solid #dbe4ef;border-radius:18px;padding:16px}.md-kpi small{font-size:10px;font-weight:950;text-transform:uppercase}.md-kpi b{display:block;font-size:28px;margin-top:7px}.md-kpi.blue{background:#eff6ff}.md-kpi.green{background:#f0fdf4}.md-kpi.orange{background:#fff7ed}.md-kpi.violet{background:#f5f3ff}.md-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.md-grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1.2fr;gap:12px;margin-top:12px}.md-card{background:#fff;border:1px solid #dbe4ef;border-radius:18px;padding:15px}.md-card-title{font-size:15px;font-weight:950;color:#1e3a8a;margin-bottom:12px}.md-card-title small{font-weight:800;color:#64748b;margin-left:6px}.md-metric-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:8px 0}.md-metric-row strong{font-size:13px}.md-metric-row>b{font-size:13px}.md-bar{height:4px;background:#eef2f7;border-radius:99px;margin-top:6px;overflow:hidden}.md-bar i{display:block;height:100%;background:#2563eb;border-radius:99px}.md-card-total{margin-top:8px;padding:10px 11px;border:1px solid #dbeafe;background:#f8fbff;border-radius:12px;display:flex;justify-content:space-between;color:#1d4ed8;font-weight:900}.md-simple-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #edf2f7;font-size:13px}.md-simple-row:last-child{border-bottom:0}.md-fin{display:grid;grid-template-columns:130px 1fr;gap:15px;align-items:center}.md-donut{width:120px;height:120px;border-radius:50%;background:conic-gradient(#3b82f6 0 50%,#22c55e 50% 82%,#f59e0b 82% 95%,#8b5cf6 95% 100%);position:relative}.md-donut:after{content:"";position:absolute;inset:27px;background:#fff;border-radius:50%}.md-fin-item{display:grid;grid-template-columns:10px 1fr auto;gap:7px;align-items:center;font-size:12px;margin:8px 0}.md-fin-item i{width:9px;height:9px;border-radius:3px}.md-fin-item small{grid-column:2/4;color:#94a3b8}.md-fin-total{margin-top:12px;border:1px solid #dbeafe;border-radius:12px;padding:10px;text-align:right;color:#1d4ed8;font-size:23px;font-weight:950}.md-rooms{margin-top:12px;background:#fff;border:1px solid #dbe4ef;border-radius:18px;padding:15px}.md-rooms h3{margin:0 0 12px;color:#1e3a8a}.md-room{display:grid;grid-template-columns:30px 1.2fr repeat(4,.8fr) 1fr;gap:10px;align-items:center;padding:11px 8px;border-bottom:1px solid #edf2f7}.md-room:last-child{border-bottom:0}.md-room-num{width:25px;height:25px;border-radius:8px;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:900}.md-room-name{font-weight:900}.md-room small{display:block;color:#94a3b8;font-size:9px;text-transform:uppercase;font-weight:900}.md-room b{display:block;margin-top:3px;font-size:12px}.md-room-sum{text-align:right;color:#1d4ed8;font-weight:950}.md-empty{color:#94a3b8;font-size:13px;padding:8px 0}@media(max-width:780px){.md-wrap{padding:8px}.md-top{align-items:flex-start}.md-top h1{font-size:20px}.md-actions button{padding:9px 10px;font-size:12px}.md-object{grid-template-columns:1fr 1fr}.md-object-main{grid-column:1/-1}.md-kpis{grid-template-columns:1fr 1fr}.md-grid3,.md-grid4{grid-template-columns:1fr}.md-room{grid-template-columns:28px 1fr 1fr}.md-room>div:nth-child(4),.md-room>div:nth-child(5),.md-room>div:nth-child(6){display:none}.md-room-sum{text-align:left}.md-fin{grid-template-columns:100px 1fr}.md-donut{width:90px;height:90px}.md-donut:after{inset:21px}}@media print{body{background:#fff}.md-actions{display:none}.md-wrap{max-width:none;padding:0}.md-card,.md-object,.md-kpi,.md-rooms{break-inside:avoid}}'+
-  '</style></head><body><div class="md-wrap"><div class="md-top"><div><div class="md-brand">A·CEIL <b>PRO</b></div><h1>МЕНЕДЖЕРСЬКИЙ ЗВІТ</h1></div><div class="md-actions"><button onclick="window.print()">🖨 Друк / PDF</button><button class="blue" id="mdShare">🔗 Поділитися</button></div></div>'+
-  '<section class="md-object"><div class="md-object-main"><small>Обʼєкт</small><h2>'+esc(obj.name||"—")+'</h2><p>'+esc(obj.addr||"")+'</p><p>'+esc(obj.phone||"")+'</p></div><div><small>Кімнат</small><b>'+rooms.length+'</b></div><div><small>Дата</small><b>'+new Date().toLocaleDateString("uk-UA")+'</b></div><div><small>Режим</small><b>Багатокімнатний</b></div><div><small>Статус</small><b>Актуальний</b></div></section>'+
-  '<section class="md-kpis"><div class="md-kpi blue"><small>Загальна площа</small><b>'+fmt(a.area,2)+' м²</b></div><div class="md-kpi green"><small>Загальний периметр</small><b>'+fmt(a.per,2)+' м</b></div><div class="md-kpi orange"><small>Кількість кутів</small><b>'+fmt(a.corners,0)+' шт</b></div><div class="md-kpi violet"><small>Загальна сума</small><b>'+money(a.total)+'</b></div></section>'+
-  '<section class="md-grid3">'+block("Профілі",a.profiles,"по всьому обʼєкту")+block("Полотно",a.canvas,"по всьому обʼєкту")+block("Вставка",a.insert,"по всьому обʼєкту")+'</section>'+
-  '<section class="md-grid4"><section class="md-card"><div class="md-card-title">Освітлення</div>'+lightingRows+'</section><section class="md-card"><div class="md-card-title">Додаткові роботи / матеріали</div>'+otherRows+'</section><section class="md-card"><div class="md-card-title">Підсумок</div><div class="md-simple-row"><span>Площа</span><b>'+fmt(a.area,2)+' м²</b></div><div class="md-simple-row"><span>Периметр</span><b>'+fmt(a.per,2)+' м</b></div><div class="md-simple-row"><span>Профілі</span><b>'+fmt(vals(a.profiles).reduce(function(s,x){return s+x.qty},0),2)+' м</b></div><div class="md-simple-row"><span>Світло</span><b>'+fmt(a.lights,0)+' шт</b></div></section><section class="md-card"><div class="md-card-title">Фінанси</div><div class="md-fin"><div class="md-donut"></div><div>'+finLegend+'</div></div><div class="md-fin-total">'+money(a.total)+'</div></section></section>'+
-  '<section class="md-rooms"><h3>Розбивка по кімнатах</h3>'+roomsHtml+'</section></div><script>document.getElementById("mdShare").onclick=async function(){try{if(navigator.share)await navigator.share({title:"Менеджерський звіт A·CEIL",url:location.href});else{await navigator.clipboard.writeText(location.href);this.textContent="✓ Скопійовано"}}catch(e){}}<\/script></body></html>';
-}
-window.A_CEIL_OpenManagerReport=async function(){
-  var obj=activeObject();
-  if(!obj||!obj.multiRoom||!Array.isArray(obj.rooms)||!obj.rooms.length){try{showToast("Менеджерський звіт доступний для багатокімнатного обʼєкта")}catch(_){}return}
-  var win=window.open();if(!win){try{showToast("Дозвольте спливаючі вікна")}catch(_){}return}
-  win.document.open();win.document.write(makeHtml(obj,aggregate(obj)));win.document.close();
-};
-function injectManagerCard(){
-  var modal=document.getElementById("reportSettingsModal");if(!modal)return;
-  var obj=activeObject(),old=document.getElementById("A_CEIL_ManagerReportCard");
-  if(!obj||!obj.multiRoom||!Array.isArray(obj.rooms)||!obj.rooms.length){if(old)old.remove();return}
-  if(old)return;
-  var target=document.getElementById("reportAudienceCard")||document.getElementById("rsToggles")||modal.firstElementChild;
-  var card=document.createElement("div");card.id="A_CEIL_ManagerReportCard";
-  card.innerHTML='<div class="mr-kicker">Багатокімнатний режим</div><div class="mr-title">📊 Менеджерський дашборд</div><div class="mr-sub">Ключові показники обʼєкта, профілі, полотно, вставка, освітлення, фінанси та кімнати одним екраном.</div><button type="button">Відкрити менеджерський звіт</button>';
-  card.querySelector("button").onclick=function(){try{if(typeof closeReportSettings==="function")closeReportSettings()}catch(_){}setTimeout(window.A_CEIL_OpenManagerReport,60)};
-  if(target&&target.parentNode)target.parentNode.insertBefore(card,target);else modal.appendChild(card);
-}
-var prev=window.openReportSettings;
-if(typeof prev==="function"&&!prev.__managerReportV2){var wrapped=function(){var r=prev.apply(this,arguments);setTimeout(injectManagerCard,80);return r};wrapped.__managerReportV2=true;window.openReportSettings=wrapped;try{openReportSettings=wrapped}catch(_){}}
-})();
-</script>
-
 
 </body></html> 
 <!-- v2.19: Safari fix — never reads/writes Window.closed; hardened language switching and translation events. -->
