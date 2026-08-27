@@ -18291,7 +18291,6 @@ if(typeof old==="function"&&!old.__elementsReadonlyV1){
       <div class="aceil-admin-tabs">
         <button type="button" class="active" data-tab="users" onclick="A_CEIL_Admin.showTab('users',this)"><svg class="aceil-svg" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> <span>Користувачі</span></button>
         <button type="button" data-tab="activity" onclick="A_CEIL_Admin.showTab('activity',this)"><svg class="aceil-svg" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg> <span>Активність</span></button>
-        <button type="button" data-tab="settings" onclick="A_CEIL_Admin.showTab('settings',this)"><svg class="aceil-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.2.38.55.72 1 .9.34.15.72.22 1.1.2h.1v4h-.1a1.7 1.7 0 0 0-1.1.4 1.7 1.7 0 0 0-1 1z"/></svg> <span>Налаштування</span></button>
       </div>
       <div id="aceilUsersPane">
         <div id="aceilAdminSummary"></div>
@@ -18299,7 +18298,6 @@ if(typeof old==="function"&&!old.__elementsReadonlyV1){
         <div id="aceilAdminContent"><div class="aceil-admin-note">Завантаження…</div></div>
       </div>
       <div id="aceilActivityPane" class="aceil-tab-pane" style="display:none"></div>
-      <div id="aceilSettingsPane" class="aceil-tab-pane" style="display:none"><div class="aceil-coming-card"><b>⚙️ Налаштування доступу</b><span>Права користувачів змінюються у вкладці «Користувачі». Системні налаштування сюди можна додати окремо.</span></div></div>
     </div>
   </div>
 </div>
@@ -18316,6 +18314,120 @@ if(typeof old==="function"&&!old.__elementsReadonlyV1){
 
 .aceil-title-icon{width:25px;height:25px;fill:none;stroke:#334155;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-5px;margin-right:8px}.aceil-admin-tabs .aceil-svg{width:21px!important;height:21px!important;stroke-width:2!important}.aceil-stat i .aceil-svg{width:23px!important;height:23px!important;stroke-width:2!important}.aceil-access-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 34px;background:#eff6ff;color:#2563eb}.aceil-access-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.aceil-access-icon.projects_edit{background:#fff7ed;color:#f59e0b}.aceil-access-icon.is_active{background:#fff1f2;color:#ef4444}.aceil-admin-user.expanded .aceil-admin-row{display:flex!important;gap:10px!important}.aceil-admin-row-text{flex:1}.aceil-admin-badge.pending{background:#fff7ed!important;color:#c2410c!important}.aceil-approval-box{grid-column:1/-1;border:1px solid #fed7aa;background:#fffaf3;border-radius:15px;padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px}.aceil-approval-box b{display:block;color:#9a3412;font-size:13px}.aceil-approval-box small{display:block;color:#9a6b4a;font-size:10px;margin-top:3px}.aceil-approval-actions{display:flex;gap:7px}.aceil-approval-actions button{border:0;border-radius:10px;padding:9px 11px;font-weight:850;font-size:11px}.aceil-approval-actions .approve{background:#10b981;color:white}.aceil-approval-actions .reject{background:#fee2e2;color:#b91c1c}@media(max-width:430px){.aceil-approval-box{align-items:flex-start;flex-direction:column}.aceil-approval-actions{width:100%}.aceil-approval-actions button{flex:1}}
 </style>
+
+<style id="A-CEIL-admin-mobile-layout-fix-20260827">
+/* A·CEIL Admin — mobile containment fix */
+.aceil-admin-overlay,
+.aceil-admin-sheet,
+.aceil-admin-head,
+.aceil-admin-body,
+.aceil-admin-tabs,
+.aceil-admin-dashboard,
+.aceil-admin-user,
+.aceil-admin-controls{
+  box-sizing:border-box!important;
+}
+.aceil-admin-sheet{
+  width:100%!important;
+  max-width:720px!important;
+  overflow:hidden!important;
+}
+.aceil-admin-body{
+  width:100%!important;
+  min-width:0!important;
+  overflow-x:hidden!important;
+}
+.aceil-admin-tabs{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  width:100%!important;
+}
+.aceil-admin-tabs button{
+  min-width:0!important;
+  overflow:hidden!important;
+}
+.aceil-admin-tabs button span{
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.aceil-admin-dashboard{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  width:100%!important;
+  min-width:0!important;
+}
+.aceil-stat{
+  min-width:0!important;
+  width:auto!important;
+}
+.aceil-admin-user{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  overflow:hidden!important;
+}
+.aceil-admin-user-top,
+.aceil-quick-rights,
+.aceil-admin-controls{
+  min-width:0!important;
+  max-width:100%!important;
+}
+.aceil-admin-user.expanded .aceil-admin-controls{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+}
+.aceil-admin-user.expanded .aceil-admin-row{
+  min-width:0!important;
+  width:100%!important;
+  overflow:hidden!important;
+}
+.aceil-admin-row-text{
+  min-width:0!important;
+}
+.aceil-admin-row-text b,
+.aceil-admin-row-text small{
+  overflow-wrap:anywhere!important;
+}
+.aceil-switch{
+  flex:0 0 46px!important;
+}
+@media(max-width:520px){
+  .aceil-admin-head{
+    padding-left:16px!important;
+    padding-right:16px!important;
+  }
+  .aceil-admin-body{
+    padding-left:12px!important;
+    padding-right:12px!important;
+  }
+  .aceil-admin-dashboard{
+    gap:8px!important;
+  }
+  .aceil-stat{
+    padding:11px 9px!important;
+    min-height:102px!important;
+  }
+  .aceil-stat b{
+    font-size:23px!important;
+  }
+  .aceil-stat span{
+    font-size:10px!important;
+    overflow-wrap:anywhere!important;
+  }
+  .aceil-admin-user.expanded .aceil-admin-controls{
+    grid-template-columns:1fr!important;
+  }
+  .aceil-admin-user.expanded .aceil-admin-row,
+  .aceil-admin-user.expanded .aceil-project-scope,
+  .aceil-admin-user.expanded .aceil-temp-access,
+  .aceil-admin-user.expanded .aceil-admin-row:last-child{
+    grid-column:1!important;
+  }
+  .aceil-admin-user.expanded .aceil-admin-row{
+    min-height:70px!important;
+  }
+}
+</style>
+
 <script id="A-CEIL-admin-v2">
 (function(){
 "use strict";
