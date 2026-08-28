@@ -18548,6 +18548,16 @@ if(typeof old==="function"&&!old.__elementsReadonlyV1){
 }
 </style>
 
+
+<style id="A-CEIL-admin-danger-zone-20260828">
+#aceilAdminModal .aceil-danger-zone{grid-column:1/-1!important;width:100%!important;margin-top:4px!important;border:1px solid #e5e7eb!important;border-radius:14px!important;background:#f8fafc!important;overflow:hidden!important}
+#aceilAdminModal .aceil-danger-zone>summary{list-style:none!important;cursor:pointer!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;min-height:42px!important;padding:9px 12px!important;color:#64748b!important;font-weight:800!important;font-size:11px!important}
+#aceilAdminModal .aceil-danger-zone>summary::-webkit-details-marker{display:none!important}
+#aceilAdminModal .aceil-danger-zone>summary small{color:#94a3b8!important;font-weight:700!important;font-size:9px!important}
+#aceilAdminModal .aceil-danger-zone[open]>summary{background:#fff7f7!important;color:#991b1b!important;border-bottom:1px solid #fee2e2!important}
+#aceilAdminModal .aceil-danger-zone .aceil-delete-user-box{margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+</style>
+
 </body></html> 
 <!-- A·CEIL 2026-08-27: manager report compact trigger + back + cloud share -->
 <!-- v2.19: Safari fix — never reads/writes Window.closed; hardened language switching and translation events. -->
@@ -18839,7 +18849,7 @@ function render(rows){
   if(!rows.length){content('<div class="aceil-admin-empty">Користувачів не знайдено.</div>');return}
   content(rows.map(function(r,i){
       var uid=String(r.user_id||r.id||""), active=r.is_active!==false, approval=String(r.approval_status||'').toLowerCase(), pending=approval==='pending', rejected=approval==='rejected';
-      var badge=pending?'<span class="aceil-admin-badge pending">Очікує</span>':rejected?'<span class="aceil-admin-badge off">Відхилено</span>':'<span class="aceil-admin-badge '+(!active?'off':'')+'">'+(!active?'Заблоковано':'Активний')+'</span>';
+      var badge=active?'<span class="aceil-admin-badge">Активний</span>':pending?'<span class="aceil-admin-badge pending">Очікує</span>':rejected?'<span class="aceil-admin-badge off">Відхилено</span>':'<span class="aceil-admin-badge off">Заблоковано</span>';
       var quick='<div class="aceil-quick-rights"><span class="aceil-quick-pill '+(r.nomenclature_access?'on':'')+'">Номенклатура</span><span class="aceil-quick-pill '+(r.projects_access?'on':'')+'">Проєкти</span><span class="aceil-quick-pill edit '+(r.projects_edit?'on':'')+'">Редагування</span></div>';
       return '<div class="aceil-admin-user '+(i===0?'expanded':'')+'" data-uid="'+esc(uid)+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||''))+'"><div class="aceil-admin-user-top" onclick="A_CEIL_Admin.toggleCard(this)"><div class="aceil-user-avatar">'+esc(initials(r))+'</div><div class="aceil-user-ident"><div class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+'</div><div class="aceil-admin-mail">'+esc(r.email||"")+'</div></div>'+badge+'<span class="aceil-user-chevron">⌄</span></div>'+quick+'<div class="aceil-admin-controls">'+(pending?'<div class="aceil-approval-box"><div><b>Нова реєстрація</b><small>Користувач ще не має доступу до A·CEIL</small></div><div class="aceil-approval-actions"><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this)" type="button" class="approve">✓ Схвалити</button><button onclick="A_CEIL_Admin.reject(\''+esc(uid)+'\',this)" type="button" class="reject">× Відхилити</button></div></div>':'')+
         toggle(uid,"nomenclature_access","Моя номенклатура","Використовувати номенклатуру owner",!!r.nomenclature_access,false)+
@@ -18848,7 +18858,7 @@ function render(rows){
         toggle(uid,"projects_edit","Редагування проєктів","Може змінювати доступні проєкти",!!r.projects_edit,!r.projects_access)+
         tempAccess(uid,r)+
         toggle(uid,"is_active","Активний користувач","Повне блокування доступу до A·CEIL",active,false)+
-        '<div class="aceil-delete-user-box"><div><b>Видалити користувача</b><small>Повністю видалити обліковий запис A·CEIL.</small></div><button type="button" class="aceil-delete-user-btn" onclick="A_CEIL_Admin.deleteUser(\''+esc(uid)+'\',\''+esc(r.email||r.name||'Користувач')+'\',this)"><svg class="aceil-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg><span>Видалити</span></button></div>'+
+        '<details class="aceil-danger-zone"><summary><span>Небезпечні дії</span><small>Видалення</small></summary><div class="aceil-delete-user-box"><div><b>Видалити користувача назавжди</b><small>Обліковий запис буде видалено без можливості відновлення.</small></div><button type="button" class="aceil-delete-user-btn" onclick="A_CEIL_Admin.deleteUser(\''+esc(uid)+'\',\''+esc(r.email||r.name||'Користувач')+'\',this)"><svg class="aceil-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg><span>Видалити назавжди</span></button></div></details>'+
       '</div></div>';
     }).join(""));
 }
@@ -18927,8 +18937,29 @@ async function deleteUser(uid,label,button){
 
 async function setAccess(uid,key,val,input){
   if(input)input.disabled=true;
-  try{var c=sb();if(!c)throw new Error("Supabase client недоступний.");var r=await c.rpc("admin_set_user_access",{p_user_id:uid,p_field:key,p_value:!!val});if(r.error)throw r.error;if(r.data!==true)throw new Error("RPC не підтвердила зміну доступу.");if(key==='projects_access'&&val===true){var sr=await c.rpc('admin_set_projects_scope',{p_user_id:uid,p_scope:'all'});if(sr.error)throw sr.error}toast("✓ Доступ оновлено");await load()}
-  catch(e){if(input){input.checked=!val;input.disabled=false}window.__diagSilent&&window.__diagSilent(e);toast("Не вдалося змінити доступ: "+String(e&&e.message?e.message:e))}
+  try{
+    var c=sb();if(!c)throw new Error("Supabase client недоступний.");
+    var r=await c.rpc("admin_set_user_access",{p_user_id:uid,p_field:key,p_value:!!val});
+    if(r.error)throw r.error;
+    if(r.data!==true)throw new Error("RPC не підтвердила зміну доступу.");
+    if(key==='projects_access'&&val===true){
+      var sr=await c.rpc('admin_set_projects_scope',{p_user_id:uid,p_scope:'all'});
+      if(sr.error)throw sr.error
+    }
+    if(key==='is_active'&&val===true){
+      try{
+        var ar=await c.rpc("admin_set_registration_status",{p_user_id:uid,p_status:"approved"});
+        if(ar.error)throw ar.error
+      }catch(syncErr){window.__diagSilent&&window.__diagSilent(syncErr)}
+    }
+    toast("✓ Доступ оновлено");
+    await load()
+  }
+  catch(e){
+    if(input){input.checked=!val;input.disabled=false}
+    window.__diagSilent&&window.__diagSilent(e);
+    toast("Не вдалося змінити доступ: "+String(e&&e.message?e.message:e))
+  }
 }
 async function setScope(uid,scope,button){
   if(button)button.disabled=true;
