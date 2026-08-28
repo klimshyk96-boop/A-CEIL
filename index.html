@@ -18692,177 +18692,115 @@ try{deleteActiveRoom=deleteCurrentRoomHard}catch(_){}
 </script>
 
 
-<style id="aceil-contour-profile-test-css">
-.canvas-container{position:relative}
-#aceilContourProfile{
- position:absolute;z-index:40;left:10px;top:10px;
- display:flex;align-items:center;gap:7px;padding:6px 9px;
- background:rgba(255,255,255,.95);border:1px solid #e2e8f0;border-radius:14px;
- box-shadow:0 7px 22px rgba(15,23,42,.10);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)
-}
-#aceilContourProfile .dot{width:9px;height:9px;border-radius:50%;background:#1d1d1f}
-#aceilContourProfile .txt{display:flex;flex-direction:column;line-height:1.05}
-#aceilContourProfile small{font:800 8px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em}
-#aceilContourProfile select{border:0;outline:0;background:transparent;color:#0f172a;font:900 12px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:1px 2px}
-</style>
-
-<script id="aceil-contour-profile-test-js">
+<!-- A·CEIL wall elements parallel lanes 2026-08-28 -->
+<script id="A-CEIL-wall-elements-parallel-lanes-20260828">
 (function(){
-"use strict";
-if(window.__aceilContourProfileTest)return;
-window.__aceilContourProfileTest=1;
+  'use strict';
+  if(window.__A_CEIL_WallElementsParallelLanes20260828) return;
+  window.__A_CEIL_WallElementsParallelLanes20260828 = true;
 
-var META={
- base:{label:"Базовий",color:"#1d1d1f"},
- shadow:{label:"Тіньовий",color:"#8b2cf5"},
- floating:{label:"Парящий",color:"#e53935"}
-};
-window._aceilContourProfile=window._aceilContourProfile||"base";
-
-function currentMeta(){return META[window._aceilContourProfile]||META.base}
-function redraw(){try{if(typeof window.requestDraw==="function")window.requestDraw();else if(typeof window.draw==="function")window.draw()}catch(e){}}
-function perimeterM(){
- try{
-  if(typeof circleMode!=="undefined"&&circleMode&&Number(circleDiamCm)>0)return Math.PI*Number(circleDiamCm)/100;
-  if(typeof lengths!=="undefined"&&Array.isArray(lengths))return lengths.reduce(function(s,v){v=Number(v);return s+(isFinite(v)?v:0)},0)/100;
- }catch(e){}
- return 0;
-}
-function sourceItem(src){
- try{
-  if(typeof elemItems==="undefined"||!Array.isArray(elemItems))return null;
-  for(var i=0;i<elemItems.length;i++)if(elemItems[i]&&String(elemItems[i].source||"")===src)return elemItems[i];
- }catch(e){}
- return null;
-}
-function autoSet(it,v){
- if(!it)return;
- it.qty=Math.max(0,Number(v)||0);
- it.autoFilled=true;
- it.autoZero=!(it.qty>0);
- it.manualQtyOverride=false;
-}
-function applyProfileQty(){
- var p=window._aceilContourProfile||"base";
- if(p==="base")return;
- var per=perimeterM();
- if(!(per>0))return;
- var main=sourceItem("main_profile");
- if(p==="shadow"){
-  autoSet(main,0);
-  autoSet(sourceItem("shadow_profile"),per);
- }else if(p==="floating"){
-  autoSet(main,0);
-  autoSet(sourceItem("floating_profile"),per);
- }
- try{if(typeof recalcElemTotal==="function")recalcElemTotal()}catch(e){}
- try{if(typeof updateElemBadge==="function")updateElemBadge()}catch(e){}
-}
-function syncBox(){
- var box=document.getElementById("aceilContourProfile");
- if(!box)return;
- var s=box.getElementsByTagName("select")[0],d=box.querySelector(".dot");
- if(s)s.value=window._aceilContourProfile||"base";
- if(d)d.style.background=currentMeta().color;
-}
-function choose(v,save){
- window._aceilContourProfile=META[v]?v:"base";
- syncBox();
- try{
-  if(typeof window.autoFillNomenclature==="function")window.autoFillNomenclature({silent:true});
-  else if(typeof autoFillNomenclature==="function")autoFillNomenclature({silent:true});
- }catch(e){}
- applyProfileQty();
- redraw();
- if(save!==false){try{if(typeof saveState==="function")saveState()}catch(e){}}
-}
-window.ACEILSetContourProfile=choose;
-
-function mount(){
- var host=document.querySelector(".canvas-container");
- if(!host||document.getElementById("aceilContourProfile"))return;
- var box=document.createElement("div");
- box.id="aceilContourProfile";
- box.innerHTML='<span class="dot"></span><span class="txt"><small>Профіль</small><select><option value="base">Базовий</option><option value="shadow">Тіньовий</option><option value="floating">Парящий</option></select></span>';
- host.appendChild(box);
- box.getElementsByTagName("select")[0].addEventListener("change",function(){choose(this.value,true)});
- syncBox();
-}
-
-/* Зберігаємо вибір у state кімнати */
-var c0=window.collectState;
-if(typeof c0!=="function"){try{c0=collectState}catch(e){}}
-if(typeof c0==="function"){
- var c1=function(){var s=c0.apply(this,arguments);if(s&&typeof s==="object")s.contourProfile=window._aceilContourProfile||"base";return s};
- window.collectState=c1;try{collectState=c1}catch(e){}
-}
-
-/* Відновлюємо при відкритті кімнати */
-var a0=window.applyState;
-if(typeof a0!=="function"){try{a0=applyState}catch(e){}}
-if(typeof a0==="function"){
- var a1=function(st){
-  var r=a0.apply(this,arguments),s=st;
-  try{if(typeof s==="string")s=JSON.parse(s)}catch(e){s=null}
-  window._aceilContourProfile=s&&META[s.contourProfile]?s.contourProfile:"base";
-  syncBox();redraw();return r;
- };
- window.applyState=a1;try{applyState=a1}catch(e){}
-}
-
-/* Після штатного автопідрахунку застосовуємо профіль контуру */
-var f0=window.autoFillNomenclature;
-if(typeof f0!=="function"){try{f0=autoFillNomenclature}catch(e){}}
-if(typeof f0==="function"){
- var f1=function(){var r=f0.apply(this,arguments);applyProfileQty();return r};
- window.autoFillNomenclature=f1;try{autoFillNomenclature=f1}catch(e){}
-}
-
-/* Колір контуру */
-function overlay(){
- if((window._aceilContourProfile||"base")==="base")return;
- try{
-  if(typeof _reportMode!=="undefined"&&_reportMode)return;
-  if(typeof ctx==="undefined"||!ctx)return;
-  ctx.save();
-  if(typeof viewOffsetX!=="undefined"&&typeof viewOffsetY!=="undefined")ctx.translate(viewOffsetX,viewOffsetY);
-  if(typeof viewScale!=="undefined")ctx.scale(viewScale,viewScale);
-  ctx.strokeStyle=currentMeta().color;ctx.lineWidth=3.8;ctx.lineJoin="round";ctx.lineCap="round";ctx.setLineDash([]);
-  if(typeof circleMode!=="undefined"&&circleMode&&Number(circleDiamCm)>0){
-   var cx=cv.width/2,cy=cv.height/2,r=.42*Math.min(cv.width,cv.height);
-   ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();
-  }else if(typeof pts!=="undefined"&&Array.isArray(pts)&&pts.length>1){
-   ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
-   var n=pts.length,count=(typeof closed!=="undefined"&&closed)?n:n-1;
-   for(var i=0;i<count;i++){
-    var j=(i+1)%n;
-    try{
-     if(typeof _isArcSide==="function"&&_isArcSide(i)&&typeof _sideArcCanvasPts==="function"){
-      var ap=_sideArcCanvasPts(i)||[];
-      for(var k=0;k<ap.length;k++)ctx.lineTo(ap[k].x,ap[k].y);
-     }
-    }catch(e){}
-    ctx.lineTo(pts[j].x,pts[j].y);
-   }
-   if(typeof closed==="undefined"||closed)ctx.closePath();
-   ctx.stroke();
+  var FALLBACK = ['#16a34a','#7c3aed','#d97706','#2563eb','#dc2626','#0891b2'];
+  function num(v){ v=Number(v); return Number.isFinite(v)?v:0; }
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+  function getPts(){ try{return Array.isArray(pts)?pts:[]}catch(_){return []} }
+  function getMarks(){
+    try{ if(typeof wallMarks!=='undefined' && Array.isArray(wallMarks)) return wallMarks; }catch(_){ }
+    return Array.isArray(window.wallMarks)?window.wallMarks:[];
   }
-  ctx.restore();
- }catch(e){}
-}
-var d0=window.draw;
-if(typeof d0!=="function"){try{d0=draw}catch(e){}}
-if(typeof d0==="function"){
- var d1=function(){var r=d0.apply(this,arguments);overlay();return r};
- window.draw=d1;try{draw=d1}catch(e){}
-}
+  function getSideLen(i,a,b){
+    try{ if(typeof _sideLenCm==='function'){ var v=Number(_sideLenCm(i)); if(v>0)return v; } }catch(_){ }
+    try{ if(Array.isArray(lengths) && Number(lengths[i])>0)return Number(lengths[i]); }catch(_){ }
+    return Math.hypot(num(b.x)-num(a.x),num(b.y)-num(a.y))||1;
+  }
+  function color(v,i){
+    v=String(v||'').trim();
+    return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)?v:FALLBACK[Math.abs(i||0)%FALLBACK.length];
+  }
+  function rr(c,x,y,w,h,r){
+    c.beginPath();
+    if(c.roundRect)c.roundRect(x,y,w,h,r); else c.rect(x,y,w,h);
+  }
+  function geometry(m){
+    var p=getPts();
+    if(p.length<2||!m)return null;
+    var i=Number(m.sideIndex)||0, a=p[i], b=p[(i+1)%p.length];
+    if(!a||!b)return null;
+    var sideLen=getSideLen(i,a,b), len=Math.max(0,Number(m.lenCm)||0), off=Math.max(0,Number(m.offsetCm)||0);
+    if(!sideLen||!len)return null;
+    if(off+len>sideLen)off=Math.max(0,sideLen-len);
+    var t1=clamp(off/sideLen,0,1), t2=clamp((off+len)/sideLen,0,1);
+    var dx=num(b.x)-num(a.x), dy=num(b.y)-num(a.y), L=Math.hypot(dx,dy)||1;
+    var nx=-dy/L, ny=dx/L;
+    var x1=num(a.x)+dx*t1, y1=num(a.y)+dy*t1, x2=num(a.x)+dx*t2, y2=num(a.y)+dy*t2;
+    var mx=(x1+x2)/2, my=(y1+y2)/2;
+    var cx=p.reduce(function(s,q){return s+num(q.x)},0)/(p.length||1);
+    var cy=p.reduce(function(s,q){return s+num(q.y)},0)/(p.length||1);
+    // nx/ny points OUTSIDE the room. We draw wall elements inside so they stay visible on mobile.
+    if((cx-mx)*nx+(cy-my)*ny>0){ nx=-nx; ny=-ny; }
+    return {i:i,x1:x1,y1:y1,x2:x2,y2:y2,mx:mx,my:my,nx:nx,ny:ny,dx:dx,dy:dy,len:len};
+  }
+  function laneIndex(list, mark, geom){
+    var idx=0;
+    for(var j=0;j<list.length;j++){
+      var q=list[j];
+      if(q===mark) return idx;
+      var g=geometry(q);
+      if(g && g.i===geom.i) idx++;
+    }
+    return idx;
+  }
+  function drawLabel(c,g,m,col,lane){
+    var title=String(m.type||'Елемент').replace(/\s+/g,' ').trim()||'Елемент';
+    c.save();
+    c.font='800 10px -apple-system,BlinkMacSystemFont,Arial';
+    var rawW=Math.min(Math.max(74,c.measureText(title).width+22),142), rawH=24;
+    var vertical=Math.abs(g.dy)>1.15*Math.abs(g.dx);
+    // Put labels in separate rows too: 24px, 52px, 80px... from the wall.
+    var labelDist=24 + lane*28;
+    var lx=g.mx-g.nx*labelDist, ly=g.my-g.ny*labelDist;
+    var cw=(c.canvas&&c.canvas.width)||9999, ch=(c.canvas&&c.canvas.height)||9999;
+    var boxW=vertical?rawH:rawW, boxH=vertical?rawW:rawH;
+    lx=clamp(lx,10+boxW/2,cw-10-boxW/2);
+    ly=clamp(ly,10+boxH/2,ch-10-boxH/2);
+    c.translate(lx,ly);
+    if(vertical)c.rotate(-Math.PI/2);
+    c.fillStyle='rgba(255,255,255,.97)';
+    rr(c,-rawW/2,-rawH/2,rawW,rawH,8); c.fill();
+    c.strokeStyle=col; c.lineWidth=1.15;
+    rr(c,-rawW/2,-rawH/2,rawW,rawH,8); c.stroke();
+    c.fillStyle=col; c.textAlign='center'; c.textBaseline='middle';
+    c.font='800 10px -apple-system,BlinkMacSystemFont,Arial';
+    c.fillText(title,0,0);
+    c.restore();
+  }
 
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount);
-else mount();
-setTimeout(mount,250);
+  window.drawWallMarks=function(c){
+    try{
+      if(typeof _reportMode!=='undefined' && _reportMode)return;
+      var list=getMarks(), p=getPts();
+      if(!Array.isArray(list)||!list.length||p.length<2)return;
+      c.save();
+      c.lineCap='round'; c.lineJoin='round'; c.setLineDash([]);
+      list.forEach(function(m,i){
+        var g=geometry(m); if(!g)return;
+        var lane=laneIndex(list,m,g);
+        // Each element gets its own parallel lane. 1st = 7px, 2nd = 14px, 3rd = 21px...
+        var dist=7*(lane+1);
+        var sx=-g.nx*dist, sy=-g.ny*dist;
+        var col=color(m.color,i);
+        c.strokeStyle=col; c.lineWidth=5.8;
+        c.beginPath(); c.moveTo(g.x1+sx,g.y1+sy); c.lineTo(g.x2+sx,g.y2+sy); c.stroke();
+        drawLabel(c,g,m,col,lane);
+      });
+      c.restore();
+    }catch(e){
+      try{c.restore()}catch(_){ }
+      try{window.__diagSilent&&window.__diagSilent(e)}catch(_){ }
+    }
+  };
+  try{ drawWallMarks=window.drawWallMarks; }catch(_){ }
 })();
 </script>
-
 </body></html> 
 <!-- A·CEIL 2026-08-27: manager report compact trigger + back + cloud share -->
 <!-- v2.19: Safari fix — never reads/writes Window.closed; hardened language switching and translation events. -->
