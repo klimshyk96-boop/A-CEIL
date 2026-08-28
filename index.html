@@ -18560,6 +18560,135 @@ if(typeof old==="function"&&!old.__elementsReadonlyV1){
 #aceilAdminModal .aceil-danger-zone .aceil-delete-user-box{margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
 </style>
 
+
+<script id="A-CEIL-multiroom-delete-hardfix-20260828">
+(function(){
+"use strict";
+if(window.__A_CEIL_MULTIROOM_DELETE_HARDFIX)return;
+window.__A_CEIL_MULTIROOM_DELETE_HARDFIX=true;
+
+function sameId(a,b){
+  return a!=null&&b!=null&&String(a)===String(b);
+}
+function findObject(projects,id){
+  return (projects||[]).findIndex(function(p){
+    return p&&(sameId(p.id,id)||sameId(p._dbId,id)||sameId(p._localId,id));
+  });
+}
+function roomStableId(room){
+  return room&&(room.id||room._id||room.roomId)||null;
+}
+async function deleteCurrentRoomHard(btn){
+  try{
+    if(typeof getProjects!=="function"||typeof setProjects!=="function"){
+      throw new Error("Сховище проєктів недоступне");
+    }
+
+    var projects=getProjects();
+    if(!Array.isArray(projects))throw new Error("Список проєктів пошкоджено");
+
+    var objectId=null;
+    try{objectId=typeof _activeObjectId!=="undefined"?_activeObjectId:null}catch(_){}
+    if(objectId==null){
+      try{objectId=typeof _currentProjectId!=="undefined"?_currentProjectId:null}catch(_){}
+    }
+
+    var oi=findObject(projects,objectId);
+    if(oi<0)throw new Error("Активний обʼєкт не знайдено");
+
+    var obj=projects[oi];
+    if(!Array.isArray(obj.rooms)||!obj.rooms.length){
+      throw new Error("У цьому обʼєкті немає кімнат");
+    }
+
+    var activeRoomId=null;
+    try{activeRoomId=window._activeRoomId||null}catch(_){}
+    var ri=-1;
+
+    if(activeRoomId!=null){
+      ri=obj.rooms.findIndex(function(r){return sameId(roomStableId(r),activeRoomId)});
+    }
+    if(ri<0){
+      try{
+        if(typeof _activeRoomIdx!=="undefined"&&Number.isInteger(_activeRoomIdx)){
+          ri=_activeRoomIdx;
+        }
+      }catch(_){}
+    }
+
+    if(ri<0||ri>=obj.rooms.length){
+      throw new Error("Не вдалося визначити поточну кімнату");
+    }
+
+    var room=obj.rooms[ri];
+    var roomName=(room&&room.name)||("Кімната "+(ri+1));
+
+    if(!window.confirm('Видалити кімнату «'+roomName+'»?\n\nЦю дію не можна скасувати.')){
+      return false;
+    }
+
+    var removedId=roomStableId(room);
+    obj.rooms.splice(ri,1);
+    obj._roomRevision=Date.now();
+    obj._localUpdatedAt=Date.now();
+    obj._dirty=true;
+    if(obj._dbId)obj._syncStatus="pending_update";
+
+    /* Важливо: спочатку записуємо масив БЕЗ кімнати. */
+    projects[oi]=obj;
+    setProjects(projects);
+
+    /* Скидаємо посилання на видалену кімнату, щоб save/switch не воскресив її. */
+    try{window._activeRoomId=null}catch(_){}
+    try{_activeRoomIdx=null}catch(_){}
+
+    /* Переходимо на сусідню кімнату, якщо вона залишилась. */
+    if(obj.rooms.length){
+      var nextIndex=Math.min(ri,obj.rooms.length-1);
+      try{
+        if(typeof _switchToRoomTab==="function"){
+          _switchToRoomTab(nextIndex);
+        }else if(typeof window._switchToRoomTab==="function"){
+          window._switchToRoomTab(nextIndex);
+        }
+      }catch(e){window.__diagSilent&&window.__diagSilent(e)}
+    }else{
+      try{if(typeof resetAllSilent==="function")resetAllSilent()}catch(_){}
+    }
+
+    try{if(typeof _renderRoomTabsAboveCanvas==="function")_renderRoomTabsAboveCanvas()}catch(_){}
+    try{if(typeof renderObjectRooms==="function")renderObjectRooms(obj)}catch(_){}
+    try{if(typeof window.closeA·CEILRoomMenu==="function")window.closeA·CEILRoomMenu()}catch(_){}
+
+    /* Хмарна синхронізація після локального видалення. */
+    try{
+      var updater=typeof window._updateObjectInCloud==="function"
+        ?window._updateObjectInCloud
+        :(typeof _updateObjectInCloud==="function"?_updateObjectInCloud:null);
+      if(updater){
+        Promise.resolve(updater(obj)).catch(function(e){
+          window.__diagSilent&&window.__diagSilent(e);
+          try{if(typeof showToast==="function")showToast("⚠️ Кімнату видалено локально, але хмара ще не синхронізувалась")}catch(_){}
+        });
+      }
+    }catch(e){window.__diagSilent&&window.__diagSilent(e)}
+
+    try{if(typeof showToast==="function")showToast("🗑 Кімнату «"+roomName+"» видалено")}catch(_){}
+    return true;
+  }catch(e){
+    window.__diagSilent&&window.__diagSilent(e);
+    try{if(typeof showToast==="function")showToast("⚠️ "+String(e&&e.message?e.message:e))}catch(_){}
+    return false;
+  }
+}
+
+/* Фінальний override: обходимо старі deleteRoom/confirmTap wrapper-и. */
+window.deleteActiveRoom=deleteCurrentRoomHard;
+window.A·CEILDeleteCurrentRoom=deleteCurrentRoomHard;
+try{deleteActiveRoom=deleteCurrentRoomHard}catch(_){}
+})();
+</script>
+
 </body></html> 
 <!-- A·CEIL 2026-08-27: manager report compact trigger + back + cloud share -->
 <!-- v2.19: Safari fix — never reads/writes Window.closed; hardened language switching and translation events. -->
