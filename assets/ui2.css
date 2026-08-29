@@ -1,0 +1,545 @@
+/* A·CEIL UI 2.0 RC3 — visual layer only. No business logic. */
+:root{
+  --ui2-bg:#f3f7fc;
+  --ui2-surface:rgba(255,255,255,.88);
+  --ui2-surface-solid:#fff;
+  --ui2-surface-2:#f8fbff;
+  --ui2-ink:#0f1b33;
+  --ui2-muted:#70809b;
+  --ui2-line:rgba(15,36,70,.09);
+  --ui2-blue:#1769ff;
+  --ui2-blue-2:#4d8dff;
+  --ui2-cyan:#27b6ff;
+  --ui2-green:#13b87a;
+  --ui2-red:#e5484d;
+  --ui2-radius-sm:12px;
+  --ui2-radius:18px;
+  --ui2-radius-lg:24px;
+  --ui2-shadow-sm:0 8px 24px rgba(31,61,109,.08);
+  --ui2-shadow:0 16px 44px rgba(31,61,109,.12);
+  --ui2-shadow-float:0 24px 70px rgba(22,50,92,.18);
+}
+
+html{background:var(--ui2-bg)}
+body{
+  color:var(--ui2-ink);
+  background:
+    radial-gradient(900px 520px at -10% -12%,rgba(77,141,255,.16),transparent 64%),
+    radial-gradient(780px 480px at 110% 10%,rgba(39,182,255,.11),transparent 62%),
+    linear-gradient(180deg,#f8fbff 0%,#f1f6fc 58%,#edf3fa 100%)!important;
+  background-attachment:fixed!important;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* Header */
+.app-header.compact-header{
+  position:sticky;
+  top:0;
+  z-index:88;
+  margin:0!important;
+  padding:calc(8px + env(safe-area-inset-top)) 14px 9px!important;
+  background:rgba(247,250,255,.78)!important;
+  border-bottom:1px solid rgba(20,57,105,.07);
+  box-shadow:0 8px 30px rgba(31,61,109,.06);
+  -webkit-backdrop-filter:blur(20px) saturate(1.35);
+  backdrop-filter:blur(20px) saturate(1.35);
+}
+.header-main{max-width:1200px;margin:0 auto;align-items:flex-start!important;gap:10px!important}
+.compact-logo{
+  width:39px!important;height:39px!important;border-radius:13px!important;
+  background:linear-gradient(145deg,#0f65ff,#46a4ff)!important;
+  border:1px solid rgba(255,255,255,.72)!important;
+  box-shadow:0 8px 22px rgba(23,105,255,.25),inset 0 1px 0 rgba(255,255,255,.5)!important;
+}
+.header-content h2{
+  margin:0 0 5px!important;
+  color:#10203b!important;
+  font-size:20px!important;
+  letter-spacing:-.035em!important;
+  font-weight:850!important;
+}
+.header-actions-row{gap:7px!important}
+.compact-user-pill,.header-icon-btn{
+  border:1px solid rgba(22,55,101,.08)!important;
+  background:rgba(255,255,255,.84)!important;
+  box-shadow:0 6px 18px rgba(38,68,112,.07),inset 0 1px 0 #fff!important;
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+}
+.compact-user-pill{color:#263752!important}
+.projects-btn{color:#36516f!important}
+.save-btn{color:var(--ui2-blue)!important;background:rgba(235,244,255,.94)!important;border-color:rgba(23,105,255,.13)!important}
+.logout-btn{color:#d93f48!important;background:rgba(255,244,245,.92)!important;border-color:rgba(229,72,77,.11)!important}
+.compact-cloud-row{color:#7b8aa2!important;opacity:.92}
+
+/* Dashboard / room cockpit */
+#rpCockpit{max-width:1200px!important;margin:12px auto 10px!important;padding:0 12px!important}
+#rpCockpit .rpc-card{
+  border:1px solid rgba(255,255,255,.88)!important;
+  border-radius:24px!important;
+  background:linear-gradient(145deg,rgba(20,37,67,.97),rgba(16,31,57,.94))!important;
+  box-shadow:0 18px 42px rgba(22,44,79,.16),inset 0 1px 0 rgba(255,255,255,.08)!important;
+  overflow:hidden;
+}
+.rpc-logo{box-shadow:0 8px 20px rgba(23,105,255,.24)!important}
+.rpc-name{letter-spacing:-.025em!important}
+.rpc-metric{
+  border-radius:14px!important;
+  border:1px solid rgba(255,255,255,.075)!important;
+  background:rgba(255,255,255,.055)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important;
+}
+.rpc-room{
+  border-radius:14px!important;
+  border:1px solid rgba(20,55,102,.08)!important;
+  box-shadow:0 7px 18px rgba(38,68,112,.07)!important;
+}
+
+/* Main workspace */
+#main-area{max-width:1200px!important;padding:0 12px 34px!important;gap:12px!important}
+.top-row{gap:12px!important;align-items:stretch!important}
+.canvas-container{
+  position:relative;
+  min-width:0;
+  border-radius:24px!important;
+  background:rgba(255,255,255,.86)!important;
+  border:1px solid rgba(255,255,255,.92)!important;
+  box-shadow:var(--ui2-shadow)!important;
+  overflow:hidden!important;
+  isolation:isolate;
+}
+.canvas-container:before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
+  background:linear-gradient(180deg,rgba(247,251,255,.75),rgba(255,255,255,.55));
+}
+canvas#cv{display:block;background:transparent!important}
+.panel-column{gap:10px!important}
+.info-box,.table-scroll{
+  border:1px solid rgba(255,255,255,.92)!important;
+  background:var(--ui2-surface)!important;
+  box-shadow:var(--ui2-shadow-sm)!important;
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+}
+.info-box{border-radius:18px!important}
+.table-scroll{border-radius:18px!important}
+
+/* Cards / stats */
+.stat-card{
+  border-radius:16px!important;
+  border:1px solid rgba(255,255,255,.78)!important;
+  box-shadow:0 8px 20px rgba(40,69,112,.07),inset 0 1px 0 rgba(255,255,255,.85)!important;
+}
+.stat-value{letter-spacing:-.035em!important}
+.stat-label{opacity:.78}
+
+/* Tool tiles */
+.tile-btn,.quick-menu-card{
+  border:1px solid rgba(20,55,102,.075)!important;
+  border-radius:17px!important;
+  box-shadow:0 8px 20px rgba(40,69,112,.075)!important;
+  transform:translateZ(0);
+}
+.tile-btn:active,.quick-menu-card:active{transform:scale(.975)!important}
+.tile-icon,.quick-menu-icon{border-radius:13px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.65)}
+.tile-btn-label,.quick-menu-text b{color:#18304f!important;letter-spacing:-.01em}
+.tile-sub,.quick-menu-text small{color:#8090a7!important}
+
+/* Buttons and form controls */
+button{border-radius:13px!important;letter-spacing:-.008em}
+button:not(.btn-cancel):not(.header-icon-btn):not(.rpc-room):not(.rpc-tools button):not(.rm-auth-lang):not(.rm-google-login):not(.rm-pwd-eye){
+  box-shadow:0 7px 18px rgba(23,105,255,.18);
+}
+input,select,textarea{
+  color:#14233d!important;
+  background:#fff!important;
+  border-color:rgba(26,64,112,.13)!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.8),0 4px 12px rgba(40,69,112,.035);
+}
+input:focus,select:focus,textarea:focus{
+  outline:none!important;
+  border-color:rgba(23,105,255,.55)!important;
+  box-shadow:0 0 0 4px rgba(23,105,255,.10)!important;
+}
+
+/* Tables */
+table{color:#20334f}
+th{
+  position:sticky;top:0;z-index:1;
+  background:rgba(246,249,253,.96)!important;
+  color:#73839b!important;
+  border-bottom:1px solid rgba(22,55,101,.08)!important;
+}
+td{border-bottom-color:rgba(22,55,101,.065)!important}
+
+/* Modals / sheets */
+.modal-overlay{
+  background:rgba(12,25,47,.48)!important;
+  -webkit-backdrop-filter:blur(10px) saturate(1.1)!important;
+  backdrop-filter:blur(10px) saturate(1.1)!important;
+  padding:14px!important;
+}
+.modal-overlay.open .modal{animation:ui2ModalIn .20s cubic-bezier(.2,.72,.2,1)}
+.modal{
+  width:min(94vw,430px)!important;
+  max-height:min(88dvh,760px)!important;
+  overflow:auto;
+  border-radius:24px!important;
+  border:1px solid rgba(255,255,255,.94)!important;
+  background:rgba(255,255,255,.965)!important;
+  box-shadow:var(--ui2-shadow-float)!important;
+  -webkit-overflow-scrolling:touch;
+}
+.modal h3{color:#14233d!important;letter-spacing:-.025em!important}
+.modal label{color:#74839a!important}
+.btn-cancel{background:#f1f5fa!important;color:#52647c!important;border:1px solid rgba(28,63,110,.07)!important}
+@keyframes ui2ModalIn{from{opacity:.35;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+
+/* Projects / nomenclature / admin — style by common surface patterns */
+#projectsModal .modal,#elementsModal .modal,#reportSettingsModal,.aceil-admin-shell,.aceil-admin-panel{
+  border:1px solid rgba(255,255,255,.92)!important;
+  box-shadow:var(--ui2-shadow-float)!important;
+}
+.aceil-admin-dashboard,.aceil-admin-body{color:var(--ui2-ink)}
+.aceil-stat,.aceil-admin-user{
+  border-color:rgba(22,55,101,.08)!important;
+  box-shadow:0 8px 22px rgba(38,68,112,.065)!important;
+}
+
+/* Floating status/debug */
+#syncBadge{
+  right:12px!important;bottom:calc(12px + env(safe-area-inset-bottom))!important;
+  background:rgba(16,31,57,.92)!important;
+  border:1px solid rgba(255,255,255,.12)!important;
+  box-shadow:0 12px 28px rgba(20,40,75,.2)!important;
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)
+}
+#rmDebugFab{
+  box-shadow:0 12px 30px rgba(20,40,75,.18)!important;
+  border:1px solid rgba(255,255,255,.8)!important;
+}
+#rmMeasureConfidenceBtn{display:none!important}
+
+/* Login — premium but still familiar */
+#authScreen{
+  background:
+    radial-gradient(700px 460px at 15% 15%,rgba(31,119,255,.27),transparent 62%),
+    radial-gradient(620px 420px at 90% 90%,rgba(31,184,255,.16),transparent 65%),
+    linear-gradient(145deg,#081425 0%,#102744 54%,#10203a 100%)!important;
+}
+.rm-auth-panel{
+  border:1px solid rgba(255,255,255,.11)!important;
+  box-shadow:0 30px 80px rgba(0,0,0,.25)!important;
+}
+.rm-classic-login{
+  background:linear-gradient(135deg,#1769ff,#3b8cff)!important;
+  box-shadow:0 12px 30px rgba(23,105,255,.28)!important;
+}
+.rm-google-login{border-color:rgba(255,255,255,.16)!important}
+
+/* Mobile-first refinements */
+@media(max-width:900px){
+  #rpCockpit{margin-top:9px!important}
+  .top-row{gap:10px!important}
+  .canvas-container{border-radius:20px!important;width:100%!important}
+  .panel-column{gap:9px!important}
+}
+@media(max-width:600px){
+  .app-header.compact-header{padding-left:10px!important;padding-right:10px!important;padding-bottom:7px!important}
+  .header-main{gap:8px!important}
+  .header-content h2{font-size:18px!important;margin-bottom:4px!important}
+  .compact-logo{width:36px!important;height:36px!important;border-radius:12px!important}
+  .compact-user-pill{height:34px!important;border-radius:12px!important}
+  .header-icon-btn{height:34px!important;width:35px!important;min-width:35px!important;border-radius:12px!important}
+  #rpCockpit{padding:0 8px!important;margin-bottom:8px!important}
+  #rpCockpit .rpc-card{border-radius:20px!important}
+  #main-area{padding:0 8px calc(22px + env(safe-area-inset-bottom))!important}
+  .canvas-container{border-radius:18px!important;box-shadow:0 10px 28px rgba(31,61,109,.10)!important}
+  .modal-overlay{align-items:flex-end!important;padding:8px!important;padding-bottom:calc(8px + env(safe-area-inset-bottom))!important}
+  .modal-overlay .modal{
+    width:100%!important;max-width:none!important;max-height:88dvh!important;
+    border-radius:22px 22px 18px 18px!important;
+    padding:20px!important;
+  }
+  .modal-overlay.open .modal{animation:ui2SheetIn .22s cubic-bezier(.2,.72,.2,1)}
+  .modal-btns{position:sticky;bottom:-20px;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 18%,#fff);padding-top:12px;padding-bottom:4px}
+  button{min-height:42px}
+  input,select,textarea{font-size:16px!important}
+  .tile-btn{border-radius:16px!important}
+  @keyframes ui2SheetIn{from{opacity:.4;transform:translateY(20px)}to{opacity:1;transform:none}}
+}
+
+/* Reduced motion */
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.001ms!important;transition-duration:.001ms!important}}
+
+/* ========================================================================
+   A·CEIL UI 2.0 RC3 — HOME / START SCREEN REWORK
+   Scope: start workspace only. Nomenclature/modal styling intentionally kept.
+   Goal: compact, bright, professional control strip; canvas remains the hero.
+   ======================================================================== */
+body.rp-home-pro{
+  --ui2-home-blue:#2f66f3;
+  --ui2-home-ink:#13233d;
+  --ui2-home-muted:#77869c;
+}
+
+/* The cockpit is the mobile app bar — keep it light and compact. */
+body.rp-home-pro #rpCockpit{
+  max-width:1200px!important;
+  margin:8px auto 10px!important;
+  padding:0 10px!important;
+}
+body.rp-home-pro #rpCockpit .rpc-card{
+  padding:10px 12px 9px!important;
+  border-radius:20px!important;
+  color:var(--ui2-home-ink)!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(249,251,255,.96))!important;
+  border:1px solid rgba(50,83,128,.10)!important;
+  box-shadow:0 10px 28px rgba(35,62,103,.09),inset 0 1px 0 #fff!important;
+  overflow:visible!important;
+}
+body.rp-home-pro #rpCockpit .rpc-top{
+  min-height:40px!important;
+  padding:0!important;
+  gap:10px!important;
+  align-items:center!important;
+}
+body.rp-home-pro #rpCockpit .rpc-brand{
+  gap:9px!important;
+  align-items:center!important;
+}
+body.rp-home-pro #rpCockpit .rpc-logo{
+  width:36px!important;
+  height:36px!important;
+  border-radius:12px!important;
+  box-shadow:0 7px 18px rgba(47,102,243,.20)!important;
+}
+body.rp-home-pro #rpCockpit .rpc-logo.rpc-logo-aceil svg{
+  width:23px!important;
+  height:21px!important;
+}
+body.rp-home-pro #rpCockpit .rpc-name{
+  color:var(--ui2-home-ink)!important;
+  font-size:18px!important;
+  line-height:1.05!important;
+  font-weight:900!important;
+  letter-spacing:-.035em!important;
+}
+body.rp-home-pro #rpCockpit .rpc-name-edit-icon{opacity:.32!important}
+body.rp-home-pro #rpCockpit .rpc-name-edit-icon svg{stroke:#66758c!important}
+body.rp-home-pro #rpCockpit .rpc-head-right{
+  gap:8px!important;
+  align-items:center!important;
+}
+body.rp-home-pro #rpCockpit #rpcStatus{
+  width:11px!important;height:11px!important;min-width:11px!important;min-height:11px!important;
+  border-width:2px!important;
+  box-shadow:0 0 0 3px rgba(34,197,94,.12)!important;
+}
+body.rp-home-pro #rpCockpit #rpcTotalPill{
+  min-width:94px!important;
+  min-height:38px!important;
+  padding:5px 10px!important;
+  border-radius:13px!important;
+  background:#f3fbf7!important;
+  border:1px solid rgba(26,164,101,.20)!important;
+  box-shadow:none!important;
+}
+body.rp-home-pro #rpCockpit #rpcTotalPill small{
+  color:#178454!important;
+  font-size:8px!important;
+  letter-spacing:.07em!important;
+}
+body.rp-home-pro #rpCockpit #rpcTotalPill b{
+  margin-top:3px!important;
+  color:#13233d!important;
+  font-size:15px!important;
+}
+
+/* Four metrics: one quiet line instead of four giant cards. */
+body.rp-home-pro #rpCockpit .rpc-metrics{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:6px!important;
+  margin:8px 0 0!important;
+  padding:0!important;
+  border:0!important;
+}
+body.rp-home-pro #rpCockpit .rpc-metric{
+  min-width:0!important;
+  min-height:43px!important;
+  padding:5px 4px!important;
+  gap:1px!important;
+  border-radius:11px!important;
+  background:#f5f7fb!important;
+  border:1px solid rgba(44,76,119,.07)!important;
+  box-shadow:none!important;
+}
+body.rp-home-pro #rpCockpit .rpc-metric-icon{
+  display:none!important;
+}
+body.rp-home-pro #rpCockpit .rpc-metric small{
+  color:#8996a9!important;
+  font-size:7px!important;
+  line-height:1!important;
+  letter-spacing:.07em!important;
+  font-weight:850!important;
+}
+body.rp-home-pro #rpCockpit .rpc-metric b{
+  color:#17263e!important;
+  font-size:14px!important;
+  line-height:1.1!important;
+  font-weight:900!important;
+  white-space:nowrap!important;
+}
+
+/* Actions: compact bottom toolbar. */
+body.rp-home-pro #rpCockpit .rpc-tools{
+  display:flex!important;
+  gap:6px!important;
+  margin-top:8px!important;
+  padding:8px 0 0!important;
+  border-top:1px solid rgba(38,69,111,.08)!important;
+  overflow:visible!important;
+}
+body.rp-home-pro #rpCockpit .rpc-tools button{
+  min-width:0!important;
+  min-height:36px!important;
+  height:36px!important;
+  padding:0 9px!important;
+  border-radius:11px!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  box-shadow:none!important;
+}
+body.rp-home-pro #rpCockpit .rpc-tools button.rpc-save{
+  flex:1.35 1 0!important;
+  background:linear-gradient(135deg,#2d6cf6,#5664f4)!important;
+  border:0!important;
+  color:#fff!important;
+  box-shadow:0 6px 14px rgba(47,102,243,.18)!important;
+}
+body.rp-home-pro #rpCockpit .rpc-tools button:not(.rpc-save):not(.rpc-logout){
+  flex:1 1 0!important;
+  background:#fff!important;
+  color:#22334e!important;
+  border:1px solid rgba(42,73,116,.12)!important;
+}
+body.rp-home-pro #rpCockpit .rpc-tools button.rpc-logout{
+  flex:0 0 42px!important;
+  width:42px!important;
+  padding:0!important;
+  background:#fff6f6!important;
+  color:#df3f48!important;
+  border:1px solid rgba(223,63,72,.14)!important;
+}
+body.rp-home-pro #rpCockpit .rpc-tools button svg{width:15px!important;height:15px!important}
+body.rp-home-pro #rpCockpit .rpc-rooms{margin-top:7px!important}
+
+/* Canvas: restore the subtle drafting grid that RC1 accidentally washed out. */
+body.rp-home-pro #main-area{
+  padding:0 10px calc(26px + env(safe-area-inset-bottom))!important;
+  gap:10px!important;
+}
+body.rp-home-pro .canvas-container{
+  padding:8px!important;
+  border-radius:20px!important;
+  background:#fff!important;
+  border:1px solid rgba(44,76,119,.08)!important;
+  box-shadow:0 10px 30px rgba(35,62,103,.08)!important;
+}
+body.rp-home-pro .canvas-container:before{display:none!important}
+body.rp-home-pro canvas#cv{
+  border-radius:15px!important;
+  background-color:#fbfdff!important;
+  background-image:
+    linear-gradient(rgba(47,102,243,.038) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(47,102,243,.038) 1px,transparent 1px),
+    linear-gradient(rgba(47,102,243,.065) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(47,102,243,.065) 1px,transparent 1px)!important;
+  background-size:22px 22px,22px 22px,110px 110px,110px 110px!important;
+  box-shadow:inset 0 0 0 1px rgba(47,102,243,.08)!important;
+}
+
+/* Tool cards below canvas: less bulky, clearer hierarchy. */
+body.rp-home-pro .tile-btn{
+  min-height:0!important;
+  border-radius:16px!important;
+  background:rgba(255,255,255,.94)!important;
+  border:1px solid rgba(44,76,119,.08)!important;
+  box-shadow:0 7px 20px rgba(35,62,103,.055)!important;
+}
+body.rp-home-pro .tile-icon{box-shadow:none!important}
+
+@media(max-width:600px){
+  body.rp-home-pro #rpCockpit{margin-top:6px!important;margin-bottom:8px!important;padding:0 8px!important}
+  body.rp-home-pro #rpCockpit .rpc-card{padding:9px 10px 8px!important;border-radius:18px!important}
+  body.rp-home-pro #rpCockpit .rpc-top{min-height:36px!important}
+  body.rp-home-pro #rpCockpit .rpc-logo{width:34px!important;height:34px!important;border-radius:11px!important}
+  body.rp-home-pro #rpCockpit .rpc-name{font-size:17px!important}
+  body.rp-home-pro #rpCockpit #rpcTotalPill{min-width:88px!important;min-height:35px!important;padding:4px 8px!important}
+  body.rp-home-pro #rpCockpit #rpcTotalPill b{font-size:14px!important}
+  body.rp-home-pro #rpCockpit .rpc-metrics{gap:4px!important;margin-top:7px!important}
+  body.rp-home-pro #rpCockpit .rpc-metric{min-height:39px!important;padding:4px 2px!important;border-radius:10px!important}
+  body.rp-home-pro #rpCockpit .rpc-metric small{font-size:6.6px!important}
+  body.rp-home-pro #rpCockpit .rpc-metric b{font-size:13px!important}
+  body.rp-home-pro #rpCockpit .rpc-tools{gap:5px!important;margin-top:7px!important;padding-top:7px!important}
+  body.rp-home-pro #rpCockpit .rpc-tools button{height:34px!important;min-height:34px!important;padding:0 7px!important;font-size:10.5px!important}
+  body.rp-home-pro #rpCockpit .rpc-tools button.rpc-logout{flex-basis:38px!important;width:38px!important}
+  body.rp-home-pro #main-area{padding-left:8px!important;padding-right:8px!important}
+  body.rp-home-pro .canvas-container{padding:7px!important;border-radius:18px!important}
+  body.rp-home-pro canvas#cv{border-radius:13px!important}
+}
+
+@media(max-width:370px){
+  body.rp-home-pro #rpCockpit .rpc-name{font-size:15.5px!important}
+  body.rp-home-pro #rpCockpit #rpcTotalPill{min-width:80px!important}
+  body.rp-home-pro #rpCockpit .rpc-tools button{font-size:10px!important}
+}
+
+
+/* ========================================================================
+   UI 2.0 RC3 — approved iPhone polish
+   - no visible test badge
+   - nomenclature sheet starts at the top
+   - debug bug stays visible
+   - report settings has square top corners
+   ======================================================================== */
+#aCeilCleanTestBadge{display:none!important}
+
+@media (max-width: 600px){
+  /* Nomenclature: use the available vertical space instead of floating low. */
+  #elementsModal.modal-overlay{
+    align-items:flex-start!important;
+    padding:0!important;
+    padding-top:env(safe-area-inset-top)!important;
+    padding-bottom:0!important;
+  }
+  #elementsModal.modal-overlay .modal{
+    width:100vw!important;
+    min-width:100vw!important;
+    max-width:100vw!important;
+    max-height:calc(100dvh - env(safe-area-inset-top))!important;
+    height:calc(100dvh - env(safe-area-inset-top))!important;
+    margin:0!important;
+    padding:0!important;
+    border-radius:0!important;
+    box-sizing:border-box!important;
+  }
+
+  /* Report settings: full-height work sheet, no rounded top edge. */
+  #reportSettingsModal.rspro-modal{
+    padding:0!important;
+  }
+  #reportSettingsModal .rspro-sheet{
+    width:100%!important;
+    max-width:none!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    margin:0!important;
+    border-radius:0!important;
+    border-top-left-radius:0!important;
+    border-top-right-radius:0!important;
+  }
+  #reportSettingsModal .rspro-handle{display:none!important}
+}
+
