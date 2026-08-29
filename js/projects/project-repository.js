@@ -119,11 +119,17 @@
     }catch(_){return false;}
   }
   function reportStorageError(){
+    /* Local project cache is only a fallback. Cloud persistence remains authoritative.
+       Safari can reject a cache write during reload/resume even when cloud sync succeeds,
+       so keep the event in diagnostics instead of showing a misleading user-facing toast. */
     try{
       const now=Date.now();
-      if(typeof window.showToast==='function'&&(!window.__rmStorageRepairToastTs||now-window.__rmStorageRepairToastTs>60000)){
-        window.__rmStorageRepairToastTs=now;
-        window.showToast('⚠️ Локальний кеш Safari не записано. Дані продовжують синхронізуватись у хмару.');
+      if(!window.__rmStorageRepairLogTs||now-window.__rmStorageRepairLogTs>60000){
+        window.__rmStorageRepairLogTs=now;
+        const log=window.A·CEIL&&window.A·CEIL.DebugLog;
+        if(log&&typeof log.warn==='function'){
+          log.warn('local_project_cache_write_failed',{storageKey:STORAGE_KEY});
+        }
       }
     }catch(_){}
   }
