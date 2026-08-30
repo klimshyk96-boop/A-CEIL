@@ -86,8 +86,23 @@ function projectScope(uid,r){
     (scope==='selected'?'<button type="button" class="aceil-project-picker-btn" onclick="A_CEIL_Admin.toggleProjects(\''+esc(uid)+'\',this)">Вибрати проєкти</button><div id="aceilProjects_'+esc(uid)+'" class="aceil-project-list" style="display:none"></div>':'')+
     '</div>';
 }
-var adminRows=[];
+var adminRows=[],activityByUser={};
 function initials(r){var x=String((r&&r.name)||r.email||'?').trim();return (x[0]||'?').toUpperCase()}
+function durationText(sec){sec=Math.max(0,Number(sec)||0);var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);if(h)return h+' год '+m+' хв';if(m)return m+' хв';return sec?'< 1 хв':'—'}
+function dateTimeText(v){if(!v)return 'Ще не заходив';var d=new Date(v);if(isNaN(d.getTime()))return 'Ще не заходив';try{return new Intl.DateTimeFormat('uk-UA',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(d)}catch(e){return d.toLocaleString()}}
+function renderActivity(){
+  var ap=document.getElementById('aceilActivityPane');if(!ap)return;
+  var rows=adminRows||[];
+  ap.innerHTML='<div class="aceil-activity-head"><b>Активність користувачів</b><span>Онлайн — активність за останні 90 секунд. Час рахується лише поки A·CEIL відкритий на екрані.</span></div>'+rows.map(function(r){
+    var uid=String(r.user_id||r.id||''),a=activityByUser[uid]||{},online=!!a.is_online;
+    return '<div class="aceil-activity-card"><div class="aceil-activity-user"><span class="dot '+(online?'online':'')+'"></span><div><b>'+esc(r.name||r.email||'Користувач')+'</b><small>'+esc(r.email||'')+'</small></div><em>'+(online?'Онлайн':'Офлайн')+'</em></div><div class="aceil-activity-grid"><div><span>Останній вхід</span><b>'+esc(dateTimeText(a.last_started_at))+'</b></div><div><span>Остання активність</span><b>'+esc(dateTimeText(a.last_seen_at))+'</b></div><div><span>Остання сесія</span><b>'+durationText(a.last_session_seconds)+'</b></div><div><span>Сьогодні</span><b>'+durationText(a.today_seconds)+'</b></div><div><span>7 днів</span><b>'+durationText(a.week_seconds)+'</b></div><div><span>Всього</span><b>'+durationText(a.total_seconds)+'</b></div></div></div>';
+  }).join('');
+}
+async function loadActivityData(){
+  activityByUser={};var c=sb();if(!c)return;
+  try{var r=await c.rpc('admin_user_activity');if(r.error)throw r.error;(Array.isArray(r.data)?r.data:[]).forEach(function(a){activityByUser[String(a.user_id||'')]=a})}catch(e){window.__diagSilent&&window.__diagSilent(e)}
+  renderActivity();
+}
 function renderSummary(rows){
   var box=document.getElementById('aceilAdminSummary');if(!box)return;
   var total=rows.length,active=rows.filter(function(r){return r.is_active!==false}).length,blocked=total-active;
@@ -150,6 +165,7 @@ async function load(){
     var c=sb();if(!c)throw new Error("Supabase client недоступний.");
     var r=await c.rpc("admin_list_users");if(r.error)throw r.error;
     render(r.data);
+    await loadActivityData();
     if(view)restoreAdminViewState(view);
   }
   catch(e){
@@ -245,7 +261,7 @@ function showTab(name,btn){
   document.querySelectorAll('.aceil-admin-tabs button').forEach(function(b){b.classList.toggle('active',b===btn)});
   var up=document.getElementById('aceilUsersPane'),ap=document.getElementById('aceilActivityPane'),sp=document.getElementById('aceilSettingsPane');
   if(up)up.style.display=name==='users'?'block':'none'; if(ap)ap.style.display=name==='activity'?'block':'none'; if(sp)sp.style.display=name==='settings'?'block':'none';
-  if(name==='activity'&&ap){var rows=adminRows||[],a=rows.filter(function(r){return r.is_active!==false}),b=rows.filter(function(r){return r.is_active===false});ap.innerHTML='<div class="aceil-activity-head"><b>Активність доступів</b><span>Поточний стан облікових записів</span></div>'+rows.map(function(r){return '<div class="aceil-activity-row"><span class="dot '+(r.is_active===false?'off':'')+'"></span><div><b>'+esc(r.email||r.name||'Користувач')+'</b><small>'+(r.is_active===false?'Доступ заблоковано':'Обліковий запис активний')+'</small></div><em>'+(r.projects_access?'Проєкти':'Без проєктів')+'</em></div>'}).join('');}
+  if(name==='activity'&&ap)renderActivity();
 }
 function open(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.add("open");m.setAttribute("aria-hidden","false");load()}
 function close(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.remove("open");m.setAttribute("aria-hidden","true")}
