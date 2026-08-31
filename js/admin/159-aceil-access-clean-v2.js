@@ -3,8 +3,8 @@
 'use strict';
 var busy=false, ACCESS=null, NOM_DENIED=false, lastAccessSig='', lastResumeRightsAt=0;
 function accessSig(a){if(!a)return'';return [a.app_role,a.is_active,a.owner_id,a.nomenclature_access,a.projects_access,a.projects_edit,a.projects_scope,a.access_until].map(function(v){return String(v==null?'':v)}).join('|')}
-function sb(){try{return (typeof _sb!=='undefined'&&_sb)||window._sb||null}catch(e){return window._sb||null}}
-function usr(){try{return (typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
+function sb(){try{var c=(typeof _sb!=='undefined'&&_sb)||window._sb||null;if(c&&!window._sb)window._sb=c;return c}catch(e){return window._sb||null}}
+function usr(){try{var u=(typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null;if(u&&!window._sbUser)window._sbUser=u;return u}catch(e){return window._sbUser||null}}
 function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
 function setGlobal(n,v){try{window[n]=v}catch(e){};try{if(n==='elemItems')elemItems=v;if(n==='elemGroups')elemGroups=v;if(n==='lightTypes')lightTypes=v}catch(e){}}
 function refreshNomUI(){try{if(typeof renderElemList==='function')renderElemList()}catch(e){};try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){};try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){};try{if(typeof renderLightMenu==='function')renderLightMenu()}catch(e){}}
@@ -56,7 +56,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(refreshOnResume,200)});
 
 /* LIVE ACCESS — Supabase Realtime. Rights changes on another device are applied immediately. */
-var liveChannel=null, liveTimer=null, liveUid=null;
+var liveChannel=null, liveTimer=null, liveUid=null, liveRetryCount=0;
+function isTransientNetworkError(e){return /load failed|failed to fetch|networkerror|network request failed/i.test(String(e&&e.message||e||''))}
 function scheduleLiveRefresh(){
   clearTimeout(liveTimer);
   liveTimer=setTimeout(async function(){
@@ -64,8 +65,15 @@ function scheduleLiveRefresh(){
       var a=await rights();
       if(!a){ clearNom(); replaceProjects([]); return; }
       await Promise.all([loadNom(a),loadProjects(a)]);
-      applyNomGate(a);lastAccessSig=accessSig(a);
-    }catch(e){ console.error('[A·CEIL realtime access]',e); }
+      applyNomGate(a);lastAccessSig=accessSig(a);liveRetryCount=0;
+    }catch(e){
+      if(isTransientNetworkError(e)){
+        if(liveRetryCount<2){liveRetryCount++;setTimeout(scheduleLiveRefresh,1000*liveRetryCount);return;}
+        try{var log=window.A·CEIL&&window.A·CEIL.DebugLog;if(log&&log.warn)log.warn('realtime_access_network_unavailable',{attempts:liveRetryCount+1,message:String(e&&e.message||e)})}catch(_){}
+        liveRetryCount=0;return;
+      }
+      console.error('[A·CEIL realtime access]',e);
+    }
   },60);
 }
 function safeRemoveLiveChannel(client,ch){
