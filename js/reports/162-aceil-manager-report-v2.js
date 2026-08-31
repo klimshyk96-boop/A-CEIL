@@ -26,22 +26,6 @@ function activeObject(){
   }catch(_){}
   return null;
 }
-function sbClient(){
-  try{if(typeof _sb!=="undefined"&&_sb)return _sb}catch(_){}
-  return window._sb||null;
-}
-function signedUser(){
-  try{if(typeof _sbUser!=="undefined"&&_sbUser)return _sbUser}catch(_){}
-  return window._sbUser||null;
-}
-function appReturnUrl(){
-  try{
-    var u=new URL(window.location.href);
-    u.search="";u.hash="";
-    if(/^\/report\/[a-f0-9]{20}\/?$/i.test(u.pathname))u.pathname="/";
-    return u.href;
-  }catch(_){return "https://a-ceil.pp.ua/"}
-}
 function groupRows(st){
   try{if(typeof _modernGetNomenclatureGroupsFromState==="function")return clone(_modernGetNomenclatureGroupsFromState(st||{}))||[]}catch(_){}
   var items=Array.isArray(st&&st.elemItems)?st.elemItems:[],groups=Array.isArray(st&&st.elemGroups)?st.elemGroups:[],by={},out=[];
@@ -94,7 +78,7 @@ function block(title,map,totalLabel){
     (rows.length?'<div class="md-card-total"><span>Разом</span><b>'+fmt(total,2)+'</b></div>':'')+'</section>';
 }
 function makeHtml(obj,data){
-  var a=data.total,rooms=data.rooms,returnUrl=appReturnUrl();
+  var a=data.total,rooms=data.rooms;
   var fin=[
     ["Профілі",vals(a.profiles).reduce(function(s,x){return s+x.sum},0),"#3b82f6"],
     ["Полотно",vals(a.canvas).reduce(function(s,x){return s+x.sum},0),"#22c55e"],
@@ -112,48 +96,32 @@ function makeHtml(obj,data){
 
   return '<!doctype html><html lang="uk"><head><meta charset="utf-8"><title>Менеджерський звіт</title><style>'+
   '*{box-sizing:border-box}body{margin:0;background:#f7f9fc;color:#111827;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.md-wrap{max-width:1180px;margin:auto;padding:18px}.md-top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;margin-bottom:14px}.md-brand{font-weight:950;font-size:22px}.md-brand b{color:#2563eb}.md-titlebox h1{font-size:24px;margin:0}.md-titlebox .md-brand{margin-bottom:2px}.md-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.md-actions button,.md-back{border:1px solid #dbe4ef;background:#fff;border-radius:12px;padding:10px 13px;font-weight:850;color:#0f172a;box-shadow:none}.md-actions .blue{background:#2563eb;color:#fff;border-color:#2563eb}.md-actions .cloud{background:#eef6ff;color:#1d4ed8;border-color:#bfdbfe}.md-back{min-width:44px;padding:10px}.md-cloudbox{display:none;margin:-2px 0 14px;background:#fff;border:1px solid #bfdbfe;border-radius:15px;padding:10px;grid-template-columns:1fr auto;gap:8px;align-items:center}.md-cloudbox.show{display:grid}.md-cloudbox input{width:100%;border:0;background:#f8fafc;border-radius:10px;padding:10px;color:#334155;font-size:12px;min-width:0}.md-cloudbox button{border:0;background:#dbeafe;color:#1d4ed8;border-radius:10px;padding:10px 12px;font-weight:850}.md-object{background:#fff;border:1px solid #dbe4ef;border-radius:20px;padding:18px;display:grid;grid-template-columns:1.4fr repeat(4,.7fr);gap:16px;align-items:center}.md-object-main small,.md-object div small{display:block;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase}.md-object-main h2{margin:4px 0 4px;font-size:23px}.md-object-main p{margin:2px 0;color:#64748b}.md-object b{display:block;margin-top:4px}.md-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}.md-kpi{background:#fff;border:1px solid #dbe4ef;border-radius:18px;padding:16px}.md-kpi small{font-size:10px;font-weight:950;text-transform:uppercase}.md-kpi b{display:block;font-size:28px;margin-top:7px}.md-kpi.blue{background:#eff6ff}.md-kpi.green{background:#f0fdf4}.md-kpi.orange{background:#fff7ed}.md-kpi.violet{background:#f5f3ff}.md-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.md-grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1.2fr;gap:12px;margin-top:12px}.md-card{background:#fff;border:1px solid #dbe4ef;border-radius:18px;padding:15px}.md-card-title{font-size:15px;font-weight:950;color:#1e3a8a;margin-bottom:12px}.md-card-title small{font-weight:800;color:#64748b;margin-left:6px}.md-metric-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:8px 0}.md-metric-row strong{font-size:13px}.md-metric-row>b{font-size:13px}.md-bar{height:4px;background:#eef2f7;border-radius:99px;margin-top:6px;overflow:hidden}.md-bar i{display:block;height:100%;background:#2563eb;border-radius:99px}.md-card-total{margin-top:8px;padding:10px 11px;border:1px solid #dbeafe;background:#f8fbff;border-radius:12px;display:flex;justify-content:space-between;color:#1d4ed8;font-weight:900}.md-simple-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #edf2f7;font-size:13px}.md-simple-row:last-child{border-bottom:0}.md-fin{display:grid;grid-template-columns:130px 1fr;gap:15px;align-items:center}.md-donut{width:120px;height:120px;border-radius:50%;background:conic-gradient(#3b82f6 0 50%,#22c55e 50% 82%,#f59e0b 82% 95%,#8b5cf6 95% 100%);position:relative}.md-donut:after{content:"";position:absolute;inset:27px;background:#fff;border-radius:50%}.md-fin-item{display:grid;grid-template-columns:10px 1fr auto;gap:7px;align-items:center;font-size:12px;margin:8px 0}.md-fin-item i{width:9px;height:9px;border-radius:3px}.md-fin-item small{grid-column:2/4;color:#94a3b8}.md-fin-total{margin-top:12px;border:1px solid #dbeafe;border-radius:12px;padding:10px;text-align:right;color:#1d4ed8;font-size:23px;font-weight:950}.md-rooms{margin-top:12px;background:#fff;border:1px solid #dbe4ef;border-radius:18px;padding:15px}.md-rooms h3{margin:0 0 12px;color:#1e3a8a}.md-room{display:grid;grid-template-columns:30px 1.2fr repeat(4,.8fr) 1fr;gap:10px;align-items:center;padding:11px 8px;border-bottom:1px solid #edf2f7}.md-room:last-child{border-bottom:0}.md-room-num{width:25px;height:25px;border-radius:8px;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:900}.md-room-name{font-weight:900}.md-room small{display:block;color:#94a3b8;font-size:9px;text-transform:uppercase;font-weight:900}.md-room b{display:block;margin-top:3px;font-size:12px}.md-room-sum{text-align:right;color:#1d4ed8;font-weight:950}.md-empty{color:#94a3b8;font-size:13px;padding:8px 0}@media(max-width:780px){.md-wrap{padding:8px}.md-top{grid-template-columns:auto 1fr;align-items:start}.md-titlebox h1{font-size:20px}.md-actions{grid-column:1/-1;justify-content:stretch}.md-actions button{flex:1;padding:9px 8px;font-size:12px}.md-cloudbox{grid-template-columns:1fr auto}.md-object{grid-template-columns:1fr 1fr}.md-object-main{grid-column:1/-1}.md-kpis{grid-template-columns:1fr 1fr}.md-grid3,.md-grid4{grid-template-columns:1fr}.md-room{grid-template-columns:28px 1fr 1fr}.md-room>div:nth-child(4),.md-room>div:nth-child(5),.md-room>div:nth-child(6){display:none}.md-room-sum{text-align:left}.md-fin{grid-template-columns:100px 1fr}.md-donut{width:90px;height:90px}.md-donut:after{inset:21px}}@media print{body{background:#fff}.md-actions{display:none}.md-wrap{max-width:none;padding:0}.md-card,.md-object,.md-kpi,.md-rooms{break-inside:avoid}}'+
-  '</style></head><body><div class="md-wrap"><div class="md-top"><button class="md-back" id="mdBack" type="button" aria-label="Назад у A·CEIL">← Назад</button><div class="md-titlebox"><div class="md-brand">A·CEIL <b>PRO</b></div><h1>МЕНЕДЖЕРСЬКИЙ ЗВІТ</h1></div><div class="md-actions"><button onclick="window.print()">🖨 Друк / PDF</button><button class="cloud" id="mdCloud">🔗 Хмарне посилання</button><button class="blue" id="mdShare">↗ Поділитися</button></div></div><div class="md-cloudbox" id="mdCloudBox"><input id="mdCloudUrl" readonly><button id="mdCopy" type="button">Копіювати</button></div>'+
+  '</style></head><body><div class="md-wrap"><div class="md-top"><button class="md-back" id="mdBack" type="button" aria-label="Назад">←</button><div class="md-titlebox"><div class="md-brand">A·CEIL <b>PRO</b></div><h1>МЕНЕДЖЕРСЬКИЙ ЗВІТ</h1></div><div class="md-actions"><button onclick="window.print()">🖨 Друк / PDF</button><button class="cloud" id="mdCloud">🔗 Хмарне посилання</button><button class="blue" id="mdShare">↗ Поділитися</button></div></div><div class="md-cloudbox" id="mdCloudBox"><input id="mdCloudUrl" readonly><button id="mdCopy" type="button">Копіювати</button></div>'+
   '<section class="md-object"><div class="md-object-main"><small>Обʼєкт</small><h2>'+esc(obj.name||"—")+'</h2><p>'+esc(obj.addr||"")+'</p><p>'+esc(obj.phone||"")+'</p></div><div><small>Кімнат</small><b>'+rooms.length+'</b></div><div><small>Дата</small><b>'+new Date().toLocaleDateString("uk-UA")+'</b></div><div><small>Режим</small><b>Багатокімнатний</b></div><div><small>Статус</small><b>Актуальний</b></div></section>'+
   '<section class="md-kpis"><div class="md-kpi blue"><small>Загальна площа</small><b>'+fmt(a.area,2)+' м²</b></div><div class="md-kpi green"><small>Загальний периметр</small><b>'+fmt(a.per,2)+' м</b></div><div class="md-kpi orange"><small>Кількість кутів</small><b>'+fmt(a.corners,0)+' шт</b></div><div class="md-kpi violet"><small>Загальна сума</small><b>'+money(a.total)+'</b></div></section>'+
   '<section class="md-grid3">'+block("Профілі",a.profiles,"по всьому обʼєкту")+block("Полотно",a.canvas,"по всьому обʼєкту")+block("Вставка",a.insert,"по всьому обʼєкту")+'</section>'+
   '<section class="md-grid4"><section class="md-card"><div class="md-card-title">Освітлення</div>'+lightingRows+'</section><section class="md-card"><div class="md-card-title">Додаткові роботи / матеріали</div>'+otherRows+'</section><section class="md-card"><div class="md-card-title">Підсумок</div><div class="md-simple-row"><span>Площа</span><b>'+fmt(a.area,2)+' м²</b></div><div class="md-simple-row"><span>Периметр</span><b>'+fmt(a.per,2)+' м</b></div><div class="md-simple-row"><span>Профілі</span><b>'+fmt(vals(a.profiles).reduce(function(s,x){return s+x.qty},0),2)+' м</b></div><div class="md-simple-row"><span>Світло</span><b>'+fmt(a.lights,0)+' шт</b></div></section><section class="md-card"><div class="md-card-title">Фінанси</div><div class="md-fin"><div class="md-donut"></div><div>'+finLegend+'</div></div><div class="md-fin-total">'+money(a.total)+'</div></section></section>'+
-  '<section class="md-rooms"><h3>Розбивка по кімнатах</h3>'+roomsHtml+'</section></div><script>(function(){var appUrl='+JSON.stringify(returnUrl)+',back=document.getElementById("mdBack"),cloud=document.getElementById("mdCloud"),share=document.getElementById("mdShare"),box=document.getElementById("mdCloudBox"),inp=document.getElementById("mdCloudUrl"),copy=document.getElementById("mdCopy");function appHost(){try{if(window.parent&&window.parent!==window&&typeof window.parent.A_CEIL_PublishManagerReport==="function")return window.parent}catch(e){}try{if(window.opener&&!window.opener.closed&&typeof window.opener.A_CEIL_PublishManagerReport==="function")return window.opener}catch(e){}return null}back.onclick=function(){var h=appHost();if(h&&typeof h.A_CEIL_CloseManagerReport==="function"){h.A_CEIL_CloseManagerReport();return}try{if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}}catch(e){}setTimeout(function(){if(!window.closed)location.replace(appUrl||"/")},180)};async function getCloud(){if(inp.value)return inp.value;if(/^\/report\/[a-f0-9]{20}\/?$/i.test(location.pathname)){inp.value=location.href;box.classList.add("show");cloud.textContent="✓ Хмарне посилання";return inp.value}var h=appHost();if(!h)throw new Error("Відкрийте звіт з A·CEIL");cloud.disabled=true;cloud.textContent="⏳ Завантаження…";try{var u=await h.A_CEIL_PublishManagerReport();inp.value=u;box.classList.add("show");cloud.textContent="✓ Хмарне посилання";return u}finally{cloud.disabled=false}}cloud.onclick=async function(){try{await getCloud()}catch(e){cloud.textContent="⚠️ "+(e.message||e)}};copy.onclick=async function(){try{await navigator.clipboard.writeText(inp.value);copy.textContent="✓ Скопійовано";setTimeout(function(){copy.textContent="Копіювати"},1500)}catch(e){inp.focus();inp.select()}};share.onclick=async function(){try{var u=await getCloud();if(navigator.share)await navigator.share({title:"Менеджерський звіт A·CEIL",url:u});else{await navigator.clipboard.writeText(u);share.textContent="✓ Скопійовано";setTimeout(function(){share.textContent="↗ Поділитися"},1500)}}catch(e){share.textContent="⚠️ Помилка"}};})();<\/script></body></html>';
+  '<section class="md-rooms"><h3>Розбивка по кімнатах</h3>'+roomsHtml+'</section></div><script>(function(){var back=document.getElementById("mdBack"),cloud=document.getElementById("mdCloud"),share=document.getElementById("mdShare"),box=document.getElementById("mdCloudBox"),inp=document.getElementById("mdCloudUrl"),copy=document.getElementById("mdCopy");back.onclick=function(){try{window.close()}catch(e){}setTimeout(function(){if(document.hidden)return;if(history.length>1){try{history.back();return}catch(e){}}back.textContent="Закрийте цю вкладку";back.disabled=true},200)};async function getCloud(){if(inp.value)return inp.value;if(/^\/report\/[a-f0-9]{20}\/?$/i.test(location.pathname)){inp.value=location.href;box.classList.add("show");cloud.textContent="✓ Хмарне посилання";return inp.value}if(window.opener&&typeof window.opener.A_CEIL_PublishManagerReport==="function"){cloud.disabled=true;cloud.textContent="⏳ Завантаження…";try{var u=await window.opener.A_CEIL_PublishManagerReport();inp.value=u;box.classList.add("show");cloud.textContent="✓ Хмарне посилання";return u}finally{cloud.disabled=false}}throw new Error("Відкрийте звіт з A·CEIL (не в приватній вкладці)")}cloud.onclick=async function(){try{await getCloud()}catch(e){cloud.textContent="⚠️ "+(e.message||e)}};copy.onclick=async function(){try{await navigator.clipboard.writeText(inp.value);copy.textContent="✓ Скопійовано";setTimeout(function(){copy.textContent="Копіювати"},1500)}catch(e){inp.focus();inp.select()}};share.onclick=async function(){try{var u=await getCloud();if(navigator.share)await navigator.share({title:"Менеджерський звіт A·CEIL",url:u});else{await navigator.clipboard.writeText(u);share.textContent="✓ Скопійовано";setTimeout(function(){share.textContent="↗ Поділитися"},1500)}}catch(e){share.textContent="⚠️ "+(e.message||e)}};})();<\/script></body></html>';
 }
 window.A_CEIL_PublishManagerReport=async function(){
   var obj=activeObject();
   if(!obj||!obj.multiRoom||!Array.isArray(obj.rooms)||!obj.rooms.length)throw new Error("Немає багатокімнатного обʼєкта");
-  var client=sbClient(),user=signedUser();
-  if(!client)throw new Error("Supabase ще не підключений");
-  if(!user||!user.id)throw new Error("Потрібна авторизація");
+  if(!window._sb)throw new Error("Supabase ще не підключений");
+  if(!window._sbUser||!window._sbUser.id)throw new Error("Потрібна авторизація");
   var html=makeHtml(obj,aggregate(obj));
   var bytes=new Uint8Array(10);try{crypto.getRandomValues(bytes)}catch(_){for(var i=0;i<bytes.length;i++)bytes[i]=Math.floor(256*Math.random())}
   var token=Array.from(bytes).map(function(x){return x.toString(16).padStart(2,"0")}).join("");
   var payload={version:3,createdAt:new Date().toISOString(),reportType:"manager",managerHtml:html,meta:{name:String(obj.name||"Менеджерський звіт")}};
   var blob=new Blob([JSON.stringify(payload)],{type:"application/json"});
-  var result=await client.storage.from("roomator-reports").upload("r/"+token+".json",blob,{contentType:"application/json",upsert:false,cacheControl:"3600"});
+  var result=await window._sb.storage.from("roomator-reports").upload("r/"+token+".json",blob,{contentType:"application/json",upsert:false,cacheControl:"3600"});
   if(result.error)throw result.error;
   return "https://a-ceil.pp.ua/report/"+token;
-};
-window.A_CEIL_CloseManagerReport=function(){
-  var overlay=document.getElementById("A_CEIL_ManagerReportOverlay");
-  if(!overlay)return;
-  var previous=overlay.getAttribute("data-prev-overflow");
-  overlay.remove();
-  document.body.style.overflow=previous==null?"":previous;
 };
 window.A_CEIL_OpenManagerReport=async function(){
   var obj=activeObject();
   if(!obj||!obj.multiRoom||!Array.isArray(obj.rooms)||!obj.rooms.length){try{showToast("Менеджерський звіт доступний для багатокімнатного обʼєкта")}catch(_){}return}
-  window.A_CEIL_CloseManagerReport();
-  var overlay=document.createElement("div"),frame=document.createElement("iframe");
-  overlay.id="A_CEIL_ManagerReportOverlay";
-  overlay.setAttribute("data-prev-overflow",document.body.style.overflow||"");
-  overlay.style.cssText="position:fixed;inset:0;z-index:2147483600;background:#f7f9fc";
-  frame.title="Менеджерський звіт A·CEIL";
-  frame.setAttribute("allow","clipboard-write; web-share");
-  frame.style.cssText="display:block;width:100%;height:100%;border:0;background:#f7f9fc";
-  overlay.appendChild(frame);document.body.appendChild(overlay);document.body.style.overflow="hidden";
-  frame.srcdoc=makeHtml(obj,aggregate(obj));
+  var win=window.open();if(!win){try{showToast("Дозвольте спливаючі вікна")}catch(_){}return}
+  win.document.open();win.document.write(makeHtml(obj,aggregate(obj)));win.document.close();
 };
 function injectManagerCard(){
   var modal=document.getElementById("reportSettingsModal");if(!modal)return;
@@ -163,7 +131,7 @@ function injectManagerCard(){
   var target=document.getElementById("reportAudienceCard")||document.getElementById("rsToggles")||modal.firstElementChild;
   var card=document.createElement("div");card.id="A_CEIL_ManagerReportCard";
   card.innerHTML='<div class="mr-kicker">Багатокімнатний режим</div><div class="mr-title">📊 Менеджерський звіт</div><div class="mr-sub">Ключові показники обʼєкта, профілі, полотно, вставка, освітлення, фінанси та кімнати одним екраном.</div><button type="button">Відкрити менеджерський звіт</button>';
-  card.querySelector("button").onclick=function(){try{if(typeof closeReportSettings==="function")closeReportSettings()}catch(_){}setTimeout(window.A_CEIL_OpenManagerReport,60)};
+  card.querySelector("button").onclick=function(){try{if(typeof closeReportSettings==="function")closeReportSettings()}catch(_){}window.A_CEIL_OpenManagerReport()};
   if(target&&target.parentNode)target.parentNode.insertBefore(card,target);else modal.appendChild(card);
 }
 var prev=window.openReportSettings;
