@@ -117,7 +117,7 @@ function makeHtml(obj,data){
   '<section class="md-kpis"><div class="md-kpi blue"><small>Загальна площа</small><b>'+fmt(a.area,2)+' м²</b></div><div class="md-kpi green"><small>Загальний периметр</small><b>'+fmt(a.per,2)+' м</b></div><div class="md-kpi orange"><small>Кількість кутів</small><b>'+fmt(a.corners,0)+' шт</b></div><div class="md-kpi violet"><small>Загальна сума</small><b>'+money(a.total)+'</b></div></section>'+
   '<section class="md-grid3">'+block("Профілі",a.profiles,"по всьому обʼєкту")+block("Полотно",a.canvas,"по всьому обʼєкту")+block("Вставка",a.insert,"по всьому обʼєкту")+'</section>'+
   '<section class="md-grid4"><section class="md-card"><div class="md-card-title">Освітлення</div>'+lightingRows+'</section><section class="md-card"><div class="md-card-title">Додаткові роботи / матеріали</div>'+otherRows+'</section><section class="md-card"><div class="md-card-title">Підсумок</div><div class="md-simple-row"><span>Площа</span><b>'+fmt(a.area,2)+' м²</b></div><div class="md-simple-row"><span>Периметр</span><b>'+fmt(a.per,2)+' м</b></div><div class="md-simple-row"><span>Профілі</span><b>'+fmt(vals(a.profiles).reduce(function(s,x){return s+x.qty},0),2)+' м</b></div><div class="md-simple-row"><span>Світло</span><b>'+fmt(a.lights,0)+' шт</b></div></section><section class="md-card"><div class="md-card-title">Фінанси</div><div class="md-fin"><div class="md-donut"></div><div>'+finLegend+'</div></div><div class="md-fin-total">'+money(a.total)+'</div></section></section>'+
-  '<section class="md-rooms"><h3>Розбивка по кімнатах</h3>'+roomsHtml+'</section></div><script>(function(){var appUrl='+JSON.stringify(returnUrl)+',back=document.getElementById("mdBack"),cloud=document.getElementById("mdCloud"),share=document.getElementById("mdShare"),box=document.getElementById("mdCloudBox"),inp=document.getElementById("mdCloudUrl"),copy=document.getElementById("mdCopy");back.onclick=function(){var triedClose=false;try{if(window.opener&&!window.opener.closed){triedClose=true;window.opener.focus();window.close()}}catch(e){}setTimeout(function(){if(!window.closed)location.replace(appUrl||"/")},triedClose?180:0)};async function getCloud(){if(inp.value)return inp.value;if(/^\/report\/[a-f0-9]{20}\/?$/i.test(location.pathname)){inp.value=location.href;box.classList.add("show");cloud.textContent="✓ Хмарне посилання";return inp.value}if(!window.opener||typeof window.opener.A_CEIL_PublishManagerReport!=="function")throw new Error("Відкрийте звіт з A·CEIL");cloud.disabled=true;cloud.textContent="⏳ Завантаження…";try{var u=await window.opener.A_CEIL_PublishManagerReport();inp.value=u;box.classList.add("show");cloud.textContent="✓ Хмарне посилання";return u}finally{cloud.disabled=false}}cloud.onclick=async function(){try{await getCloud()}catch(e){cloud.textContent="⚠️ "+(e.message||e)}};copy.onclick=async function(){try{await navigator.clipboard.writeText(inp.value);copy.textContent="✓ Скопійовано";setTimeout(function(){copy.textContent="Копіювати"},1500)}catch(e){inp.focus();inp.select()}};share.onclick=async function(){try{var u=await getCloud();if(navigator.share)await navigator.share({title:"Менеджерський звіт A·CEIL",url:u});else{await navigator.clipboard.writeText(u);share.textContent="✓ Скопійовано";setTimeout(function(){share.textContent="↗ Поділитися"},1500)}}catch(e){share.textContent="⚠️ Помилка"}};})();<\/script></body></html>';
+  '<section class="md-rooms"><h3>Розбивка по кімнатах</h3>'+roomsHtml+'</section></div><script>(function(){var appUrl='+JSON.stringify(returnUrl)+',back=document.getElementById("mdBack"),cloud=document.getElementById("mdCloud"),share=document.getElementById("mdShare"),box=document.getElementById("mdCloudBox"),inp=document.getElementById("mdCloudUrl"),copy=document.getElementById("mdCopy");function appHost(){try{if(window.parent&&window.parent!==window&&typeof window.parent.A_CEIL_PublishManagerReport==="function")return window.parent}catch(e){}try{if(window.opener&&!window.opener.closed&&typeof window.opener.A_CEIL_PublishManagerReport==="function")return window.opener}catch(e){}return null}back.onclick=function(){var h=appHost();if(h&&typeof h.A_CEIL_CloseManagerReport==="function"){h.A_CEIL_CloseManagerReport();return}try{if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}}catch(e){}setTimeout(function(){if(!window.closed)location.replace(appUrl||"/")},180)};async function getCloud(){if(inp.value)return inp.value;if(/^\/report\/[a-f0-9]{20}\/?$/i.test(location.pathname)){inp.value=location.href;box.classList.add("show");cloud.textContent="✓ Хмарне посилання";return inp.value}var h=appHost();if(!h)throw new Error("Відкрийте звіт з A·CEIL");cloud.disabled=true;cloud.textContent="⏳ Завантаження…";try{var u=await h.A_CEIL_PublishManagerReport();inp.value=u;box.classList.add("show");cloud.textContent="✓ Хмарне посилання";return u}finally{cloud.disabled=false}}cloud.onclick=async function(){try{await getCloud()}catch(e){cloud.textContent="⚠️ "+(e.message||e)}};copy.onclick=async function(){try{await navigator.clipboard.writeText(inp.value);copy.textContent="✓ Скопійовано";setTimeout(function(){copy.textContent="Копіювати"},1500)}catch(e){inp.focus();inp.select()}};share.onclick=async function(){try{var u=await getCloud();if(navigator.share)await navigator.share({title:"Менеджерський звіт A·CEIL",url:u});else{await navigator.clipboard.writeText(u);share.textContent="✓ Скопійовано";setTimeout(function(){share.textContent="↗ Поділитися"},1500)}}catch(e){share.textContent="⚠️ Помилка"}};})();<\/script></body></html>';
 }
 window.A_CEIL_PublishManagerReport=async function(){
   var obj=activeObject();
@@ -134,11 +134,26 @@ window.A_CEIL_PublishManagerReport=async function(){
   if(result.error)throw result.error;
   return "https://a-ceil.pp.ua/report/"+token;
 };
+window.A_CEIL_CloseManagerReport=function(){
+  var overlay=document.getElementById("A_CEIL_ManagerReportOverlay");
+  if(!overlay)return;
+  var previous=overlay.getAttribute("data-prev-overflow");
+  overlay.remove();
+  document.body.style.overflow=previous==null?"":previous;
+};
 window.A_CEIL_OpenManagerReport=async function(){
   var obj=activeObject();
   if(!obj||!obj.multiRoom||!Array.isArray(obj.rooms)||!obj.rooms.length){try{showToast("Менеджерський звіт доступний для багатокімнатного обʼєкта")}catch(_){}return}
-  var win=window.open();if(!win){try{showToast("Дозвольте спливаючі вікна")}catch(_){}return}
-  win.document.open();win.document.write(makeHtml(obj,aggregate(obj)));win.document.close();
+  window.A_CEIL_CloseManagerReport();
+  var overlay=document.createElement("div"),frame=document.createElement("iframe");
+  overlay.id="A_CEIL_ManagerReportOverlay";
+  overlay.setAttribute("data-prev-overflow",document.body.style.overflow||"");
+  overlay.style.cssText="position:fixed;inset:0;z-index:2147483600;background:#f7f9fc";
+  frame.title="Менеджерський звіт A·CEIL";
+  frame.setAttribute("allow","clipboard-write; web-share");
+  frame.style.cssText="display:block;width:100%;height:100%;border:0;background:#f7f9fc";
+  overlay.appendChild(frame);document.body.appendChild(overlay);document.body.style.overflow="hidden";
+  frame.srcdoc=makeHtml(obj,aggregate(obj));
 };
 function injectManagerCard(){
   var modal=document.getElementById("reportSettingsModal");if(!modal)return;
