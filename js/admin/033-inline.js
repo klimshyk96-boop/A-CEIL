@@ -48,10 +48,37 @@ function _nomenV339CatalogItems(source){
   });
   return items;
 }
+function _nomenV339Key(it){return it&&it.id!=null?"id:"+String(it.id):"n:"+String(it&&it.name||"").trim().toLowerCase()+"|g:"+String(it&&it.groupId==null?"":it.groupId)+"|u:"+String(it&&it.unit||"")}
+function _nomenV339RoomFilmItems(source){return (Array.isArray(source)?source:[]).filter(function(it){return it&&it.filmPickerManaged===true&&it.roomScoped===true})}
+function _nomenV339RoomFilmGroups(source){return (Array.isArray(source)?source:[]).filter(function(g){return g&&g.roomScoped===true&&g.roomScopedKind==="film-color"})}
+function _nomenV339MergeCatalogWithRoom(catalog,current){
+  var scoped=_nomenV339RoomFilmItems(current),scopedGroups={},by={};
+  scoped.forEach(function(it){scopedGroups[String(it.groupId)]=true});
+  (Array.isArray(current)?current:[]).forEach(function(it){by[_nomenV339Key(it)]=it});
+  var fields=["qty","manualQtyOverride","autoFilled","autoZero","calculatedQty","autoQty","resultQty","computedQty","lineTotal","total","sum","amount","price","optionalEstimateEnabled"];
+  var out=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(scopedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0)}).map(function(src){
+    var it=_nomenV339Clone(src||{}),old=by[_nomenV339Key(src)];
+    if(old)fields.forEach(function(f){if(Object.prototype.hasOwnProperty.call(old,f))it[f]=_nomenV339Clone(old[f])});
+    return it;
+  });
+  return out.concat(_nomenV339Clone(scoped));
+}
+function _nomenV339MergeGroupsWithRoom(catalog,current){
+  var out=_nomenV339Clone(Array.isArray(catalog)?catalog:[]),seen={};out.forEach(function(g){seen[String(g&&g.id)]=true});
+  _nomenV339RoomFilmGroups(current).forEach(function(g){if(!seen[String(g.id)])out.unshift(_nomenV339Clone(g))});
+  return out;
+}
 function _nomenV339CaptureCatalog(){
+  var runtimeItems=_nomenV339Clone(typeof elemItems!=="undefined"&&Array.isArray(elemItems)?elemItems:[]),runtimeGroups=_nomenV339Clone(typeof elemGroups!=="undefined"&&Array.isArray(elemGroups)?elemGroups:[]),previous=window.__A·CEILNomenCatalogV339||{items:[],groups:[]};
+  var managed=_nomenV339RoomFilmItems(runtimeItems),managedGroups={},cleanItems=runtimeItems.filter(function(it){return !(it&&it.roomScoped===true)}),cleanGroups=runtimeGroups.filter(function(g){return !(g&&g.roomScoped===true)}),seenItems={},seenGroups={};
+  managed.forEach(function(it){managedGroups[String(it.groupId)]=true});
+  cleanItems.forEach(function(it){seenItems[_nomenV339Key(it)]=true});
+  (Array.isArray(previous.items)?previous.items:[]).forEach(function(it){if(managedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0&&!seenItems[_nomenV339Key(it)])cleanItems.push(_nomenV339Clone(it))});
+  cleanGroups.forEach(function(g){seenGroups[String(g&&g.id)]=true});
+  (Array.isArray(previous.groups)?previous.groups:[]).forEach(function(g){if(managedGroups[String(g&&g.id)]&&!seenGroups[String(g.id)])cleanGroups.push(_nomenV339Clone(g))});
   var catalog={
-    items:_nomenV339CatalogItems(typeof elemItems!=="undefined"?elemItems:[]),
-    groups:_nomenV339Clone(typeof elemGroups!=="undefined"&&Array.isArray(elemGroups)?elemGroups:[])
+    items:_nomenV339CatalogItems(cleanItems),
+    groups:_nomenV339Clone(cleanGroups)
   };
   window.__A·CEILNomenCatalogV339=catalog;
   return catalog;
@@ -82,7 +109,11 @@ async function loadNomenclatureFromCloud(){
     const {data,error}=res;
     if(error||!data)return;
 
-    if(data.groups&&Array.isArray(data.groups)&&data.groups.length)elemGroups=data.groups;
+    window.__A·CEILNomenCatalogV339={items:_nomenV339Clone(Array.isArray(data.items)?data.items:[]),groups:_nomenV339Clone(Array.isArray(data.groups)?data.groups:[])};
+
+    var _currentRoomGroups=[];
+    try{_currentRoomGroups=_nomenV339Clone(Array.isArray(elemGroups)?elemGroups:[])}catch(_){_currentRoomGroups=[]}
+    if(data.groups&&Array.isArray(data.groups)&&data.groups.length)elemGroups=_nomenV339MergeGroupsWithRoom(data.groups,_currentRoomGroups);
     if(data.items&&Array.isArray(data.items)&&data.items.length){
       var _currentRoomItems=[];
       try{_currentRoomItems=JSON.parse(JSON.stringify(Array.isArray(elemItems)?elemItems:[]))}catch(_){_currentRoomItems=[]}
@@ -107,6 +138,7 @@ async function loadNomenclatureFromCloud(){
         }
         return it;
       });
+      elemItems=_nomenV339MergeCatalogWithRoom(elemItems,_currentRoomItems);
     }
 
     if(data.wall_presets&&Array.isArray(data.wall_presets)&&data.wall_presets.length){

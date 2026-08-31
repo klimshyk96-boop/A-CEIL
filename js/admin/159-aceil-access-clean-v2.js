@@ -14,9 +14,11 @@ async function rights(){var c=sb(),u=usr();if(!c||!u)return null;var r=await c.r
 function nomItemKey(it){if(!it)return'';if(it.id!=null)return'id:'+String(it.id);return'n:'+String(it.name||'').trim().toLowerCase()+'|g:'+String(it.groupId==null?'':it.groupId)+'|u:'+String(it.unit||'')}
 function currentNomItems(){try{return clone(typeof elemItems!=='undefined'&&Array.isArray(elemItems)?elemItems:(window.elemItems||[]))}catch(e){return clone(window.elemItems||[])}}
 function mergeCatalogWithRoomResults(catalog,current){
-  var by={};(Array.isArray(current)?current:[]).forEach(function(it){var k=nomItemKey(it);if(k)by[k]=it});
+  var cur=Array.isArray(current)?current:[],scoped=cur.filter(function(it){return it&&it.filmPickerManaged===true&&it.roomScoped===true}),scopedGroups={};
+  scoped.forEach(function(it){scopedGroups[String(it.groupId)]=true});
+  var by={};cur.forEach(function(it){var k=nomItemKey(it);if(k)by[k]=it});
   var roomFields=['qty','manualQtyOverride','autoFilled','autoZero','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount','price'];
-  return (Array.isArray(catalog)?catalog:[]).map(function(src){
+  var out=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(scopedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0)}).map(function(src){
     var it=clone(src||{}),old=by[nomItemKey(src)];
     if(!it.unit)it.unit='шт';
     if(it.groupId===undefined)it.groupId=null;
@@ -31,8 +33,10 @@ function mergeCatalogWithRoomResults(catalog,current){
     }
     return it;
   });
+  return out.concat(scoped.map(clone));
 }
-async function loadNom(a){var c=sb(),u=usr();if(!c||!u)return false;if(applyNomGate(a))return false;var owner=String(a&&a.app_role||'').toLowerCase()==='owner';var source=owner?u.id:a.owner_id;if(!source){clearNom();return false}var r=await c.from('nomenclature').select('user_id,items,groups,wall_presets,light_types').eq('user_id',source).maybeSingle();if(r.error)throw r.error;if(!r.data){clearNom();return false}var d=r.data,current=currentNomItems();setGlobal('elemGroups',clone(Array.isArray(d.groups)?d.groups:[]));var items=mergeCatalogWithRoomResults(clone(Array.isArray(d.items)?d.items:[]),current);setGlobal('elemItems',items);try{window.__A·CEILNomenCatalogV339={items:clone(Array.isArray(d.items)?d.items:[]),groups:clone(Array.isArray(d.groups)?d.groups:[])}}catch(e){}if(Array.isArray(d.light_types))setGlobal('lightTypes',clone(d.light_types));refreshNomUI();return true}
+function mergeCatalogGroupsWithRoom(catalog,current){var out=clone(Array.isArray(catalog)?catalog:[]),seen={};out.forEach(function(g){seen[String(g&&g.id)]=true});(Array.isArray(current)?current:[]).filter(function(g){return g&&g.roomScoped===true&&g.roomScopedKind==='film-color'}).forEach(function(g){if(!seen[String(g.id)])out.unshift(clone(g))});return out}
+async function loadNom(a){var c=sb(),u=usr();if(!c||!u)return false;if(applyNomGate(a))return false;var owner=String(a&&a.app_role||'').toLowerCase()==='owner';var source=owner?u.id:a.owner_id;if(!source){clearNom();return false}var r=await c.from('nomenclature').select('user_id,items,groups,wall_presets,light_types').eq('user_id',source).maybeSingle();if(r.error)throw r.error;if(!r.data){clearNom();return false}var d=r.data,current=currentNomItems(),currentGroups=clone(typeof elemGroups!=='undefined'&&Array.isArray(elemGroups)?elemGroups:(window.elemGroups||[]));setGlobal('elemGroups',mergeCatalogGroupsWithRoom(d.groups,currentGroups));var items=mergeCatalogWithRoomResults(clone(Array.isArray(d.items)?d.items:[]),current);setGlobal('elemItems',items);try{window.__A·CEILNomenCatalogV339={items:clone(Array.isArray(d.items)?d.items:[]),groups:clone(Array.isArray(d.groups)?d.groups:[])}}catch(e){}if(Array.isArray(d.light_types))setGlobal('lightTypes',clone(d.light_types));refreshNomUI();return true}
 function mapProject(p){var st={};try{st=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){};var multi=st.multiRoom===true;return {id:p.id,_dbId:p.id,name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',multiRoom:multi,rooms:multi?(st.rooms||[]):undefined,state:multi?null:(typeof p.state==='string'?p.state:JSON.stringify(st))}}
 function replaceProjects(rows){var mapped=(rows||[]).map(mapProject);try{if(window.A·CEIL&&window.A·CEIL.ProjectRepository)window.A·CEIL.ProjectRepository.replaceAll(mapped);else if(typeof setProjects==='function')setProjects(mapped)}catch(e){};try{if(typeof renderProjects==='function')renderProjects()}catch(e){}}
 async function loadProjects(a){var c=sb(),u=usr();if(!c||!u)return false;var owner=String(a&&a.app_role||'').toLowerCase()==='owner';if(!owner&&(!a||a.projects_access!==true)){replaceProjects([]);return false}var r=await c.from('projects').select('*').order('created_at',{ascending:false});if(r.error)throw r.error;replaceProjects(r.data||[]);return true}
