@@ -160,9 +160,24 @@ function bindLocalReport(win){
     try{await navigator.clipboard.writeText(inp.value);copy.textContent="✓ Скопійовано";setTimeout(function(){copy.textContent="Копіювати"},1500)}
     catch(_){try{inp.focus();inp.select();doc.execCommand("copy")}catch(__){}}
   });
-  share.addEventListener("click",async function(){
-    try{var url=await getCloud();if(navigator.share)await navigator.share({title:"Менеджерський звіт A·CEIL",url:url});else{await navigator.clipboard.writeText(url);share.textContent="✓ Скопійовано";setTimeout(function(){share.textContent="↗ Поділитися"},1500)}}
-    catch(_){}
+  function shareReadyUrl(url){
+    var nav=win.navigator||navigator;
+    if(nav&&typeof nav.share==="function"){
+      nav.share({title:"Менеджерський звіт A·CEIL",text:"Менеджерський звіт A·CEIL",url:url}).catch(function(e){
+        if(e&&e.name==="AbortError")return;
+        try{var log=window.A·CEIL&&window.A·CEIL.DebugLog;if(log&&log.warn)log.warn("manager_report_native_share_failed",{message:String(e&&e.message||e)})}catch(_){}
+      });
+      return;
+    }
+    navigator.clipboard.writeText(url).then(function(){share.textContent="✓ Посилання скопійовано";setTimeout(function(){share.textContent="↗ Поділитися"},1800)}).catch(function(){try{inp.focus();inp.select();doc.execCommand("copy")}catch(_){}});
+  }
+  share.addEventListener("click",function(){
+    /* iOS Safari only opens the native share sheet during the original tap.
+       If the URL already exists, share synchronously. Otherwise prepare it and
+       ask for one deliberate second tap instead of silently acting like Cloud. */
+    if(inp.value){shareReadyUrl(inp.value);return;}
+    share.disabled=true;share.textContent="⏳ Готуємо посилання…";
+    getCloud().then(function(){share.disabled=false;share.textContent="↗ Натисніть ще раз"}).catch(function(){share.disabled=false;share.textContent="↗ Поділитися"});
   });
 }
 window.A_CEIL_OpenManagerReport=async function(){
