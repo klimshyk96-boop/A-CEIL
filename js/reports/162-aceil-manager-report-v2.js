@@ -142,7 +142,11 @@ function bindLocalReport(win){
     if(inp.value)return inp.value;
     cloud.disabled=true;cloud.textContent="⏳ Завантаження…";
     try{return showUrl(await window.A_CEIL_PublishManagerReport())}
-    catch(e){cloud.textContent="⚠️ "+(e&&e.message?e.message:"Помилка");throw e}
+    catch(e){
+      cloud.textContent="⚠️ "+(e&&e.message?e.message:"Помилка");
+      try{var log=window.A·CEIL&&window.A·CEIL.DebugLog;if(log&&log.error)log.error("manager_report_cloud_failed",{message:String(e&&e.message||e),name:String(e&&e.name||"")})}catch(_){}
+      throw e;
+    }
     finally{cloud.disabled=false}
   }
   back.addEventListener("click",function(){
