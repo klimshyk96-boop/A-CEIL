@@ -12,7 +12,7 @@ function appMeta(){
  var m={version:(window.A·CEIL&&window.A·CEIL.VERSION)||'?',url:(location.origin+location.pathname),userAgent:navigator.userAgent};
  try{m.projectId=window._activeObjectId||window._currentProjectId||window.currentProjectId||(window.currentProject&&window.currentProject.id)||null}catch(e){window.__diagSilent&&window.__diagSilent(e)}
  try{m.roomId=window._activeRoomId||window.activeRoomId||(window.currentRoom&&window.currentRoom.id)||null}catch(e){window.__diagSilent&&window.__diagSilent(e)}
- try{m.localStorageKB=Math.round(JSON.stringify(localStorage).length/1024)}catch(e){window.__diagSilent&&window.__diagSilent(e)}
+ try{var repair=window.A·CEIL&&window.A·CEIL.StorageRepair;m.localStorageKB=repair&&repair.storageBytes?Math.round(repair.storageBytes()/1024):Math.round(JSON.stringify(localStorage).length*2/1024)}catch(e){window.__diagSilent&&window.__diagSilent(e)}
  return m;
 }
 function sourceContext(source,line){
