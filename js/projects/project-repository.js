@@ -2,9 +2,99 @@
 (function(){
   'use strict';
   window.A·CEIL = window.A·CEIL || {};
+  window.A·CEIL.VERSION = '2026.08.31-rc13';
+
+  /* Canonical Safari storage repair. Several later modules use this API, so it
+     must live before ProjectRepository and must not be supplied by a late patch. */
+  if(!window.A·CEIL.StorageRepair){
+    const quotaError = error => !!error && (
+      error.name === 'QuotaExceededError' ||
+      error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      error.code === 22 || error.code === 1014
+    );
+    const keyBytes = () => {
+      const out={};
+      try{
+        for(let i=0;i<localStorage.length;i++){
+          const key=localStorage.key(i);
+          if(key!=null)out[key]=2*(String(key).length+String(localStorage.getItem(key)||'').length);
+        }
+      }catch(_){}
+      return out;
+    };
+    const storageBytes = () => Object.values(keyBytes()).reduce((sum,size)=>sum+size,0);
+    const diagnosticKeys = ['A·CEIL_debug_errors_v2','A·CEIL_debug_log','A·CEIL_diag_silent_v1'];
+    /* The cloud-first snapshot duplicates current canvas/project state. Recovery
+       drafts are intentionally not removed here: they may be the only copy of
+       work made immediately before Safari terminated the page. */
+    const duplicateCacheKeys = ['A·CEIL_cloud_cache_v330'];
+    const stripThumbs = value => {
+      const seen=new WeakSet();
+      const walk=(input,parentKey) => {
+        if(typeof input==='string' && parentKey==='state' && input.length>1000 && /^[\s]*[\[{]/.test(input)){
+          try{return JSON.stringify(walk(JSON.parse(input),''));}catch(_){return input;}
+        }
+        if(!input || typeof input!=='object')return input;
+        if(seen.has(input))return null;
+        seen.add(input);
+        if(Array.isArray(input))return input.map(item=>walk(item,''));
+        const out={};
+        Object.keys(input).forEach(key=>{
+          const val=input[key];
+          if(/^(thumb|thumbnail|preview|previewImage|canvasPreview|snapshotImage)$/i.test(key) &&
+             (typeof val!=='string' || val.length>512 || /^data:image|^blob:/i.test(val)))return;
+          out[key]=walk(val,key);
+        });
+        return out;
+      };
+      return walk(value,'');
+    };
+    const trimJsonArray = (key,limit) => {
+      try{
+        const value=JSON.parse(localStorage.getItem(key)||'[]');
+        if(Array.isArray(value)&&value.length>limit)localStorage.setItem(key,JSON.stringify(value.slice(-limit)));
+      }catch(_){}
+    };
+    const trimDiagnostics = limit => {
+      const n=Math.max(0,Number(limit)||8);
+      trimJsonArray('A·CEIL_debug_errors_v2',n);
+      trimJsonArray('A·CEIL_debug_log',n);
+      trimJsonArray('A·CEIL_diag_silent_v1',n);
+    };
+    const freeSpace = options => {
+      const before=storageBytes(),aggressive=!!(options&&options.aggressive),force=!!(options&&options.force),removed=[];
+      if(!force && before<2300000)return {beforeBytes:before,afterBytes:before,removed:removed};
+      try{
+        duplicateCacheKeys.forEach(key=>{
+          if(localStorage.getItem(key)!=null){localStorage.removeItem(key);removed.push(key);}
+        });
+        if(aggressive)trimDiagnostics(8);
+        if(force && storageBytes()>4200000)diagnosticKeys.forEach(key=>{
+          if(localStorage.getItem(key)!=null){localStorage.removeItem(key);removed.push(key);}
+        });
+      }catch(_){}
+      return {beforeBytes:before,afterBytes:storageBytes(),removed:removed};
+    };
+    let lastError=null;
+    const retrySetItem = (key,value) => {
+      try{localStorage.setItem(key,value);lastError=null;return true;}
+      catch(error){
+        lastError=error;
+        if(!quotaError(error))return false;
+        freeSpace({aggressive:true,force:true});
+        try{localStorage.setItem(key,value);lastError=null;return true;}
+        catch(second){lastError=second;return false;}
+      }
+    };
+    window.A·CEIL.StorageRepair=Object.freeze({
+      keyBytes:keyBytes,storageBytes:storageBytes,stripThumbs:stripThumbs,
+      trimDiagnostics:trimDiagnostics,freeSpace:freeSpace,retrySetItem:retrySetItem,
+      isQuotaError:quotaError,lastError:()=>lastError
+    });
+  }
 
   const STORAGE_KEY = 'ceiling_projects';
-  const CACHE_LIMIT = 20;
+  const CACHE_LIMIT = 8;
   const schema = window.A·CEILProjectSchema || null;
   const isObject = value => !!value && typeof value === 'object' && !Array.isArray(value);
   const normalize = projects => schema && typeof schema.migrateProjects === 'function'
@@ -76,8 +166,9 @@
     }
     return p;
   }
-  function persistentSubset(projects){
+  function persistentSubset(projects,syncedLimit){
     const src=Array.isArray(projects)?projects:[];
+    const limit=Number.isFinite(syncedLimit)?Math.max(0,syncedLimit):CACHE_LIMIT;
     const chosen=[],seen=new Set();
     function add(p){
       if(!p)return;
@@ -95,7 +186,13 @@
     src.forEach(p=>{if(projectKeys(p).some(k=>act.has(k)))add(p);});
 
     /* Synced cloud projects are only a cache: keep the most recent few. */
-    src.forEach(p=>{if(chosen.length<CACHE_LIMIT||isUnsynced(p))add(p);});
+    let syncedAdded=0;
+    src.forEach(p=>{
+      if(isUnsynced(p))return;
+      const was=chosen.length;
+      if(syncedAdded<limit)add(p);
+      if(chosen.length>was)syncedAdded++;
+    });
     return chosen.map(stripLocalHeavyData);
   }
   function readRaw(){
@@ -108,15 +205,22 @@
     if(memoryCache===null)memoryCache=normalize(readRaw());
     return memoryCache;
   }
+  let lastWriteMeta=null;
   function writePersistent(fullProjects){
-    const persistent=persistentSubset(fullProjects);
-    const serialized=JSON.stringify(persistent);
-    try{
-      const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
-      if(repair&&typeof repair.retrySetItem==='function')return repair.retrySetItem(STORAGE_KEY,serialized);
-      localStorage.setItem(STORAGE_KEY,serialized);
-      return true;
-    }catch(_){return false;}
+    const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
+    const limits=[CACHE_LIMIT,5,2,0];
+    for(let i=0;i<limits.length;i++){
+      try{
+        const persistent=persistentSubset(fullProjects,limits[i]);
+        const serialized=JSON.stringify(persistent);
+        const ok=repair&&typeof repair.retrySetItem==='function'
+          ? repair.retrySetItem(STORAGE_KEY,serialized)
+          : (localStorage.setItem(STORAGE_KEY,serialized),true);
+        lastWriteMeta={ok:!!ok,attemptedKB:Math.round(serialized.length*2/1024),persistedCount:persistent.length,syncedLimit:limits[i]};
+        if(ok)return true;
+      }catch(error){lastWriteMeta={ok:false,error:String(error&&error.message||error),syncedLimit:limits[i]};}
+    }
+    return false;
   }
   function reportStorageError(){
     /* Local project cache is only a fallback. Cloud persistence remains authoritative.
@@ -128,7 +232,16 @@
         window.__rmStorageRepairLogTs=now;
         const log=window.A·CEIL&&window.A·CEIL.DebugLog;
         if(log&&typeof log.warn==='function'){
-          log.warn('local_project_cache_write_failed',{storageKey:STORAGE_KEY});
+          const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
+          const error=repair&&typeof repair.lastError==='function'?repair.lastError():null;
+          log.warn('local_project_cache_write_failed',{
+            storageKey:STORAGE_KEY,
+            errorName:error&&error.name||'',
+            errorMessage:String(error&&error.message||''),
+            storageKB:repair&&repair.storageBytes?Math.round(repair.storageBytes()/1024):null,
+            write:lastWriteMeta,
+            cache:cacheInfo()
+          });
         }
       }
     }catch(_){}
@@ -210,7 +323,8 @@
       fullCount:full.length,
       persistedCount:persisted.length,
       cacheLimit:CACHE_LIMIT,
-      unsyncedCount:full.filter(isUnsynced).length
+      unsyncedCount:full.filter(isUnsynced).length,
+      lastWrite:lastWriteMeta
     };
   }
 
