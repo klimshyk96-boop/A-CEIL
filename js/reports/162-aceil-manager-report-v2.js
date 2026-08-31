@@ -120,6 +120,23 @@ window.A_CEIL_PublishManagerReport=async function(){
 window.A_CEIL_OpenManagerReport=async function(){
   var obj=activeObject();
   if(!obj||!obj.multiRoom||!Array.isArray(obj.rooms)||!obj.rooms.length){try{showToast("Менеджерський звіт доступний для багатокімнатного обʼєкта")}catch(_){}return}
+  /* Пріоритетний шлях: одразу публікуємо і відкриваємо СПРАВЖНЮ URL хмарної сторінки.
+     Це критично для iOS Safari/PWA — там window.open()+document.write() у порожній
+     попап часто взагалі не виконує вписаний <script> (кнопки "мертві"), тоді як
+     справжнє завантаження сторінки /report/[token] (092-aceil-public-report-page-v1.js)
+     виконує document.write як частину звичайного завантаження — це надійно працює. */
+  var canPublish=window._sb&&window._sbUser&&window._sbUser.id;
+  if(canPublish){
+    try{
+      try{showToast("⏳ Готуємо звіт…")}catch(_){}
+      var url=await window.A_CEIL_PublishManagerReport();
+      var win=window.open(url,"_blank");
+      if(win)return;
+      location.href=url;return
+    }catch(e){
+      try{showToast("⚠️ Не вдалося опублікувати ("+(e.message||e)+") — локальний перегляд")}catch(_){}
+    }
+  }
   var win=window.open();if(!win){try{showToast("Дозвольте спливаючі вікна")}catch(_){}return}
   win.document.open();win.document.write(makeHtml(obj,aggregate(obj)));win.document.close();
 };
