@@ -33,6 +33,9 @@ function catalogGroups(){
   }catch(_){}
   return runtimeGroups();
 }
+function roomFilmItems(list){return (Array.isArray(list)?list:[]).filter(function(it){return it&&it.filmPickerManaged===true&&it.roomScoped===true;});}
+function roomFilmGroups(list){return (Array.isArray(list)?list:[]).filter(function(g){return g&&g.roomScoped===true&&g.roomScopedKind==='film-color';});}
+function filmGroupSet(managed){var out={};managed.forEach(function(it){out[String(it.groupId)]=true;});return out;}
 function install(items,groups){
   var ii=clone(items||[]),gg=clone(groups||[]);
   try{elemItems=ii;window.elemItems=elemItems;}catch(_){window.elemItems=ii;}
@@ -40,7 +43,8 @@ function install(items,groups){
 }
 function mergedRoomItems(room,catalog){
   var st=parse(room&&room.state), saved=Array.isArray(st.elemItems)?st.elemItems:(room&&Array.isArray(room.elemItems)?room.elemItems:[]);
-  var base=Array.isArray(catalog)?catalog:[];
+  var managed=roomFilmItems(saved),managedGroups=filmGroupSet(managed);
+  var base=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(managedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0);});
   var bySaved={};saved.forEach(function(it){var k=key(it);if(k)bySaved[k]=it;});
   var ROOM_FIELDS=['qty','manualQtyOverride','autoFilled','autoZero','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount'];
   var out=[],seen={};
@@ -56,8 +60,15 @@ function mergedRoomItems(room,catalog){
     }
     out.push(row);
   });
-  /* Deliberately DO NOT append items found only in an old room snapshot.
-     Old rooms are no longer allowed to resurrect deleted/stale catalog rows. */
+  managed.forEach(function(it){var k=key(it);if(k&&!seen[k]){seen[k]=1;out.push(clone(it));}});
+  /* Зі старого знімка повертаємо лише явно позначені кімнатні позиції плівки.
+     Інші видалені або застарілі рядки каталогу не воскресають. */
+  return out;
+}
+function mergedRoomGroups(room,catalog){
+  var st=parse(room&&room.state),saved=Array.isArray(st.elemGroups)?st.elemGroups:(room&&Array.isArray(room.elemGroups)?room.elemGroups:[]),out=clone(Array.isArray(catalog)?catalog:[]),seen={};
+  out.forEach(function(g){seen[String(g&&g.id)]=true;});
+  roomFilmGroups(saved).forEach(function(g){if(!seen[String(g.id)]){seen[String(g.id)]=true;out.unshift(clone(g));}});
   return out;
 }
 function persistRoomRuntime(obj,idx){
@@ -87,7 +98,7 @@ if(typeof oldLoad==='function'&&!oldLoad.__roomCalcIsolationV331){
     /* v3.39: global nomenclature is authoritative.
        Room snapshot contributes only quantities/results. */
     var targetItems=mergedRoomItems(target,catalog);
-    var targetGroups=groupsBefore;
+    var targetGroups=mergedRoomGroups(target,groupsBefore);
 
     var result=oldLoad.apply(this,arguments);
 
