@@ -67,6 +67,21 @@ function cacheState(){
   }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 function cloudReady(){return !!(sb()&&sbUser())}
+function isAutomaticDraft(p){
+  return !!p&&String(p.comment||"")==="Автоматична чернетка A·CEIL";
+}
+function projectFromCloud(row,st){
+  return {
+    id:row.id,_dbId:row.id,
+    name:row.name||"Чернетка",addr:row.addr||"",phone:row.phone||"",
+    comment:row.comment||"Автоматична чернетка A·CEIL",
+    area:row.area||"",per:row.per||"",
+    inC:row.in_corners||"",outC:row.out_corners||"",
+    thumb:row.thumb||"",
+    date:row.created_at?new Date(row.created_at).toLocaleDateString("uk-UA"):new Date().toLocaleDateString("uk-UA"),
+    state:JSON.stringify(st||row.state||{})
+  };
+}
 
 async function syncSingleProject(){
   var client=sb(),user=sbUser();
@@ -99,6 +114,30 @@ async function syncSingleProject(){
       thumb:"",
       state:JSON.stringify(st)
     };
+  }
+
+  /* Якщо після перезапуску Safari локальний ID не відновився, знаходимо
+     останню автоматичну чернетку цього користувача й ОНОВЛЮЄМО її.
+     Таким чином автозбереження має один робочий слот, а не створює картку
+     після кожного нового сеансу. Іменовані проєкти це правило не зачіпає. */
+  if(!p&&!hasCloudId){
+    var found=await client.from("projects")
+      .select("*")
+      .eq("user_id",user.id)
+      .eq("comment","Автоматична чернетка A·CEIL")
+      .order("created_at",{ascending:false})
+      .limit(1)
+      .maybeSingle();
+    if(found.error)throw found.error;
+    if(found.data&&isAutomaticDraft(found.data)){
+      p=projectFromCloud(found.data,st);
+      idx=arr.findIndex(function(x){return match(x,found.data.id)});
+      if(idx>=0)arr[idx]=p;else{arr.unshift(p);idx=0}
+      try{window.A·CEIL.ProjectRepository.replaceAll(arr)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      try{_currentProjectId=found.data.id}catch(_){window._currentProjectId=found.data.id}
+      try{_currentProjName=p.name}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      try{_currentProjComment=p.comment}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    }
   }
 
   if(!p){
@@ -220,13 +259,13 @@ function schedule(ms){
   clearTimeout(timer);
   timer=setTimeout(syncNow,typeof ms==="number"?ms:450);
 }
-window.rmCloudFirstSaveV330=function(){schedule(120)};
+window.rmCloudFirstSaveV330=function(){schedule(600)};
 
 var prevSave=window.saveState||(typeof saveState==="function"?saveState:null);
 if(typeof prevSave==="function"){
   window.saveState=function(){
     var r=prevSave.apply(this,arguments);
-    schedule(450);
+    schedule(5000);
     return r;
   };
   try{saveState=window.saveState}catch(_){window.__diagSilent&&window.__diagSilent(_)}
