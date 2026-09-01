@@ -1556,36 +1556,67 @@ body.rm-hybrid-only-active #cv{pointer-events:none!important}
 /* A·CEIL RC13 — admin user activity */
 .aceil-activity-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:13px;margin-bottom:10px}.aceil-activity-user{display:flex;align-items:center;gap:9px}.aceil-activity-user .dot{width:9px;height:9px;border-radius:50%;background:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.12);flex:0 0 9px}.aceil-activity-user .dot.online{background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.13)}.aceil-activity-user>div{min-width:0;flex:1}.aceil-activity-user b{display:block;font-size:12px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aceil-activity-user small{display:block;margin-top:2px;font-size:9px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aceil-activity-user em{font-style:normal;font-size:9px;font-weight:800;color:#64748b;background:#f1f5f9;border-radius:999px;padding:5px 7px}.aceil-activity-user .dot.online~div+em{color:#047857;background:#ecfdf5}.aceil-activity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:11px}.aceil-activity-grid>div{background:#f8fafc;border:1px solid #eef2f7;border-radius:11px;padding:8px 9px;min-width:0}.aceil-activity-grid span{display:block;color:#64748b;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}.aceil-activity-grid b{display:block;color:#0f172a;font-size:10px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media(min-width:680px){.aceil-activity-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
-/* A·CEIL film color picker v3 */
-#aceilColorPickerBtn{position:absolute;left:10px;bottom:14px;z-index:61;width:56px;min-width:56px;height:48px;min-height:48px;padding:4px!important;border:1px solid rgba(99,102,241,.18);border-radius:14px;background:rgba(255,255,255,.96);color:#273253;box-shadow:0 8px 22px rgba(15,23,42,.15);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;white-space:nowrap;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);touch-action:manipulation}
-#aceilColorPickerBtn:active{transform:scale(.94)}
-#aceilColorPickerBtn .acpb-icon{font-size:13px;line-height:1}
-#aceilColorPickerBtn .acpb-code{font-size:10.5px;font-weight:950;line-height:1;letter-spacing:-.02em}
-#aceilColorPickerBtn .acpb-width{font-size:8.5px;font-weight:850;line-height:1.1;color:#6366f1}
-#aceilColorPickerBtn.acpb-error{background:#fff7ed;border-color:#fb923c}
-#aceilColorPickerBtn.acpb-error .acpb-width{color:#c2410c}
 
-#aceilColorPickerModalV2{position:fixed;inset:0;z-index:2147483000;display:none;align-items:flex-end;justify-content:center;padding:10px;background:rgba(15,23,42,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+/* ===== SOURCE 167: css for aceil-color-picker-v2 (кнопка на канвасі + модалка) ===== */
+
+#aceilColorPickerBtn{
+  position:absolute;top:5px;right:6px;z-index:61;
+  display:flex;align-items:center;gap:5px;
+  height:26px;min-height:26px;padding:2px 9px 2px 7px;border:0;border-radius:8px;
+  background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;
+  font-size:10.5px;font-weight:800;box-shadow:0 3px 10px rgba(124,58,237,.28);
+  cursor:pointer;white-space:nowrap
+}
+#aceilColorPickerBtn .acpb-icon{font-size:12px;line-height:1}
+#aceilColorPickerBtn .acpb-code{font-weight:950;letter-spacing:-.01em}
+#aceilColorPickerBtn .acpb-width{opacity:.85;font-size:9.5px;font-weight:800}
+#aceilColorPickerBtn.acpb-error{background:linear-gradient(135deg,#dc2626,#f87171)}
+
+#aceilColorPickerModalV2{
+  position:fixed;inset:0;z-index:2147483000;display:none;
+  align-items:flex-end;justify-content:center;padding:10px;
+  background:rgba(15,23,42,.50);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)
+}
 #aceilColorPickerModalV2.open{display:flex}
-#aceilColorPickerModalV2 .acp2-card{width:min(96vw,520px);max-height:88dvh;overflow:auto;background:#fff;border-radius:28px 28px 18px 18px;padding:16px;box-shadow:0 28px 86px rgba(15,23,42,.3)}
+#aceilColorPickerModalV2 .acp2-card{
+  width:min(96vw,520px);max-height:88vh;overflow:auto;background:#fff;
+  border-radius:28px 28px 18px 18px;padding:16px;
+  box-shadow:0 28px 86px rgba(15,23,42,.30)
+}
 #aceilColorPickerModalV2 .acp2-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
 #aceilColorPickerModalV2 .acp2-title{font-size:20px;font-weight:950;color:#0f172a;letter-spacing:-.03em}
 #aceilColorPickerModalV2 .acp2-sub{font-size:11px;font-weight:800;color:#64748b;margin-top:3px}
 #aceilColorPickerModalV2 .acp2-x{width:36px;height:36px;border:0;border-radius:12px;background:#f1f5f9;color:#475569;font-size:20px;box-shadow:none;padding:0}
+
 #aceilColorPickerModalV2 .acp2-label{font-size:11px;font-weight:900;color:#94a3b8;text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
-#aceilColorPickerModalV2 .acp2-popular{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
-#aceilColorPickerModalV2 .acp2-pop-btn{min-width:0;height:34px;padding:0 5px;border-radius:11px;border:1.5px solid #ede9fe;background:#f5f3ff;color:#5b21b6;font-size:13px;font-weight:900;box-shadow:none}
+#aceilColorPickerModalV2 .acp2-popular{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+#aceilColorPickerModalV2 .acp2-pop-btn{
+  height:34px;padding:0 14px;border-radius:11px;border:1.5px solid #ede9fe;background:#f5f3ff;
+  color:#5b21b6;font-size:13px;font-weight:900;box-shadow:none
+}
 #aceilColorPickerModalV2 .acp2-pop-btn.active{background:linear-gradient(135deg,#7c3aed,#a78bfa);border-color:transparent;color:#fff}
-#aceilColorPickerModalV2 .acp2-search{display:flex;align-items:center;gap:8px;width:100%;height:46px;box-sizing:border-box;border:1.5px solid #dbe2ea;border-radius:14px;padding:0 12px;background:#fff;margin-bottom:10px}
+
+#aceilColorPickerModalV2 .acp2-search{
+  display:flex;align-items:center;gap:8px;width:100%;height:46px;box-sizing:border-box;
+  border:1.5px solid #dbe2ea;border-radius:14px;padding:0 12px;background:#fff;margin-bottom:10px
+}
 #aceilColorPickerModalV2 .acp2-search span{color:#94a3b8;font-size:15px}
-#aceilColorPickerModalV2 .acp2-search input{flex:1;min-width:0;border:0;outline:0;font-size:15px;font-weight:800;color:#0f172a;background:transparent}
+#aceilColorPickerModalV2 .acp2-search input{flex:1;border:0;outline:0;font-size:15px;font-weight:800;color:#0f172a;background:transparent}
+
 #aceilColorPickerModalV2 .acp2-tabs{display:flex;gap:6px;margin-bottom:12px}
-#aceilColorPickerModalV2 .acp2-tab{flex:1;height:40px;border-radius:12px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#334155;font-size:13px;font-weight:900;box-shadow:none;padding:0 6px}
+#aceilColorPickerModalV2 .acp2-tab{
+  flex:1;height:40px;border-radius:12px;border:1.5px solid #e2e8f0;background:#f8fafc;
+  color:#334155;font-size:13px;font-weight:900;box-shadow:none;padding:0 6px
+}
 #aceilColorPickerModalV2 .acp2-tab span{color:#94a3b8;font-weight:800;margin-left:3px}
 #aceilColorPickerModalV2 .acp2-tab.active{background:linear-gradient(135deg,#2563eb,#6366f1);border-color:transparent;color:#fff}
 #aceilColorPickerModalV2 .acp2-tab.active span{color:rgba(255,255,255,.75)}
+
 #aceilColorPickerModalV2 .acp2-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-#aceilColorPickerModalV2 .acp2-chip{border:1.5px solid #e2e8f0;border-radius:14px;background:#f8fafc;padding:10px 6px;text-align:center;box-shadow:none;color:#0f172a}
+#aceilColorPickerModalV2 .acp2-chip{
+  border:1.5px solid #e2e8f0;border-radius:14px;background:#f8fafc;
+  padding:10px 6px;text-align:center;box-shadow:none;color:#0f172a
+}
 #aceilColorPickerModalV2 .acp2-chip.active{background:#f5f3ff;border-color:#c4b5fd}
 #aceilColorPickerModalV2 .acp2-chip:active{background:#eef2ff;border-color:#c7d2fe}
 #aceilColorPickerModalV2 .acp2-chip-code{font-size:14px;font-weight:950;letter-spacing:-.02em}
@@ -1593,5 +1624,60 @@ body.rm-hybrid-only-active #cv{pointer-events:none!important}
 #aceilColorPickerModalV2 .acp2-chip-marks{display:flex;justify-content:center;gap:4px;margin-top:4px;font-size:9px;color:#94a3b8}
 #aceilColorPickerModalV2 .acp2-chip-marks span{background:#eef2ff;color:#4338ca;border-radius:6px;padding:1px 4px;font-weight:900}
 #aceilColorPickerModalV2 .acp2-empty{grid-column:1/-1;text-align:center;padding:30px 10px;color:#94a3b8;font-size:13px;font-weight:800}
-@media(max-width:600px){#aceilColorPickerModalV2{padding:0}#aceilColorPickerModalV2 .acp2-card{width:100%;max-height:86dvh;border-radius:26px 26px 0 0;padding-bottom:calc(16px + env(safe-area-inset-bottom))}}
+
 @media(max-width:370px){#aceilColorPickerModalV2 .acp2-grid{grid-template-columns:repeat(2,1fr)}}
+
+
+/* ===== SOURCE 168: desktop layout (>=1024px) — ширший канвас + постійна панель номенклатури ===== */
+
+@media (min-width:1024px){
+  #main-area{max-width:1560px!important}
+  .top-row{align-items:flex-start!important;gap:22px!important}
+  .canvas-container{min-height:640px}
+  canvas#cv{min-height:600px!important}
+  .panel-column{width:400px!important;flex-shrink:0!important;position:sticky!important;top:18px!important}
+
+  /* Модалку номенклатури/звіту на широкому екрані центруємо, а не шторка знизу */
+  #elementsModal.open,#reportSettingsModal.open,#reportSettingsModal[style*="display:block"]{
+    align-items:center!important
+  }
+  #elementsModal.open>.modal{
+    width:min(94vw,560px)!important;height:auto!important;max-height:82vh!important;
+    border-radius:26px!important;margin:0!important
+  }
+  #reportSettingsModal .rspro-sheet{margin:0!important}
+
+  #aceilColorPickerModalV2,#aceilColorPickerModalV2.open{align-items:center!important}
+}
+
+#aceilDesktopSidebar{display:none}
+@media (min-width:1024px){
+  #aceilDesktopSidebar{
+    display:block;margin-top:12px;background:rgba(255,255,255,.9);
+    border:1px solid rgba(148,163,184,.2);border-radius:24px;padding:14px;
+    box-shadow:0 14px 38px rgba(15,23,42,.07)
+  }
+  #aceilDesktopSidebar .adsb-head{display:flex;align-items:center;margin-bottom:10px}
+  #aceilDesktopSidebar .adsb-title{font-size:14px;font-weight:950;color:#0f172a}
+  #aceilDesktopSidebar .adsb-badge{margin-left:auto;background:#eff6ff;color:#1d4ed8;font-size:10.5px;font-weight:900;padding:3px 9px;border-radius:999px}
+
+  #aceilDesktopSidebar .adsb-grp{border-radius:16px;background:#fff;border:1px solid #eef2f7;margin-bottom:9px;overflow:hidden}
+  #aceilDesktopSidebar .adsb-grp-head{display:flex;align-items:center;gap:8px;padding:9px 10px;background:#f8fafc}
+  #aceilDesktopSidebar .adsb-grp-ico{width:16px!important;height:16px!important;color:#64748b;flex-shrink:0}
+  #aceilDesktopSidebar .adsb-grp-name{font-size:12.5px;font-weight:900;color:#334155;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #aceilDesktopSidebar .adsb-grp-sum{font-size:11.5px;font-weight:900;color:#0f172a;flex-shrink:0}
+
+  #aceilDesktopSidebar .adsb-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-top:1px solid #f4f6f9}
+  #aceilDesktopSidebar .adsb-rn{flex:1;min-width:0;font-size:11.5px;font-weight:800;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #aceilDesktopSidebar .adsb-rq{font-size:10.5px;font-weight:900;color:#475569;flex-shrink:0}
+  #aceilDesktopSidebar .adsb-rp{font-size:10.5px;font-weight:800;color:#94a3b8;flex-shrink:0;min-width:52px;text-align:right}
+
+  #aceilDesktopSidebar .adsb-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:26px 10px;color:#cbd5e1;font-size:11.5px;font-weight:800;text-align:center}
+  #aceilDesktopSidebar .adsb-empty .rm-ico{width:26px!important;height:26px!important}
+
+  #aceilDesktopSidebar .adsb-total{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#0f172a;border-radius:16px;padding:10px 12px;margin-top:2px}
+  #aceilDesktopSidebar .adsb-total span{display:block;color:#a5b4fc;font-size:9.5px;font-weight:800}
+  #aceilDesktopSidebar .adsb-total b{color:#fff;font-size:16px;font-weight:950}
+  #aceilDesktopSidebar .adsb-edit{height:32px;padding:0 12px;border-radius:11px;background:rgba(255,255,255,.12);color:#fff;font-size:11.5px;font-weight:900;box-shadow:none;display:flex;align-items:center;gap:5px}
+  #aceilDesktopSidebar .adsb-edit .rm-ico{width:14px!important;height:14px!important}
+}
