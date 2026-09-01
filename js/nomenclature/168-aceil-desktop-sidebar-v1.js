@@ -30,6 +30,19 @@ function money(v){
   try{return new Intl.NumberFormat("uk-UA",{minimumFractionDigits:0,maximumFractionDigits:2}).format(n)+" ₴"}catch(_){return n.toFixed(2)+" ₴"}
 }
 
+function installDesktopCanvasStroke(){
+  if(!window.matchMedia||!window.matchMedia("(min-width:901px)").matches)return;
+  var canvas=gid("cv"),ctx=canvas&&canvas.getContext&&canvas.getContext("2d");
+  if(!ctx||ctx.__aceilDesktopStrokeV1)return;
+  var nativeStroke=ctx.stroke;
+  ctx.stroke=function(){
+    var original=this.lineWidth;
+    if(String(this.strokeStyle).toLowerCase()==="#1d1d1f"&&original<=3.1)this.lineWidth=4;
+    try{return nativeStroke.apply(this,arguments)}finally{this.lineWidth=original}
+  };
+  ctx.__aceilDesktopStrokeV1=true;
+}
+
 /* Той самий принцип іконки-за-назвою, що й isFilmItem()/category() у проєкті —
    тільки тут повертаємо id символу з вже існуючого спрайту #A·CEIL-icons-v1. */
 function groupIconId(name){
@@ -57,7 +70,7 @@ function buildShell(){
     '<div class="adsb-total"><div><span>Разом</span><b id="adsbTotal">₴0</b></div>'+
       '<button type="button" class="adsb-edit" onclick="openElementsModal()">'+ico("rmi-pencil")+' Редагувати</button>'+
     '</div>';
-  host.appendChild(card);
+  host.insertBefore(card,host.firstChild);
   return true;
 }
 
@@ -118,11 +131,11 @@ function installHook(){
   }
 }
 
-function boot(){installHook();render()}
+function boot(){installDesktopCanvasStroke();installHook();render()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 var _tries=0,_timer=setInterval(function(){
   _tries++;
-  if(gid("aceilDesktopSidebar")||_tries>20){clearInterval(_timer);return}
-  boot();
-},250);
+  if(!gid("aceilDesktopSidebar"))boot();else render();
+  if(_tries>80)clearInterval(_timer);
+},500);
 })();
