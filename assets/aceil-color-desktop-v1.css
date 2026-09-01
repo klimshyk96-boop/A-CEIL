@@ -71,12 +71,12 @@
 
 /* ===== SOURCE 168: desktop layout (>=1024px) — ширший канвас + постійна панель номенклатури ===== */
 
-@media (min-width:1024px){
-  #main-area{max-width:1560px!important}
-  .top-row{align-items:flex-start!important;gap:22px!important}
-  .canvas-container{min-height:640px}
-  canvas#cv{min-height:600px!important}
-  .panel-column{width:400px!important;flex-shrink:0!important;position:sticky!important;top:18px!important}
+@media (min-width:901px){
+  #main-area{max-width:1480px!important}
+  .top-row{display:grid!important;grid-template-columns:minmax(0,1fr) 380px!important;align-items:start!important;gap:18px!important}
+  .canvas-container{min-width:0!important;min-height:0!important;height:auto!important}
+  canvas#cv{display:block!important;width:100%!important;height:auto!important;min-height:0!important;aspect-ratio:1/1}
+  .panel-column{display:flex!important;width:380px!important;min-width:380px!important;position:sticky!important;top:12px!important}
 
   /* Модалку номенклатури/звіту на широкому екрані центруємо, а не шторка знизу */
   #elementsModal.open,#reportSettingsModal.open,#reportSettingsModal[style*="display:block"]{
@@ -92,9 +92,9 @@
 }
 
 #aceilDesktopSidebar{display:none}
-@media (min-width:1024px){
+@media (min-width:901px){
   #aceilDesktopSidebar{
-    display:block;margin-top:12px;background:rgba(255,255,255,.9);
+    display:block!important;margin:0 0 10px;background:rgba(255,255,255,.96);
     border:1px solid rgba(148,163,184,.2);border-radius:24px;padding:14px;
     box-shadow:0 14px 38px rgba(15,23,42,.07)
   }
@@ -121,4 +121,29 @@
   #aceilDesktopSidebar .adsb-total b{color:#fff;font-size:16px;font-weight:950}
   #aceilDesktopSidebar .adsb-edit{height:32px;padding:0 12px;border-radius:11px;background:rgba(255,255,255,.12);color:#fff;font-size:11.5px;font-weight:900;box-shadow:none;display:flex;align-items:center;gap:5px}
   #aceilDesktopSidebar .adsb-edit .rm-ico{width:14px!important;height:14px!important}
+}
+
+/* Film picker v3: compact left-bottom canvas control on phone and desktop. */
+#aceilColorPickerBtn{
+  position:absolute;left:10px;right:auto;top:auto;bottom:14px;z-index:61;
+  width:56px;min-width:56px;height:48px;min-height:48px;padding:4px!important;
+  border:1px solid rgba(99,102,241,.18);border-radius:14px;
+  background:rgba(255,255,255,.96);color:#273253;
+  box-shadow:0 8px 22px rgba(15,23,42,.15);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  cursor:pointer;white-space:nowrap;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  touch-action:manipulation
+}
+#aceilColorPickerBtn:active{transform:scale(.94)}
+#aceilColorPickerBtn .acpb-icon{font-size:13px;line-height:1}
+#aceilColorPickerBtn .acpb-code{font-size:10.5px;font-weight:950;line-height:1;letter-spacing:-.02em}
+#aceilColorPickerBtn .acpb-width{opacity:1;font-size:8.5px;font-weight:850;line-height:1.1;color:#6366f1}
+#aceilColorPickerBtn.acpb-error{background:#fff7ed;border-color:#fb923c}
+#aceilColorPickerBtn.acpb-error .acpb-width{color:#c2410c}
+#aceilColorPickerModalV2 .acp2-popular{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:14px}
+#aceilColorPickerModalV2 .acp2-pop-btn{min-width:0;height:34px;padding:0 5px}
+#aceilColorPickerModalV2 .acp2-search input{min-width:0}
+@media(max-width:600px){
+  #aceilColorPickerModalV2{padding:0}
+  #aceilColorPickerModalV2 .acp2-card{width:100%;max-height:86dvh;border-radius:26px 26px 0 0;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
 }
