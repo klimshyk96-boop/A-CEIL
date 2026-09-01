@@ -31,7 +31,27 @@ function norm(v){return String(v||"").trim().toLowerCase()}
 function catalog(){return Array.isArray(window.ACEIL_COLOR_CATALOG)?window.ACEIL_COLOR_CATALOG:[]}
 function pricing(){return window.ACEIL_FILM_PRICING||{}}
 function texLabels(){return window.ACEIL_TEXTURE_LABELS||{lak:"Глянець",mat:"Мат",satin:"Сатин"}}
-function popularCodes(){return Array.isArray(window.ACEIL_POPULAR_CODES)?window.ACEIL_POPULAR_CODES:[]}
+var POPULAR_STORAGE_KEY="aceil_film_popular_codes_v1";
+function popularCodes(){
+  var defaults=Array.isArray(window.ACEIL_POPULAR_CODES)?window.ACEIL_POPULAR_CODES:[];
+  try{
+    var saved=JSON.parse(localStorage.getItem(POPULAR_STORAGE_KEY)||"null");
+    if(Array.isArray(saved))return saved.filter(function(code){return !!catalogEntry(code)}).slice(0,4);
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  return defaults.filter(function(code){return !!catalogEntry(code)}).slice(0,4);
+}
+function savePopularCodes(list){
+  list=list.filter(function(code,i,arr){return !!catalogEntry(code)&&arr.indexOf(code)===i}).slice(0,4);
+  try{localStorage.setItem(POPULAR_STORAGE_KEY,JSON.stringify(list))}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  renderPopular();renderGrid();
+}
+function togglePopular(code){
+  var list=popularCodes(),idx=list.indexOf(code);
+  if(idx>=0)list.splice(idx,1);
+  else{if(list.length>=4)list.shift();list.push(code)}
+  savePopularCodes(list);
+  try{if(typeof showToast==="function")showToast(idx>=0?"☆ Прибрано з популярних":"★ Додано до популярних",1700)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+}
 
 var _activeTexture="";   // "" = показуємо все (популярні/пошук), інакше конкретна фактура
 var _searchQuery="";
@@ -176,7 +196,7 @@ function buildModal(){
         '<button type="button" class="acp2-x" id="acp2Close">×</button>'+
       '</div>'+
       '<div class="acp2-body">'+
-        '<div class="acp2-label">Популярні</div>'+
+        '<div class="acp2-label acp2-pop-label"><span>Популярні</span><small>★ оберіть до 4</small></div>'+
         '<div class="acp2-popular" id="acp2Popular"></div>'+
         '<label class="acp2-search"><span>⌕</span>'+
           '<input id="acp2Search" type="text" inputmode="search" placeholder="Пошук: 402, глянець, мат…" autocomplete="off" autocapitalize="off" spellcheck="false"></label>'+
@@ -228,6 +248,7 @@ function renderGrid(){
     return;
   }
   var current=currentColorCode();
+  var favorites=popularCodes();
   host.innerHTML=list.map(function(c){
     var marks=[];
     if(c.insert)marks.push('<span title="Можлива кольорова вставка">✦</span>');
@@ -235,6 +256,7 @@ function renderGrid(){
     if(c.wide510)marks.push('<span title="Позиція 5.1 м · робоча ширина до 560 см">560</span>');
     var tex=q?('<div class="acp2-chip-tex">'+esc(texLabels()[c.texture]||"")+'</div>'):"";
     return '<button type="button" class="acp2-chip'+(c.code===current?" active":"")+'" onclick="window.__aceilColorPickerChoose(\''+c.code+'\',\''+c.texture+'\')">'+
+      '<span class="acp2-star'+(favorites.indexOf(c.code)>=0?" active":"")+'" role="button" aria-label="Популярний колір" onclick="event.preventDefault();event.stopPropagation();window.__aceilColorPickerTogglePopular(\''+c.code+'\');return false">'+(favorites.indexOf(c.code)>=0?"★":"☆")+'</span>'+
       '<div class="acp2-chip-code">'+esc(c.code)+'</div>'+tex+
       (marks.length?'<div class="acp2-chip-marks">'+marks.join("")+'</div>':"")+
       '</button>';
@@ -257,6 +279,7 @@ function closePicker(){
 }
 
 window.__aceilColorPickerChoose=chooseColor;
+window.__aceilColorPickerTogglePopular=togglePopular;
 window.__aceilColorPickerTab=function(t){_activeTexture=t;_searchQuery="";var input=gid("acp2Search");if(input)input.value="";renderTabs();renderGrid()};
 
 /* ---------- реакція на зміну кімнати/площі, щоб кнопка лишалась актуальною ---------- */
