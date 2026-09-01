@@ -1,0 +1,156 @@
+
+(function(){
+"use strict";
+if(window.__aceilColorCatalogV1)return;
+window.__aceilColorCatalogV1=true;
+
+/* MSD Premium — база кольорів натяжних стель.
+   texture: "lak" (Глянець) | "mat" (Мат) | "satin" (Сатин)
+   extra400 / extra500 — чи цей колір додатково доступний в розширеній рулонній
+   ширині 400см/500см (інформаційна позначка з фізичного каталогу виробника,
+   не впливає на тарифи продажу нижче).
+   insert — чи можлива кольорова вставка для цього кольору. */
+window.ACEIL_COLOR_CATALOG=[
+  {code:'L577',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L571',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L555',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L573',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L525',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L545',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L519',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L511',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L507',texture:'lak',label:'Глянець',extra400:true,extra500:true,insert:true},
+  {code:'L501',texture:'lak',label:'Глянець',extra400:true,extra500:true,insert:true},
+  {code:'L307',texture:'lak',label:'Глянець',extra400:true,extra500:true,insert:true},
+  {code:'L404',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L400',texture:'lak',label:'Глянець',extra400:true,extra500:true,insert:true},
+  {code:'L406',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L416',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L408',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L410',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L424',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L739',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L753',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L303',texture:'lak',label:'Глянець',extra400:true,extra500:true,insert:true},
+  {code:'L347',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L490',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L478',texture:'lak',label:'Глянець',extra400:true,extra500:true,insert:true},
+  {code:'L476',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L866',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L462',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L466',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L474',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L444',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L442',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L402',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L412',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L233',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L231',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L235',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L227',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:false},
+  {code:'L229',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L225',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L223',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L201',texture:'lak',label:'Глянець',extra400:true,extra500:true,insert:true},
+  {code:'L309',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L305',texture:'lak',label:'Глянець',extra400:true,extra500:true,insert:true},
+  {code:'L602',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L184',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L162',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L160',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L156',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L140',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L120',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L114',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L108',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L110',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:false},
+  {code:'L104',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L102',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L632',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L628',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L608',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L100',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L604',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L610',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L333',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L319',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L313',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L317',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:false},
+  {code:'L311',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L634',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L666',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L644',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L640',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L652',texture:'lak',label:'Глянець',extra400:false,extra500:true,insert:true},
+  {code:'L614',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L515',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L624',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L664',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L733',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L717',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:true},
+  {code:'L713',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L721',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'L707',texture:'lak',label:'Глянець',extra400:false,extra500:false,insert:false},
+  {code:'M309',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M311',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M317',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M604',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M608',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M303',texture:'mat',label:'Мат',extra400:true,extra500:true,insert:true},
+  {code:'M305',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M313',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M319',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M501',texture:'mat',label:'Мат',extra400:true,extra500:true,insert:true},
+  {code:'M307',texture:'mat',label:'Мат',extra400:true,extra500:true,insert:true},
+  {code:'M507',texture:'mat',label:'Мат',extra400:true,extra500:true,insert:true},
+  {code:'M511',texture:'mat',label:'Мат',extra400:true,extra500:true,insert:true},
+  {code:'M406',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M400',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M404',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M402',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M555',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M571',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M347',texture:'mat',label:'Мат',extra400:false,extra500:true,insert:false},
+  {code:'M717',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M110',texture:'mat',label:'Мат',extra400:false,extra500:true,insert:false},
+  {code:'M114',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M225',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M229',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'M652',texture:'mat',label:'Мат',extra400:false,extra500:false,insert:false},
+  {code:'S303',texture:'satin',label:'Сатин',extra400:true,extra500:true,insert:true},
+  {code:'S501',texture:'satin',label:'Сатин',extra400:true,extra500:true,insert:true},
+  {code:'S507',texture:'satin',label:'Сатин',extra400:false,extra500:true,insert:true},
+  {code:'S307',texture:'satin',label:'Сатин',extra400:true,extra500:true,insert:true},
+  {code:'S511',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:true},
+  {code:'S406',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:false},
+  {code:'S404',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:false},
+  {code:'S402',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:false},
+  {code:'S229',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:false},
+  {code:'S225',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:false},
+  {code:'S201',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:false},
+  {code:'S604',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:false},
+  {code:'S110',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:false},
+  {code:'S114',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:false},
+  {code:'S652',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:false},
+  {code:'S717',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:false},
+  {code:'S571',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:false},
+  {code:'S347',texture:'satin',label:'Сатин',extra400:false,extra500:false,insert:false}
+
+];
+
+/* Тарифи продажу, грн/м², за шириною полотна без шва.
+   3.6 -> покриває прогони до 360см (база рулону 320см)
+   5.1 -> покриває прогони від 360 до 560см
+   Однакові для всіх трьох фактур (Глянець/Мат/Сатин) станом на зараз —
+   за потреби легко розвести по texture нижче. */
+window.ACEIL_FILM_PRICING={
+  lak:{t36:380,t51:420},
+  mat:{t36:380,t51:420},
+  satin:{t36:380,t51:420}
+};
+
+window.ACEIL_TEXTURE_LABELS={lak:"Глянець",mat:"Мат",satin:"Сатин"};
+
+/* Швидкі чіпи "Популярні" у пікері — базові білі відтінки кожної фактури. */
+window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
+})();
