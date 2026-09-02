@@ -57,8 +57,11 @@ function setMode(id){
 function closeMain(){try{if(typeof window.closeRmLightStart==="function")window.closeRmLightStart()}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
 function customCards(){
   return types().filter(function(t){return t&&!typeIsSystem(t)&&String(t.label||"").trim()}).map(function(t){
-    return '<button type="button" class="rm-ce-card" data-custom-ce="'+esc(t.id)+'" onclick="rmCeUseCustomV318(this.getAttribute(\'data-custom-ce\'))">'
-      +'<span class="rm-ce-icon violet">'+esc(t.icon||"◉")+'</span><span><b>'+esc(t.label)+'</b><small>розмістити на плані</small></span></button>';
+    return '<div class="rm-ce-custom-wrap">'
+      +'<button type="button" class="rm-ce-card" data-custom-ce="'+esc(t.id)+'" onclick="rmCeUseCustomV318(this.getAttribute(\'data-custom-ce\'))">'
+      +'<span class="rm-ce-icon violet">'+esc(t.icon||"◉")+'</span><span><b>'+esc(t.label)+'</b><small>розмістити на плані</small></span></button>'
+      +'<button type="button" class="rm-ce-delete" data-delete-ce="'+esc(t.id)+'" onclick="event.stopPropagation();rmCeDeleteCustomV318(this.getAttribute(\'data-delete-ce\'))" aria-label="Видалити '+esc(t.label)+'" title="Видалити">🗑</button>'
+      +'</div>';
   }).join("");
 }
 function render(){
@@ -81,6 +84,39 @@ function render(){
 }
 window.rmRenderCeilingElementsV318=render;
 window.rmCeUseCustomV318=function(id){closeMain();setMode(id)};
+window.rmCeDeleteCustomV318=function(id){
+  id=String(id||"");
+  var all=types(),target=all.find(function(t){return t&&String(t.id)===id});
+  if(!target||!typeIsCustom(target))return;
+  var marks=[];
+  try{marks=(typeof lightMarks!=="undefined"&&Array.isArray(lightMarks))?lightMarks:(Array.isArray(window.lightMarks)?window.lightMarks:[])}catch(_){marks=Array.isArray(window.lightMarks)?window.lightMarks:[]}
+  var placed=marks.filter(function(m){return m&&String(m.type)===id}).length;
+  var question='Видалити «'+String(target.label||"Елемент")+'» зі списку?';
+  if(placed)question+=' Також буде видалено з плану: '+placed+' шт.';
+  if(typeof confirm==="function"&&!confirm(question))return;
+  var next=all.filter(function(t){return !t||String(t.id)!==id});
+  try{localStorage.setItem("lightTypes_v1",JSON.stringify(next))}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{window.lightTypes=next;lightTypes=next}catch(_){window.lightTypes=next}
+  for(var i=marks.length-1;i>=0;i--)if(marks[i]&&String(marks[i].type)===id)marks.splice(i,1);
+  try{
+    var items=(typeof elemItems!=="undefined"&&Array.isArray(elemItems))?elemItems:(Array.isArray(window.elemItems)?window.elemItems:[]);
+    items.forEach(function(it){
+      if(it&&String(it.source||"")==="lighttype:"+id){
+        it.source="";it.sourceLightType=null;
+        if(it.autoFilled){it.qty=0;it.autoFilled=false;it.autoZero=true}
+      }
+    });
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(typeof lightMode!=="undefined"&&String(lightMode)===id)lightMode=null}catch(_){window.lightMode=null}
+  try{if(typeof renderLightTypeRowsV2==="function")renderLightTypeRowsV2()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(typeof syncLightMarksToElems==="function")syncLightMarksToElems()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(typeof updateLightBadge==="function")updateLightBadge()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(typeof renderElemList==="function")renderElemList()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(typeof saveState==="function")saveState()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(typeof requestDraw==="function")requestDraw();else if(typeof draw==="function")draw()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  render();
+  try{if(typeof showToast==="function")showToast("✓ "+String(target.label||"Елемент")+" видалено")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+};
 var hostClick=gid("rmLightStartModal");
 if(hostClick)hostClick.addEventListener("click",function(e){
   var b=e.target&&e.target.closest?e.target.closest("[data-custom-ce]"):null;
@@ -114,6 +150,13 @@ window.rmSaveNewCeilingElementV318=function(){
   var icon=String(gid("rmNceIconV318")&&gid("rmNceIconV318").value||"◉").trim().slice(0,3)||"◉";
   if(!name){try{if(typeof showToast==="function")showToast("Введіть назву елемента")}catch(_){window.__diagSilent&&window.__diagSilent(_)};return}
   var arr=types();
+  var same=arr.find(function(t){return t&&typeIsCustom(t)&&String(t.label||"").trim().toLowerCase()===name.toLowerCase()});
+  if(same){
+    window.rmCloseNewCeilingElementV318();
+    setMode(same.id);
+    try{if(typeof showToast==="function")showToast("Такий елемент уже є — оберіть місце на плані")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    return;
+  }
   var id="ce_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,6);
   arr.push({id:id,label:name,icon:icon,ceilingElement:true});
   try{localStorage.setItem("lightTypes_v1",JSON.stringify(arr))}catch(_){window.__diagSilent&&window.__diagSilent(_)}
