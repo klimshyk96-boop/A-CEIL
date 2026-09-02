@@ -28,9 +28,12 @@ function isExhaust(type){
 }
 function isCustomCeiling(type){
   var id=String(type||""),t=typeObj(type)||{};
+  /* User-created items stay custom even if the visible name contains
+     "витяжка", "люстра" or another reserved word. */
+  if(id.indexOf("ce_")===0 || t.ceilingElement===true)return true;
   if(isExhaust(type))return false;
   if(id==="spot"||id==="chandelier")return false;
-  return id.indexOf("ce_")===0 || t.ceilingElement===true;
+  return false;
 }
 function roomCenter(){
   try{
