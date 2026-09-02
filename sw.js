@@ -1,7 +1,7 @@
-/* A·CEIL offline shell v3 — 2026-09-02 */
+/* A·CEIL offline shell v4 — 2026-09-02 */
 "use strict";
 
-const SHELL_CACHE="aceil-shell-20260902-v3";
+const SHELL_CACHE="aceil-shell-20260902-v4";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 
 function isStaticAsset(request){
@@ -61,8 +61,9 @@ async function navigationResponse(request){
   const path=new URL(request.url).pathname;
   const isAppEntry=path==="/"||path==="/index.html";
   try{
+    const networkRequest=new Request(request,{cache:"reload"});
     const network=await Promise.race([
-      fetch(request),
+      fetch(networkRequest),
       new Promise((_,reject)=>setTimeout(()=>reject(new Error("offline timeout")),2500))
     ]);
     if(isAppEntry)await putIfUsable(cache,new Request("/index.html"),network);
@@ -85,8 +86,9 @@ self.addEventListener("fetch",event=>{
   if(!isStaticAsset(request))return;
   event.respondWith((async()=>{
     try{
+      const networkRequest=new Request(request,{cache:"reload"});
       const response=await Promise.race([
-        fetch(request),
+        fetch(networkRequest),
         new Promise((_,reject)=>setTimeout(()=>reject(new Error("asset timeout")),2500))
       ]);
       const cache=await caches.open(SHELL_CACHE);

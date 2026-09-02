@@ -2077,7 +2077,7 @@ localStorage: A·CEIL_cloud_cache_v330
 <!-- A·CEIL ACCESS v7 — explicit server rights, UI guards, authoritative cloud projects -->
 
 <!-- A·CEIL ACCESS CLEAN v1 — single authority, 2026-08-25 -->
-<script id="A-CEIL-access-clean-v2" src="js/admin/159-aceil-access-clean-v2.js?v=20260902-offline3"></script>
+<script id="A-CEIL-access-clean-v2" src="js/admin/159-aceil-access-clean-v2.js?v=20260902-offline50"></script>
 <script id="A-CEIL-user-activity" src="js/admin/user-activity.js?v=rc13"></script>
 <!-- /A·CEIL ACCESS CLEAN v1 -->
 
@@ -2111,7 +2111,7 @@ localStorage: A·CEIL_cloud_cache_v330
   "use strict";
   if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
   window.addEventListener("load",function(){
-    navigator.serviceWorker.register("/sw.js?v=20260902-3",{scope:"/"}).then(function(reg){
+    navigator.serviceWorker.register("/sw.js?v=20260902-4",{scope:"/"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
