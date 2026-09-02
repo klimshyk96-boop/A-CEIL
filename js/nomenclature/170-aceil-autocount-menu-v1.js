@@ -7,6 +7,7 @@
     return String(v==null?"":v).toLowerCase().replace(/[’'`\"]/g,"")
       .replace(/[^\p{L}\p{N}]+/gu," ").replace(/\s+/g," ").trim();
   }
+  function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]})}
   function gid(id){return document.getElementById(id);}
   function items(){
     try{if(typeof elemItems!=="undefined"&&Array.isArray(elemItems))return elemItems;}catch(e){window.__diagSilent&&window.__diagSilent(e)}
@@ -29,8 +30,10 @@
   }
   function isOverlayPvcCornice(mark){
     var n=norm(mark&&(mark.type||mark.name||mark.title));
-    if(!n.includes("карниз")||!n.includes("пвх"))return false;
-    return n.includes("наклад")||n.includes("звичайн")||n.includes("стельов")||n.includes("потолоч");
+    if(!n.includes("карниз"))return false;
+    var special=/прихован|ніша|нішев|профіл|алюм|інтегрован|вбудован|гардин/.test(n);
+    if(special)return false;
+    return n.includes("пвх")||/наклад|звичайн|стельов|потолоч/.test(n);
   }
   function itemColor(it){
     if(it&&(it.sourceVariant==="white"||it.sourceVariant==="black"))return it.sourceVariant;
@@ -76,7 +79,7 @@
       var qty=source==="cornice break"?top.breaks:top.corners;
       if(Number(it.qty)!==qty||it.unit!=="шт")changed=true;
       it.qty=qty;it.unit="шт";it.autoFilled=true;it.autoZero=qty===0;
-      it.autoRuleNote="Накладний ПВХ карниз не враховується";
+      it.autoRuleNote="Кути й обриви: лише приховані/профільні карнизи; накладний ПВХ виключено";
     });
     if(changed&&render!==false){
       try{if(typeof renderElemList==="function")renderElemList();}catch(e){window.__diagSilent&&window.__diagSilent(e)}
@@ -106,7 +109,7 @@
     white_insert:"Біла вставка — залишок периметра",
     total_area:"Площа кімнати",
     corners:"Звичайні кути",
-    hidden_curtain:"Карниз — загальна довжина",
+    hidden_curtain:"Карниз — довжина всіх типів",
     cornice_corners:"Прихований карниз — кути",
     cornice_break:"Прихований карниз — обриви",
     floating_profile:"Парящий профіль — довжина",
@@ -122,14 +125,37 @@
     linear_corner:"Світлова лінія — кути",
     linear_break:"Світлова лінія — обриви"
   };
+  var NOTES={
+    "":"Кількість вводиться вручну або визначається за точною назвою",
+    full_perimeter:"Увесь периметр кімнати · м",
+    main_profile:"Периметр мінус парящий, тіньовий та інші задані профілі · м",
+    white_insert:"Залишок периметра після профілів без вставки · м",
+    total_area:"Площа побудованої кімнати · м²",
+    corners:"Кути кімнати після віднімання спеціальних кутів · шт",
+    hidden_curtain:"Сума довжин усіх карнизів на стінах · м",
+    cornice_corners:"Тільки стики прихованих/профільних карнизів · шт",
+    cornice_break:"Тільки вільні кінці прихованих/профільних карнизів · шт",
+    floating_profile:"Сума довжин парящого профілю · м",
+    floating_corners:"Кінці парящого профілю у кутах · шт",
+    shadow_profile:"Сума довжин тіньового профілю · м",
+    shadow_corners:"Кінці тіньового профілю у кутах · шт",
+    profile_beam:"Сума довжин профілю-бруса · м",
+    curve_length:"Сума довжин дуг · м",
+    spot_light:"Кількість точкових світильників на плані · шт",
+    chandelier:"Кількість люстр на плані · шт",
+    ventilation:"Кількість витяжок і вентиляційних елементів · шт",
+    linear_length:"Сумарна довжина лінійного елемента · м",
+    linear_corner:"Кути лінійного елемента · шт",
+    linear_break:"Вільні кінці лінійного елемента · шт"
+  };
   var GROUPS={
-    manual:{title:"Ручний режим",keys:[""]},
-    base:{title:"Основне",keys:["full_perimeter","main_profile","white_insert","total_area","corners"]},
-    wall:{title:"Елементи стін",keys:["hidden_curtain","cornice_corners","cornice_break","floating_profile","floating_corners","shadow_profile","shadow_corners","profile_beam","curve_length"]},
-    light:{title:"Світло",keys:["spot_light","chandelier","ventilation"]},
-    linear:{title:"Лінійні елементи",keys:["linear_length","linear_corner","linear_break"]},
-    plan:{title:"Елементи з плану",keys:[]},
-    other:{title:"Інше",keys:[]}
+    manual:{title:"Ручне значення",keys:[""]},
+    base:{title:"Кімната: площа, периметр і кути",keys:["full_perimeter","main_profile","white_insert","total_area","corners"]},
+    wall:{title:"Стіни: карнизи та профілі",keys:["hidden_curtain","cornice_corners","cornice_break","floating_profile","floating_corners","shadow_profile","shadow_corners","profile_beam","curve_length"]},
+    light:{title:"Світло та вентиляція",keys:["spot_light","chandelier","ventilation"]},
+    linear:{title:"Лінії та треки",keys:["linear_length","linear_corner","linear_break"]},
+    plan:{title:"Конкретний елемент із плану",keys:[]},
+    other:{title:"Інші правила",keys:[]}
   };
   function sourceFromButton(button){
     if(button.dataset&&button.dataset.aceilSource!=null)return button.dataset.aceilSource;
@@ -161,8 +187,21 @@
       var source=sourceFromButton(button),dynamic=source==null;
       if(source!=null){
         button.dataset.aceilSource=source;
-        var span=button.querySelector("span");if(span&&LABELS[source])span.textContent=(source==="cornice_break"?"▤✂️ ":source==="cornice_corners"?"▤📐 ":"")+LABELS[source];
+        var span=button.querySelector("span");
+        if(span&&LABELS[source]){
+          var icon=source==="cornice_break"?"▤✂️":source==="cornice_corners"?"▤📐":"";
+          span.className="acsrc-label";
+          span.innerHTML="<b>"+(icon?icon+" ":"")+LABELS[source]+"</b><small>"+(NOTES[source]||"")+"</small>";
+        }
+      }else{
+        var dynamicSpan=button.querySelector("span");
+        if(dynamicSpan){
+          var dynamicText=dynamicSpan.textContent.trim();
+          dynamicSpan.className="acsrc-label";
+          dynamicSpan.innerHTML="<b>"+esc(dynamicText)+"</b><small>Точна прив’язка до вибраного елемента на плані</small>";
+        }
       }
+      button.dataset.aceilSearch=norm(button.textContent);
       var cat=categoryFor(source,dynamic);buckets[cat].push(button);
       if(button.classList.contains("active"))currentGroup=cat;
     });
@@ -173,10 +212,16 @@
       else currentGroup="base";
     }
     list.innerHTML="";
-    Object.keys(GROUPS).forEach(function(key){
+    var help=document.createElement("div");help.className="acsrc-help";
+    help.innerHTML="<b>Що повинна рахувати ця позиція?</b><span>Оберіть одне джерело. Після змін на плані кількість оновлюється автоматично.</span>";
+    list.appendChild(help);
+    var search=document.createElement("input");search.type="search";search.className="acsrc-search";search.placeholder="Пошук правила: карниз, площа, світло…";list.appendChild(search);
+    var order=["manual",currentGroup].concat(Object.keys(GROUPS)).filter(function(key,index,self){return self.indexOf(key)===index;});
+    order.forEach(function(key){
       if(!buckets[key].length)return;
       var details=document.createElement("details");details.className="acsrc-group";details.open=key===currentGroup||key==="manual";
-      var summary=document.createElement("summary");summary.textContent=GROUPS[key].title+" · "+buckets[key].length;details.appendChild(summary);
+      details.dataset.aceilGroup=key;
+      var summary=document.createElement("summary");summary.innerHTML="<span>"+GROUPS[key].title+"</span><em>"+buckets[key].length+(key===currentGroup&&key!=="manual"?" · рекомендовано":"")+"</em>";details.appendChild(summary);
       var body=document.createElement("div");body.className="acsrc-options";buckets[key].forEach(function(b){body.appendChild(b);});details.appendChild(body);
       if(key==="wall"){
         var note=document.createElement("div");note.className="acsrc-note";
@@ -185,6 +230,23 @@
       }
       list.appendChild(details);
     });
+    search.addEventListener("input",function(){
+      var q=norm(search.value),groups=Array.prototype.slice.call(list.querySelectorAll(".acsrc-group"));
+      groups.forEach(function(group){
+        var visible=0;
+        Array.prototype.forEach.call(group.querySelectorAll(".qs-btn"),function(button){
+          var show=!q||String(button.dataset.aceilSearch||"").includes(q);button.hidden=!show;if(show)visible++;
+        });
+        group.hidden=visible===0;if(q&&visible)group.open=true;
+      });
+    });
+  }
+
+  var previousRender=window.renderElemList;
+  if(typeof previousRender==="function"&&!previousRender.__corniceRulesV2){
+    var wrappedRender=function(){correctCorniceRules(false);return previousRender.apply(this,arguments)};
+    wrappedRender.__corniceRulesV2=true;window.renderElemList=wrappedRender;
+    try{renderElemList=wrappedRender;}catch(e){window.__diagSilent&&window.__diagSilent(e)}
   }
 
   var previousQuick=window.openQuickSourceMenu;
