@@ -320,6 +320,7 @@
   }
   function organizeSourceMenu(){
     var list=gid("quickSourceList");if(!list)return;
+    installTouchScroll(list);
     addMissingButton(list,"white_insert");
     addCustomRuleButtons(list);
     var all=Array.prototype.slice.call(list.querySelectorAll(".qs-btn"));if(!all.length)return;
@@ -387,6 +388,39 @@
         group.hidden=visible===0;if(q&&visible)group.open=true;
       });
     });
+  }
+
+  // iOS/PWA fallback: some global canvas/modal handlers consume the native
+  // swipe before Safari scrolls this nested list. Move only this list by hand
+  // and suppress the synthetic click after an actual drag.
+  function installTouchScroll(list){
+    if(!list||list.dataset.aceilTouchScroll==="1")return;
+    list.dataset.aceilTouchScroll="1";
+    var startY=0,startTop=0,dragged=false,blockClickUntil=0;
+    list.addEventListener("touchstart",function(ev){
+      if(!ev.touches||ev.touches.length!==1)return;
+      startY=ev.touches[0].clientY;startTop=list.scrollTop;dragged=false;
+      ev.stopPropagation();
+    },{passive:true,capture:true});
+    list.addEventListener("touchmove",function(ev){
+      if(!ev.touches||ev.touches.length!==1)return;
+      var delta=startY-ev.touches[0].clientY;
+      if(!dragged&&Math.abs(delta)<5)return;
+      dragged=true;
+      var max=Math.max(0,list.scrollHeight-list.clientHeight);
+      list.scrollTop=Math.max(0,Math.min(max,startTop+delta));
+      blockClickUntil=Date.now()+600;
+      ev.preventDefault();ev.stopPropagation();
+    },{passive:false,capture:true});
+    list.addEventListener("touchend",function(ev){
+      if(dragged)blockClickUntil=Date.now()+600;
+      ev.stopPropagation();
+    },{passive:true,capture:true});
+    list.addEventListener("touchcancel",function(){dragged=false;},{passive:true,capture:true});
+    list.addEventListener("click",function(ev){
+      if(Date.now()>=blockClickUntil)return;
+      ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
+    },true);
   }
 
   var OP_OPTIONS={
@@ -462,5 +496,5 @@
     var wrappedLightBadge=function(){var result=previousLightBadge.apply(this,arguments);applyCustomRules(false);return result};
     wrappedLightBadge.__customRulesV1=true;window.updateLightBadge=wrappedLightBadge;try{updateLightBadge=wrappedLightBadge}catch(e){}
   }
-  setTimeout(function(){loadRules();embedRules();applyCustomRules(false);correctCorniceRules(false);},500);
+  setTimeout(function(){loadRules();embedRules();applyCustomRules(false);correctCorniceRules(false);installTouchScroll(gid("quickSourceList"));},500);
 })();
