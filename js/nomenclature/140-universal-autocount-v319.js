@@ -123,6 +123,15 @@ function dynamicSources(){
 }
 function computeSource(source){
   source=String(source||"");
+  if(source==="ventilation"){
+    return {
+      qty:getLightMarks().filter(function(m){
+        var id=String(m&&m.type||"").toLowerCase();
+        return id==="vent"||id==="exhaust"||id==="hood";
+      }).length,
+      unit:"шт"
+    };
+  }
   if(source.indexOf("lighttype:")===0){
     var id=source.slice(10);
     return {qty:getLightMarks().filter(function(m){return String(m&&m.type||"")===id}).length,unit:"шт"};
