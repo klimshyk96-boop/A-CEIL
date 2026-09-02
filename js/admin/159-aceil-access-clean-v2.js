@@ -3,6 +3,7 @@
 'use strict';
 var busy=false, ACCESS=null, NOM_DENIED=false, lastAccessSig='', lastResumeRightsAt=0;
 var ACCESS_CACHE_KEY='A_CEIL_access_snapshot_v1';
+try{if(!localStorage.getItem('A_CEIL_access_log_cleanup_v50')){localStorage.setItem('A_CEIL_access_log_cleanup_v50','1');var dp=window.A·CEIL&&window.A·CEIL.DebugPanel;if(dp&&typeof dp.clear==='function')dp.clear()}}catch(_cleanupError){}
 function accessSig(a){if(!a)return'';return [a.app_role,a.is_active,a.owner_id,a.nomenclature_access,a.projects_access,a.projects_edit,a.projects_scope,a.access_until].map(function(v){return String(v==null?'':v)}).join('|')}
 function sb(){try{var c=(typeof _sb!=='undefined'&&_sb)||window._sb||null;if(c&&!window._sb)window._sb=c;return c}catch(e){return window._sb||null}}
 function usr(){try{var u=(typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null;if(u&&!window._sbUser)window._sbUser=u;return u}catch(e){return window._sbUser||null}}
@@ -48,8 +49,8 @@ async function loadNom(a){var c=sb(),u=usr();if(!c||!u)return false;if(applyNomG
 function mapProject(p){var st={};try{st=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){};var multi=st.multiRoom===true;return {id:p.id,_dbId:p.id,name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',multiRoom:multi,rooms:multi?(st.rooms||[]):undefined,state:multi?null:(typeof p.state==='string'?p.state:JSON.stringify(st))}}
 function replaceProjects(rows){var mapped=(rows||[]).map(mapProject);try{if(window.A·CEIL&&window.A·CEIL.ProjectRepository)window.A·CEIL.ProjectRepository.replaceAll(mapped);else if(typeof setProjects==='function')setProjects(mapped)}catch(e){};try{if(typeof renderProjects==='function')renderProjects()}catch(e){}}
 async function loadProjects(a){var c=sb(),u=usr();if(!c||!u)return false;var owner=String(a&&a.app_role||'').toLowerCase()==='owner';if(!owner&&(!a||a.projects_access!==true)){replaceProjects([]);return false}var r=await c.from('projects').select('*').order('created_at',{ascending:false});if(r.error)throw r.error;replaceProjects(r.data||[]);return true}
-async function refresh(){if(busy)return false;var c=sb(),u=usr();if(!u)return false;if(!navigator.onLine){var cached=offlineAccess(u);if(cached){ACCESS=cached;applyNomGate(cached);lastAccessSig=accessSig(cached)}enterOffline(u);return true}if(!c)return false;busy=true;try{var a=await rights();if(!a)return false;await Promise.all([loadNom(a),loadProjects(a)]);applyNomGate(a);lastAccessSig=accessSig(a);return true}catch(e){if(isTransientNetworkError(e)){enterOffline(u);return true}console.error('[A·CEIL access]',e);try{if(typeof showToast==='function')showToast('Помилка доступу: '+(e.message||e),4500)}catch(_){};return false}finally{busy=false}}
-async function refreshOnResume(){if(busy)return false;var now=Date.now();if(now-lastResumeRightsAt<1200)return true;lastResumeRightsAt=now;var c=sb(),u=usr();if(!u)return false;if(!navigator.onLine){enterOffline(u);return true}if(!c)return false;busy=true;try{var prev=lastAccessSig||accessSig(ACCESS),a=await rights();if(!a)return false;var sig=accessSig(a);if(sig!==prev){await Promise.all([loadNom(a),loadProjects(a)])}else{applyNomGate(a)}lastAccessSig=sig;return true}catch(e){if(isTransientNetworkError(e)){enterOffline(u);return true}console.error('[A·CEIL access resume]',e);return false}finally{busy=false}}
+async function refresh(){if(busy)return false;var c=sb(),u=usr();if(!u)return false;if(!navigator.onLine){var cached=offlineAccess(u);if(cached){ACCESS=cached;applyNomGate(cached);lastAccessSig=accessSig(cached)}enterOffline(u);return true}if(!c)return false;busy=true;try{var a=await rights();if(!a)return false;await Promise.all([loadNom(a),loadProjects(a)]);applyNomGate(a);lastAccessSig=accessSig(a);return true}catch(e){enterOffline(u);return true}finally{busy=false}}
+async function refreshOnResume(){if(busy)return false;var now=Date.now();if(now-lastResumeRightsAt<1200)return true;lastResumeRightsAt=now;var c=sb(),u=usr();if(!u)return false;if(!navigator.onLine){enterOffline(u);return true}if(!c)return false;busy=true;try{var prev=lastAccessSig||accessSig(ACCESS),a=await rights();if(!a)return false;var sig=accessSig(a);if(sig!==prev){await Promise.all([loadNom(a),loadProjects(a)])}else{applyNomGate(a)}lastAccessSig=sig;return true}catch(e){enterOffline(u);return true}finally{busy=false}}
 /* Nomenclature window remains available. OFF means its catalogue is empty for a non-owner. */
 var oldElements=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);if(typeof oldElements==='function'){var openElementsClean=async function(){var a=null;try{a=await rights();if(a)applyNomGate(a)}catch(e){}var r=oldElements.apply(this,arguments);if(a&&applyNomGate(a))setTimeout(clearNom,0);return r};window.openElementsModal=openElementsClean;try{openElementsModal=openElementsClean}catch(e){}}
 /* Prevent room/project snapshots from resurrecting catalogue rows while access is OFF. */
@@ -59,7 +60,7 @@ var oldRender=window.renderElemList||(typeof renderElemList==='function'?renderE
 var oldProjects=window.openProjectsModal||(typeof openProjectsModal==='function'?openProjectsModal:null);if(typeof oldProjects==='function'){var openProjectsClean=async function(){if(navigator.onLine)try{var a=await rights();await loadProjects(a)}catch(e){if(!isTransientNetworkError(e))console.error('[A·CEIL projects]',e)}return oldProjects.apply(this,arguments)};window.openProjectsModal=openProjectsClean;try{openProjectsModal=openProjectsClean}catch(e){}}
 window.forceLoadNomenclature=async function(){if(!navigator.onLine)return false;var a=await rights();return a?loadNom(a):false};try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){};try{loadNomenclatureFromCloud=window.forceLoadNomenclature}catch(e){}
 window.A_CEIL_forceAccessRefresh=refresh;
-function boot(n){if(n>20)return;setTimeout(async function(){if(await refresh())return;boot(n+1)},300)}
+function boot(n){if(n>4||window.__A_CEIL_OFFLINE_ACTIVE===true)return;setTimeout(async function(){if(await refresh())return;boot(n+1)},500)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){boot(0)},{once:true});else boot(0);
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(refreshOnResume,200)});
 
@@ -80,7 +81,7 @@ function scheduleLiveRefresh(){
         try{var log=window.A·CEIL&&window.A·CEIL.DebugLog;if(log&&log.warn)log.warn('realtime_access_network_unavailable',{attempts:liveRetryCount+1,message:String(e&&e.message||e)})}catch(_){}
         liveRetryCount=0;return;
       }
-      console.error('[A·CEIL realtime access]',e);
+      enterOffline(usr());
     }
   },60);
 }
