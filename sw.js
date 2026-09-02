@@ -1,7 +1,7 @@
-/* A·CEIL offline shell v2 — 2026-09-02 */
+/* A·CEIL offline shell v3 — 2026-09-02 */
 "use strict";
 
-const SHELL_CACHE="aceil-shell-20260902-v2";
+const SHELL_CACHE="aceil-shell-20260902-v3";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 
 function isStaticAsset(request){
@@ -84,12 +84,13 @@ self.addEventListener("fetch",event=>{
 
   if(!isStaticAsset(request))return;
   event.respondWith((async()=>{
-    const cached=await caches.match(request);
-    if(cached)return cached;
     try{
-      const response=await fetch(request);
+      const response=await Promise.race([
+        fetch(request),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error("asset timeout")),2500))
+      ]);
       const cache=await caches.open(SHELL_CACHE);
       return await putIfUsable(cache,request,response);
-    }catch(_){return Response.error()}
+    }catch(_){return await caches.match(request)||Response.error()}
   })());
 });
