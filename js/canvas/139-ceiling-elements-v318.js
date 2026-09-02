@@ -10,8 +10,23 @@ function types(){
   try{var a=JSON.parse(localStorage.getItem("lightTypes_v1")||"[]");return Array.isArray(a)?a:[]}catch(_){return[]}
 }
 function typeIsVent(t){var s=(String(t&&t.id||"")+" "+String(t&&t.label||"")).toLowerCase();return /vent|exhaust|hood|витяж|вентил/.test(s)}
-function typeIsSystem(t){var id=String(t&&t.id||"").toLowerCase();return id==="spot"||id==="chandelier"||typeIsVent(t)}
-function findVent(){var a=types();for(var i=0;i<a.length;i++)if(typeIsVent(a[i]))return a[i];return null}
+function typeIsCustom(t){
+  var id=String(t&&t.id||"").toLowerCase();
+  return !!(t&&t.ceilingElement)||id.indexOf("ce_")===0;
+}
+/* A custom element may legitimately contain words such as "витяжка" or
+   "люстра". Only built-in ids are system cards; labels must not hide it. */
+function typeIsSystem(t){
+  var id=String(t&&t.id||"").toLowerCase();
+  if(typeIsCustom(t))return false;
+  return id==="spot"||id==="chandelier"||id==="vent"||id==="exhaust"||id==="hood";
+}
+function findVent(){
+  var a=types(),i;
+  for(i=0;i<a.length;i++)if(!typeIsCustom(a[i])&&String(a[i]&&a[i].id||"").toLowerCase()==="vent")return a[i];
+  for(i=0;i<a.length;i++)if(!typeIsCustom(a[i])&&typeIsVent(a[i]))return a[i];
+  return null;
+}
 function setMode(id){
   try{
     var lm=(typeof lightMarks!=="undefined"&&Array.isArray(lightMarks))?lightMarks:(Array.isArray(window.lightMarks)?window.lightMarks:[]);
@@ -105,6 +120,8 @@ window.rmSaveNewCeilingElementV318=function(){
   try{window.lightTypes=arr;lightTypes=arr}catch(_){window.lightTypes=arr}
   try{if(typeof renderLightTypeRowsV2==="function")renderLightTypeRowsV2()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   try{if(typeof syncLightMarksToElems==="function")syncLightMarksToElems()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  /* Persist the newly-created type immediately; placement is a separate step. */
+  try{if(typeof saveState==="function")saveState()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   window.rmCloseNewCeilingElementV318();
   setMode(id);
   try{if(typeof showToast==="function")showToast("✓ "+name+": вкажіть розташування на плані")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
