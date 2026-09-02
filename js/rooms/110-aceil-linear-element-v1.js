@@ -35,9 +35,12 @@
       t=4*Math.max(1,num(el.rhombusSide,num(s[0],100)));
     }
     el.totalLengthCm=Math.round(t*10)/10;
+    /* Ready-made light figures use their actual geometry. Previously every
+       lightLine fell back to segments.length-1, so a rectangle stored as
+       [width,height] incorrectly produced one corner instead of four. */
     el.cornerCount=(el.elementType==='lightLine'&&el.lightShapeMode==='rhombus')?4:
-      (el.elementType==='lightLine'&&el.lightShapeMode==='basic'&&el.shape==='U')?2:
-      (el.elementType==='lightLine'?Math.max(0,s.length-1):(SHAPES[el.shape]||SHAPES.line).corners);
+      (el.elementType==='lightLine'&&el.lightShapeMode==='free')?Math.max(0,s.length-1):
+      (SHAPES[el.shape]||SHAPES.line).corners;
     return el;
   }
   window.A·CEILLinearElement={ TYPES:TYPES, SHAPES:SHAPES, computeTotals:computeTotals,
@@ -451,7 +454,8 @@
     var out={count:0,totalLengthCm:0,cornerCount:0,breakCount:0,byType:{}};
     src.forEach(function(e){
       var el=computeTotals(Object.assign({},e));
-      var breaks=el.shape==='rectangle'?0:2;
+      var closedFigure=el.shape==='rectangle'||(el.elementType==='lightLine'&&el.lightShapeMode==='rhombus');
+      var breaks=closedFigure?0:2;
       out.count++; out.totalLengthCm+=el.totalLengthCm; out.cornerCount+=el.cornerCount; out.breakCount+=breaks;
       var k=el.elementType||'custom';
       if(!out.byType[k]) out.byType[k]={label:typeDef(k).label,lengthCm:0,corners:0,breaks:0,count:0};
