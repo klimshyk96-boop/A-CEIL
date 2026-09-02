@@ -2105,6 +2105,17 @@ localStorage: A·CEIL_cloud_cache_v330
 <script id="aceil-desktop-sidebar-v1" src="js/nomenclature/168-aceil-desktop-sidebar-v1.js?v=20260901-2"></script>
 <script id="aceil-wall-placement-restore-v1" src="js/canvas/169-aceil-wall-placement-restore-v1.js?v=20260902-1"></script>
 <script id="aceil-autocount-menu-v1" src="js/nomenclature/170-aceil-autocount-menu-v1.js?v=20260902-1"></script>
+<script id="aceil-offline-shell-v1">
+(function(){
+  "use strict";
+  if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
+  window.addEventListener("load",function(){
+    navigator.serviceWorker.register("/sw.js?v=20260902-1",{scope:"/"}).then(function(reg){
+      reg.update().catch(function(){});
+    }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
+  },{once:true});
+})();
+</script>
 <!-- A·CEIL wall elements parallel lanes 2026-08-28 -->
 <script id="A-CEIL-wall-elements-parallel-lanes-20260828" src="js/canvas/wall-elements-parallel.js"></script>
  
