@@ -992,6 +992,10 @@ body.rm-hybrid-only-active #cv{pointer-events:none!important}
 #rmLightStartModal .rm-ce-icon.violet{background:#f5f3ff;color:#7c3aed}
 #rmLightStartModal .rm-ce-card b{display:block;font-size:14px;font-weight:950;color:#0f172a;line-height:1.05}
 #rmLightStartModal .rm-ce-card small{display:block;margin-top:4px;font-size:10.5px;font-weight:800;color:#64748b;line-height:1.25}
+#rmLightStartModal .rm-ce-custom-wrap{position:relative;min-width:0;display:flex}
+#rmLightStartModal .rm-ce-custom-wrap>.rm-ce-card{width:100%!important;height:100%!important;padding-right:42px!important}
+#rmLightStartModal .rm-ce-delete{position:absolute;z-index:2;right:8px;top:8px;width:32px!important;height:32px!important;min-height:32px!important;padding:0!important;border-radius:11px!important;border:1px solid #fecdd3!important;background:#fff1f2!important;color:#be123c!important;box-shadow:none!important;font-size:15px!important;display:flex!important;align-items:center!important;justify-content:center!important}
+#rmLightStartModal .rm-ce-delete:active{transform:scale(.94);background:#ffe4e6!important}
 #rmLightStartModal .rm-ce-new{margin-top:10px;width:100%!important;min-height:50px!important;border-radius:17px!important;border:1.5px dashed #93c5fd!important;background:#f8fbff!important;color:#1d4ed8!important;font-weight:950!important;box-shadow:none!important}
 #rmNewCeilingElementV318{position:fixed;inset:0;z-index:2147482600;display:none;align-items:flex-end;justify-content:center;padding:10px;background:rgba(15,23,42,.48);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 #rmNewCeilingElementV318.open{display:flex}

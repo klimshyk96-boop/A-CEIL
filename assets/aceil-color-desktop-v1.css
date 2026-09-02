@@ -248,8 +248,9 @@
 }
 
 /* Auto-count source menu: grouped instead of one long mixed list. */
-#quickSourceModal .modal{height:min(88vh,760px);max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
-#quickSourceList{flex:1 1 auto;min-height:0;overflow-y:auto!important;overflow-x:hidden;overscroll-behavior:contain;padding:1px 2px 18px;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+#quickSourceModal{touch-action:none}
+#quickSourceModal .modal{height:min(88dvh,760px)!important;max-height:88dvh!important;display:flex;flex-direction:column;overflow:hidden!important;touch-action:none}
+#quickSourceList{height:0;flex:1 1 0;min-height:0;overflow-y:scroll!important;overflow-x:hidden;overscroll-behavior:contain;padding:1px 2px 18px;-webkit-overflow-scrolling:touch;touch-action:pan-y!important}
 #quickSourceList .acsrc-help{
   display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 11px;border-radius:13px;
   background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a
