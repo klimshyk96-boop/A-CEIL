@@ -225,3 +225,24 @@
   }
   body.rp-home-pro .canvas-container{padding:5px!important}
 }
+
+/* Restored wall-element placement: compact controls plus live preview. */
+#wallEditModal #rwe2PositionTitle{
+  display:block!important;margin:11px 0 6px!important;
+  color:#64748b!important;font-size:10.5px!important;font-weight:950!important;
+  letter-spacing:.07em!important;text-transform:uppercase
+}
+#wallEditModal #rwe2PositionGrid{display:grid!important}
+@media (max-width:520px){
+  #wallEditModal .rwe-pos-grid.rwe-visual{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important
+  }
+  #wallEditModal .rwe-pos-grid.rwe-visual .rwe-pos-btn{
+    min-width:0!important;min-height:58px!important;padding:5px 3px!important;
+    border-radius:13px!important;font-size:10px!important;gap:2px!important
+  }
+  #wallEditModal .rwe-pos-btn .rwe-mini{max-width:58px!important;height:19px!important}
+  #wallEditModal .rwe-preview{margin-top:6px!important;padding:6px 8px!important;border-radius:13px!important}
+  #wallEditModal .rwe-preview-title{font-size:8.5px!important;margin-bottom:1px!important}
+  #wallEditModal .rwe-preview svg{height:43px!important}
+}
