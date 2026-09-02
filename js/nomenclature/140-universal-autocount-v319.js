@@ -298,6 +298,8 @@ if(typeof prevQuick==="function"){
         var b=document.createElement("button");
         b.type="button";
         b.className="qs-btn"+(current===s.key?" active":"");
+        b.dataset.aceilSource=s.key;
+        b.dataset.aceilDynamic="1";
         b.innerHTML="<span>"+esc(s.icon)+" "+esc(s.label)+"</span>"+(current===s.key?'<span class="qs-check">✓</span>':"");
         b.addEventListener("click",function(){
           var item=getElemItems().find(function(x){return x&&x.id===id});
