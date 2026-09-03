@@ -35,20 +35,28 @@
     } catch(e){window.__diagSilent&&window.__diagSilent(e)}
     return 1;
   }
-  function replaceSpots(points){
-    if (typeof lightMarks === "undefined" || !Array.isArray(lightMarks)) return false;
-    lightMarks.length = 0;
-    var base = Date.now();
-    points.forEach(function(p,i){
-      var m={id:"light_row_"+base+"_"+i,type:"spot",x:Math.round(p.x),y:Math.round(p.y)};
-      try { if(typeof _nearestLightBaseIndex==="function") m.baseIndex=_nearestLightBaseIndex(m.x,m.y); } catch(e){window.__diagSilent&&window.__diagSilent(e)}
-      try { if(typeof _updateLightCoords==="function") _updateLightCoords(m); } catch(e){window.__diagSilent&&window.__diagSilent(e)}
-      lightMarks.push(m);
-    });
+  function isSpotMark(mark){
+    return String(mark && mark.type || "spot").toLowerCase() === "spot";
+  }
+  function syncAfterSpotReplace(){
     try { if(typeof updateLightBadge==="function") updateLightBadge(); } catch(e){window.__diagSilent&&window.__diagSilent(e)}
     try { if(typeof syncLightMarksToElems==="function") syncLightMarksToElems(); } catch(e){window.__diagSilent&&window.__diagSilent(e)}
     try { if(typeof saveState==="function") saveState(); } catch(e){window.__diagSilent&&window.__diagSilent(e)}
     try { if(typeof requestDraw==="function") requestDraw(); else if(typeof draw==="function") draw(); } catch(e){window.__diagSilent&&window.__diagSilent(e)}
+  }
+  function replaceSpots(points){
+    if (typeof lightMarks === "undefined" || !Array.isArray(lightMarks)) return false;
+    for(var i=lightMarks.length-1;i>=0;i--){
+      if(isSpotMark(lightMarks[i])) lightMarks.splice(i,1);
+    }
+    var base = Date.now();
+    points.forEach(function(p,index){
+      var m={id:"light_row_"+base+"_"+index,type:"spot",x:Math.round(p.x),y:Math.round(p.y)};
+      try { if(typeof _nearestLightBaseIndex==="function") m.baseIndex=_nearestLightBaseIndex(m.x,m.y); } catch(e){window.__diagSilent&&window.__diagSilent(e)}
+      try { if(typeof _updateLightCoords==="function") _updateLightCoords(m); } catch(e){window.__diagSilent&&window.__diagSilent(e)}
+      lightMarks.push(m);
+    });
+    syncAfterSpotReplace();
     return true;
   }
   function buildUniformRow(){
@@ -81,7 +89,26 @@
     var row=document.getElementById("rmLfRow");
     var rowVisible=row && !row.classList.contains("rm-lf-hidden");
     if(rowVisible || lf.mode==="row") return buildUniformRow();
-    return typeof oldApply==="function" ? oldApply.apply(this,arguments) : undefined;
+    var preserved=[];
+    try {
+      if(typeof lightMarks!=="undefined" && Array.isArray(lightMarks)){
+        preserved=lightMarks.filter(function(mark){return !isSpotMark(mark)});
+      }
+    } catch(e){window.__diagSilent&&window.__diagSilent(e)}
+    var result=typeof oldApply==="function" ? oldApply.apply(this,arguments) : undefined;
+    try {
+      if(preserved.length && typeof lightMarks!=="undefined" && Array.isArray(lightMarks)){
+        var missing=preserved.some(function(mark){return lightMarks.indexOf(mark)<0});
+        if(missing){
+          var spots=lightMarks.filter(isSpotMark);
+          lightMarks.length=0;
+          preserved.forEach(function(mark){lightMarks.push(mark)});
+          spots.forEach(function(mark){lightMarks.push(mark)});
+          syncAfterSpotReplace();
+        }
+      }
+    } catch(e){window.__diagSilent&&window.__diagSilent(e)}
+    return result;
   };
   try { rmLfApply=window.rmLfApply; } catch(e){window.__diagSilent&&window.__diagSilent(e)}
 
