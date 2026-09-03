@@ -982,20 +982,23 @@ body.rm-hybrid-only-active #cv{pointer-events:none!important}
 #rmLightStartModal .rm-ce-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px}
 #rmLightStartModal .rm-ce-title{font-size:25px;font-weight:950;color:#0f172a;letter-spacing:-.045em;line-height:1.03}
 #rmLightStartModal .rm-ce-sub{margin-top:5px;color:#64748b;font-size:12px;font-weight:800}
+#rmLightStartModal .rm-ce-head-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 #rmLightStartModal .rm-ce-close{width:42px!important;height:42px!important;min-height:42px!important;border-radius:15px!important;background:#f1f5f9!important;color:#334155!important;padding:0!important;box-shadow:none!important;font-size:22px!important}
+#rmLightStartModal .rm-ce-edit-toggle{width:42px!important;height:42px!important;min-height:42px!important;border-radius:15px!important;background:#eff6ff!important;color:#2563eb!important;border:1.5px solid #dbeafe!important;padding:0!important;box-shadow:none!important;font-size:16px!important;display:flex!important;align-items:center!important;justify-content:center!important}
+#rmLightStartModal .rm-ce-edit-toggle.on{background:#2563eb!important;color:#fff!important;border-color:#2563eb!important}
 #rmLightStartModal .rm-ce-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 #rmLightStartModal .rm-ce-card{min-height:88px!important;border-radius:20px!important;background:#fff!important;color:#0f172a!important;border:1.5px solid #dbe2ea!important;box-shadow:0 8px 22px rgba(15,23,42,.05)!important;padding:11px!important;display:flex!important;align-items:center!important;gap:10px!important;text-align:left!important}
 #rmLightStartModal .rm-ce-card.primary{background:linear-gradient(135deg,#eff6ff,#fff)!important;border-color:#bfdbfe!important}
 #rmLightStartModal .rm-ce-card.wide{grid-column:1/-1;min-height:78px!important}
 #rmLightStartModal .rm-ce-icon{width:42px;height:42px;border-radius:16px;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:22px;flex:0 0 42px}
-#rmLightStartModal .rm-ce-icon.green{background:#ecfdf5;color:#059669}
-#rmLightStartModal .rm-ce-icon.violet{background:#f5f3ff;color:#7c3aed}
 #rmLightStartModal .rm-ce-card b{display:block;font-size:14px;font-weight:950;color:#0f172a;line-height:1.05}
 #rmLightStartModal .rm-ce-card small{display:block;margin-top:4px;font-size:10.5px;font-weight:800;color:#64748b;line-height:1.25}
 #rmLightStartModal .rm-ce-custom-wrap{position:relative;min-width:0;display:flex}
-#rmLightStartModal .rm-ce-custom-wrap>.rm-ce-card{width:100%!important;height:100%!important;padding-right:42px!important}
-#rmLightStartModal .rm-ce-delete{position:absolute;z-index:2;right:8px;top:8px;width:32px!important;height:32px!important;min-height:32px!important;padding:0!important;border-radius:11px!important;border:1px solid #fecdd3!important;background:#fff1f2!important;color:#be123c!important;box-shadow:none!important;font-size:15px!important;display:flex!important;align-items:center!important;justify-content:center!important}
+#rmLightStartModal .rm-ce-custom-wrap>.rm-ce-card{width:100%!important;height:100%!important}
+#rmLightStartModal .rm-ce-delete{position:absolute;z-index:2;right:6px;top:6px;width:22px!important;height:22px!important;min-height:22px!important;padding:0!important;border-radius:8px!important;border:1px solid #fecdd3!important;background:#fff1f2!important;color:#be123c!important;box-shadow:none!important;font-size:11px!important;display:none;align-items:center!important;justify-content:center!important;opacity:.9}
 #rmLightStartModal .rm-ce-delete:active{transform:scale(.94);background:#ffe4e6!important}
+#rmLightStartModal .rm-ce-grid.rm-ce-edit-mode .rm-ce-custom-wrap>.rm-ce-card{padding-right:34px!important}
+#rmLightStartModal .rm-ce-grid.rm-ce-edit-mode .rm-ce-delete{display:flex!important}
 #rmLightStartModal .rm-ce-new{margin-top:10px;width:100%!important;min-height:50px!important;border-radius:17px!important;border:1.5px dashed #93c5fd!important;background:#f8fbff!important;color:#1d4ed8!important;font-weight:950!important;box-shadow:none!important}
 #rmNewCeilingElementV318{position:fixed;inset:0;z-index:2147482600;display:none;align-items:flex-end;justify-content:center;padding:10px;background:rgba(15,23,42,.48);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 #rmNewCeilingElementV318.open{display:flex}
