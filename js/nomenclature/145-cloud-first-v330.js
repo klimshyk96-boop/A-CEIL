@@ -5,6 +5,11 @@ if(window.__rmCloudFirstV330)return;
 window.__rmCloudFirstV330=true;
 
 var timer=null,busy=false,again=false,lastOk=0;
+var lastSavedSignature=null;
+
+function stateSignature(){
+  try{return JSON.stringify(currentState())}catch(_){return ""}
+}
 
 function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(_){return v}}
 function sb(){
@@ -224,6 +229,7 @@ async function syncNow(){
   if(busy){again=true;return}
   if(window.__A·CEILReportRendering||window.__A·CEILSessionSwitching)return;
   busy=true;
+  var savingSignature=stateSignature();
   try{
     cacheState();
     var ok=false;
@@ -238,6 +244,7 @@ async function syncNow(){
 
     if(ok){
       lastOk=Date.now();
+      lastSavedSignature=savingSignature;
       window.__A·CEILCloudFirstStatusV330="saved";
     }else{
       window.__A·CEILCloudFirstStatusV330=cloudReady()?"cache_only":"offline_cache";
@@ -265,11 +272,23 @@ var prevSave=window.saveState||(typeof saveState==="function"?saveState:null);
 if(typeof prevSave==="function"){
   window.saveState=function(){
     var r=prevSave.apply(this,arguments);
-    schedule(5000);
+    /* Зміни підхопить хвилинний контролер нижче. Не створюємо
+       мережевий запит після кожного руху точки або елемента. */
+    cacheState();
     return r;
   };
   try{saveState=window.saveState}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
+
+/* Надійне автозбереження: раз на хвилину перевіряємо сам стан макета.
+   Це працює навіть для дій, які не викликали saveState(). Якщо змін немає,
+   Supabase і список проєктів взагалі не чіпаємо. */
+setInterval(function(){
+  var st=currentState();
+  if(!meaningful(st))return;
+  var signature=stateSignature();
+  if(signature&&signature!==lastSavedSignature)syncNow();
+},60000);
 
 /* Safari: не запускаємо новий async Supabase-запит у pagehide.
    visibilitychange достатньо, а локальний аварійний кеш зберігається синхронно. */
