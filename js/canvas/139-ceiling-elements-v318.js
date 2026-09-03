@@ -55,11 +55,12 @@ function setMode(id){
   return ok;
 }
 function closeMain(){try{if(typeof window.closeRmLightStart==="function")window.closeRmLightStart()}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
+var editMode=false;
 function customCards(){
   return types().filter(function(t){return t&&!typeIsSystem(t)&&String(t.label||"").trim()}).map(function(t){
     return '<div class="rm-ce-custom-wrap">'
       +'<button type="button" class="rm-ce-card" data-custom-ce="'+esc(t.id)+'" onclick="rmCeUseCustomV318(this.getAttribute(\'data-custom-ce\'))">'
-      +'<span class="rm-ce-icon violet">'+esc(t.icon||"◉")+'</span><span><b>'+esc(t.label)+'</b><small>розмістити на плані</small></span></button>'
+      +'<span class="rm-ce-icon">'+esc(t.icon||"◉")+'</span><span><b>'+esc(t.label)+'</b><small>розмістити на плані</small></span></button>'
       +'<button type="button" class="rm-ce-delete" data-delete-ce="'+esc(t.id)+'" onclick="event.stopPropagation();rmCeDeleteCustomV318(this.getAttribute(\'data-delete-ce\'))" aria-label="Видалити '+esc(t.label)+'" title="Видалити">🗑</button>'
       +'</div>';
   }).join("");
@@ -67,27 +68,32 @@ function customCards(){
 function render(){
   var card=gid("rmLightStartModal")&&gid("rmLightStartModal").querySelector(".modal");if(!card)return;
   var vent=findVent(), ventBtn=vent
-    ?'<button type="button" class="rm-ce-card" onclick="rmCeVentV318()"><span class="rm-ce-icon green">◯</span><span><b>Витяжка</b><small>розташування + кількість</small></span></button>'
+    ?'<button type="button" class="rm-ce-card" onclick="rmCeVentV318()"><span class="rm-ce-icon">◯</span><span><b>Витяжка</b><small>розташування + кількість</small></span></button>'
+    :"";
+  var custom=customCards();
+  var editBtn=custom
+    ?'<button type="button" class="rm-ce-edit-toggle'+(editMode?" on":"")+'" onclick="rmCeToggleEditV318()" aria-label="Редагувати список" title="Редагувати список">✎</button>'
     :"";
   card.innerHTML=
     '<div class="rm-ce-head"><div><div class="rm-ce-title">Елементи стелі</div><div class="rm-ce-sub">Розміщення елементів і автоматичний прорахунок</div></div>'
-    +'<button type="button" class="rm-ce-close" onclick="closeRmLightStart()">×</button></div>'
-    +'<div class="rm-ce-grid">'
+    +'<div class="rm-ce-head-actions">'+editBtn+'<button type="button" class="rm-ce-close" onclick="closeRmLightStart()">×</button></div></div>'
+    +'<div class="rm-ce-grid'+(editMode?" rm-ce-edit-mode":"")+'">'
     +'<button type="button" class="rm-ce-card primary wide" data-flp="1" onclick="rmOpenLinearLightingV317()"><span class="rm-ce-icon">━</span><span><b>Лінійне освітлення</b><small>Готові фігури • Довільна форма</small></span></button>'
     +'<button type="button" class="rm-ce-card" onclick="rmStartChandelier()"><span class="rm-ce-icon">✶</span><span><b>Люстра</b><small>центр або ручне розташування</small></span></button>'
     +'<button type="button" class="rm-ce-card" onclick="rmStartSpotFlow()"><span class="rm-ce-icon">⊙</span><span><b>Точкові</b><small>один / ряд / сітка</small></span></button>'
     +ventBtn
     +'<button type="button" class="rm-ce-card" onclick="rmCeTrackV318()"><span class="rm-ce-icon">▭</span><span><b>Трекове освітлення</b><small>магнітний або накладний трек</small></span></button>'
-    +customCards()
+    +custom
     +'</div>'
     +'<button type="button" class="rm-ce-new" onclick="rmOpenNewCeilingElementV318()">＋ Новий елемент</button>';
 }
+window.rmCeToggleEditV318=function(){editMode=!editMode;render()};
 window.rmRenderCeilingElementsV318=render;
 window.rmCeUseCustomV318=function(id){closeMain();setMode(id)};
 window.rmCeDeleteCustomV318=function(id){
   id=String(id||"");
   var all=types(),target=all.find(function(t){return t&&String(t.id)===id});
-  if(!target||!typeIsCustom(target))return;
+  if(!target||typeIsSystem(target))return;
   var marks=[];
   try{marks=(typeof lightMarks!=="undefined"&&Array.isArray(lightMarks))?lightMarks:(Array.isArray(window.lightMarks)?window.lightMarks:[])}catch(_){marks=Array.isArray(window.lightMarks)?window.lightMarks:[]}
   var placed=marks.filter(function(m){return m&&String(m.type)===id}).length;
@@ -177,6 +183,7 @@ var prevOpen=window.openRmLightStart;
 window.openRmLightStart=function(){
   var r;
   try{if(typeof prevOpen==="function")r=prevOpen.apply(this,arguments)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  editMode=false;
   render();
   var m=gid("rmLightStartModal");if(m)m.classList.add("open");
   return r;
