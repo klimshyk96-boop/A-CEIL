@@ -93,29 +93,6 @@
 
 #aceilDesktopSidebar{display:none}
 @media (min-width:901px){
-  #A·CEILToolPanel{
-    display:flex!important;flex-wrap:wrap;align-items:stretch!important;
-    gap:8px!important;margin-top:10px!important
-  }
-  #A·CEILToolPanel>div{flex:0 0 auto!important;position:relative}
-  #A·CEILToolPanel .tile-btn{
-    display:flex!important;flex-direction:row!important;align-items:center!important;
-    gap:9px!important;width:auto!important;height:46px!important;min-height:0!important;
-    padding:0 16px!important;white-space:nowrap;box-shadow:0 4px 14px rgba(15,23,42,.05)!important
-  }
-  #A·CEILToolPanel .tile-icon{
-    width:26px!important;height:26px!important;margin-bottom:0!important;
-    border-radius:9px!important;flex-shrink:0
-  }
-  #A·CEILToolPanel .tile-icon .rm-ico{width:15px!important;height:15px!important}
-  #A·CEILToolPanel .tile-btn-label{font-size:13px!important;line-height:1.1!important}
-  #A·CEILToolPanel .tile-sub{display:none!important}
-  #A·CEILToolPanel .tile-red{margin-left:auto!important;grid-column:auto!important}
-  #A·CEILToolPanel .tile-red>div{flex-direction:row!important;gap:8px!important}
-  #A·CEILToolPanel .tile-red .tile-icon{width:26px!important;height:26px!important}
-  #A·CEILToolPanel #shapeMenu,#A·CEILToolPanel #lightMenu{top:calc(100% + 8px)!important;bottom:auto!important}
-}
-@media (min-width:901px){
   #aceilDesktopSidebar{
     display:block!important;margin:0 0 10px;background:rgba(255,255,255,.96);
     border:1px solid rgba(148,163,184,.2);border-radius:24px;padding:14px;
