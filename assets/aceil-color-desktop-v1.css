@@ -349,6 +349,23 @@
     flex:0 0 auto!important
   }
   body.rp-home-pro #adsbGroups{max-height:calc(100vh - 190px);overflow-y:auto;scrollbar-width:thin}
+  body.rp-home-pro #aceilDesktopQuickActions{
+    display:block!important;margin-top:10px;padding:13px;
+    border:1px solid rgba(148,163,184,.22);border-radius:20px;
+    background:rgba(255,255,255,.96);box-shadow:0 12px 30px rgba(15,23,42,.06)
+  }
+  #aceilDesktopQuickActions .adqa-title{
+    margin-bottom:9px;color:#64748b;font-size:10px;font-weight:950;
+    letter-spacing:.07em;text-transform:uppercase
+  }
+  #aceilDesktopQuickActions .adqa-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  #aceilDesktopQuickActions button{
+    display:flex;align-items:center;gap:8px;justify-content:flex-start;
+    min-height:42px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:12px;
+    background:#f8fafc;color:#1e3a8a;box-shadow:none;font-size:11px;font-weight:900
+  }
+  #aceilDesktopQuickActions button:hover{background:#eff6ff;border-color:#bfdbfe}
+  #aceilDesktopQuickActions button .rm-ico{width:16px!important;height:16px!important;color:#2563eb}
 }
 
 @media (min-width:901px) and (max-width:1180px){
@@ -357,3 +374,5 @@
     gap:10px!important
   }
 }
+
+@media (max-width:900px){#aceilDesktopQuickActions{display:none!important}}
