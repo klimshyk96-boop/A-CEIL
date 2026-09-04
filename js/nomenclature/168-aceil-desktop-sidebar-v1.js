@@ -35,13 +35,30 @@ function installDesktopCanvasStroke(){
   var canvas=gid("cv"),ctx=canvas&&canvas.getContext&&canvas.getContext("2d");
   if(!ctx||ctx.__aceilDesktopStrokeV1)return;
   var nativeStroke=ctx.stroke;
+  var nativeFillText=ctx.fillText;
+  var nativeStrokeText=ctx.strokeText;
+  function smallerFont(font){
+    return String(font||"").replace(/(\d+(?:\.\d+)?)px/,function(_,size){
+      return Math.max(8,Number(size)*.8).toFixed(1)+"px";
+    });
+  }
   ctx.stroke=function(){
     var original=this.lineWidth;
     /* На великому екрані canvas масштабується сильніше, тому базовий
        контур візуально ставав грубим. Не потовщуємо його до 4 px, як у
        попередньому desktop-патчі, а акуратно обмежуємо двома пікселями. */
-    if(String(this.strokeStyle).toLowerCase()==="#1d1d1f"&&original>=2)this.lineWidth=2;
+    if(String(this.strokeStyle).toLowerCase()==="#1d1d1f"&&original>=1.5)this.lineWidth=1.5;
     try{return nativeStroke.apply(this,arguments)}finally{this.lineWidth=original}
+  };
+  ctx.fillText=function(){
+    var original=this.font;
+    this.font=smallerFont(original);
+    try{return nativeFillText.apply(this,arguments)}finally{this.font=original}
+  };
+  ctx.strokeText=function(){
+    var original=this.font;
+    this.font=smallerFont(original);
+    try{return nativeStrokeText.apply(this,arguments)}finally{this.font=original}
   };
   ctx.__aceilDesktopStrokeV1=true;
 }
@@ -61,19 +78,33 @@ function ico(id,cls){return '<svg class="'+(cls||"rm-ico")+'" aria-hidden="true"
 function buildShell(){
   var host=document.querySelector(".panel-column");
   if(!host)return false;
-  if(gid("aceilDesktopSidebar"))return true;
-  var card=document.createElement("div");
-  card.id="aceilDesktopSidebar";
-  card.innerHTML=
-    '<div class="adsb-head">'+
-      '<div class="adsb-title">Номенклатура</div>'+
-      '<div class="adsb-badge" id="adsbBadge">0 груп</div>'+
-    '</div>'+
-    '<div id="adsbGroups"></div>'+
-    '<div class="adsb-total"><div><span>Разом</span><b id="adsbTotal">₴0</b></div>'+
-      '<button type="button" class="adsb-edit" onclick="openElementsModal()">'+ico("rmi-pencil")+' Редагувати</button>'+
-    '</div>';
-  host.insertBefore(card,host.firstChild);
+  if(!gid("aceilDesktopSidebar")){
+    var card=document.createElement("div");
+    card.id="aceilDesktopSidebar";
+    card.innerHTML=
+      '<div class="adsb-head">'+
+        '<div class="adsb-title">Номенклатура</div>'+
+        '<div class="adsb-badge" id="adsbBadge">0 груп</div>'+
+      '</div>'+
+      '<div id="adsbGroups"></div>'+
+      '<div class="adsb-total"><div><span>Разом</span><b id="adsbTotal">₴0</b></div>'+
+        '<button type="button" class="adsb-edit" onclick="openElementsModal()">'+ico("rmi-pencil")+' Редагувати</button>'+
+      '</div>';
+    host.insertBefore(card,host.firstChild);
+  }
+  if(!gid("aceilDesktopQuickActions")){
+    var quick=document.createElement("div");
+    quick.id="aceilDesktopQuickActions";
+    quick.innerHTML=
+      '<div class="adqa-title">Швидкі дії</div>'+
+      '<div class="adqa-grid">'+
+        '<button type="button" onclick="openElementsModal()">'+ico("rmi-elements")+'<span>Елементи</span></button>'+
+        '<button type="button" onclick="openRmLightStart()">'+ico("rmi-light")+'<span>Світло</span></button>'+
+        '<button type="button" onclick="openReportSettings()">'+ico("rmi-report")+'<span>Звіт</span></button>'+
+        '<button type="button" onclick="openProjectsModal()">'+ico("rmi-folder")+'<span>Проєкти</span></button>'+
+      '</div>';
+    host.appendChild(quick);
+  }
   return true;
 }
 
