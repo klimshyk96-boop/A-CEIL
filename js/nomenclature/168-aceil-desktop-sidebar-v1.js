@@ -37,7 +37,10 @@ function installDesktopCanvasStroke(){
   var nativeStroke=ctx.stroke;
   ctx.stroke=function(){
     var original=this.lineWidth;
-    if(String(this.strokeStyle).toLowerCase()==="#1d1d1f"&&original<=3.1)this.lineWidth=4;
+    /* На великому екрані canvas масштабується сильніше, тому базовий
+       контур візуально ставав грубим. Не потовщуємо його до 4 px, як у
+       попередньому desktop-патчі, а акуратно обмежуємо двома пікселями. */
+    if(String(this.strokeStyle).toLowerCase()==="#1d1d1f"&&original>=2)this.lineWidth=2;
     try{return nativeStroke.apply(this,arguments)}finally{this.lineWidth=original}
   };
   ctx.__aceilDesktopStrokeV1=true;
