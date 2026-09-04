@@ -314,3 +314,46 @@
 .ac-rule-actions .danger{background:#fff1f2;border:1px solid #fecdd3;color:#be123c}
 .ac-rule-actions .secondary{background:#f8fafc;border:1px solid #e2e8f0;color:#475569}
 @media(max-width:420px){.ac-rule-grid{grid-template-columns:1fr}.ac-rule-actions{grid-template-columns:1fr 1fr}.ac-rule-actions .danger{grid-column:1/-1;order:3}}
+
+/* ===== Desktop workspace v2: великий план + жива номенклатура справа ===== */
+@media (min-width:901px){
+  html,body{overflow-x:hidden!important}
+  body.rp-home-pro{padding:10px 16px 24px!important}
+  body.rp-home-pro #rpCockpit,
+  body.rp-home-pro #main-area{
+    width:min(100%,1680px)!important;max-width:1680px!important;
+    margin-left:auto!important;margin-right:auto!important
+  }
+  body.rp-home-pro .top-row{
+    display:grid!important;
+    grid-template-columns:minmax(620px,1fr) minmax(340px,400px)!important;
+    align-items:start!important;gap:14px!important
+  }
+  body.rp-home-pro .canvas-container{
+    width:100%!important;min-width:0!important;height:auto!important;
+    padding:8px!important;box-sizing:border-box!important
+  }
+  body.rp-home-pro canvas#cv{
+    display:block!important;width:100%!important;height:auto!important;
+    min-height:0!important;aspect-ratio:1/1!important;margin:0 auto!important
+  }
+  body.rp-home-pro .panel-column{
+    display:flex!important;flex-direction:column!important;
+    width:auto!important;min-width:0!important;
+    position:sticky!important;top:10px!important;
+    max-height:calc(100vh - 20px)!important;overflow-y:auto!important;
+    scrollbar-width:thin;overscroll-behavior:contain
+  }
+  body.rp-home-pro #aceilDesktopSidebar{
+    display:block!important;order:-10!important;margin:0 0 10px!important;
+    flex:0 0 auto!important
+  }
+  body.rp-home-pro #adsbGroups{max-height:calc(100vh - 190px);overflow-y:auto;scrollbar-width:thin}
+}
+
+@media (min-width:901px) and (max-width:1180px){
+  body.rp-home-pro .top-row{
+    grid-template-columns:minmax(560px,1fr) minmax(310px,350px)!important;
+    gap:10px!important
+  }
+}
