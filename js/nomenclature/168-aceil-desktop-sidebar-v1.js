@@ -75,6 +75,27 @@ function groupIconId(name){
 }
 function ico(id,cls){return '<svg class="'+(cls||"rm-ico")+'" aria-hidden="true"><use href="#'+id+'"></use></svg>'}
 
+function textOf(id,fallback){var el=gid(id);return el?String(el.textContent||"").trim():(fallback||"—")}
+function switchDesktopTab(name){
+  var estimate=gid("adsbEstimatePanel"),room=gid("adsbRoomPanel");
+  if(estimate)estimate.hidden=name!=="estimate";
+  if(room)room.hidden=name!=="room";
+  document.querySelectorAll("#aceilDesktopSidebar .adsb-tab").forEach(function(btn){
+    btn.classList.toggle("active",btn.getAttribute("data-tab")===name);
+  });
+}
+function applyDesktopSearch(){
+  var input=gid("adsbSearch"),q=String(input&&input.value||"").toLowerCase().trim();
+  document.querySelectorAll("#adsbGroups .adsb-grp").forEach(function(group){
+    var groupMatch=String(group.getAttribute("data-name")||"").indexOf(q)>=0,visible=0;
+    group.querySelectorAll(".adsb-row").forEach(function(row){
+      var show=!q||groupMatch||String(row.getAttribute("data-name")||"").indexOf(q)>=0;
+      row.style.display=show?"":"none";if(show)visible++;
+    });
+    group.style.display=(!q||groupMatch||visible)?"":"none";
+  });
+}
+
 function buildShell(){
   var host=document.querySelector(".panel-column");
   if(!host)return false;
@@ -82,29 +103,29 @@ function buildShell(){
     var card=document.createElement("div");
     card.id="aceilDesktopSidebar";
     card.innerHTML=
-      '<div class="adsb-head">'+
-        '<div class="adsb-title">Номенклатура</div>'+
-        '<div class="adsb-badge" id="adsbBadge">0 груп</div>'+
+      '<div class="adsb-tabs">'+
+        '<button type="button" class="adsb-tab active" data-tab="estimate">Кошторис</button>'+
+        '<button type="button" class="adsb-tab" data-tab="room">Кімната</button>'+
       '</div>'+
-      '<div id="adsbGroups"></div>'+
-      '<div class="adsb-total"><div><span>Разом</span><b id="adsbTotal">₴0</b></div>'+
-        '<button type="button" class="adsb-edit" onclick="openElementsModal()">'+ico("rmi-pencil")+' Редагувати</button>'+
+      '<div id="adsbEstimatePanel" class="adsb-panel">'+
+        '<div class="adsb-head"><div><div class="adsb-title">Номенклатура</div><div class="adsb-meta" id="adsbMeta">0 груп · 0 позицій</div></div><button type="button" class="adsb-head-action" onclick="openElementsModal()" aria-label="Налаштувати">'+ico("rmi-wrench")+'</button></div>'+
+        '<label class="adsb-search">⌕<input id="adsbSearch" type="search" placeholder="Пошук позиції…"></label>'+
+        '<div id="adsbGroups"></div>'+
+        '<div class="adsb-total"><div><span>До сплати</span><b id="adsbTotal">₴0</b></div></div>'+
+        '<div class="adsb-actions"><button type="button" onclick="openElementsModal()">'+ico("rmi-pencil")+' Редагувати</button><button type="button" class="primary" onclick="openReportSettings()">'+ico("rmi-report")+' Створити звіт</button></div>'+
+      '</div>'+
+      '<div id="adsbRoomPanel" class="adsb-panel" hidden>'+
+        '<div class="adsb-head"><div><div class="adsb-title">Параметри кімнати</div><div class="adsb-meta">Поточний макет</div></div></div>'+
+        '<div class="adsb-room-grid"><div><span>Площа</span><b id="adsbRoomArea">—</b></div><div><span>Периметр</span><b id="adsbRoomPer">—</b></div><div><span>Внутр. кути</span><b id="adsbRoomIn">—</b></div><div><span>Зовн. кути</span><b id="adsbRoomOut">—</b></div></div>'+
+        '<div class="adsb-property"><span>Кімната</span><b id="adsbRoomName">1</b></div>'+
+        '<div class="adsb-property"><span>Полотно</span><b id="adsbRoomFilm">M303 · AUTO</b></div>'+
+        '<div class="adsb-room-actions"><button type="button" onclick="openSideInputModal()">'+ico("rmi-measure")+' Розміри</button><button type="button" onclick="openRmLightStart()">'+ico("rmi-light")+' Світло</button><button type="button" onclick="openElementsModal()">'+ico("rmi-elements")+' Елементи</button><button type="button" onclick="openProjectsModal()">'+ico("rmi-folder")+' Проєкти</button></div>'+
       '</div>';
     host.insertBefore(card,host.firstChild);
+    card.querySelectorAll(".adsb-tab").forEach(function(btn){btn.addEventListener("click",function(){switchDesktopTab(btn.getAttribute("data-tab"))})});
+    var search=gid("adsbSearch");if(search)search.addEventListener("input",applyDesktopSearch);
   }
-  if(!gid("aceilDesktopQuickActions")){
-    var quick=document.createElement("div");
-    quick.id="aceilDesktopQuickActions";
-    quick.innerHTML=
-      '<div class="adqa-title">Швидкі дії</div>'+
-      '<div class="adqa-grid">'+
-        '<button type="button" onclick="openElementsModal()">'+ico("rmi-elements")+'<span>Елементи</span></button>'+
-        '<button type="button" onclick="openRmLightStart()">'+ico("rmi-light")+'<span>Світло</span></button>'+
-        '<button type="button" onclick="openReportSettings()">'+ico("rmi-report")+'<span>Звіт</span></button>'+
-        '<button type="button" onclick="openProjectsModal()">'+ico("rmi-folder")+'<span>Проєкти</span></button>'+
-      '</div>';
-    host.appendChild(quick);
-  }
+  var legacy=gid("aceilDesktopQuickActions");if(legacy)legacy.remove();
   return true;
 }
 
@@ -121,16 +142,16 @@ function render(){
     (byGroup[gidKey]=byGroup[gidKey]||[]).push(it);
   });
 
-  var rows=[],grandTotal=0,groupCount=0;
+  var rows=[],grandTotal=0,groupCount=0,itemCount=0;
   groups().forEach(function(g){
     var list=byGroup[String(g.id)];
     if(!list||!list.length)return;
-    groupCount++;
+    groupCount++;itemCount+=list.length;
     var subtotal=0;
     var itemsHtml=list.map(function(it){
       var line=(Number(it.qty)||0)*(Number(it.price)||0);
       subtotal+=line;
-      return '<div class="adsb-row">'+
+      return '<div class="adsb-row" data-name="'+esc(String(it.name||"").toLowerCase())+'">'+
         '<div class="adsb-rn">'+esc(it.name||"Позиція")+'</div>'+
         '<div class="adsb-rq">'+(Number(it.qty)||0)+' '+esc(it.unit||"")+'</div>'+
         '<div class="adsb-rp">'+money(line)+'</div>'+
@@ -138,7 +159,7 @@ function render(){
     }).join("");
     grandTotal+=subtotal;
     rows.push(
-      '<div class="adsb-grp">'+
+      '<div class="adsb-grp" data-name="'+esc(String(g.name||"").toLowerCase())+'">'+
         '<div class="adsb-grp-head">'+ico(groupIconId(g.name),"rm-ico adsb-grp-ico")+
           '<div class="adsb-grp-name">'+esc(g.name||"Група")+'</div>'+
           '<div class="adsb-grp-sum">'+money(subtotal)+'</div>'+
@@ -149,7 +170,16 @@ function render(){
 
   body.innerHTML=rows.length?rows.join(""):'<div class="adsb-empty">'+ico("rmi-folder")+'<div>Ще немає заповнених позицій</div></div>';
   if(badge)badge.textContent=groupCount+(groupCount===1?" група":groupCount>=2&&groupCount<=4?" групи":" груп");
+  var meta=gid("adsbMeta");if(meta)meta.textContent=groupCount+" груп · "+itemCount+" позицій";
   if(totalEl)totalEl.textContent=money(grandTotal);
+  var area=gid("adsbRoomArea"),per=gid("adsbRoomPer"),inc=gid("adsbRoomIn"),out=gid("adsbRoomOut"),roomName=gid("adsbRoomName"),film=gid("adsbRoomFilm");
+  if(area)area.textContent=textOf("area","0.00")+" м²";
+  if(per)per.textContent=textOf("per","0.00")+" м";
+  if(inc)inc.textContent=textOf("inCorners","0");
+  if(out)out.textContent=textOf("outCorners","0");
+  if(roomName)roomName.textContent=textOf("rpcRoomName","1");
+  if(film){var code=document.querySelector("#aceilColorPickerBtn .acpb-code"),width=document.querySelector("#aceilColorPickerBtn .acpb-width");film.textContent=[code&&code.textContent,width&&width.textContent].filter(Boolean).join(" · ")||"M303 · AUTO"}
+  applyDesktopSearch();
 }
 
 /* Синхронізація: чіпляємось до вже існуючого renderElemList (той самий
