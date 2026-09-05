@@ -128,7 +128,7 @@ function planImage(room,st){
       var color=/^#[0-9a-f]{3,8}$/i.test(String(m.color||""))?m.color:["#f97316","#7c3aed","#16a34a","#dc2626"][i%4];
       svg+='<line x1="'+px(a.x+(b.x-a.x)*t1)+'" y1="'+py(a.y+(b.y-a.y)*t1)+'" x2="'+px(a.x+(b.x-a.x)*t2)+'" y2="'+py(a.y+(b.y-a.y)*t2)+'" stroke="'+color+'" stroke-width="5" stroke-linecap="round"/>';
     });
-    (Array.isArray(st.lightMarks)?st.lightMarks:[]).forEach(function(m){if(!m||!isFinite(+m.x)||!isFinite(+m.y))return;var type=String(m.type||"").toLowerCase(),color=type==="chandelier"?"#7c3aed":/vent|exhaust/.test(type)?"#0891b2":"#ca8a04";svg+='<circle cx="'+px(m.x)+'" cy="'+py(m.y)+'" r="4.6" fill="#fff" stroke="'+color+'" stroke-width="2"/><circle cx="'+px(m.x)+'" cy="'+py(m.y)+'" r="1.4" fill="'+color+'"/>'});
+    (Array.isArray(st.lightMarks)?st.lightMarks:[]).forEach(function(m){if(!m||!isFinite(+m.x)||!isFinite(+m.y))return;var type=String(m.type||"").toLowerCase();if(type==="chandelier")svg+='<circle cx="'+px(m.x)+'" cy="'+py(m.y)+'" r="4.5" fill="#facc15" stroke="#ca8a04" stroke-width="1.2"/>';else if(/vent|exhaust/.test(type))svg+='<circle cx="'+px(m.x)+'" cy="'+py(m.y)+'" r="4.6" fill="#fff" stroke="#0891b2" stroke-width="2"/><circle cx="'+px(m.x)+'" cy="'+py(m.y)+'" r="1.4" fill="#0891b2"/>';else svg+='<circle cx="'+px(m.x)+'" cy="'+py(m.y)+'" r="4.1" fill="#fff0a3" stroke="#d69e00" stroke-width="1.2"/><circle cx="'+px(m.x)+'" cy="'+py(m.y)+'" r="1.2" fill="#d69e00"/>'});
   }else if(st&&st.circleMode&&n(st.circleDiamCm)>0)svg='<circle cx="80" cy="48" r="36" fill="#f8fbff" stroke="#172554" stroke-width="2.4"/>';
   else svg='<rect x="18" y="15" width="124" height="66" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="5 4"/><path d="M59 54l14-13 12 10 15-17 18 20" fill="none" stroke="#94a3b8" stroke-width="2"/>';
   return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'+svg+'</svg>');
@@ -196,7 +196,7 @@ window.A_CEIL_PublishManagerReport=async function(){
   if(result.error)throw result.error;
   return "https://a-ceil.pp.ua/?r="+token;
 };
-function bindLocalReport(win){
+function bindLocalReport(win,onBack){
   var doc=win.document,back=doc.getElementById("mdBack"),cloud=doc.getElementById("mdCloud"),share=doc.getElementById("mdShare"),box=doc.getElementById("mdCloudBox"),inp=doc.getElementById("mdCloudUrl"),copy=doc.getElementById("mdCopy");
   if(!back||!cloud||!share||!box||!inp||!copy)throw new Error("Не вдалося підключити кнопки звіту");
   function showUrl(url){inp.value=url;box.classList.add("show");cloud.textContent="✓ Хмарне посилання";return url}
@@ -212,6 +212,7 @@ function bindLocalReport(win){
     finally{cloud.disabled=false}
   }
   back.addEventListener("click",function(){
+    if(typeof onBack==="function"){onBack();return}
     try{window.focus()}catch(_){}
     try{win.close()}catch(_){}
     setTimeout(function(){try{if(!win.closed)win.location.replace(appReturnUrl())}catch(_){}},180);
@@ -242,11 +243,31 @@ function bindLocalReport(win){
     getCloud().then(function(){share.disabled=false;share.textContent="↗ Натисніть ще раз"}).catch(function(){share.disabled=false;share.textContent="↗ Поділитися"});
   });
 }
+function isInstalledApp(){
+  try{return navigator.standalone===true||window.matchMedia("(display-mode: standalone)").matches||window.matchMedia("(display-mode: window-controls-overlay)").matches}catch(_){return false}
+}
+function openManagerReportInApp(html){
+  var old=document.getElementById("A_CEIL_InAppManagerReport");if(old)old.remove();
+  var previousOverflow=document.body.style.overflow;
+  var layer=document.createElement("div");layer.id="A_CEIL_InAppManagerReport";
+  layer.style.cssText="position:fixed;inset:0;z-index:2147483000;background:#f7f9fc;display:block";
+  var frame=document.createElement("iframe");frame.title="Менеджерський звіт";frame.setAttribute("aria-label","Менеджерський звіт");
+  frame.style.cssText="display:block;width:100%;height:100%;border:0;background:#f7f9fc";
+  layer.appendChild(frame);document.body.appendChild(layer);document.body.style.overflow="hidden";
+  var closed=false;
+  function close(){if(closed)return;closed=true;document.body.style.overflow=previousOverflow;layer.remove();window.removeEventListener("keydown",onKey)}
+  function onKey(e){if(e.key==="Escape")close()}
+  window.addEventListener("keydown",onKey);
+  frame.addEventListener("load",function(){try{bindLocalReport(frame.contentWindow,close)}catch(e){close();throw e}},{once:true});
+  frame.srcdoc=html;
+}
 window.A_CEIL_OpenManagerReport=async function(){
   var obj=reportObject();
   if(!obj||!Array.isArray(obj.rooms)||!obj.rooms.length){try{showToast("Спочатку створіть контур або відкрийте проєкт")}catch(_){}return}
+  var html=makeHtml(obj,aggregate(obj));
+  if(isInstalledApp()){try{openManagerReportInApp(html)}catch(e){try{showToast(e&&e.message?e.message:"Не вдалося відкрити звіт")}catch(_){} }return}
   var win=window.open("","_blank");if(!win){try{showToast("Дозвольте спливаючі вікна")}catch(_){}return}
-  try{win.document.open();win.document.write(makeHtml(obj,aggregate(obj)));win.document.close();bindLocalReport(win)}
+  try{win.document.open();win.document.write(html);win.document.close();bindLocalReport(win)}
   catch(e){try{win.close()}catch(_){}try{showToast(e&&e.message?e.message:"Не вдалося відкрити звіт")}catch(_){} }
 };
 function injectManagerCard(){
