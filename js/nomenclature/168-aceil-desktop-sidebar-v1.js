@@ -39,7 +39,7 @@ function installDesktopCanvasStroke(){
   var nativeStrokeText=ctx.strokeText;
   function smallerFont(font){
     return String(font||"").replace(/(\d+(?:\.\d+)?)px/,function(_,size){
-      return Math.max(8,Number(size)*.8).toFixed(1)+"px";
+      return Math.max(9,Number(size)*.9).toFixed(1)+"px";
     });
   }
   ctx.stroke=function(){
@@ -61,6 +61,31 @@ function installDesktopCanvasStroke(){
     try{return nativeStrokeText.apply(this,arguments)}finally{this.font=original}
   };
   ctx.__aceilDesktopStrokeV1=true;
+}
+
+function installDesktopCanvasZoom(){
+  if(!window.matchMedia||!window.matchMedia("(min-width:901px)").matches)return;
+  var host=document.querySelector(".canvas-container"),canvas=gid("cv");
+  if(!host||!canvas||gid("aceilDesktopCanvasZoom"))return;
+  var steps=[75,100,125,150],saved=Number(localStorage.getItem("aceil_desktop_canvas_zoom")||100);
+  if(steps.indexOf(saved)<0)saved=100;
+  var zoom=saved,control=document.createElement("div");
+  control.id="aceilDesktopCanvasZoom";
+  control.innerHTML='<button type="button" data-dir="-1" aria-label="Зменшити масштаб">−</button><span id="aceilDesktopZoomValue">100%</span><button type="button" data-dir="1" aria-label="Збільшити масштаб">+</button>';
+  function apply(){
+    var base=Number(canvas.getAttribute("width"))||750;
+    canvas.style.setProperty("width",Math.round(base*zoom/100)+"px","important");
+    canvas.style.setProperty("max-width","none","important");
+    canvas.style.setProperty("height","auto","important");
+    var value=gid("aceilDesktopZoomValue");if(value)value.textContent=zoom+"%";
+    try{localStorage.setItem("aceil_desktop_canvas_zoom",String(zoom))}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  }
+  control.addEventListener("click",function(e){
+    var btn=e.target.closest&&e.target.closest("button[data-dir]");if(!btn)return;
+    var i=steps.indexOf(zoom),next=Math.max(0,Math.min(steps.length-1,i+Number(btn.getAttribute("data-dir"))));
+    zoom=steps[next];apply();
+  });
+  host.appendChild(control);apply();
 }
 
 /* Той самий принцип іконки-за-назвою, що й isFilmItem()/category() у проєкті —
@@ -195,7 +220,7 @@ function installHook(){
   }
 }
 
-function boot(){installDesktopCanvasStroke();installHook();render()}
+function boot(){installDesktopCanvasStroke();installDesktopCanvasZoom();installHook();render()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 var _tries=0,_timer=setInterval(function(){
   _tries++;
