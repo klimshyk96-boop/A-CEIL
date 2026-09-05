@@ -578,13 +578,20 @@
 @media (min-width:901px){
   body.rp-home-pro .canvas-container{
     position:relative!important;overflow:auto!important;min-height:790px!important;
-    display:block!important;background:#f8fafc!important
+    display:block!important;background-color:#fbfdff!important;
+    background-image:
+      linear-gradient(rgba(47,102,243,.038) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(47,102,243,.038) 1px,transparent 1px),
+      linear-gradient(rgba(47,102,243,.065) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(47,102,243,.065) 1px,transparent 1px)!important;
+    background-size:22px 22px,22px 22px,110px 110px,110px 110px!important
   }
   body.rp-home-pro canvas#cv{
-    margin:44px auto 8px!important;image-rendering:auto!important;flex:none!important
+    margin:44px auto 8px!important;image-rendering:auto!important;flex:none!important;
+    background-color:transparent!important;background-image:none!important;box-shadow:none!important
   }
   #aceilDesktopCanvasZoom{
-    position:absolute;z-index:90;right:13px;top:11px;
+    position:absolute;z-index:90;left:13px;right:auto;top:11px;
     display:flex;align-items:center;gap:3px;height:35px;padding:3px;
     border:1px solid #d7e0ec;border-radius:10px;background:rgba(255,255,255,.96);
     box-shadow:0 5px 15px rgba(15,23,42,.09);backdrop-filter:blur(8px)
