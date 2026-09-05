@@ -390,37 +390,16 @@
     });
   }
 
-  // iOS/PWA fallback: some global canvas/modal handlers consume the native
-  // swipe before Safari scrolls this nested list. Move only this list by hand
-  // and suppress the synthetic click after an actual drag.
+  // Keep the gesture inside the source list, but let Safari/PWA perform its
+  // native inertial scrolling. A previous manual scrollTop + preventDefault
+  // implementation made the list immovable on recent iOS versions.
   function installTouchScroll(list){
     if(!list||list.dataset.aceilTouchScroll==="1")return;
     list.dataset.aceilTouchScroll="1";
-    var startY=0,startTop=0,dragged=false,blockClickUntil=0;
-    list.addEventListener("touchstart",function(ev){
-      if(!ev.touches||ev.touches.length!==1)return;
-      startY=ev.touches[0].clientY;startTop=list.scrollTop;dragged=false;
-      ev.stopPropagation();
-    },{passive:true,capture:true});
-    list.addEventListener("touchmove",function(ev){
-      if(!ev.touches||ev.touches.length!==1)return;
-      var delta=startY-ev.touches[0].clientY;
-      if(!dragged&&Math.abs(delta)<5)return;
-      dragged=true;
-      var max=Math.max(0,list.scrollHeight-list.clientHeight);
-      list.scrollTop=Math.max(0,Math.min(max,startTop+delta));
-      blockClickUntil=Date.now()+600;
-      ev.preventDefault();ev.stopPropagation();
-    },{passive:false,capture:true});
-    list.addEventListener("touchend",function(ev){
-      if(dragged)blockClickUntil=Date.now()+600;
-      ev.stopPropagation();
-    },{passive:true,capture:true});
-    list.addEventListener("touchcancel",function(){dragged=false;},{passive:true,capture:true});
-    list.addEventListener("click",function(ev){
-      if(Date.now()>=blockClickUntil)return;
-      ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
-    },true);
+    list.style.webkitOverflowScrolling="touch";
+    list.style.touchAction="pan-y";
+    list.addEventListener("touchstart",function(ev){ev.stopPropagation()},{passive:true});
+    list.addEventListener("touchmove",function(ev){ev.stopPropagation()},{passive:true});
   }
 
   var OP_OPTIONS={
