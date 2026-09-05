@@ -495,3 +495,81 @@
   body.rp-home-pro #A·CEILToolPanel>.tile-btn{min-width:72px!important;padding:5px 6px!important}
   body.rp-home-pro #rpCockpit .rpc-card{grid-template-columns:minmax(170px,.7fr) minmax(410px,1.5fr) auto!important}
 }
+
+/* ===== Ultrawide desktop: 34\" / 21:9 =====
+   На широкому моніторі інструменти не стискаються у дрібний рядок,
+   а стають повноцінною вертикальною панеллю поруч із канвасом. */
+@media (min-width:1400px){
+  body.rp-home-pro #rpCockpit,
+  body.rp-home-pro #main-area{max-width:2240px!important}
+
+  body.rp-home-pro #main-area{
+    grid-template-columns:116px minmax(760px,1fr) minmax(360px,410px)!important;
+    grid-template-rows:auto!important;
+    grid-template-areas:"desktop-tools desktop-canvas desktop-side"!important;
+    gap:12px!important
+  }
+
+  body.rp-home-pro #A·CEILToolPanel{
+    position:sticky!important;top:8px!important;
+    display:flex!important;flex-direction:column!important;align-items:stretch!important;
+    gap:7px!important;width:116px!important;padding:9px!important;
+    border-radius:15px!important;overflow:visible!important
+  }
+  body.rp-home-pro #A·CEILToolPanel>div,
+  body.rp-home-pro #A·CEILToolPanel>button{
+    flex:0 0 auto!important;width:100%!important;height:68px!important;min-height:68px!important
+  }
+  body.rp-home-pro #A·CEILToolPanel>div>.tile-btn,
+  body.rp-home-pro #A·CEILToolPanel>.tile-btn{
+    display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+    gap:6px!important;width:100%!important;min-width:0!important;height:68px!important;min-height:68px!important;
+    padding:7px 5px!important;border:1px solid transparent!important;border-radius:12px!important
+  }
+  body.rp-home-pro #A·CEILToolPanel .tile-btn:hover{
+    border-color:#bfdbfe!important;background:#eff6ff!important;transform:translateY(-1px)
+  }
+  body.rp-home-pro #A·CEILToolPanel .tile-icon{
+    width:34px!important;height:34px!important;border-radius:10px!important
+  }
+  body.rp-home-pro #A·CEILToolPanel .tile-icon .rm-ico{
+    width:20px!important;height:20px!important;stroke-width:2!important
+  }
+  body.rp-home-pro #A·CEILToolPanel .tile-btn-label{
+    max-width:100%!important;font-size:10.5px!important;line-height:1.08!important;
+    text-align:center!important;white-space:normal!important
+  }
+  body.rp-home-pro #A·CEILToolPanel>.tile-red{
+    margin:7px 0 0!important;height:54px!important;min-height:54px!important
+  }
+  body.rp-home-pro #A·CEILToolPanel>.tile-red>div{
+    flex-direction:column!important;gap:4px!important
+  }
+  body.rp-home-pro #A·CEILToolPanel>.tile-red .tile-icon{
+    width:28px!important;height:28px!important
+  }
+
+  /* Випадаючі меню відкриваються вправо від вертикальної панелі. */
+  body.rp-home-pro #A·CEILToolPanel .quick-menu{
+    left:calc(100% + 9px)!important;right:auto!important;top:0!important;bottom:auto!important
+  }
+
+  body.rp-home-pro .canvas-container{padding:9px!important}
+  body.rp-home-pro .panel-column{top:8px!important}
+  body.rp-home-pro #aceilDesktopSidebar{max-height:calc(100vh - 16px)!important}
+}
+
+@media (min-width:1900px){
+  body.rp-home-pro #main-area{
+    grid-template-columns:132px minmax(900px,1fr) 420px!important;
+    gap:14px!important
+  }
+  body.rp-home-pro #A·CEILToolPanel{width:132px!important;padding:11px!important}
+  body.rp-home-pro #A·CEILToolPanel>div,
+  body.rp-home-pro #A·CEILToolPanel>button,
+  body.rp-home-pro #A·CEILToolPanel>div>.tile-btn,
+  body.rp-home-pro #A·CEILToolPanel>.tile-btn{height:76px!important;min-height:76px!important}
+  body.rp-home-pro #A·CEILToolPanel .tile-icon{width:40px!important;height:40px!important}
+  body.rp-home-pro #A·CEILToolPanel .tile-icon .rm-ico{width:23px!important;height:23px!important}
+  body.rp-home-pro #A·CEILToolPanel .tile-btn-label{font-size:11.5px!important}
+}
