@@ -1,7 +1,7 @@
-/* A·CEIL offline shell v4 — 2026-09-02 */
+/* A·CEIL offline shell v5 — 2026-09-05 */
 "use strict";
 
-const SHELL_CACHE="aceil-shell-20260902-v4";
+const SHELL_CACHE="aceil-shell-20260905-v5";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 
 function isStaticAsset(request){
@@ -53,6 +53,8 @@ self.addEventListener("activate",event=>{
     const keys=await caches.keys();
     await Promise.all(keys.filter(key=>key.startsWith("aceil-shell-")&&key!==SHELL_CACHE).map(key=>caches.delete(key)));
     await self.clients.claim();
+    const clients=await self.clients.matchAll({type:"window",includeUncontrolled:true});
+    clients.forEach(client=>client.postMessage({type:"A_CEIL_UPDATE_READY",cache:SHELL_CACHE}));
   })());
 });
 

@@ -826,7 +826,7 @@ wallElementPresets_v1  ->  #043
 Визначає: A·CEILAutoDiagonalDebug; __A·CEILSelectedSideV89 [застаріла, див. #127]; _autoControlDiagonals; _conflictZoneHighlight; _diagHighlightLoopRunning; _formatReportCm [ФІНАЛЬНА; було в: #000]; _recommendedDiagHighlight; getArcSidesCount [застаріла, див. #126]; requestDraw [застаріла, див. #110]; rmCurveOpenV87 [застаріла, див. #132]; rmWallTapOpenV84 [застаріла, див. #131]; totalCurveLength [застаріла, див. #126]
 localStorage: lightAutoQtyOn, lightGridCm, lightGridOn, lightSnapOn, lightTypes_v1
 -->
-<script src="js/nomenclature/019-inline.js?v=20260905-1"></script>
+<script src="js/nomenclature/019-inline.js?v=20260905-2"></script>
 
 <!--
 === БЛОК #018 ===
@@ -2113,7 +2113,18 @@ localStorage: A·CEIL_cloud_cache_v330
   "use strict";
   if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
   window.addEventListener("load",function(){
-    navigator.serviceWorker.register("/sw.js?v=20260902-4",{scope:"/"}).then(function(reg){
+    var updateKey="aceil-pwa-update-20260905-v5";
+    navigator.serviceWorker.addEventListener("message",function(event){
+      if(!event.data||event.data.type!=="A_CEIL_UPDATE_READY"||sessionStorage.getItem(updateKey))return;
+      sessionStorage.setItem(updateKey,"1");
+      location.reload();
+    });
+    navigator.serviceWorker.addEventListener("controllerchange",function(){
+      if(sessionStorage.getItem(updateKey))return;
+      sessionStorage.setItem(updateKey,"1");
+      location.reload();
+    });
+    navigator.serviceWorker.register("/sw.js?v=20260905-5",{scope:"/"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
