@@ -573,3 +573,57 @@
   body.rp-home-pro #A·CEILToolPanel .tile-icon .rm-ico{width:23px!important;height:23px!important}
   body.rp-home-pro #A·CEILToolPanel .tile-btn-label{font-size:11.5px!important}
 }
+
+/* ===== Desktop readability + native canvas zoom ===== */
+@media (min-width:901px){
+  body.rp-home-pro .canvas-container{
+    position:relative!important;overflow:auto!important;min-height:790px!important;
+    display:block!important;background:#f8fafc!important
+  }
+  body.rp-home-pro canvas#cv{
+    margin:44px auto 8px!important;image-rendering:auto!important;flex:none!important
+  }
+  #aceilDesktopCanvasZoom{
+    position:absolute;z-index:90;right:13px;top:11px;
+    display:flex;align-items:center;gap:3px;height:35px;padding:3px;
+    border:1px solid #d7e0ec;border-radius:10px;background:rgba(255,255,255,.96);
+    box-shadow:0 5px 15px rgba(15,23,42,.09);backdrop-filter:blur(8px)
+  }
+  #aceilDesktopCanvasZoom button{
+    display:grid;place-items:center;width:29px;height:27px;padding:0;border:0;border-radius:7px;
+    background:transparent;color:#334155;font-size:18px;font-weight:800;line-height:1;box-shadow:none
+  }
+  #aceilDesktopCanvasZoom button:hover{background:#eaf2ff;color:#1d5fc8}
+  #aceilDesktopCanvasZoom span{
+    min-width:43px;text-align:center;color:#475569;font-size:10.5px;font-weight:900;font-variant-numeric:tabular-nums
+  }
+}
+
+@media (min-width:1400px){
+  body.rp-home-pro #rpCockpit .rpc-metric small{font-size:10px!important}
+  body.rp-home-pro #rpCockpit .rpc-metric b{font-size:14px!important}
+  body.rp-home-pro #A·CEILToolPanel .tile-btn-label{font-size:12px!important;line-height:1.15!important}
+  #aceilDesktopSidebar .adsb-tab{font-size:12px!important}
+  #aceilDesktopSidebar .adsb-title{font-size:17px!important}
+  #aceilDesktopSidebar .adsb-meta{font-size:11px!important}
+  #aceilDesktopSidebar .adsb-search input{font-size:13px!important}
+  #aceilDesktopSidebar .adsb-grp-name{font-size:12.5px!important}
+  #aceilDesktopSidebar .adsb-grp-sum{font-size:11.5px!important}
+  #aceilDesktopSidebar .adsb-rn{font-size:11.5px!important}
+  #aceilDesktopSidebar .adsb-rq,#aceilDesktopSidebar .adsb-rp{font-size:10.5px!important}
+  #aceilDesktopSidebar .adsb-total span{font-size:10.5px!important}
+  #aceilDesktopSidebar .adsb-total b{font-size:17px!important}
+  #aceilDesktopSidebar .adsb-actions button,#aceilDesktopSidebar .adsb-room-actions button{font-size:11.5px!important}
+  #aceilDesktopSidebar .adsb-room-grid span,#aceilDesktopSidebar .adsb-property span{font-size:10px!important}
+  #aceilDesktopSidebar .adsb-room-grid b{font-size:16px!important}
+  #aceilDesktopSidebar .adsb-property b{font-size:13px!important}
+}
+
+@media (min-width:1900px){
+  body.rp-home-pro #A·CEILToolPanel .tile-btn-label{font-size:13px!important}
+  #aceilDesktopSidebar .adsb-grp-name{font-size:13.5px!important}
+  #aceilDesktopSidebar .adsb-rn{font-size:12.5px!important}
+  #aceilDesktopSidebar .adsb-rq,#aceilDesktopSidebar .adsb-rp{font-size:11.5px!important}
+}
+
+@media (max-width:900px){#aceilDesktopCanvasZoom{display:none!important}}
