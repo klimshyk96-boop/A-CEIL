@@ -402,6 +402,26 @@
     list.addEventListener("touchmove",function(ev){ev.stopPropagation()},{passive:true});
   }
 
+  var quickSourcePageLock=null;
+  function setQuickSourcePageLocked(locked){
+    if(locked){
+      if(quickSourcePageLock)return;
+      var body=document.body,y=window.scrollY||window.pageYOffset||0;
+      quickSourcePageLock={y:y,position:body.style.position,top:body.style.top,left:body.style.left,right:body.style.right,width:body.style.width,overflow:body.style.overflow};
+      body.style.position="fixed";body.style.top=(-y)+"px";body.style.left="0";body.style.right="0";body.style.width="100%";body.style.overflow="hidden";
+      return;
+    }
+    if(!quickSourcePageLock)return;
+    var saved=quickSourcePageLock;quickSourcePageLock=null;
+    document.body.style.position=saved.position;document.body.style.top=saved.top;document.body.style.left=saved.left;document.body.style.right=saved.right;document.body.style.width=saved.width;document.body.style.overflow=saved.overflow;
+    window.scrollTo(0,saved.y);
+  }
+  function installQuickSourcePageLock(){
+    var modal=gid("quickSourceModal");if(!modal||modal.dataset.aceilPageLock==="1")return;
+    modal.dataset.aceilPageLock="1";
+    new MutationObserver(function(){setQuickSourcePageLocked(modal.classList.contains("open"))}).observe(modal,{attributes:true,attributeFilter:["class"]});
+  }
+
   var OP_OPTIONS={
     room:[["perimeter","Периметр"],["area","Площа"],["corners","Кількість кутів"]],
     wall:[["length","Сума довжин"],["count","Кількість елементів"],["corners","З’єднані кути"],["breaks","Вільні кінці / обриви"]],
@@ -475,5 +495,5 @@
     var wrappedLightBadge=function(){var result=previousLightBadge.apply(this,arguments);applyCustomRules(false);return result};
     wrappedLightBadge.__customRulesV1=true;window.updateLightBadge=wrappedLightBadge;try{updateLightBadge=wrappedLightBadge}catch(e){}
   }
-  setTimeout(function(){loadRules();embedRules();applyCustomRules(false);correctCorniceRules(false);installTouchScroll(gid("quickSourceList"));},500);
+  setTimeout(function(){loadRules();embedRules();applyCustomRules(false);correctCorniceRules(false);installTouchScroll(gid("quickSourceList"));installQuickSourcePageLock();},500);
 })();
