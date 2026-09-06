@@ -6,37 +6,7 @@ window.__A_CEIL_PlanReportPwaV1=true;
 function isInstalledApp(){
   try{return navigator.standalone===true||window.matchMedia("(display-mode: standalone)").matches||window.matchMedia("(display-mode: window-controls-overlay)").matches}catch(_){return false}
 }
-function liveReportSettings(value){
-  var out=Object.assign({},value||{}),checkbox=document.getElementById("rs_overall");
-  if(checkbox)out.overall=checkbox.checked===true;
-  else try{
-    var saved=JSON.parse(localStorage.getItem("reportSettings")||"{}");
-    if(Object.prototype.hasOwnProperty.call(saved,"overall"))out.overall=saved.overall===true;
-  }catch(_){}
-  return out;
-}
-function wrapSettingsFunction(name){
-  var previous=window[name];
-  if(typeof previous!=="function"||previous.__aceilLiveOverall)return;
-  var wrapped=function(settings){
-    var args=Array.prototype.slice.call(arguments),settingsIndex=name==="_renderRoomForReport"?1:0;
-    args[settingsIndex]=liveReportSettings(args[settingsIndex]);
-    return previous.apply(this,args);
-  };
-  wrapped.__aceilLiveOverall=true;window[name]=wrapped;
-  try{if(name==="_modernCaptureCurrentDrawing")_modernCaptureCurrentDrawing=wrapped;else if(name==="_renderRoomForReport")_renderRoomForReport=wrapped;else if(name==="generateModernSingleReport")generateModernSingleReport=wrapped;else if(name==="generateModernObjectReport")generateModernObjectReport=wrapped}catch(_){}
-}
-["_modernCaptureCurrentDrawing","_renderRoomForReport","generateModernSingleReport","generateModernObjectReport"].forEach(wrapSettingsFunction);
-
-var previousSave=window.saveReportSettings;
-if(typeof previousSave==="function"&&!previousSave.__aceilLiveOverall){
-  var saveWrapped=function(){
-    var checkbox=document.getElementById("rs_overall");
-    if(checkbox)try{var saved=JSON.parse(localStorage.getItem("reportSettings")||"{}");saved.overall=checkbox.checked===true;localStorage.setItem("reportSettings",JSON.stringify(saved))}catch(_){}
-    return previousSave.apply(this,arguments);
-  };
-  saveWrapped.__aceilLiveOverall=true;window.saveReportSettings=saveWrapped;try{saveReportSettings=saveWrapped}catch(_){}
-}
+/* aceil: redundant "live overall dimensions" patch removed — 037-inline.js now handles this directly */
 
 function typeInfo(mark){
   var id=String(mark&&mark.type||"").toLowerCase(),label="";
