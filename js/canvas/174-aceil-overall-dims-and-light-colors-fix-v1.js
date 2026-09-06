@@ -176,4 +176,19 @@ window.__A_CEIL_FinalFixes174=true;
   }
 })();
 
+function _aceil174ForceRedraw(){
+  try{
+    if(typeof requestDraw==="function")requestDraw();
+    else if(typeof draw==="function")draw();
+  }catch(_){}
+}
+_aceil174ForceRedraw();
+try{
+  if(document.readyState==="complete")setTimeout(_aceil174ForceRedraw,0);
+  else window.addEventListener("load",function(){_aceil174ForceRedraw()},{once:true});
+}catch(_){}
+setTimeout(_aceil174ForceRedraw,150);
+setTimeout(_aceil174ForceRedraw,600);
+setTimeout(_aceil174ForceRedraw,1200);
+
 })();
