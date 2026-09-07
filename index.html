@@ -2133,6 +2133,48 @@ localStorage: A·CEIL_cloud_cache_v330
 <script id="aceil-autocount-menu-v1" src="js/nomenclature/170-aceil-autocount-menu-v1.js?v=20260905-7"></script>
 <script id="aceil-offline-nomenclature-v1" src="js/nomenclature/171-aceil-offline-nomenclature-v1.js?v=20260902-1"></script>
 <script id="aceil-plan-report-pwa-v1" src="js/reports/172-aceil-plan-report-pwa-v1.js?v=20260906-4"></script>
+<script id="aceil-single-project-wall-restore-v1">
+(function(){
+  'use strict';
+  if(window.__A_CEIL_SINGLE_PROJECT_WALL_RESTORE_V1)return;
+  window.__A_CEIL_SINGLE_PROJECT_WALL_RESTORE_V1=true;
+  var previous=window.loadProject;
+  if(typeof previous!=='function')return;
+  function clone(value){
+    try{return JSON.parse(JSON.stringify(value));}catch(_){return Array.isArray(value)?value.slice():[];}
+  }
+  function parse(value){
+    try{return typeof value==='string'?JSON.parse(value||'{}'):(value&&typeof value==='object'?value:{});}catch(_){return {};}
+  }
+  var wrapped=function(id){
+    var project=null;
+    try{
+      var list=typeof getProjects==='function'?getProjects():[];
+      project=list.find(function(item){
+        return item&&[item.id,item._dbId,item._localId].some(function(key){return key!=null&&String(key)===String(id);});
+      })||null;
+    }catch(_){project=null;}
+    var result=previous.apply(this,arguments);
+    try{
+      if(project&&!(project.multiRoom||Array.isArray(project.rooms)&&project.rooms.length)){
+        var state=parse(project.state);
+        wallMarks=clone(Array.isArray(state.wallMarks)?state.wallMarks:(Array.isArray(project.wallMarks)?project.wallMarks:[]));
+        linearElements=clone(Array.isArray(state.linearElements)?state.linearElements:[]);
+        wallTypes=clone(Array.isArray(state.wallTypes)?state.wallTypes:[]);
+        arcPoints=clone(Array.isArray(state.arcPoints)?state.arcPoints:[]);
+        try{window.wallMarks=wallMarks;}catch(_){}
+        if(typeof draw==='function')draw();
+      }
+    }catch(error){
+      try{window.A·CEIL&&window.A·CEIL.DebugLog&&window.A·CEIL.DebugLog.error('single_project_wall_restore_failed',{message:String(error&&error.message||error),projectId:id});}catch(_){}
+    }
+    return result;
+  };
+  wrapped.__singleProjectWallRestoreV1=true;
+  window.loadProject=wrapped;
+  try{loadProject=wrapped;}catch(_){}
+})();
+</script>
 <script id="aceil-overall-dims-and-light-colors-fix-v1" src="js/canvas/174-aceil-overall-dims-and-light-colors-fix-v1.js?v=20260906-1"></script>
 <script id="aceil-offline-shell-v1">
 (function(){
