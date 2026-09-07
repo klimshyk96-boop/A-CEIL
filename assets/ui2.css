@@ -673,6 +673,29 @@ body.rp-home-pro .tile-icon{box-shadow:none!important}
 .aceil-side-all-toggle{background:#f1f5f9!important;color:#475569!important;box-shadow:none!important}
 .aceil-side-apply{background:linear-gradient(135deg,#2563eb,#6366f1)!important;color:#fff!important}
 body:has(#sideInputModal.open) #recoveryBanner{display:none!important}
+#sideInputModal.open.aceil-keyboard-open{
+  background:transparent!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  padding:5px 8px!important;
+}
+#sideInputModal.open.aceil-keyboard-open>.modal.aceil-side-stepper{
+  width:min(96vw,560px)!important;
+  height:auto!important;
+  max-height:58px!important;
+  min-height:0!important;
+  padding:6px!important;
+  border-radius:17px!important;
+  background:rgba(255,255,255,.97)!important;
+  box-shadow:0 8px 30px rgba(15,23,42,.24)!important;
+}
+#sideInputModal.aceil-keyboard-open .aceil-side-head,
+#sideInputModal.aceil-keyboard-open .aceil-side-actions,
+#sideInputModal.aceil-keyboard-open .aceil-side-all,
+#sideInputModal.aceil-keyboard-open .aceil-side-arc-editor{display:none!important}
+#sideInputModal.aceil-keyboard-open .aceil-side-current{grid-template-columns:38px 34px minmax(0,1fr) 38px 38px;gap:4px}
+#sideInputModal.aceil-keyboard-open .aceil-side-nav,
+#sideInputModal.aceil-keyboard-open .aceil-side-arc{width:38px!important;height:44px!important;min-height:44px!important}
 @media(max-width:390px){
   .aceil-side-current{grid-template-columns:36px 30px minmax(0,1fr) 36px 36px;gap:4px}
   .aceil-side-nav,.aceil-side-arc{width:36px!important;height:42px!important;min-height:42px!important}
