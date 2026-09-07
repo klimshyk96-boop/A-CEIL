@@ -6,6 +6,8 @@
   var activeIndex=0;
   var draft=[];
   var expanded=false;
+  var viewportBound=false;
+  var fullViewportHeight=0;
 
   function sideName(index){
     var next=(index+1)%pts.length;
@@ -17,6 +19,35 @@
   }
   function modal(){return document.querySelector("#sideInputModal>.modal");}
   function input(){return document.getElementById("aceilSideActiveInput");}
+
+  function updateVisualViewport(){
+    var overlay=document.getElementById("sideInputModal");
+    if(!overlay)return;
+    var viewport=window.visualViewport;
+    var viewportHeight=viewport?viewport.height:window.innerHeight;
+    var viewportTop=viewport?viewport.offsetTop:0;
+    var referenceHeight=Math.max(fullViewportHeight||0,window.innerHeight||0,viewportHeight||0);
+    var keyboardOpen=viewportHeight<referenceHeight*0.78;
+    overlay.classList.toggle("aceil-keyboard-open",keyboardOpen);
+    if(overlay.classList.contains("open")&&viewport){
+      overlay.style.top=Math.round(viewportTop)+"px";
+      overlay.style.height=Math.round(viewportHeight)+"px";
+      overlay.style.bottom="auto";
+    }else if(!overlay.classList.contains("open")){
+      overlay.style.top="";
+      overlay.style.height="";
+      overlay.style.bottom="";
+    }
+  }
+  function bindVisualViewport(){
+    if(viewportBound)return;
+    viewportBound=true;
+    if(window.visualViewport){
+      window.visualViewport.addEventListener("resize",updateVisualViewport);
+      window.visualViewport.addEventListener("scroll",updateVisualViewport);
+    }
+    window.addEventListener("orientationchange",updateVisualViewport);
+  }
 
   function commitCurrent(){
     var field=input();
@@ -99,6 +130,7 @@
   function closeStepper(){
     try{_wallSideFlash=-1;draw();}catch(_){ }
     closeModal("sideInputModal");
+    updateVisualViewport();
   }
   function applyStepper(){
     commitCurrent();
@@ -170,9 +202,16 @@
     expanded=false;
     draft=lengths.map(function(value){return numberValue(value);});
     if(!buildMarkup())return;
+    fullViewportHeight=window.visualViewport?window.visualViewport.height:window.innerHeight;
     document.getElementById("sideInputModal").classList.add("open");
+    bindVisualViewport();
+    updateVisualViewport();
     renderCurrent(false);
-    setTimeout(function(){var field=input();if(field){field.focus();try{field.select();}catch(_){ }}},80);
+    setTimeout(function(){
+      var field=input();
+      if(field){field.focus();try{field.select();}catch(_){ }}
+      updateVisualViewport();
+    },80);
   }
 
   window.openSideInputModal=openStepper;
