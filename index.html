@@ -2136,12 +2136,13 @@ localStorage: A·CEIL_cloud_cache_v330
 <script id="aceil-wall-elements-persistence-v2" src="js/projects/173-aceil-wall-elements-persistence-v2.js?v=20260907-2"></script>
 <script id="aceil-overall-dims-and-light-colors-fix-v1" src="js/canvas/174-aceil-overall-dims-and-light-colors-fix-v1.js?v=20260906-1"></script>
 <script id="aceil-side-input-stepper-v1" src="js/canvas/175-aceil-side-input-stepper-v1.js?v=20260907-2"></script>
+<script id="aceil-ceiling-catalog-safety-v1" src="js/canvas/176-ceiling-elements-catalog-safety-v1.js?v=20260907-1"></script>
 <script id="aceil-offline-shell-v1">
 (function(){
   "use strict";
   if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
   window.addEventListener("load",function(){
-    var updateKey="aceil-pwa-update-20260907-v10";
+    var updateKey="aceil-pwa-update-20260907-v11";
     navigator.serviceWorker.addEventListener("message",function(event){
       if(!event.data||event.data.type!=="A_CEIL_UPDATE_READY"||sessionStorage.getItem(updateKey))return;
       sessionStorage.setItem(updateKey,"1");
@@ -2152,7 +2153,7 @@ localStorage: A·CEIL_cloud_cache_v330
       sessionStorage.setItem(updateKey,"1");
       location.reload();
     });
-    navigator.serviceWorker.register("/sw.js?v=20260907-10",{scope:"/"}).then(function(reg){
+    navigator.serviceWorker.register("/sw.js?v=20260907-11",{scope:"/"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
