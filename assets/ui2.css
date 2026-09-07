@@ -553,20 +553,20 @@ body.rp-home-pro .tile-icon{box-shadow:none!important}
   padding:8px!important;
 }
 #sideInputModal.open>.modal{
-  width:min(96vw,680px)!important;
+  width:min(96vw,640px)!important;
   height:auto!important;
-  max-height:min(52dvh,480px)!important;
+  max-height:min(40dvh,390px)!important;
   overflow:hidden!important;
   display:flex!important;
   flex-direction:column!important;
-  padding:14px!important;
+  padding:11px!important;
   border-radius:24px 24px 16px 16px!important;
   box-shadow:0 -14px 44px rgba(15,23,42,.28)!important;
 }
 #sideInputModal.open>.modal>h3{
   flex:0 0 auto!important;
-  margin:0 0 10px!important;
-  font-size:20px!important;
+  margin:0 0 7px!important;
+  font-size:18px!important;
   line-height:1.15!important;
 }
 #sideInputsContainer{
@@ -577,33 +577,65 @@ body.rp-home-pro .tile-icon{box-shadow:none!important}
   -webkit-overflow-scrolling:touch!important;
   display:grid!important;
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
-  gap:8px!important;
-  padding:1px 2px 4px!important;
+  gap:6px!important;
+  padding:1px 1px 3px!important;
 }
 #sideInputsContainer>div{
   margin:0!important;
-  padding:8px!important;
-  border-radius:13px!important;
+  padding:5px!important;
+  border-radius:11px!important;
+  display:grid!important;
+  grid-template-columns:30px minmax(0,1fr) 30px!important;
+  align-items:center!important;
+  gap:5px!important;
 }
-#sideInputsContainer>div>div:first-child{margin-bottom:4px!important}
-#sideInputsContainer label{font-size:13px!important}
+#sideInputsContainer>div>div:first-child{display:contents!important}
+#sideInputsContainer label{
+  grid-column:1!important;
+  font-size:12px!important;
+  text-align:center!important;
+}
+#sideInputsContainer>div>div:first-child>button{
+  grid-column:3!important;
+  width:30px!important;
+  min-width:30px!important;
+  height:34px!important;
+  min-height:34px!important;
+  padding:0!important;
+  font-size:0!important;
+  border-radius:9px!important;
+}
+#sideInputsContainer>div>div:first-child>button::before{
+  content:"〰";
+  font-size:17px!important;
+  line-height:1!important;
+}
 #sideInputsContainer .bulk-side-input{
-  height:42px!important;
-  min-height:42px!important;
-  padding:6px 10px!important;
-  font-size:18px!important;
+  grid-column:2!important;
+  grid-row:1!important;
+  height:36px!important;
+  min-height:36px!important;
+  padding:4px 7px!important;
+  font-size:16px!important;
+  text-align:center!important;
   box-sizing:border-box!important;
+}
+#sideInputsContainer [id^="sideArcEditor_"]{
+  grid-column:1/-1!important;
+  margin-top:2px!important;
 }
 #sideInputModal.open>.modal>.modal-btns{
   flex:0 0 auto!important;
-  margin-top:9px!important;
+  margin-top:6px!important;
   padding-top:0!important;
 }
 #sideInputModal.open>.modal>.modal-btns button{
-  min-height:44px!important;
-  padding:9px 12px!important;
+  min-height:40px!important;
+  padding:7px 11px!important;
 }
 @media(max-width:600px){
-  #sideInputModal.open>.modal{max-height:48dvh!important}
+  #sideInputModal.open>.modal{max-height:40dvh!important}
 }
-
+@media(max-width:360px){
+  #sideInputsContainer{grid-template-columns:1fr!important}
+}
