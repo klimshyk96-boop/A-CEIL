@@ -543,3 +543,20 @@ body.rp-home-pro .tile-icon{box-shadow:none!important}
   #reportSettingsModal .rspro-handle{display:none!important}
 }
 
+/* "Ввести розміри сторін" — залишаємо канвас видимим позаду, щоб було видно
+   підсвічену стіну під час вводу її довжини. Стосується лише цього вікна. */
+#sideInputModal{
+  background:rgba(15,23,42,.14)!important;
+  -webkit-backdrop-filter:blur(1.5px)!important;
+  backdrop-filter:blur(1.5px)!important;
+  align-items:flex-end!important;
+}
+#sideInputModal .modal{
+  max-height:min(46vh,420px)!important;
+  box-shadow:0 -14px 44px rgba(15,23,42,.28)!important;
+}
+@media(max-width:600px){
+  #sideInputModal .modal{max-height:44dvh!important}
+}
+
+
