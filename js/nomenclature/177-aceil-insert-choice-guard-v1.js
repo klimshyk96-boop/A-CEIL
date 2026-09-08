@@ -16,7 +16,14 @@
     return "";
   }
   function candidates(){
-    return items().filter(function(item){return item&&norm(item.source)==="white_insert";});
+    return items().filter(function(item){
+      if(!item)return false;
+      if(norm(item.source)==="white_insert")return true;
+      /* Older/cloud nomenclature can have no source assigned to the black
+         insert. It is still the same insert choice and must be preserved. */
+      var name=norm(item.name);
+      return /вставк|insert/.test(name)&&!!colorOf(item);
+    });
   }
   function preferredBeforeAutofill(list){
     var selected=list.filter(function(item){return item.insertSelected===true;});
