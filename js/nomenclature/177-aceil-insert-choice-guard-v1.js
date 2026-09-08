@@ -26,13 +26,15 @@
     });
   }
   function preferredBeforeAutofill(list){
-    var selected=list.filter(function(item){return item.insertSelected===true;});
-    if(selected.length===1)return selected[0];
-
+    /* A value entered by the user must override the catalog's default white
+       selection. Otherwise every recalculation resets black back to zero. */
     var manualPositive=list.filter(function(item){
       return Number(item.qty)>0&&(item.manualQtyOverride===true||item.autoFilled!==true);
     });
     if(manualPositive.length===1)return manualPositive[0];
+
+    var selected=list.filter(function(item){return item.insertSelected===true;});
+    if(selected.length===1)return selected[0];
 
     var blackPositive=list.filter(function(item){return colorOf(item)==="black"&&Number(item.qty)>0;});
     var whitePositive=list.some(function(item){return colorOf(item)==="white"&&Number(item.qty)>0;});

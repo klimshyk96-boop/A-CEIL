@@ -46,7 +46,7 @@ function mergedRoomItems(room,catalog){
   var managed=roomFilmItems(saved),managedGroups=filmGroupSet(managed);
   var base=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(managedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0);});
   var bySaved={};saved.forEach(function(it){var k=key(it);if(k)bySaved[k]=it;});
-  var ROOM_FIELDS=['qty','manualQtyOverride','autoFilled','autoZero','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount'];
+  var ROOM_FIELDS=['qty','manualQtyOverride','autoFilled','autoZero','insertSelected','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount'];
   var out=[],seen={};
   base.forEach(function(cat){
     var k=key(cat);if(!k||seen[k])return;seen[k]=1;
