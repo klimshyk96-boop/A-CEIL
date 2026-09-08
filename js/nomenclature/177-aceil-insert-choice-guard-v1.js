@@ -48,23 +48,33 @@
     var result=previous.apply(this,arguments);
     if(!preferred)return result;
 
-    var after=candidates();
-    var chosen=after.find(function(item){return item===preferred||String(item.id)===String(preferredId);});
-    if(!chosen)return result;
+    function restorePreferredInsert(){
+      var after=candidates();
+      var chosen=after.find(function(item){return item===preferred||String(item.id)===String(preferredId);});
+      if(!chosen)return;
 
-    var calculatedQty=after.reduce(function(max,item){return Math.max(max,Number(item.qty)||0);},0);
-    var changed=false;
-    after.forEach(function(item){
-      var isChosen=item===chosen;
-      var qty=isChosen?calculatedQty:0;
-      if(Number(item.qty)!==qty||item.insertSelected!==isChosen)changed=true;
-      item.qty=qty;
-      item.insertSelected=isChosen;
-      item.autoFilled=true;
-      item.autoZero=qty===0;
-      item.manualQtyOverride=false;
-    });
-    if(changed)refreshAndSave();
+      var calculatedQty=after.reduce(function(max,item){return Math.max(max,Number(item.qty)||0);},0);
+      var changed=false;
+      after.forEach(function(item){
+        var isChosen=item===chosen;
+        var qty=isChosen?calculatedQty:0;
+        if(Number(item.qty)!==qty||item.insertSelected!==isChosen)changed=true;
+        item.qty=qty;
+        item.insertSelected=isChosen;
+        item.autoFilled=true;
+        item.autoZero=qty===0;
+        item.manualQtyOverride=false;
+      });
+      if(changed)refreshAndSave();
+    }
+
+    restorePreferredInsert();
+    /* Universal AutoCount performs one more deferred pass after this wrapper
+       returns. Re-apply the user's black/white choice after that pass. */
+    setTimeout(restorePreferredInsert,0);
+    setTimeout(restorePreferredInsert,80);
+    setTimeout(restorePreferredInsert,300);
+    if(result&&typeof result.then==="function")result.then(restorePreferredInsert).catch(function(){});
     return result;
   };
   wrapped.__insertChoiceGuardV1=true;
