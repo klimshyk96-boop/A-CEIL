@@ -82,16 +82,21 @@ window.__A_CEIL_FinalFixes174=true;
   function isExhaustMark(mark){
     if(!mark)return false;
     var id=String(mark.type||mark.lightType||mark.kind||"").toLowerCase();
-    if(id.indexOf("ce_")===0)return false;
-    try{var t0=typeof _lightType==="function"?_lightType(mark.type):null;if(t0&&t0.ceilingElement===true)return false}catch(_){}
+    var t0=null,label="",svgId="";
+    try{t0=typeof _lightType==="function"?_lightType(mark.type):null}catch(_){}
+    label=String(mark.label||mark.name||mark.title||(t0&&t0.label)||"").toLowerCase();
+    svgId=String(mark.svgId||mark.iconSvgId||(t0&&t0.svgId)||"").toLowerCase();
+
+    /* Regular and magnetic exhausts are independent ceiling elements now.
+       Recognise both before the generic ce_* exclusion, otherwise the regular
+       exhaust falls through to the grey generic-light renderer. */
+    if(/^(vent|exhaust|hood|extractor|fan|ce_exhaust|ce_regular_exhaust|ce_vent|ce_magnetic_exhaust)$/.test(id))return true;
     if(mark._exhaust||mark.kind==="exhaust"||mark.exhaust===true)return true;
-    if(/^(vent|exhaust|hood|extractor|fan)$/.test(id))return true;
-    var label="",svgId="";
-    try{
-      var item=typeof _lightType==="function"?_lightType(mark.type):null;
-      label=String(item&&item.label||"").toLowerCase();
-      svgId=String(item&&item.svgId||mark.svgId||mark.iconSvgId||"").toLowerCase();
-    }catch(_){}
+    if(/^(vent_round|vent_square|vent_grille)$/.test(svgId))return true;
+    if(/витяж|вытяж|вентиляц|\bvent\b|hood|exhaust|extractor/.test(label))return true;
+
+    if(id.indexOf("ce_")===0)return false;
+    if(t0&&t0.ceilingElement===true)return false;
     return/витяж|вытяж|вентиляц|вент\.?|\bvent\b|hood|exhaust|extractor|fan|vent_round|vent_square|vent_grille/.test(id+" "+label+" "+svgId);
   }
 
@@ -218,6 +223,26 @@ window.__A_CEIL_FinalFixes174=true;
     },250);
   }else{
     try{drawLightMarks=storedWrapped}catch(_){}
+  }
+
+  /* The report legend has its own legacy exhaust detector. Feed it compatible
+     copies so the regular independent exhaust is blue there as well. */
+  var baseLegend=window.legend;
+  if(typeof baseLegend==="function"&&!baseLegend.__aceilExhaustColorCompat){
+    var wrappedLegend=function(c,x,y,w,legendLightMarks){
+      var source=Array.isArray(legendLightMarks)?legendLightMarks:[];
+      if(!source.length){
+        try{source=Array.isArray(lightMarks)?lightMarks:[]}
+        catch(_){source=Array.isArray(window.lightMarks)?window.lightMarks:[]}
+      }
+      var compatible=source.map(function(mark){
+        return isExhaustMark(mark)&&!mark._exhaust?Object.assign({},mark,{_exhaust:true}):mark;
+      });
+      return baseLegend.call(this,c,x,y,w,compatible);
+    };
+    wrappedLegend.__aceilExhaustColorCompat=true;
+    window.legend=wrappedLegend;
+    try{legend=wrappedLegend}catch(_){}
   }
 })();
 
