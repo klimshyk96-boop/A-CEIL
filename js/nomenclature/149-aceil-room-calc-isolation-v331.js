@@ -12,6 +12,11 @@ function zeroResult(it){
   c.qty=0;
   c.manualQtyOverride=false;
   c.autoFilled=false;c.autoZero=true;
+  /* Вибір кольору вставки є станом конкретної кімнати, а не глобальним
+     налаштуванням номенклатури. Нова кімната починається без вибору —
+     AutoFill штатно обере білу. Збережена кімната нижче відновить свій
+     insertSelected, тому вручну обрана чорна не загубиться. */
+  c.insertSelected=false;
   ['calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount'].forEach(function(k){
     if(Object.prototype.hasOwnProperty.call(c,k))delete c[k];
   });
