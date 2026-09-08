@@ -103,9 +103,11 @@ window.__A_CEIL_FinalFixes174=true;
       catch(_){all=Array.isArray(window.lightMarks)?window.lightMarks:[]}
 
       var targets=[],others=[];
+      var exhaustTargets=[];
       all.forEach(function(mark,index){
         var info=typeInfo(mark);
-        if(!isExhaustMark(mark)&&(isPoint(info)||isChandelier(info)))targets.push({mark:mark,index:index,chandelier:isChandelier(info)});
+        if(isExhaustMark(mark))exhaustTargets.push(mark);
+        else if(isPoint(info)||isChandelier(info))targets.push({mark:mark,index:index,chandelier:isChandelier(info)});
         else others.push(mark);
       });
 
@@ -152,6 +154,34 @@ window.__A_CEIL_FinalFixes174=true;
         ctx.textAlign="center";
         ctx.textBaseline="top";
         ctx.fillText(String(entry.index+1),x,y+r+4);
+        ctx.restore();
+      });
+
+      exhaustTargets.forEach(function(mark){
+        if(!mark||!isFinite(+mark.x)||!isFinite(+mark.y))return;
+        var x=+mark.x,y=+mark.y;
+        ctx.save();
+        if(typeof window.rmDrawExhaustLegendIcon==="function"){
+          var svgId=null;
+          try{
+            var lib=window.SVG_ICON_LIB||{};
+            if(mark.svgId&&lib[mark.svgId])svgId=mark.svgId;
+            else if(mark.iconSvgId&&lib[mark.iconSvgId])svgId=mark.iconSvgId;
+            else{
+              var item=typeof _lightType==="function"?_lightType(mark.type):null;
+              if(item&&item.svgId&&lib[item.svgId])svgId=item.svgId;
+            }
+          }catch(_){}
+          window.rmDrawExhaustLegendIcon(ctx,x,y,svgId);
+        }else{
+          ctx.fillStyle="rgba(255,255,255,.96)";
+          ctx.strokeStyle="#0891b2";
+          ctx.lineWidth=2.4;
+          ctx.beginPath();
+          ctx.arc(x,y,15,0,Math.PI*2);
+          ctx.fill();
+          ctx.stroke();
+        }
         ctx.restore();
       });
     };
