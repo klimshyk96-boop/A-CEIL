@@ -81,8 +81,10 @@ window.__A_CEIL_FinalFixes174=true;
   function isChandelier(info){return info.id==="chandelier"||/люстр/.test(info.label)}
   function isExhaustMark(mark){
     if(!mark)return false;
-    if(mark._exhaust||mark.kind==="exhaust"||mark.exhaust===true)return true;
     var id=String(mark.type||mark.lightType||mark.kind||"").toLowerCase();
+    if(id.indexOf("ce_")===0)return false;
+    try{var t0=typeof _lightType==="function"?_lightType(mark.type):null;if(t0&&t0.ceilingElement===true)return false}catch(_){}
+    if(mark._exhaust||mark.kind==="exhaust"||mark.exhaust===true)return true;
     if(/^(vent|exhaust|hood|extractor|fan)$/.test(id))return true;
     var label="",svgId="";
     try{
