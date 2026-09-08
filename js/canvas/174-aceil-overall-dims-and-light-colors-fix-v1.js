@@ -79,6 +79,19 @@ window.__A_CEIL_FinalFixes174=true;
   }
   function isPoint(info){return info.id==="spot"||/точков|точка|світильник|спот/.test(info.label)}
   function isChandelier(info){return info.id==="chandelier"||/люстр/.test(info.label)}
+  function isExhaustMark(mark){
+    if(!mark)return false;
+    if(mark._exhaust||mark.kind==="exhaust"||mark.exhaust===true)return true;
+    var id=String(mark.type||mark.lightType||mark.kind||"").toLowerCase();
+    if(/^(vent|exhaust|hood|extractor|fan)$/.test(id))return true;
+    var label="",svgId="";
+    try{
+      var item=typeof _lightType==="function"?_lightType(mark.type):null;
+      label=String(item&&item.label||"").toLowerCase();
+      svgId=String(item&&item.svgId||mark.svgId||mark.iconSvgId||"").toLowerCase();
+    }catch(_){}
+    return/витяж|вытяж|вентиляц|вент\.?|\bvent\b|hood|exhaust|extractor|fan|vent_round|vent_square|vent_grille/.test(id+" "+label+" "+svgId);
+  }
 
   function buildYellowWrapper(baseDraw){
     if(typeof baseDraw!=="function")return baseDraw;
@@ -92,7 +105,7 @@ window.__A_CEIL_FinalFixes174=true;
       var targets=[],others=[];
       all.forEach(function(mark,index){
         var info=typeInfo(mark);
-        if(isPoint(info)||isChandelier(info))targets.push({mark:mark,index:index,chandelier:isChandelier(info)});
+        if(!isExhaustMark(mark)&&(isPoint(info)||isChandelier(info)))targets.push({mark:mark,index:index,chandelier:isChandelier(info)});
         else others.push(mark);
       });
 
