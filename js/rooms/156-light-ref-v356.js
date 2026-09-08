@@ -14,13 +14,7 @@ function decorate(){
  var m=mode();
  h.setAttribute("data-rm356-one",m==="one"?"1":"0");
  var oq=g("rm356OneQty");
- if(m==="one"){
-   if(!oq){
-     oq=document.createElement("div");oq.id="rm356OneQty";oq.className="rm356-oneqty";
-     oq.innerHTML='<button type="button" disabled>−</button><b>1</b><button type="button" disabled>＋</button>';
-     h.insertBefore(oq,h.firstChild);
-   }
- }else if(oq)oq.remove();
+ if(oq)oq.remove();
 
  /* Give reference-like explanatory subtitles without changing actions. */
  h.querySelectorAll(".rm353-method").forEach(function(b){
