@@ -112,10 +112,7 @@ function open(){
     return;
   }
   var rooms=window.A·CEIL.BulkRoomActions.listRooms();
-  if(rooms.length<2){
-    toast("Ця панель працює з проєктами, де більше однієї кімнати.");
-    return;
-  }
+  var multiRoom=rooms.length>=2;
   var activeId=window.A·CEIL.BulkRoomActions.activeRoomId();
   var variants=window.A·CEIL.EstimateVariants.listVariants();
 
@@ -126,6 +123,7 @@ function open(){
     '<div class="aceil-bv-sheet">'+
       '<div class="aceil-bv-head"><h3>Масові дії та варіанти</h3><button class="aceil-bv-close" id="aceil-bv-close">✕</button></div>'+
 
+      (multiRoom?(
       '<div class="aceil-bv-section">'+
         '<h4>Профіль / елементи</h4>'+
         '<div class="aceil-bv-hint" style="margin-bottom:8px;">Джерело — активна кімната. Застосувати на:</div>'+
@@ -141,7 +139,13 @@ function open(){
           '<button class="aceil-bv-btn primary" id="aceil-bv-apply-insert">Колір з активної кімнати</button>'+
           '<button class="aceil-bv-btn danger" id="aceil-bv-remove-insert">Прибрати вставку</button>'+
         '</div>'+
-      '</div>'+
+      '</div>'
+      ):(
+      '<div class="aceil-bv-section">'+
+        '<h4>Профіль / вставка на кілька кімнат</h4>'+
+        '<div class="aceil-bv-hint">У проєкті поки одна кімната — масове застосування зʼявиться, коли додасте ще. Варіанти кошторису нижче доступні вже зараз.</div>'+
+      '</div>'
+      ))+
 
       '<div class="aceil-bv-section">'+
         '<h4>Варіанти кошторису</h4>'+
@@ -165,19 +169,22 @@ function open(){
   overlay.addEventListener("click",function(e){if(e.target===overlay)close();});
   document.getElementById("aceil-bv-close").addEventListener("click",close);
 
-  document.getElementById("aceil-bv-apply-profile").addEventListener("click",function(){
+  var applyProfileBtn=document.getElementById("aceil-bv-apply-profile");
+  if(applyProfileBtn)applyProfileBtn.addEventListener("click",function(){
     var ids=selectedRoomIds(document.getElementById("aceil-bv-rooms-profile"));
     if(!ids.length)return toast("Оберіть хоча б одну кімнату.");
     var r=window.A·CEIL.BulkRoomActions.applyProfileToRooms(activeId,ids);
     toast(r.ok?"Профіль застосовано до "+r.count+" кімнат.":"Не вдалося: "+(r.reason||"?"));
   });
-  document.getElementById("aceil-bv-apply-insert").addEventListener("click",function(){
+  var applyInsertBtn=document.getElementById("aceil-bv-apply-insert");
+  if(applyInsertBtn)applyInsertBtn.addEventListener("click",function(){
     var ids=selectedRoomIds(document.getElementById("aceil-bv-rooms-insert"));
     if(!ids.length)return toast("Оберіть хоча б одну кімнату.");
     var r=window.A·CEIL.BulkRoomActions.applyInsertToRooms(activeId,ids,{remove:false});
     toast(r.ok?"Колір вставки застосовано до "+r.count+" кімнат.":"Не вдалося: "+(r.reason||"?"));
   });
-  document.getElementById("aceil-bv-remove-insert").addEventListener("click",function(){
+  var removeInsertBtn=document.getElementById("aceil-bv-remove-insert");
+  if(removeInsertBtn)removeInsertBtn.addEventListener("click",function(){
     var ids=selectedRoomIds(document.getElementById("aceil-bv-rooms-insert"));
     if(!ids.length)return toast("Оберіть хоча б одну кімнату.");
     var r=window.A·CEIL.BulkRoomActions.applyInsertToRooms(null,ids,{remove:true});
