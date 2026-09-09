@@ -102,6 +102,10 @@ function category(groupName,itemName){
   if(/освіт|світ|люстр|трек|бра|led|ламп|світиль|точков/.test(i))return"lighting";
   return"other";
 }
+/* Неінвазивний експорт для js/nomenclature/180-*-bulk-room-actions-v1.js та
+   js/reports/181-*-estimate-variants-v1.js: щоб не дублювати regex-класифікацію
+   "профіль/плівка/вставка/світло/інше" по кількох файлах. */
+if(!window.A·CEILReportCategory)window.A·CEILReportCategory=category;
 function unitNorm(v){return String(v||"шт").replace(/\s+/g," ").trim()}
 function addAgg(map,key,row){
   var k=String(key||"Позиція").trim()+"|"+unitNorm(row.unit);
