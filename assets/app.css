@@ -592,7 +592,7 @@ button[onclick*="A·CEILHybridCurve"],
 .rm-room-menu-toggle{width:48px;height:48px;min-width:48px;padding:0!important;border-radius:16px!important;background:rgba(255,255,255,.96)!important;border:1px solid rgba(148,163,184,.2)!important;color:#334155!important;box-shadow:0 8px 24px rgba(15,23,42,.14)!important;display:flex!important;flex-direction:column;align-items:center!important;justify-content:center!important;gap:3px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .rm-room-menu-toggle span{width:4px;height:4px;border-radius:50%;background:currentColor;display:block;pointer-events:none}
 .rm-room-menu-toggle[aria-expanded="true"]{color:#2563eb!important;background:#eff6ff!important}
-.rm-room-menu-popup{position:absolute;right:0;bottom:58px;width:250px;padding:8px;background:rgba(255,255,255,.98);border:1px solid rgba(148,163,184,.2);border-radius:20px;box-shadow:0 18px 46px rgba(15,23,42,.2);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.rm-room-menu-popup{position:absolute;right:0;bottom:58px;width:250px;padding:8px;background:rgba(255,255,255,.98);border:1px solid rgba(148,163,184,.2);border-radius:20px;box-shadow:0 18px 46px rgba(15,23,42,.2);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);max-height:min(420px,calc(100vh - 90px));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .rm-room-menu-popup[hidden]{display:none!important}
 .rm-room-menu-action{width:100%;min-height:58px;padding:10px 11px!important;border-radius:14px!important;background:transparent!important;color:#0f172a!important;box-shadow:none!important;display:flex!important;align-items:center!important;gap:11px;text-align:left}
 .rm-room-menu-action:active{background:#f1f5f9!important}
@@ -600,7 +600,7 @@ button[onclick*="A·CEILHybridCurve"],
 .rm-room-menu-action span{display:flex;flex-direction:column;gap:2px}.rm-room-menu-action b{font-size:14px;font-weight:850}.rm-room-menu-action small{font-size:11px;color:#64748b;font-weight:650}
 .rm-room-menu-action.danger{color:#dc2626!important}.rm-room-menu-action.danger small{color:#ef4444}
 .rm-room-menu-separator{height:1px;background:#e2e8f0;margin:5px 8px}
-@media(max-width:600px){.rm-room-menu{right:10px;bottom:14px}.rm-room-menu-toggle{width:44px;height:44px;min-width:44px;border-radius:15px!important}.rm-room-menu-popup{bottom:53px;width:min(245px,76vw)}}
+@media(max-width:600px){.rm-room-menu{right:10px;bottom:14px}.rm-room-menu-toggle{width:44px;height:44px;min-width:44px;border-radius:15px!important}.rm-room-menu-popup{bottom:53px;width:min(245px,76vw);max-height:min(400px,calc(100vh - 130px))}}
 
 
 /* ===== SOURCE 043: css/canvas/043-aceil-history-controls-v1.css ===== */
