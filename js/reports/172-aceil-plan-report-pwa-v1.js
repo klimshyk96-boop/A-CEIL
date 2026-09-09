@@ -8,36 +8,7 @@ function isInstalledApp(){
 }
 /* aceil: redundant "live overall dimensions" patch removed — 037-inline.js now handles this directly */
 
-function typeInfo(mark){
-  var id=String(mark&&mark.type||"").toLowerCase(),label="";
-  try{var item=typeof _lightType==="function"?_lightType(mark.type):null;label=String(item&&item.label||"").toLowerCase()}catch(_){}
-  return{id:id,label:label};
-}
-function isPoint(info){return info.id==="spot"||/точков|точка|світильник/.test(info.label)}
-function isChandelier(info){return info.id==="chandelier"||/люстр/.test(info.label)}
-function assignLightMarks(list){try{lightMarks=list}catch(_){window.lightMarks=list}}
-var previousDraw=window.drawLightMarks;
-if(typeof previousDraw==="function"&&!previousDraw.__aceilYellowLights){
-  var yellowDraw=function(ctx){
-    var all=[];try{all=Array.isArray(lightMarks)?lightMarks:[]}catch(_){all=Array.isArray(window.lightMarks)?window.lightMarks:[]}
-    var targets=[],others=[];
-    all.forEach(function(mark,index){var info=typeInfo(mark);if(isPoint(info)||isChandelier(info))targets.push({mark:mark,index:index,chandelier:isChandelier(info)});else others.push(mark)});
-    assignLightMarks(others);
-    try{previousDraw.apply(this,arguments)}finally{assignLightMarks(all)}
-    targets.forEach(function(entry){
-      var mark=entry.mark;if(!mark||!isFinite(+mark.x)||!isFinite(+mark.y))return;
-      var x=+mark.x,y=+mark.y,r=entry.chandelier?9.25:8.25,selected=false;
-      try{selected=!_reportMode&&lightMode&&mark.id&&mark.id===selectedLightId}catch(_){}
-      ctx.save();ctx.shadowColor="rgba(234,179,8,.35)";ctx.shadowBlur=4;
-      ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
-      if(entry.chandelier){ctx.fillStyle="#facc15";ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle="#ca8a04";ctx.lineWidth=1.5;ctx.stroke();}
-      else{ctx.fillStyle="#ffffff";ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle="#facc15";ctx.lineWidth=2.6;ctx.stroke();}
-      if(selected){ctx.beginPath();ctx.arc(x,y,r+3.5,0,Math.PI*2);ctx.strokeStyle="#2563eb";ctx.lineWidth=2;ctx.stroke()}
-      ctx.fillStyle="#475569";ctx.font="700 9px Arial";ctx.textAlign="center";ctx.textBaseline="top";ctx.fillText(String(entry.index+1),x,y+r+4);ctx.restore();
-    });
-  };
-  yellowDraw.__aceilYellowLights=true;window.drawLightMarks=yellowDraw;try{drawLightMarks=yellowDraw}catch(_){}
-}
+/* aceil: duplicate yellow-recolor pass removed — 174-aceil-overall-dims-and-light-colors-fix-v1.js already handles this (and exhaust icons) as the single authoritative layer */
 
 function dataUrlToBlob(dataUrl){
   var parts=dataUrl.split(","),mime=(parts[0].match(/:(.*?);/)||[])[1]||"image/png",raw=atob(parts[1]),bytes=new Uint8Array(raw.length);
