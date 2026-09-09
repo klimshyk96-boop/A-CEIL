@@ -198,6 +198,22 @@ window.__A_CEIL_FinalFixes174=true;
 
   var storedWrapped=buildYellowWrapper(window.drawLightMarks);
 
+  window.__aceil174FinalDrawLightMarks={
+    __reapply:function(){
+      var current;
+      try{current=Object.getOwnPropertyDescriptor(window,"drawLightMarks")}catch(_){current=null}
+      if(!current||!current.get){
+        // fallback (non-defineProperty) path: current storedWrapped may have been
+        // clobbered by a plain reassignment elsewhere — re-wrap whatever is live now.
+        storedWrapped=buildYellowWrapper(window.drawLightMarks&&window.drawLightMarks.__aceilYellowLightsFinal?storedWrapped:window.drawLightMarks);
+        window.drawLightMarks=storedWrapped;
+        try{drawLightMarks=storedWrapped}catch(_){}
+      }
+      // when defineProperty is active the setter already re-wraps every write,
+      // so there is nothing extra to do — the getter is already authoritative.
+    }
+  };
+
   var installed=false;
   try{
     Object.defineProperty(window,"drawLightMarks",{
