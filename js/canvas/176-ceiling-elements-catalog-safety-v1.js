@@ -5,6 +5,7 @@ window.__aceilCeilingCatalogSafetyV1=true;
 
 var KEY="lightTypes_v1";
 var READY=[
+  {id:"vent",label:"Витяжка",icon:"◯",svgId:"vent_round",system:true,locked:false},
   {id:"ce_magnetic_exhaust",label:"Магнітна витяжка",icon:"◉",svgId:"vent_grille",ceilingElement:true},
   {id:"ce_camera_sensor",label:"Датчик/камера",icon:"◌",svgId:"camera",ceilingElement:true},
   {id:"ce_pipe_bypass_lt50",label:"Обхід труби <50",icon:"◆",svgId:"niche",ceilingElement:true},
