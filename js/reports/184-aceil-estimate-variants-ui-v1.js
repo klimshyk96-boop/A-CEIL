@@ -404,6 +404,40 @@ function ensureVisibleVariantsMenuAction(){
   if(document.getElementById('aceilVariantsMenuAction')) return;
   var menu=document.getElementById('A·CEILRoomMenuPopup');
   if(!menu) return;
+
+  /* Keep the popup attached to the existing three-dots control, but
+     position it against the viewport. This prevents the canvas container
+     from clipping the top and gives iPhone Safari a real scroll area. */
+  function positionMenuForViewport(){
+    var toggle=document.getElementById('A·CEILRoomMenuToggle');
+    if(!toggle) return;
+    var rect=toggle.getBoundingClientRect();
+    var viewportH=window.innerHeight || document.documentElement.clientHeight || 700;
+    var bottom=Math.max(12, viewportH-rect.top+8);
+    var available=Math.max(190, rect.top-18);
+    menu.style.setProperty('position','fixed','important');
+    menu.style.setProperty('top','auto','important');
+    menu.style.setProperty('right','12px','important');
+    menu.style.setProperty('left','auto','important');
+    menu.style.setProperty('bottom',bottom+'px','important');
+    menu.style.setProperty('width','min(330px, calc(100vw - 24px))','important');
+    menu.style.setProperty('max-height',available+'px','important');
+    menu.style.setProperty('overflow-y','auto','important');
+    menu.style.setProperty('-webkit-overflow-scrolling','touch','important');
+    menu.style.setProperty('overscroll-behavior','contain','important');
+    menu.style.setProperty('touch-action','pan-y','important');
+    menu.style.setProperty('z-index','10020','important');
+  }
+  var toggle=document.getElementById('A·CEILRoomMenuToggle');
+  if(toggle){
+    toggle.addEventListener('click', function(){ requestAnimationFrame(positionMenuForViewport); });
+  }
+  menu.addEventListener('touchstart', function(e){ e.stopPropagation(); }, {passive:true});
+  menu.addEventListener('touchmove', function(e){ e.stopPropagation(); }, {passive:true});
+  menu.addEventListener('wheel', function(e){ e.stopPropagation(); }, {passive:true});
+  window.addEventListener('resize', function(){ if(!menu.hidden) positionMenuForViewport(); });
+  window.addEventListener('orientationchange', function(){ setTimeout(positionMenuForViewport,80); });
+
   var button=document.createElement('button');
   button.type='button';
   button.id='aceilVariantsMenuAction';
@@ -423,6 +457,7 @@ function ensureVisibleVariantsMenuAction(){
   });
   var separator=menu.querySelector('.rm-room-menu-separator');
   menu.insertBefore(button, separator || menu.firstChild);
+  positionMenuForViewport();
 }
 
 window.A_CEIL_OpenEstimateVariants=openVariantsFromRoomScreen;
