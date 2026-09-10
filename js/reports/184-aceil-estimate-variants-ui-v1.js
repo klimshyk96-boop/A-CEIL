@@ -261,13 +261,20 @@ function injectInterfaceTotals(project, breakdown){
   }catch(_){}
 }
 
-function renderVariantBar(project){
+function renderVariantBar(project, explicitHost){
   var totalsEl=document.getElementById('objRoomsTotals');
-  if(!totalsEl || !totalsEl.parentNode) return;
+  var homeOverlay=document.getElementById('aceilVarHomeModal');
+  var homeHost=document.getElementById('aceilVarHomeHost');
+  var host=explicitHost || (homeOverlay && homeOverlay.classList.contains('open') ? homeHost : null);
+  if(!host && (!totalsEl || !totalsEl.parentNode)) return;
   var bar=document.getElementById('aceilVarBar');
   if(!bar){
     bar=document.createElement('div');
     bar.id='aceilVarBar';
+  }
+  if(host){
+    if(bar.parentNode!==host) host.appendChild(bar);
+  }else if(bar.parentNode!==totalsEl.parentNode || bar.previousSibling!==totalsEl){
     totalsEl.parentNode.insertBefore(bar, totalsEl.nextSibling);
   }
 
@@ -349,6 +356,69 @@ function renderVariantBar(project){
     openCompareModal(proj);
   });
 }
+
+/* ---------------------------------------------------------------
+   Visible entry point on the real room screen.
+
+   The legacy objectRoomsModal is skipped by the current project flow, so
+   the variants UI must be reachable directly from the main tool tiles.
+   --------------------------------------------------------------- */
+
+function ensureHomeVariantsModal(){
+  var overlay=document.getElementById('aceilVarHomeModal');
+  if(overlay) return overlay;
+  overlay=document.createElement('div');
+  overlay.id='aceilVarHomeModal';
+  overlay.className='aceilv-modal-overlay';
+  overlay.style.zIndex='9400';
+  overlay.innerHTML=
+    '<div class="aceilv-modal" style="width:min(96vw,560px)">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">'+
+        '<h3 style="margin:0">Варіанти кошторису</h3>'+
+        '<button type="button" id="aceilVarHomeClose" aria-label="Закрити" style="background:#f1f5f9;color:#64748b;box-shadow:none;border-radius:10px;padding:5px 10px;font-size:20px;line-height:1">×</button>'+
+      '</div>'+
+      '<div id="aceilVarHomeHost"></div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#aceilVarHomeClose').addEventListener('click', function(){ overlay.classList.remove('open'); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.classList.remove('open'); });
+  return overlay;
+}
+
+async function openVariantsFromRoomScreen(){
+  var id=activeProjectId();
+  if(id==null){ toast('Спочатку відкрийте або збережіть об’єкт'); return; }
+  try{
+    if(typeof window.saveCurrentRoom==='function' && typeof _activeRoomIdx!=='undefined' && _activeRoomIdx!=null){
+      await Promise.resolve(window.saveCurrentRoom({silent:true}));
+    }
+  }catch(_){}
+  var project=findActiveProject();
+  if(!project){ toast('Об’єкт не знайдено'); return; }
+  var overlay=ensureHomeVariantsModal();
+  overlay.classList.add('open');
+  renderVariantBar(project, document.getElementById('aceilVarHomeHost'));
+}
+
+function ensureVisibleVariantsButton(){
+  if(document.getElementById('aceilVariantsTile')) return;
+  var panel=document.getElementById('A·CEILToolPanel');
+  if(!panel) return;
+  var wrap=document.createElement('div');
+  wrap.id='aceilVariantsTile';
+  wrap.innerHTML=
+    '<button type="button" class="tile-btn tile-blue" style="width:100%;height:100%">'+
+      '<div class="tile-icon" style="font-size:25px">🔄</div>'+
+      '<div class="tile-btn-label">Варіанти</div>'+
+      '<div class="tile-sub">Основний / економ</div>'+
+    '</button>';
+  wrap.querySelector('button').addEventListener('click', openVariantsFromRoomScreen);
+  panel.appendChild(wrap);
+}
+
+window.A_CEIL_OpenEstimateVariants=openVariantsFromRoomScreen;
+ensureVisibleVariantsButton();
+document.addEventListener('DOMContentLoaded', ensureVisibleVariantsButton, {once:true});
 
 /* ---------------------------------------------------------------
    Bulk change modal
