@@ -663,12 +663,144 @@ function ensureCompareModal(){
       '<h3>\u041F\u043E\u0440\u0456\u0432\u043D\u044F\u043D\u043D\u044F \u0437 \u041E\u0441\u043D\u043E\u0432\u043D\u0438\u043C</h3>'+
       '<div class="aceilv-field"><label>\u0412\u0430\u0440\u0456\u0430\u043D\u0442</label><select id="aceilvCmpSelect"></select></div>'+
       '<div id="aceilvCmpTableWrap"></div>'+
-      '<div class="aceilv-modal-btns"><button type="button" class="aceilv-btn-secondary" id="aceilvCmpClose">\u0417\u0430\u043A\u0440\u0438\u0442\u0438</button></div>'+
+      '<div class="aceilv-modal-btns">'+
+        '<button type="button" id="aceilvCmpReport">\uD83D\uDCE4 \u0417\u0432\u0456\u0442 / \u043F\u043E\u0434\u0456\u043B\u0438\u0442\u0438\u0441\u044F</button>'+
+        '<button type="button" class="aceilv-btn-secondary" id="aceilvCmpClose">\u0417\u0430\u043A\u0440\u0438\u0442\u0438</button>'+
+      '</div>'+
     '</div>';
   document.body.appendChild(overlay);
   overlay.querySelector('#aceilvCmpClose').addEventListener('click', function(){ overlay.classList.remove('open'); });
+  overlay.querySelector('#aceilvCmpReport').addEventListener('click', function(){
+    var project=overlay._aceilCompareProject;
+    var select=document.getElementById('aceilvCmpSelect');
+    if(project && select && select.value) generateComparisonReport(project, select.value);
+  });
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.classList.remove('open'); });
   return overlay;
+}
+
+function reportMoney(v){
+  return Math.round(num(v)).toLocaleString('uk-UA')+' \u20B4';
+}
+
+function reportRoundRect(ctx,x,y,w,h,r,fill,stroke){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+  if(fill){ ctx.fillStyle=fill; ctx.fill(); }
+  if(stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=1.5; ctx.stroke(); }
+}
+
+function reportFitText(ctx,text,maxWidth){
+  text=String(text||'');
+  if(ctx.measureText(text).width<=maxWidth) return text;
+  while(text.length>2 && ctx.measureText(text+'…').width>maxWidth) text=text.slice(0,-1);
+  return text+'…';
+}
+
+function buildComparisonReportCanvas(project,variantId){
+  var mainBd=ENGINE.computeProjectBreakdown(project,null);
+  var varBd=ENGINE.computeProjectBreakdown(project,variantId);
+  var variant=ENGINE.findVariant(project,variantId);
+  var variantName=variant&&variant.name ? variant.name : '\u0412\u0430\u0440\u0456\u0430\u043D\u0442';
+  var names=[],seen={};
+  mainBd.categories.concat(varBd.categories).forEach(function(row){
+    if(!seen[row.name]){ seen[row.name]=true; names.push(row.name); }
+  });
+  function categoryTotal(bd,name){
+    var found=bd.categories.find(function(row){ return row.name===name; });
+    return found ? found.total : 0;
+  }
+  var roomCount=Math.max(mainBd.rooms.length,varBd.rooms.length);
+  var height=470+names.length*58+(roomCount?80+roomCount*54:0)+170;
+  var canvas=document.createElement('canvas');
+  canvas.width=1080; canvas.height=Math.max(1100,height);
+  var c=canvas.getContext('2d');
+  c.fillStyle='#f8fafc'; c.fillRect(0,0,canvas.width,canvas.height);
+
+  var grad=c.createLinearGradient(0,0,1080,150);
+  grad.addColorStop(0,'#0f172a'); grad.addColorStop(1,'#2563eb');
+  c.fillStyle=grad; c.fillRect(0,0,1080,150);
+  reportRoundRect(c,42,32,78,78,20,'#ffffff');
+  c.fillStyle='#2563eb'; c.font='900 48px Arial'; c.textAlign='center'; c.fillText('A',81,88);
+  c.textAlign='left'; c.fillStyle='#ffffff'; c.font='900 30px Arial'; c.fillText('A·CEIL',144,68);
+  c.fillStyle='#bfdbfe'; c.font='700 17px Arial'; c.fillText('\u041F\u043E\u0440\u0456\u0432\u043D\u044F\u043D\u043D\u044F \u0432\u0430\u0440\u0456\u0430\u043D\u0442\u0456\u0432 \u043A\u043E\u0448\u0442\u043E\u0440\u0438\u0441\u0443',144,98);
+
+  var y=198;
+  c.fillStyle='#0f172a'; c.font='900 34px Arial';
+  c.fillText(reportFitText(c,project.name||'\u041F\u0440\u043E\u0454\u043A\u0442',900),48,y);
+  y+=31;
+  var meta=[project.addr,project.phone,(project.rooms||[]).length+' \u043A\u0456\u043C\u043D.'].filter(Boolean).join('  •  ');
+  c.fillStyle='#64748b'; c.font='600 17px Arial'; c.fillText(reportFitText(c,meta,970),48,y);
+  y+=38;
+
+  reportRoundRect(c,48,y,476,116,20,'#ffffff','#dbeafe');
+  reportRoundRect(c,556,y,476,116,20,'#ffffff','#bbf7d0');
+  c.fillStyle='#64748b'; c.font='800 15px Arial'; c.fillText('\u041E\u0421\u041D\u041E\u0412\u041D\u0418\u0419',72,y+31);
+  c.fillStyle='#1e3a8a'; c.font='900 34px Arial'; c.fillText(reportMoney(mainBd.grandTotal),72,y+78);
+  c.fillStyle='#64748b'; c.font='800 15px Arial'; c.fillText(reportFitText(c,String(variantName).toUpperCase(),410),580,y+31);
+  c.fillStyle='#166534'; c.font='900 34px Arial'; c.fillText(reportMoney(varBd.grandTotal),580,y+78);
+  y+=156;
+
+  c.fillStyle='#0f172a'; c.font='900 23px Arial'; c.fillText('\u041A\u043E\u0448\u0442\u043E\u0440\u0438\u0441 \u0437\u0430 \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0456\u044F\u043C\u0438',48,y); y+=24;
+  reportRoundRect(c,48,y,984,46,12,'#e2e8f0');
+  c.fillStyle='#475569'; c.font='800 14px Arial';
+  c.fillText('\u041A\u0410\u0422\u0415\u0413\u041E\u0420\u0406\u042F',68,y+29); c.textAlign='right';
+  c.fillText('\u041E\u0421\u041D\u041E\u0412\u041D\u0418\u0419',780,y+29); c.fillText(reportFitText(c,String(variantName).toUpperCase(),210),1008,y+29);
+  c.textAlign='left'; y+=50;
+  names.forEach(function(name,index){
+    if(index%2===0){ c.fillStyle='#ffffff'; c.fillRect(48,y,984,54); }
+    c.fillStyle='#334155'; c.font='700 18px Arial'; c.fillText(reportFitText(c,name,490),68,y+34);
+    c.textAlign='right'; c.fillStyle='#334155'; c.font='800 18px Arial';
+    c.fillText(reportMoney(categoryTotal(mainBd,name)),780,y+34);
+    c.fillStyle='#166534'; c.fillText(reportMoney(categoryTotal(varBd,name)),1008,y+34);
+    c.textAlign='left'; y+=54;
+  });
+
+  if(roomCount){
+    y+=42; c.fillStyle='#0f172a'; c.font='900 23px Arial'; c.fillText('\u0421\u0443\u043C\u0430 \u043F\u043E \u043A\u0456\u043C\u043D\u0430\u0442\u0430\u0445',48,y); y+=24;
+    reportRoundRect(c,48,y,984,46,12,'#e2e8f0');
+    c.fillStyle='#475569'; c.font='800 14px Arial'; c.fillText('\u041A\u0406\u041C\u041D\u0410\u0422\u0410',68,y+29); c.textAlign='right';
+    c.fillText('\u041E\u0421\u041D\u041E\u0412\u041D\u0418\u0419',780,y+29); c.fillText(reportFitText(c,String(variantName).toUpperCase(),210),1008,y+29); c.textAlign='left'; y+=50;
+    for(var i=0;i<roomCount;i++){
+      var mr=mainBd.rooms[i],vr=varBd.rooms[i];
+      if(i%2===0){ c.fillStyle='#ffffff'; c.fillRect(48,y,984,50); }
+      c.fillStyle='#334155'; c.font='700 17px Arial'; c.fillText(reportFitText(c,(mr&&mr.room&&mr.room.name)||(vr&&vr.room&&vr.room.name)||('\u041A\u0456\u043C\u043D\u0430\u0442\u0430 '+(i+1)),490),68,y+32);
+      c.textAlign='right'; c.font='800 17px Arial'; c.fillText(reportMoney(mr?mr.total:0),780,y+32); c.fillStyle='#166534'; c.fillText(reportMoney(vr?vr.total:0),1008,y+32); c.textAlign='left'; y+=50;
+    }
+  }
+
+  y+=46;
+  var saving=mainBd.grandTotal-varBd.grandTotal;
+  var savingGood=saving>=0;
+  reportRoundRect(c,48,y,984,104,22,savingGood?'#dcfce7':'#fee2e2',savingGood?'#86efac':'#fecaca');
+  c.fillStyle=savingGood?'#166534':'#991b1b'; c.font='900 22px Arial';
+  c.fillText(savingGood?'\u0415\u043A\u043E\u043D\u043E\u043C\u0456\u044F':'\u041F\u043E\u0434\u043E\u0440\u043E\u0436\u0447\u0430\u043D\u043D\u044F',76,y+42);
+  c.textAlign='right'; c.font='900 36px Arial'; c.fillText(reportMoney(Math.abs(saving)),1004,y+64); c.textAlign='left';
+
+  c.fillStyle='#94a3b8'; c.font='600 14px Arial'; c.textAlign='center';
+  c.fillText('A·CEIL  •  \u041F\u043E\u0440\u0456\u0432\u043D\u044F\u043B\u044C\u043D\u0438\u0439 \u043A\u043E\u0448\u0442\u043E\u0440\u0438\u0441',540,canvas.height-38); c.textAlign='left';
+  return canvas;
+}
+
+function generateComparisonReport(project,variantId){
+  try{
+    var canvas=buildComparisonReportCanvas(project,variantId);
+    var variant=ENGINE.findVariant(project,variantId);
+    var safe=String((variant&&variant.name)||'variant').replace(/[^a-zA-Z0-9\u0400-\u04FF_-]+/g,'_');
+    var fileName='A-CEIL_porivnyannya_'+safe+'.png';
+    if(typeof window._modernOpenPreview==='function'){
+      window._modernOpenPreview(canvas,fileName);
+      return;
+    }
+    var link=document.createElement('a');
+    link.href=canvas.toDataURL('image/png'); link.download=fileName; link.click();
+  }catch(e){
+    toast('\u041D\u0435 \u0432\u0434\u0430\u043B\u043E\u0441\u044F \u0441\u0444\u043E\u0440\u043C\u0443\u0432\u0430\u0442\u0438 \u043F\u043E\u0440\u0456\u0432\u043D\u044F\u043B\u044C\u043D\u0438\u0439 \u0437\u0432\u0456\u0442');
+  }
 }
 
 function renderCompareTable(project, variantId){
@@ -695,6 +827,7 @@ function openCompareModal(project){
   var alts=(project.estimateVariants||[]);
   if(!alts.length){ toast('\u0421\u043F\u043E\u0447\u0430\u0442\u043A\u0443 \u0441\u0442\u0432\u043E\u0440\u0456\u0442\u044C \u0430\u043B\u044C\u0442\u0435\u0440\u043D\u0430\u0442\u0438\u0432\u043D\u0438\u0439 \u0432\u0430\u0440\u0456\u0430\u043D\u0442'); return; }
   var overlay=ensureCompareModal();
+  overlay._aceilCompareProject=project;
   var activeId=ENGINE.getActiveId(project);
   var defaultId = (activeId!=null && alts.some(function(v){ return String(v.id)===String(activeId); })) ? activeId : alts[0].id;
   var sel=document.getElementById('aceilvCmpSelect');
