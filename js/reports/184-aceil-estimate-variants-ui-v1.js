@@ -358,10 +358,10 @@ function renderVariantBar(project, explicitHost){
 }
 
 /* ---------------------------------------------------------------
-   Visible entry point on the real room screen.
+   Visible entry point in the canvas three-dots menu.
 
    The legacy objectRoomsModal is skipped by the current project flow, so
-   the variants UI must be reachable directly from the main tool tiles.
+   the variants UI must be reachable directly from the room menu.
    --------------------------------------------------------------- */
 
 function ensureHomeVariantsModal(){
@@ -400,25 +400,34 @@ async function openVariantsFromRoomScreen(){
   renderVariantBar(project, document.getElementById('aceilVarHomeHost'));
 }
 
-function ensureVisibleVariantsButton(){
-  if(document.getElementById('aceilVariantsTile')) return;
-  var panel=document.getElementById('A·CEILToolPanel');
-  if(!panel) return;
-  var wrap=document.createElement('div');
-  wrap.id='aceilVariantsTile';
-  wrap.innerHTML=
-    '<button type="button" class="tile-btn tile-blue" style="width:100%;height:100%">'+
-      '<div class="tile-icon" style="font-size:25px">🔄</div>'+
-      '<div class="tile-btn-label">Варіанти</div>'+
-      '<div class="tile-sub">Основний / економ</div>'+
-    '</button>';
-  wrap.querySelector('button').addEventListener('click', openVariantsFromRoomScreen);
-  panel.appendChild(wrap);
+function ensureVisibleVariantsMenuAction(){
+  if(document.getElementById('aceilVariantsMenuAction')) return;
+  var menu=document.getElementById('A·CEILRoomMenuPopup');
+  if(!menu) return;
+  var button=document.createElement('button');
+  button.type='button';
+  button.id='aceilVariantsMenuAction';
+  button.className='rm-room-menu-action';
+  button.innerHTML=
+    '<svg viewBox="0 0 24 24" aria-hidden="true">'+
+      '<path d="M20 7h-7M20 7l-3-3M20 7l-3 3M4 17h7M4 17l3-3M4 17l3 3"/>'+
+      '<path d="M7 7a7 7 0 0 0 10 10"/>'+
+    '</svg>'+
+    '<span><b>Варіанти кошторису</b><small>Основний, економ і порівняння</small></span>';
+  button.addEventListener('click', function(){
+    try{
+      var closeFn=window['closeA\u00B7CEILRoomMenu'];
+      if(typeof closeFn==='function') closeFn();
+    }catch(_){}
+    openVariantsFromRoomScreen();
+  });
+  var separator=menu.querySelector('.rm-room-menu-separator');
+  menu.insertBefore(button, separator || menu.firstChild);
 }
 
 window.A_CEIL_OpenEstimateVariants=openVariantsFromRoomScreen;
-ensureVisibleVariantsButton();
-document.addEventListener('DOMContentLoaded', ensureVisibleVariantsButton, {once:true});
+ensureVisibleVariantsMenuAction();
+document.addEventListener('DOMContentLoaded', ensureVisibleVariantsMenuAction, {once:true});
 
 /* ---------------------------------------------------------------
    Bulk change modal
