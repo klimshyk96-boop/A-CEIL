@@ -57,6 +57,23 @@
 #wallEditModal .rwe2-always-hidden{display:none!important;}
 #wallEditModal #rwe2LivePreview{display:none!important;}
 
+/* Show the saved drawing color directly inside the selected preset field. */
+#wallEditModal .rwe-preset-toolbar{position:relative!important;}
+#wallEditModal .rwe-preset-toolbar #rwe2Preset{padding-left:43px!important;}
+#wallEditModal .rwe2-preset-color-dot{
+  position:absolute;
+  left:15px;
+  top:50%;
+  width:17px;
+  height:17px;
+  border-radius:50%;
+  transform:translateY(-50%);
+  border:2px solid #fff;
+  box-shadow:0 0 0 1px rgba(15,23,42,.2),0 2px 5px rgba(15,23,42,.18);
+  pointer-events:none;
+  z-index:2;
+}
+
 /* Compact footer: small delete action + one primary save action. */
 #wallEditModal .rwe2-footer{
   grid-template-columns:minmax(0,1fr)!important;
