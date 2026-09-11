@@ -45,7 +45,6 @@
 }
 #wallEditModal .modal:not(.rwe2-advanced-open) .rwe-preset-edit,
 #wallEditModal .modal:not(.rwe2-advanced-open) .rwe-preset-del,
-#wallEditModal .modal:not(.rwe2-advanced-open) #rwe2ProfileColorRow,
 #wallEditModal .modal:not(.rwe2-advanced-open) #rmCurtainIdHint,
 #wallEditModal .modal:not(.rwe2-advanced-open) #rwe2Name,
 #wallEditModal .modal:not(.rwe2-advanced-open) #rwe2Colors{
