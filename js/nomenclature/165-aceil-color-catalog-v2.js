@@ -92,7 +92,11 @@ window.ACEIL_COLOR_CATALOG=[
   {code:"M317",texture:"mat",label:"Мат",wide510:false,insert:false},
   {code:"M604",texture:"mat",label:"Мат",wide510:false,insert:false},
   {code:"M608",texture:"mat",label:"Мат",wide510:false,insert:false},
-  {code:"M303",texture:"mat",label:"Мат",wide510:true,insert:true},
+  {code:"M303",texture:"mat",label:"Мат",wide510:true,insert:true,filmWidths:[
+    {nominal:3.6,max:3.6,priceKey:"narrow"},
+    {nominal:5.1,max:5.6,priceKey:"wide"},
+    {nominal:5.8,max:6.2,priceKey:"extraWide"}
+  ]},
   {code:"M305",texture:"mat",label:"Мат",wide510:false,insert:false},
   {code:"M313",texture:"mat",label:"Мат",wide510:false,insert:false},
   {code:"M319",texture:"mat",label:"Мат",wide510:false,insert:false},
@@ -135,7 +139,7 @@ window.ACEIL_COLOR_CATALOG=[
 
 window.ACEIL_FILM_PRICING={
   lak:{narrow:380,wide:420},
-  mat:{narrow:380,wide:420},
+  mat:{narrow:380,wide:420,extraWide:420},
   satin:{narrow:380,wide:420}
 };
 window.ACEIL_TEXTURE_LABELS={lak:"Глянець",mat:"Мат",satin:"Сатин"};
