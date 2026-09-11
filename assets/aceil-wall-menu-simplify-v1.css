@@ -1,10 +1,4 @@
-/* A-CEIL: simplify "Розташування елемента" (#wallEditModal) modal.
-   Hides secondary fields (name-on-plan, color-on-plan) behind a small
-   gear toggle placed in the top-right corner of the modal.
-
-   NOTE: this modal has NO wrapper header (.rwe2-head) and NO close-X
-   (.rwe2-x) — the title is a plain <h3>, and labels are plain <label>
-   with no class. Selectors below target that real structure. */
+/* A-CEIL: secondary wall-element fields live under the gear toggle. */
 
 #wallEditModal .modal{
   position:relative;
@@ -33,6 +27,12 @@
   cursor:pointer;
   z-index:2;
 }
+#wallEditModal .rwe2-head .rwe2-adv-toggle{
+  position:static!important;
+  margin-left:auto!important;
+  flex:0 0 36px!important;
+}
+#wallEditModal .rwe2-head > div:first-child{min-width:0;}
 #wallEditModal .rwe2-adv-toggle.active{
   background:#eff6ff!important;
   color:#2563eb!important;
