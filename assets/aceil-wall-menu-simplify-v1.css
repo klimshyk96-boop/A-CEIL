@@ -43,20 +43,38 @@
 #wallEditModal .modal:not(.rwe2-advanced-open) .rwe2-only-adv{
   display:none!important;
 }
+#wallEditModal .modal:not(.rwe2-advanced-open) .rwe-preset-edit,
+#wallEditModal .modal:not(.rwe2-advanced-open) .rwe-preset-del,
+#wallEditModal .modal:not(.rwe2-advanced-open) #rwe2ProfileColorRow,
+#wallEditModal .modal:not(.rwe2-advanced-open) #rmCurtainIdHint,
+#wallEditModal .modal:not(.rwe2-advanced-open) #rwe2Name,
+#wallEditModal .modal:not(.rwe2-advanced-open) #rwe2Colors{
+  display:none!important;
+}
+#wallEditModal .modal:not(.rwe2-advanced-open) label.rwe2-label:has(+ #rwe2Name),
+#wallEditModal .modal:not(.rwe2-advanced-open) label.rwe2-label:has(+ #rwe2Colors){
+  display:none!important;
+}
 #wallEditModal .rwe2-always-hidden{display:none!important;}
 #wallEditModal #rwe2LivePreview{display:none!important;}
 
 /* Compact footer: small delete action + one primary save action. */
 #wallEditModal .rwe2-footer{
-  grid-template-columns:48px minmax(0,1fr)!important;
+  grid-template-columns:minmax(0,1fr)!important;
 }
 #wallEditModal .rwe2-footer .rwe2-del{
-  width:48px!important;
-  min-width:48px!important;
-  padding:0!important;
-  font-size:18px!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:46px!important;
+  padding:10px 14px!important;
+  font-size:14px!important;
+  background:#fff1f2!important;
+  color:#be123c!important;
+  border:1px solid #fecdd3!important;
+  box-shadow:none!important;
 }
-#wallEditModal .rwe2-footer .rwe2-ok{grid-column:2!important;}
+#wallEditModal .rwe2-footer .rwe2-cancel{display:none!important;}
+#wallEditModal .rwe2-footer .rwe2-ok{grid-column:1!important;width:100%!important;}
 
 /* Keep the user's four original graphical position buttons. */
 #wallEditModal #rwe2PositionGrid.rwe-visual{
