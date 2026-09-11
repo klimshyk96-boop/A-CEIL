@@ -675,7 +675,7 @@ function openBulkModal(project, baseVariantId){
   var filmInactiveSeriesList=filmSeriesList.filter(function(s){ return s && s.active===false; });
   filmCatEl.innerHTML =
     '<div class="aceilv-cat" data-cat="film">'+
-      '<div class="aceilv-cat-title">\u041F\u043B\u0456\u0432\u043A\u0430 / \u043F\u043E\u043B\u043E\u0442\u043D\u043E'+(cats.filmFound?'':' <span style="font-weight:600;color:#94a3b8;font-size:11px">(\u0433\u0440\u0443\u043F\u0443 \u043F\u043B\u0456\u0432\u043A\u0438 \u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E \u2014 \u0431\u0443\u0434\u0435 \u0441\u0442\u0432\u043E\u0440\u0435\u043D\u043E \u043D\u043E\u0432\u0443)</span>')+'</div>'+
+      '<div class="aceilv-cat-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span>\u041F\u043B\u0456\u0432\u043A\u0430 / \u043F\u043E\u043B\u043E\u0442\u043D\u043E'+(cats.filmFound?'':' <span style="font-weight:600;color:#94a3b8;font-size:11px">(\u0433\u0440\u0443\u043F\u0443 \u043F\u043B\u0456\u0432\u043A\u0438 \u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E \u2014 \u0431\u0443\u0434\u0435 \u0441\u0442\u0432\u043E\u0440\u0435\u043D\u043E \u043D\u043E\u0432\u0443)</span>')+'</span><button type="button" id="aceilvFilmPricesBtn" class="aceilv-btn-secondary" style="padding:7px 10px;font-size:11px;white-space:nowrap">\u270F\uFE0F \u0426\u0456\u043D\u0438</button></div>'+
       '<div class="aceilv-mode-row" data-mode-row>'+
         '<span class="aceilv-mode-btn active" data-mode="keep">\u0411\u0435\u0437 \u0437\u043C\u0456\u043D</span>'+
         '<span class="aceilv-mode-btn" data-mode="replace">\u0417\u0430\u043C\u0456\u043D\u0438\u0442\u0438 \u043F\u043B\u0456\u0432\u043A\u0443</span>'+
@@ -687,6 +687,7 @@ function openBulkModal(project, baseVariantId){
           filmActiveSeriesList.map(function(s){ return '<span class="aceilv-mode-btn" data-series="'+esc(s.id)+'">'+esc(s.name)+(s.manufacturer?(' <small style="opacity:.6">'+esc(s.manufacturer)+'</small>'):'')+'</span>'; }).join('')+
           filmInactiveSeriesList.map(function(s){ return '<span class="aceilv-mode-btn aceilv-film-series-disabled" title="\u041D\u0435\u043C\u0430\u0454 \u0434\u0430\u043D\u0438\u0445 \u0443 \u043A\u0430\u0442\u0430\u043B\u043E\u0437\u0456">'+esc(s.name)+' (\u043D\u0435\u043C\u0430\u0454 \u0434\u0430\u043D\u0438\u0445)</span>'; }).join('')+
         '</div>'+
+        '<div id="aceilvFilmPriceEditor" style="display:none;margin:8px 0;padding:10px;border:1px solid #dbe4f0;border-radius:12px;background:#f8fafc"></div>'+
         '<div class="aceilv-field" style="margin:8px 0 0"><label>\u041F\u043E\u043F\u0443\u043B\u044F\u0440\u043D\u0456</label><div class="aceilv-mode-row" id="aceilvFilmPopular"></div></div>'+
         '<div class="aceilv-field" style="margin-bottom:0"><label>\u041F\u043E\u0448\u0443\u043A</label><input id="aceilvFilmSearch" type="text" placeholder="\u041D\u0430\u043F\u0440. 402, \u0433\u043B\u044F\u043D\u0435\u0446\u044C, \u043C\u0430\u0442\u2026"></div>'+
         '<div class="aceilv-mode-row" id="aceilvFilmTextureRow" style="margin-top:8px"></div>'+
@@ -711,9 +712,43 @@ function openBulkModal(project, baseVariantId){
   var filmGrid=document.getElementById('aceilvFilmGrid');
   var filmSearchInp=document.getElementById('aceilvFilmSearch');
   var filmPopularEl=document.getElementById('aceilvFilmPopular');
+  var filmPriceEditor=document.getElementById('aceilvFilmPriceEditor');
   var filmActiveTexture='';
 
   function filmColorsForCurrentSeries(){ return filmState.seriesId ? ENGINE.filmCatalogForSeries(filmState.seriesId) : []; }
+  function renderFilmPriceEditor(){
+    if(!filmState.seriesId){ filmPriceEditor.innerHTML=''; return; }
+    var colors=filmColorsForCurrentSeries();
+    var textures=[]; colors.forEach(function(c){ if(c&&textures.indexOf(c.texture)<0) textures.push(c.texture); });
+    var pricing=ENGINE.filmPricingForSeries(filmState.seriesId);
+    var keys=[];
+    colors.forEach(function(c){ ENGINE.filmWidthCandidates(c).forEach(function(w){ if(!keys.some(function(x){return x.priceKey===w.priceKey;})) keys.push(w); }); });
+    keys.sort(function(a,b){return a.max-b.max;});
+    var rows='<div style="display:grid;grid-template-columns:repeat('+Math.max(1,keys.length)+',minmax(74px,1fr));gap:6px;margin-bottom:9px">'+keys.map(function(w){
+      var value=0; for(var i=0;i<textures.length;i++){ value=num(pricing[textures[i]]&&pricing[textures[i]][w.priceKey]); if(value>0) break; }
+      return '<label style="font-size:10px;font-weight:800;color:#64748b">до '+esc(String(w.max))+' м<input type="number" min="0" step="1" value="'+value+'" data-price-key="'+esc(w.priceKey)+'" style="width:100%;margin-top:3px;padding:8px;border:1px solid #cbd5e1;border-radius:9px;font-weight:800"> грн/м\u00B2</label>';
+    }).join('')+'</div>';
+    filmPriceEditor.innerHTML='<div style="font-size:12px;font-weight:900;margin-bottom:8px">\u0426\u0456\u043D\u0438 '+esc((ENGINE.filmSeriesRegistry().find(function(s){return s.id===filmState.seriesId;})||{}).name||filmState.seriesId)+'</div>'+rows+'<button type="button" id="aceilvFilmPricesSave" style="width:100%;padding:9px;border:0;border-radius:10px;background:#2563eb;color:white;font-weight:900">\u0417\u0431\u0435\u0440\u0435\u0433\u0442\u0438 \u0446\u0456\u043D\u0438</button><div style="font-size:10px;color:#64748b;margin-top:6px">\u0417\u0431\u0435\u0440\u0456\u0433\u0430\u044E\u0442\u044C\u0441\u044F \u043D\u0430 \u0446\u044C\u043E\u043C\u0443 \u043F\u0440\u0438\u0441\u0442\u0440\u043E\u0457.</div>';
+    var saveBtn=document.getElementById('aceilvFilmPricesSave');
+    if(saveBtn) saveBtn.onclick=function(){
+      var next={};
+      textures.forEach(function(t){ next[t]={}; });
+      filmPriceEditor.querySelectorAll('[data-price-key]').forEach(function(inp){
+        var k=inp.getAttribute('data-price-key'),value=Math.max(0,num(inp.value));
+        textures.forEach(function(t){ next[t][k]=value; });
+      });
+      if(typeof window.ACEILSetFilmPricing==='function') window.ACEILSetFilmPricing(filmState.seriesId,next);
+      toast('\u2713 \u0426\u0456\u043D\u0438 \u043F\u043B\u0456\u0432\u043A\u0438 \u0437\u0431\u0435\u0440\u0435\u0436\u0435\u043D\u043E');
+      filmPriceEditor.style.display='none'; updatePreview();
+    };
+  }
+  document.getElementById('aceilvFilmPricesBtn').addEventListener('click',function(){
+    var opening=filmPriceEditor.style.display==='none';
+    renderFilmPriceEditor();
+    filmPriceEditor.style.display=opening?'block':'none';
+    if(opening) filmPickerEl.style.display='block';
+    else if(filmState.mode!=='replace') filmPickerEl.style.display='none';
+  });
   function filmPopularCodes(){
     try{
       var saved=JSON.parse(localStorage.getItem('aceil_film_popular_codes_v1')||'null');
@@ -722,8 +757,9 @@ function openBulkModal(project, baseVariantId){
     return Array.isArray(window.ACEIL_POPULAR_CODES) ? window.ACEIL_POPULAR_CODES : [];
   }
   function filmChipHtml(c){
-    var marks=[c.wide510?'360/560':'360'];
-    return '<button type="button" class="aceilv-mode-btn aceilv-film-chip'+(c.code===filmState.code?' active':'')+'" data-code="'+esc(c.code)+'">'+esc(c.code)+'<small>'+marks.join('')+'</small></button>';
+    var marks=ENGINE.filmWidthCandidates(c).map(function(w){return Math.round(w.max*100);});
+    var title=c.colorName?(' title="'+esc(c.colorName)+'"'):'';
+    return '<button type="button" class="aceilv-mode-btn aceilv-film-chip'+(c.code===filmState.code?' active':'')+'" data-code="'+esc(c.code)+'"'+title+'>'+esc(c.code)+(c.colorName?('<small style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c.colorName)+'</small>'):'')+'<small>'+marks.join('/')+'</small></button>';
   }
   function bindFilmChips(host){
     host.querySelectorAll('[data-code]').forEach(function(btn){
@@ -767,7 +803,7 @@ function openBulkModal(project, baseVariantId){
     var colors=filmColorsForCurrentSeries();
     var q=(filmSearchInp.value||'').trim().toLowerCase();
     var list;
-    if(q) list=colors.filter(function(c){ return c.code.toLowerCase().indexOf(q)>=0; });
+    if(q) list=colors.filter(function(c){ return c.code.toLowerCase().indexOf(q)>=0 || String(c.colorName||'').toLowerCase().indexOf(q)>=0; });
     else if(filmActiveTexture) list=colors.filter(function(c){ return c.texture===filmActiveTexture; });
     else list=[];
     if(!list.length){
@@ -786,6 +822,8 @@ function openBulkModal(project, baseVariantId){
     btn.addEventListener('click', function(){
       filmState.seriesId=btn.getAttribute('data-series');
       filmState.code=null; filmActiveTexture=''; filmSearchInp.value='';
+      filmPriceEditor.style.display='none';
+      if(filmState.mode!=='replace') filmPickerEl.style.display='none';
       filmSeriesRow.querySelectorAll('[data-series]').forEach(function(b){ b.classList.toggle('active', b===btn); });
       renderFilmPopular(); renderFilmTextures(); renderFilmGrid();
       updatePreview();
@@ -852,6 +890,12 @@ function openBulkModal(project, baseVariantId){
     opts.name=document.getElementById('aceilvName').value;
     if(!opts.roomIds.length){ toast('\u041E\u0431\u0435\u0440\u0456\u0442\u044C \u0445\u043E\u0447\u0430 \u0431 \u043E\u0434\u043D\u0443 \u043A\u0456\u043C\u043D\u0430\u0442\u0443'); return; }
     if(opts.changes.film.mode==='replace' && !opts.changes.film.code){ toast('\u041E\u0431\u0435\u0440\u0456\u0442\u044C \u043A\u043E\u043B\u0456\u0440 \u043F\u043B\u0456\u0432\u043A\u0438'); return; }
+    if(opts.changes.film.mode==='replace'){
+      var priceEntry=ENGINE.filmCatalogForSeries(opts.changes.film.seriesId).find(function(c){return c.code===opts.changes.film.code;});
+      var texturePrices=ENGINE.filmPricingForSeries(opts.changes.film.seriesId)[priceEntry&&priceEntry.texture]||{};
+      var missingPrice=!priceEntry || ENGINE.filmWidthCandidates(priceEntry).some(function(w){return !(num(texturePrices[w.priceKey])>0);});
+      if(missingPrice){ toast('\u0421\u043F\u043E\u0447\u0430\u0442\u043A\u0443 \u0437\u0430\u0434\u0430\u0439\u0442\u0435 \u0446\u0456\u043D\u0438 \u0434\u043B\u044F \u0446\u0456\u0454\u0457 \u043F\u043B\u0456\u0432\u043A\u0438'); return; }
+    }
     var hasChange=CAT_DEFS.some(function(def){ return opts.changes[def.key].mode!=='keep'; }) || opts.changes.film.mode!=='keep';
     if(!hasChange){ toast('\u041E\u0431\u0435\u0440\u0456\u0442\u044C \u0445\u043E\u0447\u0430 \u043E\u0434\u043D\u0443 \u0437\u043C\u0456\u043D\u0443'); return; }
     var proj=findActiveProject(); if(!proj) return;

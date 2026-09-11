@@ -139,6 +139,7 @@ function filmCatalogForSeries(seriesId){
   return [];
 }
 function filmPricingForSeries(seriesId){
+  if(typeof window.ACEILGetFilmPricing==='function') return window.ACEILGetFilmPricing(seriesId);
   var bySeries=window.ACEIL_FILM_PRICING_BY_SERIES || {};
   if(bySeries[seriesId]) return bySeries[seriesId];
   if(seriesId==='premium' && window.ACEIL_FILM_PRICING) return window.ACEIL_FILM_PRICING;
@@ -201,9 +202,18 @@ function roomAreaM2(room){
    roll, 500-560cm range -> the 5.1m/560cm roll (only when the color actually
    has a wide510 product), 400cm is never returned. Returns null when nothing
    fits, so the caller can warn instead of pricing the wrong width. */
+function filmWidthCandidates(entry){
+  if(entry && Array.isArray(entry.filmWidths) && entry.filmWidths.length){
+    return entry.filmWidths.map(function(w){ return {
+      nominal:num(w.nominal), max:num(w.max)||num(w.nominal), priceKey:w.priceKey||'narrow'
+    }; }).filter(function(w){ return w.nominal>0 && w.max>0; });
+  }
+  var out=[Object.assign({},FILM_WIDTH_NARROW)];
+  if(entry && entry.wide510) out.push(Object.assign({},FILM_WIDTH_WIDE));
+  return out;
+}
 function pickFilmWidthCandidate(entry, neededWidthM){
-  var candidates=[Object.assign({},FILM_WIDTH_NARROW)];
-  if(entry && entry.wide510) candidates.push(Object.assign({},FILM_WIDTH_WIDE));
+  var candidates=filmWidthCandidates(entry);
   if(!(neededWidthM>0)) return candidates[0];
   var fitting=candidates.filter(function(c){ return c.max+1e-6>=neededWidthM; });
   if(!fitting.length) return null;
@@ -253,6 +263,8 @@ function applyFilmChange(items, groups, change, room, warnings){
     return;
   }
   var pricing=filmPricingForSeries(change.seriesId)[entry.texture] || {narrow:0,wide:0};
+  var selectedPrice=num(pricing[candidate.priceKey]);
+  if(!(selectedPrice>0) && warnings) warnings.push('\u00AB'+roomName+'\u00BB: для '+seriesName+' '+change.code+' не задано ціну за ширину '+filmDisplayWidthLabel(candidate.nominal)+' м. Відкрийте «Ціни плівки».');
   var areaM2=roomAreaM2(room);
 
   for(var i=items.length-1;i>=0;i--){ if(existing.indexOf(items[i])>=0) items.splice(i,1); }
@@ -266,8 +278,7 @@ function applyFilmChange(items, groups, change, room, warnings){
     var g=groups.find(function(g){ return String(g.id)===String(gid); });
     if(g) g.name=groupLabel;
   }
-  var available=[Object.assign({},FILM_WIDTH_NARROW)];
-  if(entry.wide510) available.push(Object.assign({},FILM_WIDTH_WIDE));
+  var available=filmWidthCandidates(entry);
   available.forEach(function(width){
     var selected=Math.abs(width.nominal-candidate.nominal)<1e-6;
     items.push({
@@ -831,6 +842,7 @@ window.A_CEIL_EstimateVariants = {
   filmSeriesRegistry: filmSeriesRegistry,
   filmCatalogForSeries: filmCatalogForSeries,
   filmPricingForSeries: filmPricingForSeries,
+  filmWidthCandidates: filmWidthCandidates,
   filmTextureLabels: filmTextureLabels,
   pickFilmWidthCandidate: pickFilmWidthCandidate,
   requiredFilmWidthMetersFromRoom: requiredFilmWidthMetersFromRoom,
