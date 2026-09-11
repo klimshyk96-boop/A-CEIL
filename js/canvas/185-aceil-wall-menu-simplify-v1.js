@@ -59,11 +59,11 @@
     var cancel = modal.querySelector(".rwe2-footer .rwe2-cancel");
     if (cancel) cancel.classList.add("rwe2-always-hidden");
     var del = modal.querySelector(".rwe2-footer .rwe2-del");
-    if (del && del.dataset.compact !== "1"){
-      del.dataset.compact = "1";
+    if (del && del.dataset.compact !== "2"){
+      del.dataset.compact = "2";
       del.setAttribute("aria-label", "Видалити елемент");
       del.title = "Видалити елемент";
-      del.textContent = "🗑";
+      del.textContent = "🗑 Видалити елемент";
     }
   }
 
@@ -170,9 +170,22 @@
     }
   }, true);
 
+  function watchModal(){
+    var modal=byId("wallEditModal");
+    if(!modal||modal.dataset.simplifyObserved==="1"||typeof MutationObserver!=="function")return;
+    modal.dataset.simplifyObserved="1";
+    var queued=false;
+    new MutationObserver(function(){
+      if(queued)return;
+      queued=true;
+      setTimeout(function(){queued=false;applyState();},0);
+    }).observe(modal,{childList:true,subtree:true});
+  }
+
   if (document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", function(){ setTimeout(applyState, 300); }, { once: true });
+    document.addEventListener("DOMContentLoaded", function(){ watchModal(); setTimeout(applyState, 300); }, { once: true });
   } else {
+    watchModal();
     setTimeout(applyState, 300);
   }
 })();
