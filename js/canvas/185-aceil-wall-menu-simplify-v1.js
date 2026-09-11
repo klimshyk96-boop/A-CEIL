@@ -12,19 +12,29 @@
     try { localStorage.setItem(STORAGE_KEY, on ? "1" : "0"); } catch(e){}
   }
 
+  // The real modal has plain <label> tags with no class/id, so we match
+  // by their text content instead of a hypothetical .rwe2-label class.
   function findLabelByText(root, text){
-    var labels = root.querySelectorAll(".rwe2-label");
+    var labels = root.querySelectorAll("label");
     for (var i = 0; i < labels.length; i++){
       if (labels[i].textContent.trim() === text) return labels[i];
     }
     return null;
   }
 
-  function tagHiddenLabels(modal){
-    var nameLabel = findLabelByText(modal, "Назва на макеті");
-    if (nameLabel) nameLabel.classList.add("rwe2-only-adv");
-    var colorLabel = findLabelByText(modal, "Колір на макеті");
-    if (colorLabel) colorLabel.classList.add("rwe2-only-adv");
+  // Tags a label AND the field element right after it (input / color row)
+  // so both can be hidden together via CSS.
+  function tagField(modal, labelText){
+    var label = findLabelByText(modal, labelText);
+    if (!label) return;
+    label.classList.add("rwe2-only-adv");
+    var sib = label.nextElementSibling;
+    if (sib) sib.classList.add("rwe2-only-adv");
+  }
+
+  function tagHiddenFields(modal){
+    tagField(modal, "Назва на макеті"); // label + #wallEditType
+    tagField(modal, "Колір на макеті"); // label + color-row div (#wallEditColor + swatches)
   }
 
   var GEAR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -32,7 +42,9 @@
     '<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>' +
     '</svg>';
 
-  function ensureToggleBtn(head){
+  // No wrapper header exists in this modal — the button is absolutely
+  // positioned (see CSS) inside .modal itself, next to the plain <h3>.
+  function ensureToggleBtn(box){
     var btn = byId("rwe2AdvToggle");
     if (btn) return btn;
     btn = document.createElement("button");
@@ -47,9 +59,7 @@
       setAdvanced(!isAdvancedOn());
       applyState();
     };
-    var xBtn = head.querySelector(".rwe2-x");
-    if (xBtn && xBtn.parentNode === head) head.insertBefore(btn, xBtn);
-    else head.appendChild(btn);
+    box.appendChild(btn);
     return btn;
   }
 
@@ -58,11 +68,9 @@
     if (!modal) return;
     var box = modal.querySelector(".modal");
     if (!box) return;
-    var head = box.querySelector(".rwe2-head");
-    if (!head) return;
 
-    tagHiddenLabels(box);
-    var btn = ensureToggleBtn(head);
+    tagHiddenFields(box);
+    var btn = ensureToggleBtn(box);
 
     var on = isAdvancedOn();
     box.classList.toggle("rwe2-advanced-open", on);
@@ -87,7 +95,7 @@
   }
 
   // Also keep state correct if other scripts rebuild bits of the modal
-  // while it's already open (e.g. preset toolbar, break-option row).
+  // while it's already open (e.g. preset toolbar, preset select).
   document.addEventListener("click", function(e){
     if (e.target && e.target.closest && e.target.closest("#wallEditModal") && e.target.id !== "rwe2AdvToggle"){
       setTimeout(applyState, 0);
