@@ -211,8 +211,9 @@ if(typeof oldLoadRoomToCanvas==='function' && !oldLoadRoomToCanvas.__aceilVarian
     '.aceilv-cmp-table td.num{text-align:right;font-weight:800;}' +
     '.aceilv-cmp-table tr.total td{font-weight:950;color:#0f172a;border-top:2px solid #e2e8f0;}' +
     '.aceilv-cmp-table tr.save td{color:#15803d;font-weight:900;}' +
-    '.aceilv-film-chip{flex-direction:column;line-height:1.25;}' +
-    '.aceilv-film-chip small{opacity:.65;font-size:9.5px;font-weight:800;}' +
+    '.aceilv-film-chip{display:flex!important;flex-direction:column!important;align-items:center;justify-content:center;gap:2px;line-height:1.15;min-width:82px!important;max-width:120px;overflow:hidden;padding:8px 4px!important;}' +
+    '#aceilvFilmGrid .aceilv-film-chip{min-width:0!important;width:100%;max-width:100%;}' +
+    '.aceilv-film-chip small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.68;font-size:9px;font-weight:800;}' +
     '.aceilv-film-series-disabled{opacity:.45;cursor:not-allowed;}' +
     '.aceilv-cmp-subtitle{font-weight:900;font-size:13px;color:#1e293b;margin:14px 0 4px;}' +
     '.aceilv-nom-banner{margin:8px 10px 2px;padding:9px 11px;border-radius:11px;background:#eef2ff;color:#3730a3;font-size:12px;font-weight:800;}' +
@@ -691,7 +692,7 @@ function openBulkModal(project, baseVariantId){
         '<div class="aceilv-field" style="margin:8px 0 0"><label>\u041F\u043E\u043F\u0443\u043B\u044F\u0440\u043D\u0456</label><div class="aceilv-mode-row" id="aceilvFilmPopular"></div></div>'+
         '<div class="aceilv-field" style="margin-bottom:0"><label>\u041F\u043E\u0448\u0443\u043A</label><input id="aceilvFilmSearch" type="text" placeholder="\u041D\u0430\u043F\u0440. 402, \u0433\u043B\u044F\u043D\u0435\u0446\u044C, \u043C\u0430\u0442\u2026"></div>'+
         '<div class="aceilv-mode-row" id="aceilvFilmTextureRow" style="margin-top:8px"></div>'+
-        '<div id="aceilvFilmGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;max-height:190px;overflow:auto;margin-top:6px"></div>'+
+        '<div id="aceilvFilmGrid" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-height:220px;overflow:auto;margin-top:6px"></div>'+
         '<div id="aceilvFilmInfo" style="margin-top:8px;font-size:12px;font-weight:700;color:#475569;display:flex;flex-direction:column;gap:2px"></div>'+
       '</div>'+
     '</div>';
@@ -701,6 +702,10 @@ function openBulkModal(project, baseVariantId){
   filmModeButtons.forEach(function(btn){
     btn.addEventListener('click', function(){
       filmState.mode=btn.getAttribute('data-mode');
+      if(filmState.mode==='replace' && !filmState.code){
+        var firstFilm=filmState.seriesId && ENGINE.filmCatalogForSeries(filmState.seriesId)[0];
+        if(firstFilm){ filmState.code=firstFilm.code; filmActiveTexture=firstFilm.texture; renderFilmPopular(); renderFilmTextures(); renderFilmGrid(); }
+      }
       filmModeButtons.forEach(function(b){ b.classList.toggle('active', b===btn); });
       filmPickerEl.style.display = filmState.mode==='replace' ? 'block' : 'none';
       updatePreview();
@@ -793,9 +798,13 @@ function openBulkModal(project, baseVariantId){
     filmTextureRow.querySelectorAll('[data-texture]').forEach(function(btn){
       btn.addEventListener('click', function(){
         filmActiveTexture=btn.getAttribute('data-texture');
+        var firstOfTexture=colors.find(function(c){return c.texture===filmActiveTexture;});
+        if(firstOfTexture) filmState.code=firstOfTexture.code;
         filmSearchInp.value='';
         filmTextureRow.querySelectorAll('[data-texture]').forEach(function(b){ b.classList.toggle('active', b===btn); });
         renderFilmGrid();
+        renderFilmPopular();
+        updatePreview();
       });
     });
   }
@@ -821,7 +830,9 @@ function openBulkModal(project, baseVariantId){
   filmSeriesRow.querySelectorAll('[data-series]').forEach(function(btn){
     btn.addEventListener('click', function(){
       filmState.seriesId=btn.getAttribute('data-series');
-      filmState.code=null; filmActiveTexture=''; filmSearchInp.value='';
+      var firstSeriesColor=ENGINE.filmCatalogForSeries(filmState.seriesId)[0]||null;
+      filmState.code=firstSeriesColor?firstSeriesColor.code:null;
+      filmActiveTexture=firstSeriesColor?firstSeriesColor.texture:''; filmSearchInp.value='';
       filmPriceEditor.style.display='none';
       if(filmState.mode!=='replace') filmPickerEl.style.display='none';
       filmSeriesRow.querySelectorAll('[data-series]').forEach(function(b){ b.classList.toggle('active', b===btn); });
@@ -875,6 +886,7 @@ function openBulkModal(project, baseVariantId){
       }else if(filmInfoEl){
         filmInfoEl.innerHTML='';
       }
+      allNotes=allNotes.filter(function(v,i,a){return v&&a.indexOf(v)===i;});
       var notesEl=document.getElementById('aceilvNotes');
       notesEl.innerHTML = allNotes.length ? allNotes.map(function(a){ return '<div class="aceilv-note">'+esc(a)+'</div>'; }).join('') : '';
     }catch(e){
