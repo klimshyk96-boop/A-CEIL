@@ -65,7 +65,7 @@
     });
   }
   function topologyFor(list){
-    var vertices=points(),count=vertices.length,tolerance=3,corners=0;
+    var vertices=points(),count=vertices.length,tolerance=3,corners=0,breaks=0;
     if(count>1){
       for(var i=0;i<count;i++){
         var prev=(i-1+count)%count,next=i;
@@ -80,7 +80,17 @@
         if(prevTouches&&nextTouches)corners++;
       }
     }
-    return {corners:corners,breaks:Math.max(0,2*list.length-2*corners)};
+    list.forEach(function(mark){
+      if(!mark)return;
+      if(mark.forceBreaks===true){breaks+=2;return;}
+      if(mark.anchor==="full")return;
+      var side=sideLengthCm(Number(mark.sideIndex)||0);
+      if(!(side>0)){breaks+=2;return;}
+      var start=Number(mark.offsetCm)||0,end=start+(Number(mark.lenCm)||0);
+      if(start>tolerance)breaks++;
+      if(end<side-tolerance)breaks++;
+    });
+    return {corners:corners,breaks:breaks};
   }
   function corniceTopology(color){return topologyFor(eligibleCornices(color))}
 
