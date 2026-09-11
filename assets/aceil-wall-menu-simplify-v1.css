@@ -43,3 +43,62 @@
 #wallEditModal .modal:not(.rwe2-advanced-open) .rwe2-only-adv{
   display:none!important;
 }
+#wallEditModal .rwe2-always-hidden{display:none!important;}
+#wallEditModal #rwe2LivePreview{display:none!important;}
+
+/* Compact footer: small delete action + one primary save action. */
+#wallEditModal .rwe2-footer{
+  grid-template-columns:48px minmax(0,1fr)!important;
+}
+#wallEditModal .rwe2-footer .rwe2-del{
+  width:48px!important;
+  min-width:48px!important;
+  padding:0!important;
+  font-size:18px!important;
+}
+#wallEditModal .rwe2-footer .rwe2-ok{grid-column:2!important;}
+
+/* Keep the user's four original graphical position buttons. */
+#wallEditModal #rwe2PositionGrid.rwe-visual{
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+}
+
+/* Compact cornice break mode. */
+#wallEditModal #rwe2ForceBreaksRow.rwe2-break-mode{
+  display:block;
+  margin:12px 0 4px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+}
+#wallEditModal .rwe2-break-title{
+  margin:0 0 7px;
+  color:#64748b;
+  font-size:10.5px;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+}
+#wallEditModal .rwe2-break-buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
+#wallEditModal .rwe2-break-buttons button{
+  min-height:42px!important;
+  padding:8px!important;
+  border-radius:14px!important;
+  background:#f8fafc!important;
+  color:#334155!important;
+  border:1.5px solid #e2e8f0!important;
+  box-shadow:none!important;
+}
+#wallEditModal .rwe2-break-buttons button.active{
+  background:linear-gradient(135deg,#2563eb,#6366f1)!important;
+  color:#fff!important;
+  border-color:transparent!important;
+}
+
+@media(max-width:420px){
+  #wallEditModal #rwe2PositionGrid.rwe-visual{grid-template-columns:1fr 1fr!important;}
+}
