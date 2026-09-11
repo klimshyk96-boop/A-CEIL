@@ -2,7 +2,7 @@
 (function(){
 "use strict";
 function els(){return{wrap:document.getElementById("A·CEILRoomMenu"),toggle:document.getElementById("A·CEILRoomMenuToggle"),popup:document.getElementById("A·CEILRoomMenuPopup")};}
-function close(){var e=els();if(!e.popup)return;e.popup.hidden=true;if(e.toggle)e.toggle.setAttribute("aria-expanded","false");}
+function close(){var e=els();if(!e.popup)return;e.popup.hidden=true;document.documentElement.classList.remove("aceil-room-menu-open");if(e.toggle)e.toggle.setAttribute("aria-expanded","false");}
 function syncCanvasAction(){
   var api=window.A·CEIL&&window.A·CEIL.ToolPanel;
   var collapsed=!!(api&&typeof api.isCollapsed==="function"&&api.isCollapsed());
@@ -28,7 +28,23 @@ function toggleCleanView(){
   try{if(typeof requestDraw==="function")requestDraw();else if(typeof draw==="function")draw();}catch(e){window.__diagSilent&&window.__diagSilent(e)}
   return window.A·CEILCanvasCleanView;
 }
-function toggle(ev){if(ev){ev.preventDefault();ev.stopPropagation();}var e=els();if(!e.popup)return false;var open=e.popup.hidden;e.popup.hidden=!open;if(e.toggle)e.toggle.setAttribute("aria-expanded",open?"true":"false");if(open)syncCanvasAction();return open;}
+function toggle(ev){if(ev){ev.preventDefault();ev.stopPropagation();}var e=els();if(!e.popup)return false;var open=e.popup.hidden;e.popup.hidden=!open;document.documentElement.classList.toggle("aceil-room-menu-open",open);if(e.toggle)e.toggle.setAttribute("aria-expanded",open?"true":"false");if(open)syncCanvasAction();return open;}
+function installPopupScroll(){
+  var e=els();if(!e.popup||e.popup.dataset.touchScrollFixed==="1")return;
+  e.popup.dataset.touchScrollFixed="1";
+  var style=document.getElementById("aceilRoomMenuScrollFix");
+  if(!style){
+    style=document.createElement("style");style.id="aceilRoomMenuScrollFix";
+    style.textContent='[id="A·CEILRoomMenuPopup"]{max-height:min(70dvh,420px)!important;overflow-x:hidden!important;overflow-y:scroll!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;touch-action:pan-y!important}html.aceil-room-menu-open,html.aceil-room-menu-open body{overscroll-behavior:none!important}';
+    document.head.appendChild(style);
+  }
+  e.popup.addEventListener("touchmove",function(ev){ev.stopPropagation();},{passive:true});
+  document.addEventListener("touchmove",function(ev){
+    var current=els();if(!current.popup||current.popup.hidden)return;
+    if(current.popup.contains(ev.target))return;
+    ev.preventDefault();
+  },{passive:false});
+}
 function validPoints(){try{return Array.isArray(window.pts)?window.pts.filter(function(p){return p&&isFinite(Number(p.x))&&isFinite(Number(p.y));}):(typeof pts!=="undefined"&&Array.isArray(pts)?pts.filter(function(p){return p&&isFinite(Number(p.x))&&isFinite(Number(p.y));}):[]);}catch(e){return[];}}
 function showWholeRoom(){
   close();
@@ -59,5 +75,6 @@ window.addEventListener("A·CEIL:tool-panel-change",syncCanvasAction);
 window.A·CEILCanvasCleanView=readCleanView();
 window.toggleA·CEILRoomMenu=toggle;window.closeA·CEILRoomMenu=close;window.A·CEILShowWholeRoom=showWholeRoom;window.A·CEILToggleCanvasMode=toggleCanvasMode;window.A·CEILToggleCleanCanvasView=toggleCleanView;window.A·CEILDeleteCurrentRoom=deleteCurrent;
 window.A·CEIL=window.A·CEIL||{};window.A·CEIL.RoomMenu={toggle:toggle,close:close,showWholeRoom:showWholeRoom,toggleCanvasMode:toggleCanvasMode,toggleCleanView:toggleCleanView,deleteCurrentRoom:deleteCurrent,syncCanvasAction:syncCanvasAction};
-if(typeof rmOnReady==="function")rmOnReady(syncCanvasAction);else if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",syncCanvasAction,{once:true});else syncCanvasAction();
+function boot(){syncCanvasAction();installPopupScroll();}
+if(typeof rmOnReady==="function")rmOnReady(boot);else if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 })();
