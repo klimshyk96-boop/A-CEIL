@@ -298,7 +298,7 @@ function applyFilmChange(items, groups, change, room, warnings){
    an already-computed items array - used by the UI/report to show series
    name, texture+code, width, price/m^2, area and total without it having
    to know anything about elemItems shape. */
-function getRoomFilmInfoFromItems(items){
+function getRoomFilmInfoFromItems(items, requiredWidthM){
   var filmItems=(items||[]).filter(function(it){ return it && (it.roomScopedKind==='film-color'||it.filmPickerManaged===true) && num(it.qty)>0; });
   if(!filmItems.length) return null;
   var total=0; filmItems.forEach(function(it){ total+=num(it.qty)*num(it.price); });
@@ -311,21 +311,22 @@ function getRoomFilmInfoFromItems(items){
     code:first.colorCode||'',
     texture:first.colorTexture||'',
     textureLabel: filmTextureLabels()[first.colorTexture] || first.colorTexture || '',
-    widthM:num(first.filmWidth),
+    widthM:num(requiredWidthM)||num(first.displayFilmWidth)||num(first.filmWidth),
+    availableWidthM:num(first.filmMaxWidth)||num(first.filmWidth),
     pricePerM2:num(first.price),
     areaM2: filmItems.reduce(function(s,it){ return s+num(it.qty); },0),
     total:total
   };
 }
 function getRoomFilmInfo(project, room, variantId){
-  return getRoomFilmInfoFromItems(computeRoomItems(project, room, variantId).items);
+  return getRoomFilmInfoFromItems(computeRoomItems(project, room, variantId).items, requiredFilmWidthMetersFromRoom(room));
 }
 function computeFilmBreakdown(project, variantId){
   var warnings=[];
   var rooms=(project.rooms||[]).map(function(room){
     var ri=computeRoomItems(project, room, variantId);
     if(ri.warnings && ri.warnings.length) warnings=warnings.concat(ri.warnings);
-    return {room:room, info:getRoomFilmInfoFromItems(ri.items)};
+    return {room:room, info:getRoomFilmInfoFromItems(ri.items, requiredFilmWidthMetersFromRoom(room))};
   });
   return {rooms:rooms, warnings:warnings};
 }
