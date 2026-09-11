@@ -43,6 +43,40 @@
     });
   }
 
+  function presetColor(name){
+    var list=[];
+    try{
+      if(typeof window.rwe2WallPresetRead==="function") list=window.rwe2WallPresetRead()||[];
+      else list=JSON.parse(localStorage.getItem("A·CEIL_wall_presets_v32")||"[]");
+    }catch(e){ list=[]; }
+    var wanted=String(name||"").trim().toLowerCase();
+    var found=list.find(function(p){
+      var n=typeof p==="string"?p:(p&&p.name);
+      return String(n||"").trim().toLowerCase()===wanted;
+    });
+    return found&&typeof found==="object"&&found.color ? found.color : "";
+  }
+
+  function syncPresetColorDot(){
+    var select=byId("rwe2Preset");
+    if(!select||!select.parentElement)return;
+    var toolbar=select.closest(".rwe-preset-toolbar")||select.parentElement;
+    var dot=toolbar.querySelector(".rwe2-preset-color-dot");
+    if(!dot){
+      dot=document.createElement("span");
+      dot.className="rwe2-preset-color-dot";
+      dot.setAttribute("aria-hidden","true");
+      toolbar.insertBefore(dot,select);
+    }
+    var color=presetColor(select.value);
+    dot.style.display=color?"block":"none";
+    if(color)dot.style.backgroundColor=color;
+    if(select.dataset.colorDotReady!=="1"){
+      select.dataset.colorDotReady="1";
+      select.addEventListener("change",function(){setTimeout(syncPresetColorDot,0);});
+    }
+  }
+
   function simplifyVisibleLayout(modal){
     var preview = byId("rwe2LivePreview");
     if (preview) preview.classList.add("rwe2-always-hidden");
@@ -68,7 +102,7 @@
   function ensureBreakModeUi(){
     var row=byId("rwe2ForceBreaksRow"), checkbox=byId("rwe2ForceBreaks");
     if(!row||!checkbox)return;
-    row.classList.add("rwe2-break-mode");
+    row.classList.add("rwe2-break-mode","rwe2-only-adv");
     var oldText=row.querySelector("span");
     if(oldText)oldText.classList.add("rwe2-always-hidden");
     checkbox.classList.add("rwe2-always-hidden");
@@ -135,6 +169,7 @@
     tagHiddenFields(box);
     simplifyVisibleLayout(box);
     ensureBreakModeUi();
+    syncPresetColorDot();
     var btn = ensureToggleBtn(box);
 
     var on = isAdvancedOn();
