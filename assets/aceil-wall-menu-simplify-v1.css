@@ -1,0 +1,40 @@
+/* A-CEIL: simplify wall element ("Розташування елемента") menu.
+   Hides secondary fields (name-on-plan, color-on-plan, "count 2 breaks",
+   preset-delete button) behind a small gear toggle in the header.
+   Uses !important so it reliably wins over inline styles set by other
+   legacy scripts that manage this same modal. */
+
+#wallEditModal .rwe2-adv-toggle{
+  width:38px!important;
+  height:38px!important;
+  min-height:38px!important;
+  padding:0!important;
+  border-radius:14px!important;
+  background:#f1f5f9!important;
+  color:#64748b!important;
+  box-shadow:none!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex:0 0 auto;
+}
+#wallEditModal .rwe2-adv-toggle.active{
+  background:#eff6ff!important;
+  color:#2563eb!important;
+}
+#wallEditModal .rwe2-adv-toggle svg{ width:18px; height:18px; }
+
+/* Default (collapsed) state: hide the secondary fields */
+#wallEditModal .modal:not(.rwe2-advanced-open) label.rwe2-label.rwe2-only-adv,
+#wallEditModal .modal:not(.rwe2-advanced-open) #rwe2Name,
+#wallEditModal .modal:not(.rwe2-advanced-open) #rwe2Colors,
+#wallEditModal .modal:not(.rwe2-advanced-open) #rwe2ForceBreaksRow,
+#wallEditModal .modal:not(.rwe2-advanced-open) .rwe-preset-del{
+  display:none!important;
+}
+
+/* When the preset-delete button is hidden, let the edit button take
+   the freed column so the row doesn't leave an odd gap */
+#wallEditModal .modal:not(.rwe2-advanced-open) .rwe-preset-toolbar{
+  grid-template-columns:1fr 44px!important;
+}
