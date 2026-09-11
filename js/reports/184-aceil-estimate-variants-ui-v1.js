@@ -701,6 +701,63 @@ function reportFitText(ctx,text,maxWidth){
   return text+'…';
 }
 
+function reportRoomState(room){
+  var st=room&&room.state;
+  if(typeof st==='string') try{ st=JSON.parse(st); }catch(_){ st={}; }
+  return st&&typeof st==='object' ? st : {};
+}
+
+function drawComparisonRoomSketch(c,room,x,y,w,h){
+  var st=reportRoomState(room), pts=Array.isArray(st.pts)?st.pts.filter(function(p){
+    return p&&isFinite(Number(p.x))&&isFinite(Number(p.y));
+  }):[];
+  reportRoundRect(c,x,y,w,h,18,'#ffffff','#dbeafe');
+  c.fillStyle='#0f172a'; c.font='900 19px Arial';
+  c.fillText(reportFitText(c,(room&&room.name)||'Кімната',w-38),x+18,y+29);
+  var area=room&&room.area!=null?room.area:st.area, per=room&&room.per!=null?room.per:st.per;
+  var sub=[]; if(area!=null&&area!=='') sub.push(area+' м²'); if(per!=null&&per!=='') sub.push(per+' м');
+  c.fillStyle='#64748b'; c.font='700 13px Arial'; c.fillText(sub.join('  •  '),x+18,y+50);
+  var bx=x+20,by=y+64,bw=w-40,bh=h-82;
+  c.fillStyle='#f8fafc'; c.fillRect(bx,by,bw,bh);
+  if(st.circleMode){
+    var radius=Math.min(bw,bh)*0.36,cx=bx+bw/2,cy=by+bh/2;
+    c.strokeStyle='#172554'; c.lineWidth=3; c.beginPath(); c.arc(cx,cy,radius,0,Math.PI*2); c.stroke();
+    var diam=Number(st.circleDiamCm)||0;
+    if(diam){ c.fillStyle='#475569'; c.font='800 12px Arial'; c.textAlign='center'; c.fillText('Ø '+Math.round(diam)+' см',cx,cy+4); c.textAlign='left'; }
+    return;
+  }
+  if(pts.length<3){
+    c.fillStyle='#94a3b8'; c.font='700 15px Arial'; c.textAlign='center'; c.fillText('Ескіз не збережено',bx+bw/2,by+bh/2); c.textAlign='left';
+    return;
+  }
+  var xs=pts.map(function(p){return Number(p.x);}),ys=pts.map(function(p){return Number(p.y);});
+  var minX=Math.min.apply(null,xs),maxX=Math.max.apply(null,xs),minY=Math.min.apply(null,ys),maxY=Math.max.apply(null,ys);
+  var pad=34,scale=Math.min((bw-pad*2)/Math.max(1,maxX-minX),(bh-pad*2)/Math.max(1,maxY-minY));
+  var ox=bx+(bw-(maxX-minX)*scale)/2-minX*scale,oy=by+(bh-(maxY-minY)*scale)/2-minY*scale;
+  function px(v){return Number(v)*scale+ox;} function py(v){return Number(v)*scale+oy;}
+  c.fillStyle='#ffffff'; c.strokeStyle='#172554'; c.lineWidth=3; c.lineJoin='round'; c.beginPath();
+  pts.forEach(function(p,i){ if(i)c.lineTo(px(p.x),py(p.y)); else c.moveTo(px(p.x),py(p.y)); }); c.closePath(); c.fill(); c.stroke();
+  var lens=Array.isArray(st.lengths)?st.lengths:[];
+  pts.forEach(function(p,i){
+    var q=pts[(i+1)%pts.length],mx=(px(p.x)+px(q.x))/2,my=(py(p.y)+py(q.y))/2,len=Number(lens[i])||0;
+    if(len){ c.fillStyle='rgba(255,255,255,.94)'; reportRoundRect(c,mx-28,my-10,56,20,7,'rgba(255,255,255,.94)','#cbd5e1'); c.fillStyle='#475569'; c.font='800 10px Arial'; c.textAlign='center'; c.fillText(Math.round(len)+' см',mx,my+4); }
+    c.fillStyle='#2563eb'; c.font='900 11px Arial'; c.textAlign='center'; c.fillText(String.fromCharCode(65+i),px(p.x),py(p.y)-10);
+  }); c.textAlign='left';
+  (Array.isArray(st.wallMarks)?st.wallMarks:[]).forEach(function(m,i){
+    var si=Math.max(0,Math.min(pts.length-1,Number(m&&m.sideIndex)||0)),a=pts[si],b=pts[(si+1)%pts.length]; if(!a||!b)return;
+    var side=Number(lens[si])||Math.hypot(Number(b.x)-Number(a.x),Number(b.y)-Number(a.y))||1;
+    var t1=Math.max(0,Math.min(1,(Number(m.offsetCm)||0)/side)),t2=Math.max(t1,Math.min(1,((Number(m.offsetCm)||0)+(Number(m.lenCm)||side))/side));
+    c.strokeStyle=m.color||['#f97316','#7c3aed','#16a34a','#dc2626'][i%4]; c.lineWidth=6; c.lineCap='round'; c.beginPath();
+    c.moveTo(px(Number(a.x)+(Number(b.x)-Number(a.x))*t1),py(Number(a.y)+(Number(b.y)-Number(a.y))*t1));
+    c.lineTo(px(Number(a.x)+(Number(b.x)-Number(a.x))*t2),py(Number(a.y)+(Number(b.y)-Number(a.y))*t2)); c.stroke();
+  });
+  (Array.isArray(st.lightMarks)?st.lightMarks:[]).forEach(function(m){
+    if(!m||!isFinite(Number(m.x))||!isFinite(Number(m.y)))return; var lx=px(m.x),ly=py(m.y),type=String(m.type||'').toLowerCase();
+    c.fillStyle=/vent|exhaust/.test(type)?'#ecfeff':'#fef3c7'; c.strokeStyle=/vent|exhaust/.test(type)?'#0891b2':'#d69e00'; c.lineWidth=2;
+    c.beginPath(); c.arc(lx,ly,6,0,Math.PI*2); c.fill(); c.stroke();
+  });
+}
+
 function buildComparisonReportCanvas(project,variantId){
   var mainBd=ENGINE.computeProjectBreakdown(project,null);
   var varBd=ENGINE.computeProjectBreakdown(project,variantId);
@@ -715,7 +772,8 @@ function buildComparisonReportCanvas(project,variantId){
     return found ? found.total : 0;
   }
   var roomCount=Math.max(mainBd.rooms.length,varBd.rooms.length);
-  var height=470+names.length*58+(roomCount?80+roomCount*54:0)+170;
+  var sketchRows=Math.ceil((project.rooms||[]).length/2);
+  var height=570+names.length*58+(roomCount?80+roomCount*54:0)+170+(sketchRows?70+sketchRows*300:0);
   var canvas=document.createElement('canvas');
   canvas.width=1080; canvas.height=Math.max(1100,height);
   var c=canvas.getContext('2d');
@@ -780,6 +838,14 @@ function buildComparisonReportCanvas(project,variantId){
   c.fillStyle=savingGood?'#166534':'#991b1b'; c.font='900 22px Arial';
   c.fillText(savingGood?'\u0415\u043A\u043E\u043D\u043E\u043C\u0456\u044F':'\u041F\u043E\u0434\u043E\u0440\u043E\u0436\u0447\u0430\u043D\u043D\u044F',76,y+42);
   c.textAlign='right'; c.font='900 36px Arial'; c.fillText(reportMoney(Math.abs(saving)),1004,y+64); c.textAlign='left';
+
+  if((project.rooms||[]).length){
+    y+=148; c.fillStyle='#0f172a'; c.font='900 25px Arial'; c.fillText('Ескізи кімнат',48,y); y+=24;
+    (project.rooms||[]).forEach(function(room,i){
+      var col=i%2,row=Math.floor(i/2);
+      drawComparisonRoomSketch(c,room,48+col*508,y+row*300,476,276);
+    });
+  }
 
   c.fillStyle='#94a3b8'; c.font='600 14px Arial'; c.textAlign='center';
   c.fillText('A·CEIL  •  \u041F\u043E\u0440\u0456\u0432\u043D\u044F\u043B\u044C\u043D\u0438\u0439 \u043A\u043E\u0448\u0442\u043E\u0440\u0438\u0441',540,canvas.height-38); c.textAlign='left';
