@@ -217,7 +217,7 @@ function pickFilmWidthCandidate(entry, neededWidthM){
   if(!(neededWidthM>0)) return candidates[0];
   var fitting=candidates.filter(function(c){ return c.max+1e-6>=neededWidthM; });
   if(!fitting.length) return null;
-  fitting.sort(function(a,b){ return a.max-b.max; });
+  fitting.sort(function(a,b){ return a.nominal-b.nominal || a.max-b.max; });
   return fitting[0];
 }
 
