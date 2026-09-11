@@ -159,13 +159,13 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
   if(window.ACEIL_FILM_SERIES) return;
   window.ACEIL_COLOR_CATALOG.forEach(function(c){ if(c && c.seriesId===undefined) c.seriesId="premium"; });
 
-  /* Classic uses the same palette as Premium, but only the 3.2/3.6 m
-     position is available. Keep separate objects so the two catalogs
-     can evolve independently later. */
+  /* Classic uses the same palette and ordinary widths as Premium.
+     The special M303 5.8 m / working width 6.2 m remains Premium-only. */
   var classicCatalog=window.ACEIL_COLOR_CATALOG.map(function(c){
-    return Object.assign({},c,{seriesId:"classic",wide510:false,filmWidths:[
-      {nominal:3.6,max:3.6,priceKey:"narrow"}
-    ]});
+    var widths=Array.isArray(c.filmWidths)&&c.filmWidths.length
+      ? c.filmWidths.filter(function(w){return w.priceKey!=="extraWide";}).map(function(w){return Object.assign({},w);})
+      : [{nominal:3.6,max:3.6,priceKey:"narrow"}].concat(c.wide510?[{nominal:5.1,max:5.6,priceKey:"wide"}]:[]);
+    return Object.assign({},c,{seriesId:"classic",filmWidths:widths});
   });
 
   /* KRALTON palette supplied in Kralton_kolory.xlsx. The public product
@@ -200,7 +200,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     /* Classic intentionally starts at 0: set the actual selling price
        with the in-app price editor before creating a Classic variant. */
     classic: {
-      lak:{narrow:0},mat:{narrow:0},satin:{narrow:0}
+      lak:{narrow:0,wide:0},mat:{narrow:0,wide:0},satin:{narrow:0,wide:0}
     },
     kralton: {
       lak:{narrow:500,mid:550},
