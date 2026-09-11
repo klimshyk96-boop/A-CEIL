@@ -1,7 +1,7 @@
 (function(){
   "use strict";
 
-  var STORAGE_KEY = "A·CEIL_wallMenuAdvanced_v1";
+  var STORAGE_KEY = "A·CEIL_wallMenuAdvanced_v2";
 
   function byId(id){ return document.getElementById(id); }
 
@@ -35,6 +35,68 @@
   function tagHiddenFields(modal){
     tagField(modal, "Назва на макеті"); // label + #wallEditType
     tagField(modal, "Колір на макеті"); // label + color-row div (#wallEditColor + swatches)
+
+    var profileColor = byId("rwe2ProfileColorRow");
+    if (profileColor) profileColor.classList.add("rwe2-only-adv");
+    var identityHint = byId("rmCurtainIdHint");
+    if (identityHint) identityHint.classList.add("rwe2-only-adv");
+    modal.querySelectorAll(".rwe-preset-edit,.rwe-preset-del").forEach(function(btn){
+      btn.classList.add("rwe2-only-adv");
+    });
+  }
+
+  function simplifyVisibleLayout(modal){
+    var preview = byId("rwe2LivePreview");
+    if (preview) preview.classList.add("rwe2-always-hidden");
+
+    var labels = modal.querySelectorAll("label");
+    for (var i=0;i<labels.length;i++){
+      if (labels[i].id !== "rwe2PositionTitle" && labels[i].textContent.trim() === "Розташування"){
+        labels[i].classList.add("rwe2-always-hidden");
+      }
+    }
+
+    var cancel = modal.querySelector(".rwe2-footer .rwe2-cancel");
+    if (cancel) cancel.classList.add("rwe2-always-hidden");
+    var del = modal.querySelector(".rwe2-footer .rwe2-del");
+    if (del && del.dataset.compact !== "1"){
+      del.dataset.compact = "1";
+      del.setAttribute("aria-label", "Видалити елемент");
+      del.title = "Видалити елемент";
+      del.textContent = "🗑";
+    }
+  }
+
+  function ensureBreakModeUi(){
+    var row=byId("rwe2ForceBreaksRow"), checkbox=byId("rwe2ForceBreaks");
+    if(!row||!checkbox)return;
+    row.classList.add("rwe2-break-mode");
+    var oldText=row.querySelector("span");
+    if(oldText)oldText.classList.add("rwe2-always-hidden");
+    checkbox.classList.add("rwe2-always-hidden");
+    var controls=byId("rwe2BreakModeControls");
+    if(!controls){
+      controls=document.createElement("div");
+      controls.id="rwe2BreakModeControls";
+      controls.innerHTML='<div class="rwe2-break-title">Обриви карниза</div><div class="rwe2-break-buttons"><button type="button" data-break-mode="auto">Автоматично</button><button type="button" data-break-mode="two">Завжди 2</button></div>';
+      controls.querySelectorAll("button").forEach(function(btn){
+        btn.onclick=function(e){
+          e.preventDefault();
+          checkbox.checked=btn.dataset.breakMode==="two";
+          syncBreakModeUi();
+        };
+      });
+      row.appendChild(controls);
+    }
+    syncBreakModeUi();
+  }
+
+  function syncBreakModeUi(){
+    var checkbox=byId("rwe2ForceBreaks"), controls=byId("rwe2BreakModeControls");
+    if(!checkbox||!controls)return;
+    controls.querySelectorAll("button").forEach(function(btn){
+      btn.classList.toggle("active",checkbox.checked ? btn.dataset.breakMode==="two" : btn.dataset.breakMode==="auto");
+    });
   }
 
   var GEAR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -73,6 +135,8 @@
     if (!box) return;
 
     tagHiddenFields(box);
+    simplifyVisibleLayout(box);
+    ensureBreakModeUi();
     var btn = ensureToggleBtn(box);
 
     var on = isAdvancedOn();
@@ -90,6 +154,7 @@
       setTimeout(applyState, 30);
       setTimeout(applyState, 120);
       setTimeout(applyState, 300);
+      setTimeout(applyState, 520);
       return result;
     };
     wrapped.__menuSimplify = true;
