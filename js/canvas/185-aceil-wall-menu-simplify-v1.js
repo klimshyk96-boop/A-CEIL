@@ -36,8 +36,6 @@
     tagField(modal, "Назва на макеті"); // label + #wallEditType
     tagField(modal, "Колір на макеті"); // label + color-row div (#wallEditColor + swatches)
 
-    var profileColor = byId("rwe2ProfileColorRow");
-    if (profileColor) profileColor.classList.add("rwe2-only-adv");
     var identityHint = byId("rmCurtainIdHint");
     if (identityHint) identityHint.classList.add("rwe2-only-adv");
     modal.querySelectorAll(".rwe-preset-edit,.rwe-preset-del").forEach(function(btn){
