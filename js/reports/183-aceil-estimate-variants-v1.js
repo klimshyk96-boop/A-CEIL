@@ -110,6 +110,215 @@ function lightingSourceItems(baseItems){
   return (baseItems||[]).filter(function(it){ return LIGHT_SOURCE_KEYS.indexOf(norm(it&&it.source))>=0; });
 }
 
+/* ---------- film / canvas (plivka) helpers ----------
+   Film color items are NOT shared catalog items like profile/insert/
+   lighting - 167-aceil-color-picker-v3.js synthesizes a fresh, room-scoped
+   pair of elemItems (roomScopedKind:'film-color') the moment a color is
+   chosen for THAT room, with ids unique to that click. So a variant film
+   override never targets an existing item id; it stores which series+code
+   to show instead, and the actual item(s) - width, qty, price - are
+   synthesized fresh from ACEIL_COLOR_CATALOG_BY_SERIES / _PRICING_BY_SERIES
+   every time computeRoomItems() runs, using that room's OWN current area
+   and required width (so geometry edits are picked up automatically,
+   exactly like the Main estimate's own color choice already is). */
+
+function hasWord(name, words){
+  var n=String(name||'').toLowerCase();
+  return words.some(function(w){ return n.indexOf(w)>=0; });
+}
+var FILM_GROUP_WORDS=['\u043F\u043B\u0456\u0432','\u043F\u043E\u043B\u043E\u0442\u043D\u043E','film'];
+var FILM_WIDTH_NARROW={nominal:3.6, max:3.6, priceKey:'narrow'};
+var FILM_WIDTH_WIDE={nominal:5.1, max:5.6, priceKey:'wide'};
+
+function filmSeriesRegistry(){ return Array.isArray(window.ACEIL_FILM_SERIES) ? window.ACEIL_FILM_SERIES : []; }
+function filmSeriesMeta(seriesId){ return filmSeriesRegistry().find(function(s){ return s && s.id===seriesId; }) || null; }
+function filmCatalogForSeries(seriesId){
+  var bySeries=window.ACEIL_COLOR_CATALOG_BY_SERIES || {};
+  if(Array.isArray(bySeries[seriesId])) return bySeries[seriesId];
+  if(seriesId==='premium' && Array.isArray(window.ACEIL_COLOR_CATALOG)) return window.ACEIL_COLOR_CATALOG;
+  return [];
+}
+function filmPricingForSeries(seriesId){
+  var bySeries=window.ACEIL_FILM_PRICING_BY_SERIES || {};
+  if(bySeries[seriesId]) return bySeries[seriesId];
+  if(seriesId==='premium' && window.ACEIL_FILM_PRICING) return window.ACEIL_FILM_PRICING;
+  return {};
+}
+function filmTextureLabels(){ return window.ACEIL_TEXTURE_LABELS || {}; }
+function findFilmColorEntry(seriesId, code){
+  return filmCatalogForSeries(seriesId).find(function(c){ return c && c.code===code; }) || null;
+}
+
+function findFilmGroupId(items, groups){
+  var managed=(items||[]).find(function(it){ return it && it.roomScopedKind==='film-color'; });
+  if(managed && managed.groupId!=null) return String(managed.groupId);
+  var g=(groups||[]).find(function(g){ return hasWord(g && g.name, FILM_GROUP_WORDS); });
+  return g ? String(g.id) : null;
+}
+
+/* Mirrors getRoomBoundingBoxMeters()/getRequiredFilmWidthMeters() from
+   167-aceil-color-picker-v3.js, but reads STORED room.state geometry
+   instead of the live canvas globals, since this runs with no canvas
+   attached. Same rule: the room's smaller bounding-box dimension is the
+   width the roll must cover. */
+function requiredFilmWidthMetersFromRoom(room){
+  try{
+    var st=parseMaybeJSON(room && room.state);
+    if(st && st.circleMode && num(st.circleDiamCm)>0) return num(st.circleDiamCm)/100;
+    var pts=st && Array.isArray(st.realPts) ? st.realPts : [];
+    if(pts.length>=2){
+      var xs=pts.map(function(p){ return num(p&&p.x); });
+      var ys=pts.map(function(p){ return num(p&&p.y); });
+      var w=(Math.max.apply(null,xs)-Math.min.apply(null,xs))/100;
+      var h=(Math.max.apply(null,ys)-Math.min.apply(null,ys))/100;
+      if(w>0 && h>0) return Math.min(w,h);
+      return w||h||0;
+    }
+  }catch(_){}
+  return 0;
+}
+/* room.area is the same value already displayed/saved for the room
+   (m^2, canonical). Only falls back to the shoelace formula on stored
+   realPts if that field is somehow missing. */
+function roomAreaM2(room){
+  var a=num(room && room.area);
+  if(a>0) return a;
+  try{
+    var st=parseMaybeJSON(room && room.state);
+    if(st && st.circleMode && num(st.circleDiamCm)>0){ var r=num(st.circleDiamCm)/200; return Math.PI*r*r; }
+    var pts=st && Array.isArray(st.realPts) ? st.realPts : [];
+    if(pts.length>=3){
+      var sum=0;
+      for(var i=0;i<pts.length;i++){ var p=pts[i], q=pts[(i+1)%pts.length]; sum+=num(p&&p.x)*num(q&&q.y)-num(q&&q.x)*num(p&&p.y); }
+      return Math.abs(sum)/2/10000;
+    }
+  }catch(_){}
+  return 0;
+}
+
+/* Same "smallest sufficient roll" rule the live picker's autoFillNomenclature
+   already applies to filmMaxWidth candidates: 320-360cm range -> the 3.6m/360cm
+   roll, 500-560cm range -> the 5.1m/560cm roll (only when the color actually
+   has a wide510 product), 400cm is never returned. Returns null when nothing
+   fits, so the caller can warn instead of pricing the wrong width. */
+function pickFilmWidthCandidate(entry, neededWidthM){
+  var candidates=[Object.assign({},FILM_WIDTH_NARROW)];
+  if(entry && entry.wide510) candidates.push(Object.assign({},FILM_WIDTH_WIDE));
+  if(!(neededWidthM>0)) return candidates[0];
+  var fitting=candidates.filter(function(c){ return c.max+1e-6>=neededWidthM; });
+  if(!fitting.length) return null;
+  fitting.sort(function(a,b){ return a.max-b.max; });
+  return fitting[0];
+}
+
+function filmDisplayWidthLabel(nominal){
+  var n=Number(nominal)||0;
+  var s=n.toFixed(1);
+  if(s.slice(-2)==='.0') s=s.slice(0,-2);
+  return s;
+}
+
+/* Applies one room's film override on top of the working items/groups
+   arrays for THIS computeRoomItems() call - splicing out whichever film
+   block is currently showing (Premium from Main, or an earlier link in
+   the variant chain) and, for 'replace', synthesizing the new series'
+   block fresh from geometry so two film blocks are never shown/counted
+   at once and nothing here ever freezes a stale area. */
+function applyFilmChange(items, groups, change, room, warnings){
+  if(!change) return;
+  var groupId=findFilmGroupId(items, groups);
+  var existing=groupId!=null ? items.filter(function(it){
+    return it && String(it.groupId)===String(groupId) && (it.filmPickerManaged===true || num(it.filmWidth)>0);
+  }) : [];
+
+  if(change.mode==='remove'){
+    existing.forEach(function(it){ it.qty=0; });
+    return;
+  }
+  if(change.mode!=='replace') return;
+
+  var seriesMeta=filmSeriesMeta(change.seriesId);
+  var seriesName=seriesMeta ? seriesMeta.name : change.seriesId;
+  var entry=findFilmColorEntry(change.seriesId, change.code);
+  var roomName=(room && room.name) || '\u041A\u0456\u043C\u043D\u0430\u0442\u0430';
+  if(!entry){
+    if(warnings) warnings.push('\u041A\u043E\u043B\u0456\u0440 '+change.code+' ('+seriesName+') \u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E \u0432 \u043A\u0430\u0442\u0430\u043B\u043E\u0437\u0456 \u2014 \u0431\u043B\u043E\u043A \u043F\u043B\u0456\u0432\u043A\u0438 \u0434\u043B\u044F \u00AB'+roomName+'\u00BB \u043D\u0435 \u0437\u043C\u0456\u043D\u0435\u043D\u043E.');
+    return;
+  }
+  var neededWidthM=requiredFilmWidthMetersFromRoom(room);
+  var candidate=pickFilmWidthCandidate(entry, neededWidthM);
+  if(!candidate){
+    existing.forEach(function(it){ it.qty=0; });
+    if(warnings) warnings.push('\u00AB'+roomName+'\u00BB: \u0434\u043B\u044F '+seriesName+' '+change.code+' \u043D\u0435\u043C\u0430\u0454 \u0434\u043E\u0441\u0442\u0430\u0442\u043D\u044C\u043E\u0457 \u0440\u043E\u0431\u043E\u0447\u043E\u0457 \u0448\u0438\u0440\u0438\u043D\u0438 \u2014 \u0446\u0456\u043D\u0430 \u043D\u0435 \u0440\u043E\u0437\u0440\u0430\u0445\u043E\u0432\u0430\u043D\u0430.');
+    return;
+  }
+  var pricing=filmPricingForSeries(change.seriesId)[entry.texture] || {narrow:0,wide:0};
+  var areaM2=roomAreaM2(room);
+
+  for(var i=items.length-1;i>=0;i--){ if(existing.indexOf(items[i])>=0) items.splice(i,1); }
+
+  var gid=groupId;
+  var groupLabel='\u041F\u043B\u0456\u0432\u043A\u0430'+(seriesMeta?(' '+seriesMeta.name):'');
+  if(gid==null){
+    gid='g_film_virtual_'+String(room && room.id || 'r');
+    groups.push({id:gid, name:groupLabel, roomScoped:true, roomScopedKind:'film-color'});
+  }else{
+    var g=groups.find(function(g){ return String(g.id)===String(gid); });
+    if(g) g.name=groupLabel;
+  }
+  var available=[Object.assign({},FILM_WIDTH_NARROW)];
+  if(entry.wide510) available.push(Object.assign({},FILM_WIDTH_WIDE));
+  available.forEach(function(width){
+    var selected=Math.abs(width.nominal-candidate.nominal)<1e-6;
+    items.push({
+      id:'filmv_'+String(room && room.id || 'r')+'_'+change.seriesId+'_'+change.code+'_'+String(width.nominal).replace('.','_'),
+      groupId:gid, icon:'\uD83C\uDFA8',
+      name:change.code+' '+filmDisplayWidthLabel(width.nominal)+'\u043C',
+      qty:selected&&areaM2>0 ? Math.round(areaM2*100)/100 : 0,
+      unit:'\u043C\u00B2', price:num(pricing[width.priceKey]),
+      filmWidth:width.nominal, filmMaxWidth:width.max, filmSelected:selected,
+      colorCode:change.code, colorTexture:entry.texture, seriesId:change.seriesId,
+      filmPickerManaged:true, roomScoped:true, roomScopedKind:'film-color'
+    });
+  });
+}
+
+/* Pure summary of whichever film item(s) are currently active (qty>0) in
+   an already-computed items array - used by the UI/report to show series
+   name, texture+code, width, price/m^2, area and total without it having
+   to know anything about elemItems shape. */
+function getRoomFilmInfoFromItems(items){
+  var filmItems=(items||[]).filter(function(it){ return it && (it.roomScopedKind==='film-color'||it.filmPickerManaged===true) && num(it.qty)>0; });
+  if(!filmItems.length) return null;
+  var total=0; filmItems.forEach(function(it){ total+=num(it.qty)*num(it.price); });
+  var first=filmItems[0];
+  var seriesId=first.seriesId || 'premium';
+  var seriesMeta=filmSeriesMeta(seriesId);
+  return {
+    seriesId:seriesId,
+    seriesName: seriesMeta ? seriesMeta.name : seriesId,
+    code:first.colorCode||'',
+    texture:first.colorTexture||'',
+    textureLabel: filmTextureLabels()[first.colorTexture] || first.colorTexture || '',
+    widthM:num(first.filmWidth),
+    pricePerM2:num(first.price),
+    areaM2: filmItems.reduce(function(s,it){ return s+num(it.qty); },0),
+    total:total
+  };
+}
+function getRoomFilmInfo(project, room, variantId){
+  return getRoomFilmInfoFromItems(computeRoomItems(project, room, variantId).items);
+}
+function computeFilmBreakdown(project, variantId){
+  var warnings=[];
+  var rooms=(project.rooms||[]).map(function(room){
+    var ri=computeRoomItems(project, room, variantId);
+    if(ri.warnings && ri.warnings.length) warnings=warnings.concat(ri.warnings);
+    return {room:room, info:getRoomFilmInfoFromItems(ri.items)};
+  });
+  return {rooms:rooms, warnings:warnings};
+}
+
 /* ---------- persistence ---------- */
 
 function findProjectRaw(projectId){
@@ -320,18 +529,21 @@ function baseItemsForRoom(room){
 
 function computeRoomItems(project, room, variantId){
   var base=baseItemsForRoom(room);
-  if(variantId==null) return base;
+  if(variantId==null) return {items:base.items, groups:base.groups, warnings:[]};
   var chain=resolveChain(project, variantId);
   var items=clone(base.items);
+  var groups=base.groups;
   var tracker={profile:null, insert:null, lighting:null};
+  var warnings=[];
   chain.forEach(function(v){
     var catChanges = v.overrides && room && v.overrides[room.id];
     if(!catChanges) return;
     ['profile','insert','lighting'].forEach(function(cat){
       applySemanticCategoryChange(cat, items, catChanges[cat], tracker);
     });
+    if(catChanges.film) applyFilmChange(items, groups, catChanges.film, room, warnings);
   });
-  return {items:items, groups:base.groups};
+  return {items:items, groups:groups, warnings:warnings};
 }
 
 function groupsForState(state){
@@ -428,9 +640,11 @@ function detectCategoryGroups(project){
     return /\u0432\u0441\u0442\u0430\u0432\u043A|insert/.test(n) && !!colorWordOf(it);
   });
   var lightingFound=lightingSourceItems(items).length>0;
+  var filmFound = groups.some(function(g){ return hasWord(g&&g.name, FILM_GROUP_WORDS); })
+    || items.some(function(it){ return it && it.roomScopedKind==='film-color'; });
   return {
     profile:profile, insert:insert, lighting:lighting,
-    profileFound:profileFound, insertFound:insertFound, lightingFound:lightingFound,
+    profileFound:profileFound, insertFound:insertFound, lightingFound:lightingFound, filmFound:filmFound,
     profileSourceKey:'main_profile', insertSourceKey:'white_insert', lightingSourceKeys:LIGHT_SOURCE_KEYS.slice(),
     allGroups:groups.map(function(g){ return {id:String(g.id),name:g.name||''}; })
   };
@@ -444,6 +658,28 @@ function detectCategoryGroups(project){
 
 function buildSemanticChange(cat, baseItems, catBulk, assumptions){
   if(!catBulk || catBulk.mode==='keep') return null;
+
+  if(cat==='film'){
+    if(catBulk.mode==='remove') return {mode:'remove'};
+    if(catBulk.mode==='replace'){
+      if(!catBulk.seriesId || !catBulk.code){
+        if(assumptions) assumptions.push('\u041D\u0435 \u043E\u0431\u0440\u0430\u043D\u043E \u0441\u0435\u0440\u0456\u044E \u0430\u0431\u043E \u043A\u043E\u043B\u0456\u0440 \u043F\u043B\u0456\u0432\u043A\u0438.');
+        return null;
+      }
+      var seriesMeta=filmSeriesMeta(catBulk.seriesId);
+      if(!seriesMeta || seriesMeta.active===false){
+        if(assumptions) assumptions.push('\u0421\u0435\u0440\u0456\u044F "'+(seriesMeta?seriesMeta.name:catBulk.seriesId)+'" \u0449\u0435 \u043D\u0435 \u043C\u0430\u0454 \u0434\u0430\u043D\u0438\u0445 \u0443 \u043A\u0430\u0442\u0430\u043B\u043E\u0437\u0456 \u2014 \u0434\u043E\u0434\u0430\u0439\u0442\u0435 \u043A\u043E\u043B\u044C\u043E\u0440\u0438/\u0446\u0456\u043D\u0438 \u0432 ACEIL_COLOR_CATALOG_BY_SERIES / ACEIL_FILM_PRICING_BY_SERIES.');
+        return null;
+      }
+      var entry=findFilmColorEntry(catBulk.seriesId, catBulk.code);
+      if(!entry){
+        if(assumptions) assumptions.push('\u041A\u043E\u043B\u0456\u0440 '+catBulk.code+' \u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E \u0432 \u043A\u0430\u0442\u0430\u043B\u043E\u0437\u0456 \u0441\u0435\u0440\u0456\u0457 "'+seriesMeta.name+'".');
+        return null;
+      }
+      return {mode:'replace', seriesId:catBulk.seriesId, code:catBulk.code};
+    }
+    return null;
+  }
 
   if(cat==='lighting'){
     if(catBulk.mode==='remove') return {mode:'remove'};
@@ -501,7 +737,7 @@ function createVariant(project, opts){
        mode + targetItemId (never a computed qty) end up in roomChanges. */
     var baseItems = computeRoomItems(project, room, baseId).items;
     var roomChanges = {};
-    ['profile','insert','lighting'].forEach(function(cat){
+    ['profile','insert','lighting','film'].forEach(function(cat){
       var catBulk = opts.changes && opts.changes[cat];
       var change = buildSemanticChange(cat, baseItems, catBulk, assumptions);
       if(change) roomChanges[cat]=change;
@@ -591,6 +827,16 @@ window.A_CEIL_EstimateVariants = {
   renameVariant: renameVariant,
   deleteVariant: deleteVariant,
   virtualizeProjectForRender: virtualizeProjectForRender,
-  LIGHT_SOURCE_KEYS: LIGHT_SOURCE_KEYS.slice()
+  LIGHT_SOURCE_KEYS: LIGHT_SOURCE_KEYS.slice(),
+  filmSeriesRegistry: filmSeriesRegistry,
+  filmCatalogForSeries: filmCatalogForSeries,
+  filmPricingForSeries: filmPricingForSeries,
+  filmTextureLabels: filmTextureLabels,
+  pickFilmWidthCandidate: pickFilmWidthCandidate,
+  requiredFilmWidthMetersFromRoom: requiredFilmWidthMetersFromRoom,
+  roomAreaM2: roomAreaM2,
+  getRoomFilmInfo: getRoomFilmInfo,
+  getRoomFilmInfoFromItems: getRoomFilmInfoFromItems,
+  computeFilmBreakdown: computeFilmBreakdown
 };
 })();

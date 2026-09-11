@@ -154,13 +154,9 @@ if(typeof oldLoadRoomToCanvas==='function' && !oldLoadRoomToCanvas.__aceilVarian
       var id = obj && (obj.id!=null ? obj.id : (obj._dbId!=null ? obj._dbId : obj._localId));
       var proj = id!=null ? ENGINE.findProjectRaw(id) : null;
       if(proj && ENGINE.getActiveId(proj)!=null){
-        ENGINE.setActiveId(proj, null);
-        ENGINE.persistProject(proj);
-        toast('\u270F\uFE0F \u0420\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u043F\u0440\u0430\u0446\u044E\u0454 \u043B\u0438\u0448\u0435 \u0437 \u041E\u0441\u043D\u043E\u0432\u043D\u0438\u043C \u043A\u043E\u0448\u0442\u043E\u0440\u0438\u0441\u043E\u043C \u2014 \u0430\u043A\u0442\u0438\u0432\u043D\u0438\u0439 \u0432\u0430\u0440\u0456\u0430\u043D\u0442 \u0432\u0438\u043C\u043A\u043D\u0435\u043D\u043E \u043D\u0430 \u0447\u0430\u0441 \u0440\u0435\u0434\u0430\u0433\u0443\u0432\u0430\u043D\u043D\u044F.');
-        try{ renderVariantBar(proj); }catch(_){}
-        /* Make sure the object we're about to load rooms from is the real,
-           unvirtualized one - never anything a report call may have handed
-           back while the (now-deactivated) variant was still active. */
+        /* Geometry remains shared and is loaded from the real Main room,
+           while the active variant stays selected. Its nomenclature is
+           exposed separately below as a safe read-only virtual view. */
         if(obj && proj.rooms) obj.rooms = proj.rooms;
       }
     }catch(_){}
@@ -214,7 +210,18 @@ if(typeof oldLoadRoomToCanvas==='function' && !oldLoadRoomToCanvas.__aceilVarian
     '.aceilv-cmp-table th{color:#64748b;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;}' +
     '.aceilv-cmp-table td.num{text-align:right;font-weight:800;}' +
     '.aceilv-cmp-table tr.total td{font-weight:950;color:#0f172a;border-top:2px solid #e2e8f0;}' +
-    '.aceilv-cmp-table tr.save td{color:#15803d;font-weight:900;}';
+    '.aceilv-cmp-table tr.save td{color:#15803d;font-weight:900;}' +
+    '.aceilv-film-chip{flex-direction:column;line-height:1.25;}' +
+    '.aceilv-film-chip small{opacity:.65;font-size:9.5px;font-weight:800;}' +
+    '.aceilv-film-series-disabled{opacity:.45;cursor:not-allowed;}' +
+    '.aceilv-cmp-subtitle{font-weight:900;font-size:13px;color:#1e293b;margin:14px 0 4px;}' +
+    '.aceilv-nom-banner{margin:8px 10px 2px;padding:9px 11px;border-radius:11px;background:#eef2ff;color:#3730a3;font-size:12px;font-weight:800;}' +
+    '.aceilv-ro-group{margin:10px 8px;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;background:#fff;}' +
+    '.aceilv-ro-head{padding:11px 13px;background:#f8fafc;color:#4338ca;font-size:14px;font-weight:900;}' +
+    '.aceilv-ro-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:10px 13px;border-top:1px solid #f1f5f9;}' +
+    '.aceilv-ro-name{min-width:0;color:#1e293b;font-size:13px;font-weight:750;}' +
+    '.aceilv-ro-qty{color:#475569;font-size:12px;font-weight:800;white-space:nowrap;}' +
+    '.aceilv-ro-sum{color:#15803d;font-size:12px;font-weight:900;white-space:nowrap;}';
   document.head.appendChild(st);
 })();
 
@@ -464,6 +471,66 @@ window.A_CEIL_OpenEstimateVariants=openVariantsFromRoomScreen;
 ensureVisibleVariantsMenuAction();
 document.addEventListener('DOMContentLoaded', ensureVisibleVariantsMenuAction, {once:true});
 
+/* Read-only nomenclature for an active estimate variant. It renders the
+   computed clone directly into the existing modal and never swaps or saves
+   the editor's real elemItems/elemGroups (Main stays untouched). */
+function currentRoomForVariantProject(project){
+  var rooms=project&&Array.isArray(project.rooms)?project.rooms:[];
+  var rid=window._activeRoomId;
+  var room=rooms.find(function(r){ return rid!=null&&r&&String(r.id)===String(rid); });
+  if(room) return room;
+  try{ if(typeof _activeRoomIdx!=='undefined'&&Number.isInteger(_activeRoomIdx)) return rooms[_activeRoomIdx]||null; }catch(_){}
+  return rooms[0]||null;
+}
+function restoreNormalNomenclatureChrome(){
+  var modal=document.getElementById('elementsModal'); if(!modal) return;
+  var banner=modal.querySelector('.aceilv-nom-banner'); if(banner) banner.remove();
+  modal.removeAttribute('data-aceilv-readonly');
+  modal.querySelectorAll('[data-aceilv-hidden]').forEach(function(el){ el.style.display=el.getAttribute('data-aceilv-hidden')||''; el.removeAttribute('data-aceilv-hidden'); });
+}
+function renderActiveVariantNomenclature(){
+  var project=findActiveProject(); if(!project) return;
+  var activeId=ENGINE.getActiveId(project); if(activeId==null) return;
+  var room=currentRoomForVariantProject(project); if(!room) return;
+  var result=ENGINE.computeRoomItems(project,room,activeId), items=result.items||[], groups=result.groups||[];
+  var variant=ENGINE.findVariant(project,activeId), modal=document.getElementById('elementsModal'), list=document.getElementById('elemList');
+  if(!modal||!list) return;
+  modal.setAttribute('data-aceilv-readonly','1');
+  var banner=document.createElement('div'); banner.className='aceilv-nom-banner';
+  banner.textContent='Перегляд варіанта «'+((variant&&variant.name)||'Варіант')+'» · редагування лише в Основному';
+  var header=modal.firstElementChild&&modal.firstElementChild.firstElementChild;
+  if(header&&header.parentNode) header.parentNode.insertBefore(banner,header.nextSibling); else modal.insertBefore(banner,list);
+  var groupIds={}; groups.forEach(function(g){ groupIds[String(g&&g.id)]=true; });
+  function rowsFor(groupId){ return items.filter(function(it){ return String(it&&it.groupId!=null?it.groupId:'')===String(groupId); }); }
+  function rowHtml(it){
+    var qty=num(it&&it.qty),price=num(it&&it.price),sum=qty*price;
+    return '<div class="aceilv-ro-row"><div class="aceilv-ro-name">'+esc((it&&it.icon?it.icon+' ':'')+(it&&it.name||'Позиція'))+'</div><div class="aceilv-ro-qty">'+qty.toLocaleString('uk-UA')+' '+esc(it&&it.unit||'шт')+' × '+money(price)+'</div><div class="aceilv-ro-sum">'+(sum>0?money(sum):'—')+'</div></div>';
+  }
+  var html=groups.map(function(g){ var rows=rowsFor(g.id); return '<section class="aceilv-ro-group"><div class="aceilv-ro-head">📁 '+esc(g.name||'Група')+'</div>'+rows.map(rowHtml).join('')+'</section>'; }).join('');
+  var other=items.filter(function(it){ return !groupIds[String(it&&it.groupId)]; });
+  if(other.length) html+='<section class="aceilv-ro-group"><div class="aceilv-ro-head">📁 Інше</div>'+other.map(rowHtml).join('')+'</section>';
+  list.innerHTML=html||'<div style="padding:24px;text-align:center;color:#94a3b8">Номенклатура порожня</div>';
+  var total=items.reduce(function(s,it){ return s+num(it&&it.qty)*num(it&&it.price); },0), totalEl=document.getElementById('elemTotalValue');
+  if(totalEl) totalEl.textContent=money(total);
+  var gear=modal.querySelector('button[onclick*="toggleElemMenu"]');
+  var editButtons=modal.querySelectorAll('#elemBottomBar button:not([onclick*="closeModal"])');
+  var hide=[]; if(gear) hide.push(gear); editButtons.forEach(function(b){ hide.push(b); });
+  hide.forEach(function(el){ el.setAttribute('data-aceilv-hidden',el.style.display||''); el.style.display='none'; });
+}
+var oldOpenElementsModal=window.openElementsModal;
+if(typeof oldOpenElementsModal==='function'&&!oldOpenElementsModal.__aceilVariantReadonly){
+  var openElementsVariantAware=function(){
+    restoreNormalNomenclatureChrome();
+    var out=oldOpenElementsModal.apply(this,arguments);
+    var finish=function(){ setTimeout(renderActiveVariantNomenclature,0); };
+    if(out&&typeof out.then==='function') return out.then(function(v){ finish(); return v; });
+    finish(); return out;
+  };
+  openElementsVariantAware.__aceilVariantReadonly=true;
+  window.openElementsModal=openElementsVariantAware;
+  try{ openElementsModal=openElementsVariantAware; }catch(_){}
+}
+
 /* ---------------------------------------------------------------
    Bulk change modal
    --------------------------------------------------------------- */
@@ -492,6 +559,7 @@ function ensureBulkModal(){
         '<div class="aceilv-room-list" id="aceilvRoomList" style="display:none"></div>'+
       '</div>'+
       '<div id="aceilvCats"></div>'+
+      '<div id="aceilvFilmCat"></div>'+
       '<div class="aceilv-preview" id="aceilvPreview">\u041F\u043E\u043F\u0435\u0440\u0435\u0434\u043D\u044F \u0441\u0443\u043C\u0430: \u2014</div>'+
       '<div id="aceilvNotes"></div>'+
       '<div class="aceilv-modal-btns">'+
@@ -596,6 +664,140 @@ function openBulkModal(project, baseVariantId){
     if(qtyInp) qtyInp.addEventListener('input', function(){ catState[def.key].qty=num(qtyInp.value); updatePreview(); });
   });
 
+  /* ---- Film / canvas (plivka) block: series -> texture -> color, with
+     search and popular codes, mirroring 167-aceil-color-picker-v3.js's UX
+     but reading the shared series registry so Classic/Kralton light up the
+     moment real data is added to it - no separate color catalog here. */
+  var filmState={mode:'keep', seriesId:null, code:null};
+  var filmCatEl=document.getElementById('aceilvFilmCat');
+  var filmSeriesList=ENGINE.filmSeriesRegistry();
+  var filmActiveSeriesList=filmSeriesList.filter(function(s){ return s && s.active; });
+  var filmInactiveSeriesList=filmSeriesList.filter(function(s){ return s && s.active===false; });
+  filmCatEl.innerHTML =
+    '<div class="aceilv-cat" data-cat="film">'+
+      '<div class="aceilv-cat-title">\u041F\u043B\u0456\u0432\u043A\u0430 / \u043F\u043E\u043B\u043E\u0442\u043D\u043E'+(cats.filmFound?'':' <span style="font-weight:600;color:#94a3b8;font-size:11px">(\u0433\u0440\u0443\u043F\u0443 \u043F\u043B\u0456\u0432\u043A\u0438 \u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E \u2014 \u0431\u0443\u0434\u0435 \u0441\u0442\u0432\u043E\u0440\u0435\u043D\u043E \u043D\u043E\u0432\u0443)</span>')+'</div>'+
+      '<div class="aceilv-mode-row" data-mode-row>'+
+        '<span class="aceilv-mode-btn active" data-mode="keep">\u0411\u0435\u0437 \u0437\u043C\u0456\u043D</span>'+
+        '<span class="aceilv-mode-btn" data-mode="replace">\u0417\u0430\u043C\u0456\u043D\u0438\u0442\u0438 \u043F\u043B\u0456\u0432\u043A\u0443</span>'+
+        '<span class="aceilv-mode-btn" data-mode="remove">\u041F\u0440\u0438\u0431\u0440\u0430\u0442\u0438</span>'+
+      '</div>'+
+      '<div id="aceilvFilmPicker" style="display:none">'+
+        '<label style="display:block;font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:6px 0 5px">\u0421\u0435\u0440\u0456\u044F / \u0442\u0438\u043F</label>'+
+        '<div class="aceilv-mode-row" id="aceilvFilmSeriesRow">'+
+          filmActiveSeriesList.map(function(s){ return '<span class="aceilv-mode-btn" data-series="'+esc(s.id)+'">'+esc(s.name)+(s.manufacturer?(' <small style="opacity:.6">'+esc(s.manufacturer)+'</small>'):'')+'</span>'; }).join('')+
+          filmInactiveSeriesList.map(function(s){ return '<span class="aceilv-mode-btn aceilv-film-series-disabled" title="\u041D\u0435\u043C\u0430\u0454 \u0434\u0430\u043D\u0438\u0445 \u0443 \u043A\u0430\u0442\u0430\u043B\u043E\u0437\u0456">'+esc(s.name)+' (\u043D\u0435\u043C\u0430\u0454 \u0434\u0430\u043D\u0438\u0445)</span>'; }).join('')+
+        '</div>'+
+        '<div class="aceilv-field" style="margin:8px 0 0"><label>\u041F\u043E\u043F\u0443\u043B\u044F\u0440\u043D\u0456</label><div class="aceilv-mode-row" id="aceilvFilmPopular"></div></div>'+
+        '<div class="aceilv-field" style="margin-bottom:0"><label>\u041F\u043E\u0448\u0443\u043A</label><input id="aceilvFilmSearch" type="text" placeholder="\u041D\u0430\u043F\u0440. 402, \u0433\u043B\u044F\u043D\u0435\u0446\u044C, \u043C\u0430\u0442\u2026"></div>'+
+        '<div class="aceilv-mode-row" id="aceilvFilmTextureRow" style="margin-top:8px"></div>'+
+        '<div id="aceilvFilmGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;max-height:190px;overflow:auto;margin-top:6px"></div>'+
+        '<div id="aceilvFilmInfo" style="margin-top:8px;font-size:12px;font-weight:700;color:#475569;display:flex;flex-direction:column;gap:2px"></div>'+
+      '</div>'+
+    '</div>';
+
+  var filmModeButtons=filmCatEl.querySelectorAll('[data-mode]');
+  var filmPickerEl=document.getElementById('aceilvFilmPicker');
+  filmModeButtons.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      filmState.mode=btn.getAttribute('data-mode');
+      filmModeButtons.forEach(function(b){ b.classList.toggle('active', b===btn); });
+      filmPickerEl.style.display = filmState.mode==='replace' ? 'block' : 'none';
+      updatePreview();
+    });
+  });
+
+  var filmSeriesRow=document.getElementById('aceilvFilmSeriesRow');
+  var filmTextureRow=document.getElementById('aceilvFilmTextureRow');
+  var filmGrid=document.getElementById('aceilvFilmGrid');
+  var filmSearchInp=document.getElementById('aceilvFilmSearch');
+  var filmPopularEl=document.getElementById('aceilvFilmPopular');
+  var filmActiveTexture='';
+
+  function filmColorsForCurrentSeries(){ return filmState.seriesId ? ENGINE.filmCatalogForSeries(filmState.seriesId) : []; }
+  function filmPopularCodes(){
+    try{
+      var saved=JSON.parse(localStorage.getItem('aceil_film_popular_codes_v1')||'null');
+      if(Array.isArray(saved) && saved.length) return saved;
+    }catch(_){}
+    return Array.isArray(window.ACEIL_POPULAR_CODES) ? window.ACEIL_POPULAR_CODES : [];
+  }
+  function filmChipHtml(c){
+    var marks=[c.wide510?'360/560':'360'];
+    return '<button type="button" class="aceilv-mode-btn aceilv-film-chip'+(c.code===filmState.code?' active':'')+'" data-code="'+esc(c.code)+'">'+esc(c.code)+'<small>'+marks.join('')+'</small></button>';
+  }
+  function bindFilmChips(host){
+    host.querySelectorAll('[data-code]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var code=btn.getAttribute('data-code');
+        var entry=filmColorsForCurrentSeries().find(function(c){ return c.code===code; });
+        filmState.code=code;
+        if(entry) filmActiveTexture=entry.texture;
+        renderFilmPopular(); renderFilmTextures(); renderFilmGrid();
+        updatePreview();
+      });
+    });
+  }
+  function renderFilmPopular(){
+    var colors=filmColorsForCurrentSeries();
+    var codes=filmPopularCodes().filter(function(code){ return colors.some(function(c){ return c.code===code; }); });
+    if(!codes.length){ filmPopularEl.innerHTML='<span style="font-size:11px;color:#94a3b8;font-weight:700">\u043D\u0435\u043C\u0430\u0454</span>'; return; }
+    filmPopularEl.innerHTML=codes.map(function(code){
+      var c=colors.find(function(x){ return x.code===code; });
+      return c ? filmChipHtml(c) : '';
+    }).join('');
+    bindFilmChips(filmPopularEl);
+  }
+  function renderFilmTextures(){
+    var colors=filmColorsForCurrentSeries();
+    var textures=[]; colors.forEach(function(c){ if(c && textures.indexOf(c.texture)<0) textures.push(c.texture); });
+    var labels=ENGINE.filmTextureLabels();
+    filmTextureRow.innerHTML=textures.map(function(t){
+      return '<span class="aceilv-mode-btn'+(t===filmActiveTexture?' active':'')+'" data-texture="'+esc(t)+'">'+esc(labels[t]||t)+'</span>';
+    }).join('');
+    filmTextureRow.querySelectorAll('[data-texture]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        filmActiveTexture=btn.getAttribute('data-texture');
+        filmSearchInp.value='';
+        filmTextureRow.querySelectorAll('[data-texture]').forEach(function(b){ b.classList.toggle('active', b===btn); });
+        renderFilmGrid();
+      });
+    });
+  }
+  function renderFilmGrid(){
+    var colors=filmColorsForCurrentSeries();
+    var q=(filmSearchInp.value||'').trim().toLowerCase();
+    var list;
+    if(q) list=colors.filter(function(c){ return c.code.toLowerCase().indexOf(q)>=0; });
+    else if(filmActiveTexture) list=colors.filter(function(c){ return c.texture===filmActiveTexture; });
+    else list=[];
+    if(!list.length){
+      filmGrid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#94a3b8;font-size:12px;padding:10px">'+(q?'\u041D\u0456\u0447\u043E\u0433\u043E \u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E':'\u041E\u0431\u0435\u0440\u0456\u0442\u044C \u0444\u0430\u043A\u0442\u0443\u0440\u0443 \u0430\u0431\u043E \u0441\u043A\u043E\u0440\u0438\u0441\u0442\u0430\u0439\u0442\u0435\u0441\u044C \u043F\u043E\u0448\u0443\u043A\u043E\u043C')+'</div>';
+      return;
+    }
+    filmGrid.innerHTML=list.map(filmChipHtml).join('');
+    bindFilmChips(filmGrid);
+  }
+  filmSearchInp.addEventListener('input', function(){
+    filmActiveTexture='';
+    filmTextureRow.querySelectorAll('[data-texture]').forEach(function(b){ b.classList.remove('active'); });
+    renderFilmGrid();
+  });
+  filmSeriesRow.querySelectorAll('[data-series]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      filmState.seriesId=btn.getAttribute('data-series');
+      filmState.code=null; filmActiveTexture=''; filmSearchInp.value='';
+      filmSeriesRow.querySelectorAll('[data-series]').forEach(function(b){ b.classList.toggle('active', b===btn); });
+      renderFilmPopular(); renderFilmTextures(); renderFilmGrid();
+      updatePreview();
+    });
+  });
+  if(filmActiveSeriesList.length){
+    filmState.seriesId=filmActiveSeriesList[0].id;
+    var firstSeriesBtn=filmSeriesRow.querySelector('[data-series="'+filmActiveSeriesList[0].id+'"]');
+    if(firstSeriesBtn) firstSeriesBtn.classList.add('active');
+    renderFilmPopular(); renderFilmTextures();
+  }
+
   function currentScopeIds(){
     if(scopeState.mode==='all') return rooms.map(function(r){ return r.id; });
     return Array.from(roomListEl.querySelectorAll('.aceilv-room-chk:checked')).map(function(c){ return c.value; });
@@ -603,6 +805,9 @@ function openBulkModal(project, baseVariantId){
   function buildOptsForPreview(){
     var changes={};
     CAT_DEFS.forEach(function(def){ changes[def.key]=Object.assign({}, catState[def.key]); });
+    changes.film = filmState.mode==='keep' ? {mode:'keep'}
+      : filmState.mode==='remove' ? {mode:'remove'}
+      : {mode:'replace', seriesId:filmState.seriesId, code:filmState.code};
     return {
       scope: scopeState.mode==='all' ? 'all' : 'rooms',
       roomIds: currentScopeIds(),
@@ -618,8 +823,22 @@ function openBulkModal(project, baseVariantId){
       var res=ENGINE.createVariant(probe, Object.assign({}, opts, {name:'__preview__'}));
       var breakdown=ENGINE.computeProjectBreakdown(probe, res.variant.id);
       document.getElementById('aceilvPreview').textContent='\u041F\u043E\u043F\u0435\u0440\u0435\u0434\u043D\u044F \u0441\u0443\u043C\u0430: '+money(breakdown.grandTotal);
+      var allNotes=res.assumptions.slice();
+      var filmInfoEl=document.getElementById('aceilvFilmInfo');
+      if(opts.changes.film.mode==='replace'){
+        var filmBd=ENGINE.computeFilmBreakdown(probe, res.variant.id);
+        allNotes=allNotes.concat(filmBd.warnings);
+        if(filmInfoEl){
+          var lines=filmBd.rooms.filter(function(r){ return !!r.info; }).map(function(r){
+            return (r.room && r.room.name || '')+': '+r.info.code+' '+r.info.widthM+'\u043C \u00B7 '+money(r.info.pricePerM2)+'/\u043C\u00B2 \u00B7 '+r.info.areaM2.toFixed(2)+' \u043C\u00B2 = '+money(r.info.total);
+          });
+          filmInfoEl.innerHTML=lines.map(function(l){ return '<div>'+esc(l)+'</div>'; }).join('');
+        }
+      }else if(filmInfoEl){
+        filmInfoEl.innerHTML='';
+      }
       var notesEl=document.getElementById('aceilvNotes');
-      notesEl.innerHTML = res.assumptions.length ? res.assumptions.map(function(a){ return '<div class="aceilv-note">'+esc(a)+'</div>'; }).join('') : '';
+      notesEl.innerHTML = allNotes.length ? allNotes.map(function(a){ return '<div class="aceilv-note">'+esc(a)+'</div>'; }).join('') : '';
     }catch(e){
       document.getElementById('aceilvPreview').textContent='\u041F\u043E\u043F\u0435\u0440\u0435\u0434\u043D\u044F \u0441\u0443\u043C\u0430: \u2014';
     }
@@ -632,7 +851,8 @@ function openBulkModal(project, baseVariantId){
     var opts=buildOptsForPreview();
     opts.name=document.getElementById('aceilvName').value;
     if(!opts.roomIds.length){ toast('\u041E\u0431\u0435\u0440\u0456\u0442\u044C \u0445\u043E\u0447\u0430 \u0431 \u043E\u0434\u043D\u0443 \u043A\u0456\u043C\u043D\u0430\u0442\u0443'); return; }
-    var hasChange=CAT_DEFS.some(function(def){ return opts.changes[def.key].mode!=='keep'; });
+    if(opts.changes.film.mode==='replace' && !opts.changes.film.code){ toast('\u041E\u0431\u0435\u0440\u0456\u0442\u044C \u043A\u043E\u043B\u0456\u0440 \u043F\u043B\u0456\u0432\u043A\u0438'); return; }
+    var hasChange=CAT_DEFS.some(function(def){ return opts.changes[def.key].mode!=='keep'; }) || opts.changes.film.mode!=='keep';
     if(!hasChange){ toast('\u041E\u0431\u0435\u0440\u0456\u0442\u044C \u0445\u043E\u0447\u0430 \u043E\u0434\u043D\u0443 \u0437\u043C\u0456\u043D\u0443'); return; }
     var proj=findActiveProject(); if(!proj) return;
     var result=ENGINE.createVariant(proj, opts);
@@ -772,8 +992,11 @@ function buildComparisonReportCanvas(project,variantId){
     return found ? found.total : 0;
   }
   var roomCount=Math.max(mainBd.rooms.length,varBd.rooms.length);
+  var mainFilmBd=ENGINE.computeFilmBreakdown(project,null);
+  var varFilmBd=ENGINE.computeFilmBreakdown(project,variantId);
+  var filmRoomCount=(project.rooms||[]).length;
   var sketchRows=Math.ceil((project.rooms||[]).length/2);
-  var height=570+names.length*58+(roomCount?80+roomCount*54:0)+170+(sketchRows?70+sketchRows*300:0);
+  var height=570+names.length*58+(roomCount?80+roomCount*54:0)+(filmRoomCount?90+filmRoomCount*70:0)+varFilmBd.warnings.length*24+170+(sketchRows?70+sketchRows*300:0);
   var canvas=document.createElement('canvas');
   canvas.width=1080; canvas.height=Math.max(1100,height);
   var c=canvas.getContext('2d');
@@ -828,6 +1051,30 @@ function buildComparisonReportCanvas(project,variantId){
       if(i%2===0){ c.fillStyle='#ffffff'; c.fillRect(48,y,984,50); }
       c.fillStyle='#334155'; c.font='700 17px Arial'; c.fillText(reportFitText(c,(mr&&mr.room&&mr.room.name)||(vr&&vr.room&&vr.room.name)||('\u041A\u0456\u043C\u043D\u0430\u0442\u0430 '+(i+1)),490),68,y+32);
       c.textAlign='right'; c.font='800 17px Arial'; c.fillText(reportMoney(mr?mr.total:0),780,y+32); c.fillStyle='#166534'; c.fillText(reportMoney(vr?vr.total:0),1008,y+32); c.textAlign='left'; y+=50;
+    }
+  }
+
+  if(filmRoomCount){
+    y+=42; c.fillStyle='#0f172a'; c.font='900 23px Arial'; c.fillText('\u041F\u043B\u0456\u0432\u043A\u0430 / \u043F\u043E\u043B\u043E\u0442\u043D\u043E',48,y); y+=24;
+    reportRoundRect(c,48,y,984,46,12,'#e2e8f0');
+    c.fillStyle='#475569'; c.font='800 14px Arial'; c.fillText('\u041A\u0406\u041C\u041D\u0410\u0422\u0410',68,y+29); c.textAlign='right';
+    c.fillText('\u041E\u0421\u041D\u041E\u0412\u041D\u0418\u0419',780,y+29); c.fillText(reportFitText(c,String(variantName).toUpperCase(),210),1008,y+29); c.textAlign='left'; y+=50;
+    (project.rooms||[]).forEach(function(room,i){
+      var mInfo=mainFilmBd.rooms[i]&&mainFilmBd.rooms[i].info, vInfo=varFilmBd.rooms[i]&&varFilmBd.rooms[i].info;
+      if(i%2===0){ c.fillStyle='#ffffff'; c.fillRect(48,y,984,66); }
+      c.fillStyle='#334155'; c.font='700 17px Arial'; c.fillText(reportFitText(c,room.name||('\u041A\u0456\u043C\u043D\u0430\u0442\u0430 '+(i+1)),300),68,y+26);
+      c.font='600 13px Arial'; c.fillStyle='#64748b';
+      c.fillText(mInfo?(mInfo.seriesName+' '+mInfo.code+' \u00B7 '+mInfo.widthM+'\u043C \u00B7 '+mInfo.areaM2.toFixed(1)+'\u043C\u00B2'):'\u2014',380,y+22);
+      c.fillText(vInfo?(vInfo.seriesName+' '+vInfo.code+' \u00B7 '+vInfo.widthM+'\u043C \u00B7 '+vInfo.areaM2.toFixed(1)+'\u043C\u00B2'):'\u2014',380,y+44);
+      c.textAlign='right'; c.font='800 15px Arial';
+      c.fillStyle='#1e3a8a'; c.fillText(reportMoney(mInfo?mInfo.total:0),1008,y+22);
+      c.fillStyle='#166534'; c.fillText(reportMoney(vInfo?vInfo.total:0),1008,y+44);
+      c.textAlign='left'; y+=70;
+    });
+    if(varFilmBd.warnings.length){
+      c.font='700 13px Arial'; c.fillStyle='#c2410c';
+      varFilmBd.warnings.forEach(function(w){ c.fillText(reportFitText(c,'\u26A0 '+w,940),68,y+14); y+=22; });
+      y+=8;
     }
   }
 
@@ -886,7 +1133,25 @@ function renderCompareTable(project, variantId){
     '<tr class="total"><td>\u0420\u0430\u0437\u043E\u043C</td><td class="num">'+money(mainBd.grandTotal)+'</td><td class="num">'+money(varBd.grandTotal)+'</td></tr>'+
     '<tr class="save"><td>'+diffLabel+'</td><td class="num" colspan="2">'+money(Math.abs(diff))+'</td></tr>'+
   '</tbody></table>';
-  document.getElementById('aceilvCmpTableWrap').innerHTML=html;
+
+  var mainFilm=ENGINE.computeFilmBreakdown(project, null);
+  var varFilm=ENGINE.computeFilmBreakdown(project, variantId);
+  function filmCell(info){
+    if(!info) return '\u2014';
+    return esc(info.seriesName)+' '+esc(info.code)+'<br><span style="color:#64748b;font-weight:600">'+esc(info.textureLabel)+' \u00B7 '+info.widthM+'\u043C \u00B7 '+money(info.pricePerM2)+'/\u043C\u00B2 \u00B7 '+info.areaM2.toFixed(2)+'\u043C\u00B2</span>';
+  }
+  var filmRows=(project.rooms||[]).map(function(room,i){
+    var mInfo=mainFilm.rooms[i]&&mainFilm.rooms[i].info, vInfo=varFilm.rooms[i]&&varFilm.rooms[i].info;
+    return '<tr><td>'+esc(room.name||'')+'</td><td>'+filmCell(mInfo)+'</td><td>'+filmCell(vInfo)+'</td>'+
+      '<td class="num">'+money(mInfo?mInfo.total:0)+'</td><td class="num">'+money(vInfo?vInfo.total:0)+'</td></tr>';
+  }).join('');
+  var filmHtml = (project.rooms||[]).length
+    ? '<div class="aceilv-cmp-subtitle">\u041F\u043B\u0456\u0432\u043A\u0430 / \u043F\u043E\u043B\u043E\u0442\u043D\u043E</div>'+
+      '<table class="aceilv-cmp-table"><thead><tr><th>\u041A\u0456\u043C\u043D\u0430\u0442\u0430</th><th>\u041E\u0441\u043D\u043E\u0432\u043D\u0438\u0439</th><th>\u0412\u0430\u0440\u0456\u0430\u043D\u0442</th><th class="num">\u0421\u0443\u043C\u0430 \u041E</th><th class="num">\u0421\u0443\u043C\u0430 \u0412</th></tr></thead><tbody>'+filmRows+'</tbody></table>'+
+      (varFilm.warnings.length ? varFilm.warnings.map(function(w){ return '<div class="aceilv-note">'+esc(w)+'</div>'; }).join('') : '')
+    : '';
+
+  document.getElementById('aceilvCmpTableWrap').innerHTML=html+filmHtml;
 }
 
 function openCompareModal(project){

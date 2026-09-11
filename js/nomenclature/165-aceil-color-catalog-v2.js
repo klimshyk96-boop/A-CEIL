@@ -140,5 +140,39 @@ window.ACEIL_FILM_PRICING={
 };
 window.ACEIL_TEXTURE_LABELS={lak:"Глянець",mat:"Мат",satin:"Сатин"};
 window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
+
+/* ---------------------------------------------------------------
+   Multi-series registry (added for "Варіанти кошторису" -> заміна
+   плівки). The flat globals above are UNTOUCHED — they remain the
+   single source of truth the live per-room canvas color picker (167)
+   reads and writes. Everything below is purely additive: it never
+   redefines a color, a price, or a texture label, only re-exposes the
+   same Premium data under a seriesId-aware shape and reserves empty,
+   inactive slots for Classic/Kralton until real data is supplied.
+   See chat reply for exactly which fields are still needed for them.
+   --------------------------------------------------------------- */
+(function(){
+  if(window.ACEIL_FILM_SERIES) return;
+  window.ACEIL_COLOR_CATALOG.forEach(function(c){ if(c && c.seriesId===undefined) c.seriesId="premium"; });
+
+  window.ACEIL_COLOR_CATALOG_BY_SERIES = {
+    premium: window.ACEIL_COLOR_CATALOG,
+    /* No confirmed Classic/Kralton codes/textures were supplied with
+       this task. Left empty on purpose — never invent color codes. */
+    classic: [],
+    kralton: []
+  };
+  window.ACEIL_FILM_PRICING_BY_SERIES = {
+    premium: window.ACEIL_FILM_PRICING,
+    /* {texture: {narrow: pricePerM2, wide: pricePerM2}, ...} once known */
+    classic: {},
+    kralton: {}
+  };
+  window.ACEIL_FILM_SERIES = [
+    {id:"premium", name:"Premium", manufacturer:"MSD", active:true},
+    {id:"classic", name:"Classic", manufacturer:"", active:false},
+    {id:"kralton", name:"Kralton", manufacturer:"", active:false}
+  ];
+})();
 })();
 
