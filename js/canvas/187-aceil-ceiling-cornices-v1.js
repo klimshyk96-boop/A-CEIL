@@ -5,6 +5,7 @@
 
   var editingId=null;
   var pendingPlacement=null;
+  var suppressCanvasClickUntil=0;
   var backupKey="A·CEIL_ceiling_cornices_v1";
   var suspendPersistence=false;
 
@@ -167,7 +168,20 @@
   function nearestWall(point){var p=points(),best=null;for(var i=0;i<p.length;i++){var a=p[i],b=p[(i+1)%p.length],vx=b.x-a.x,vy=b.y-a.y,len2=vx*vx+vy*vy;if(!len2)continue;var t=Math.max(0,Math.min(1,((point.x-a.x)*vx+(point.y-a.y)*vy)/len2)),q={x:a.x+t*vx,y:a.y+t*vy},distance=Math.hypot(point.x-q.x,point.y-q.y);if(!best||distance<best.distance)best={index:i,t:t,distance:distance};}return best;}
   function placeOnWall(point){var wall=nearestWall(point);if(!wall)return false;var item=clone(pendingPlacement),map=roomMap(wall.index);if(!map)return false;var sideCm=(+sideLengths()[wall.index]||Math.hypot(points()[(wall.index+1)%points().length].x-points()[wall.index].x,points()[(wall.index+1)%points().length].y-points()[wall.index].y)/map.scale),longCm=Math.max(1,+item.lengthA||1);if(longCm>sideCm){toast("Карниз "+Math.round(longCm)+" см не вміщується на стіні "+Math.round(sideCm)+" см");return true;}var intervalStart=Math.max(0,Math.min(sideCm-longCm,wall.t*sideCm-longCm/2));item.id="cornice_"+Date.now()+"_"+Math.floor(Math.random()*1000);item.baseIndex=wall.index;item.offsetY=0;if(item.flipX)item.offsetX=intervalStart+longCm;else item.offsetX=intervalStart;item.mountingType="hidden";item.rows=1;item.flipY=false;item.totalLengthM=Math.round(totalLength(item))/100;list().push(item);pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");persistNow();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();toast("✓ Карниз поставлено на стіну");return true;}
   function hitCornice(point){for(var i=list().length-1;i>=0;i--){var ps=canvasShape(list()[i]);for(var j=1;j<ps.length;j++)if(distanceToSegment(point,ps[j-1],ps[j])<=point.threshold)return list()[i];}return null;}
-  function bindCanvas(){var canvas=id("cv");if(!canvas||canvas.dataset.ceilingCornicesBound==="1")return;canvas.dataset.ceilingCornicesBound="1";canvas.addEventListener("click",function(ev){var point=eventWorld(ev,canvas);if(pendingPlacement){ev.preventDefault();ev.stopImmediatePropagation();placeOnWall(point);return;}var hit=hitCornice(point);if(!hit)return;ev.preventDefault();ev.stopImmediatePropagation();window.openCeilingCorniceModal(hit.id);},true);}
+  function bindCanvas(){
+    var canvas=id("cv");if(!canvas||canvas.dataset.ceilingCornicesBound==="1")return;canvas.dataset.ceilingCornicesBound="1";
+    /* Capture on window before the legacy wall handler can open its editor. */
+    window.addEventListener("pointerdown",function(ev){
+      if(!pendingPlacement||ev.target!==canvas)return;
+      ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
+      suppressCanvasClickUntil=Date.now()+900;placeOnWall(eventWorld(ev,canvas));
+    },true);
+    window.addEventListener("click",function(ev){
+      if(ev.target!==canvas||Date.now()>suppressCanvasClickUntil)return;
+      ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
+    },true);
+    canvas.addEventListener("click",function(ev){var point=eventWorld(ev,canvas);if(pendingPlacement){ev.preventDefault();ev.stopImmediatePropagation();placeOnWall(point);return;}var hit=hitCornice(point);if(!hit)return;ev.preventDefault();ev.stopImmediatePropagation();window.openCeilingCorniceModal(hit.id);},true);
+  }
 
   function injectLauncher(){
     var host=id("rmLightStartModal"),grid=host&&host.querySelector(".rm-ce-grid, .rm-ls-grid");if(!grid||id("ccLauncher"))return;
