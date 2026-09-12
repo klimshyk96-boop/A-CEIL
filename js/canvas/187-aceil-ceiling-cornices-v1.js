@@ -164,8 +164,10 @@
   function bindCanvas(){var canvas=id("cv");if(!canvas||canvas.dataset.ceilingCornicesBound==="1")return;canvas.dataset.ceilingCornicesBound="1";canvas.addEventListener("click",function(ev){var hit=hitCornice(eventWorld(ev,canvas));if(!hit)return;ev.preventDefault();ev.stopImmediatePropagation();window.openCeilingCorniceModal(hit.id);},true);}
 
   function injectLauncher(){
-    var grid=id("rmLightStartModal")&&id("rmLightStartModal").querySelector(".rm-ls-grid");if(!grid||id("ccLauncher"))return;
-    var button=document.createElement("button");button.type="button";button.id="ccLauncher";button.className="rm-ls-btn custom-real";button.innerHTML='<span class="rm-ls-icon cc-launch-icon">⌜</span><span><b>Карниз</b></span>';button.onclick=function(){try{if(typeof window.closeRmLightStart==="function")window.closeRmLightStart();}catch(e){}window.openCeilingCorniceModal();};
+    var host=id("rmLightStartModal"),grid=host&&host.querySelector(".rm-ce-grid, .rm-ls-grid");if(!grid||id("ccLauncher"))return;
+    var modern=grid.classList.contains("rm-ce-grid"),button=document.createElement("button");button.type="button";button.id="ccLauncher";button.className=modern?"rm-ce-card":"rm-ls-btn custom-real";
+    button.innerHTML=modern?'<span class="rm-ce-icon cc-launch-icon">⌜</span><span><b>Карниз</b><small>прямий, Г- або П-подібний</small></span>':'<span class="rm-ls-icon cc-launch-icon">⌜</span><span><b>Карниз</b></span>';
+    button.onclick=function(){try{if(typeof window.closeRmLightStart==="function")window.closeRmLightStart();}catch(e){}window.openCeilingCorniceModal();};
     var settings=grid.querySelector(".settings");grid.insertBefore(button,settings||null);
   }
   function wrapLauncher(){var previous=window.openRmLightStart;if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){var result=previous.apply(this,arguments);setTimeout(injectLauncher,0);return result;};wrapped.__ceilingCornices=true;window.openRmLightStart=wrapped;try{openRmLightStart=wrapped;}catch(e){}}
