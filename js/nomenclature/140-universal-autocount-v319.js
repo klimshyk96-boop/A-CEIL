@@ -85,6 +85,14 @@ function ceilingCorniceLengthM(profileName){
   });
   return Math.round(cm)/100;
 }
+function ceilingCorniceCornerCount(profileName){
+  var wanted=norm(profileName||""),count=0;
+  getCeilingCornices().forEach(function(item){
+    if(!item)return;var profile=norm(item.profileName||"UNO");if(wanted&&profile!==wanted)return;
+    if(item.shape==="L")count+=1;else if(item.shape==="U")count+=2;
+  });
+  return count;
+}
 function getElemItems(){
   try{if(typeof elemItems!=="undefined"&&Array.isArray(elemItems))return elemItems}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return Array.isArray(window.elemItems)?window.elemItems:[];
@@ -102,6 +110,7 @@ function linearTypeLabel(el){
 function dynamicSources(){
   var out=[];
   out.push({key:"ceilingcornice:uno",label:"Карниз ванної UNO (загальна довжина)",icon:"⌜",unit:"м"});
+  out.push({key:"ceilingcornicecorners:uno",label:"Кути UNO (кількість)",icon:"⌞",unit:"шт"});
   getLightTypes().forEach(function(t){
     if(!t||!t.id||!String(t.label||"").trim())return;
     out.push({
@@ -139,6 +148,10 @@ function dynamicSources(){
 }
 function computeSource(source){
   source=String(source||"");
+  if(source.indexOf("ceilingcornicecorners:")===0){
+    var cornerProfile="";try{cornerProfile=decodeURIComponent(source.slice(22))}catch(_){cornerProfile=source.slice(22)}
+    return {qty:ceilingCorniceCornerCount(cornerProfile||"uno"),unit:"шт"};
+  }
   if(source.indexOf("ceilingcornice:")===0){
     var profile="";try{profile=decodeURIComponent(source.slice(15))}catch(_){profile=source.slice(15)}
     return {qty:ceilingCorniceLengthM(profile||"uno"),unit:"м"};
@@ -196,6 +209,9 @@ function exactAutoSourceForName(name){
   var n=norm(name); if(!n)return null;
   if(n==="uno"||n==="уно"||n.indexOf("карниз uno")>=0||n.indexOf("карниз уно")>=0){
     return {source:"ceilingcornice:uno",unit:"м"};
+  }
+  if(n==="кут uno"||n==="кути uno"||n==="кут уно"||n==="кути уно"||n.indexOf("кут до uno")>=0||n.indexOf("кут до уно")>=0){
+    return {source:"ceilingcornicecorners:uno",unit:"шт"};
   }
 
   var matches=[];
