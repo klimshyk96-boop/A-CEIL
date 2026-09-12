@@ -135,9 +135,7 @@ function linearTypeLabel(el){
 }
 function dynamicSources(){
   var out=[];
-  out.push({key:"ceilingcornice:uno",label:"Карниз ванної UNO (загальна довжина)",icon:"⌜",unit:"м"});
-  out.push({key:"ceilingcornice:uno:white",label:"Карниз UNO — Білий",icon:"⚪",unit:"м"});
-  out.push({key:"ceilingcornice:uno:black",label:"Карниз UNO — Чорний",icon:"⚫",unit:"м"});
+  out.push({key:"ceilingcornice:uno",label:"Карниз UNO (за вибраним кольором)",icon:"⌜",unit:"м"});
   out.push({key:"ceilingcornicecorners:uno",label:"Кути UNO (кількість)",icon:"⌞",unit:"шт"});
   out.push({key:"ceilingcornicebreaks:uno",label:"Обриви UNO (кількість)",icon:"✂️",unit:"шт"});
   getLightTypes().forEach(function(t){
@@ -175,7 +173,7 @@ function dynamicSources(){
   });
   return out;
 }
-function computeSource(source){
+function computeSource(source,item){
   source=String(source||"");
   if(source==="cornice_break")return {qty:wallCorniceBreakCount()+ceilingCorniceBreakCount("uno"),unit:"шт"};
   if(source.indexOf("ceilingcornicebreaks:")===0){
@@ -189,6 +187,7 @@ function computeSource(source){
   if(source.indexOf("ceilingcornice:")===0){
     var rawProfile="";try{rawProfile=decodeURIComponent(source.slice(15))}catch(_){rawProfile=source.slice(15)}
     var profileParts=String(rawProfile||"uno").split(":"),profile=profileParts[0]||"uno",profileColor=profileParts[1]||"";
+    if(!profileColor&&item&&(item.sourceVariant==="white"||item.sourceVariant==="black"))profileColor=item.sourceVariant;
     return {qty:ceilingCorniceLengthM(profile,profileColor),unit:"м"};
   }
   if(source==="ventilation"){
@@ -242,20 +241,15 @@ function computeSource(source){
 }
 function exactAutoSourceForName(name){
   var n=norm(name); if(!n)return null;
-  if((n.indexOf("uno")>=0||n.indexOf("уно")>=0)&&/(^| )біл/.test(n)){
-    return {source:"ceilingcornice:uno:white",unit:"м"};
-  }
-  if((n.indexOf("uno")>=0||n.indexOf("уно")>=0)&&/(^| )чорн/.test(n)){
-    return {source:"ceilingcornice:uno:black",unit:"м"};
-  }
-  if(n==="uno"||n==="уно"||n.indexOf("карниз uno")>=0||n.indexOf("карниз уно")>=0){
-    return {source:"ceilingcornice:uno",unit:"м"};
-  }
   if(n==="кут uno"||n==="кути uno"||n==="кут уно"||n==="кути уно"||n.indexOf("кут до uno")>=0||n.indexOf("кут до уно")>=0){
     return {source:"ceilingcornicecorners:uno",unit:"шт"};
   }
   if(n==="обрив uno"||n==="обриви uno"||n==="обрив уно"||n==="обриви уно"||n.indexOf("обрив карниза uno")>=0||n.indexOf("обрив карнизу uno")>=0||n.indexOf("обрив карниза уно")>=0||n.indexOf("обрив карнизу уно")>=0){
     return {source:"ceilingcornicebreaks:uno",unit:"шт"};
+  }
+  if(n==="uno"||n==="уно"||n.indexOf("карниз uno")>=0||n.indexOf("карниз уно")>=0){
+    var unoColor=colorFromName(name);
+    return {source:"ceilingcornice:uno",unit:"м",variant:unoColor||""};
   }
 
   var matches=[];
@@ -297,18 +291,23 @@ function exactAutoSourceForName(name){
 function applyUniversal(opts){
   opts=opts||{};
   var changed=0,allItems=getElemItems();
-  var hasColorSpecificUno=allItems.some(function(it){
-    if(!it)return false;
-    var src=String(it.source||"");if(src==="ceilingcornice:uno:white"||src==="ceilingcornice:uno:black")return true;
-    var n=norm(it.name||"");return (n.indexOf("uno")>=0||n.indexOf("уно")>=0)&&(/(^| )біл/.test(n)||/(^| )чорн/.test(n));
+  var hasColoredUnoRows=allItems.some(function(row){
+    if(!row)return false;
+    var rowSource=String(row.source||"");
+    if(rowSource==="ceilingcornice:uno:white"||rowSource==="ceilingcornice:uno:black")return true;
+    if(rowSource==="ceilingcornice:uno"&&(row.sourceVariant==="white"||row.sourceVariant==="black"))return true;
+    var rowName=norm(row.name);
+    return (rowName.indexOf("uno")>=0||rowName.indexOf("уно")>=0)&&!!colorFromName(row.name);
   });
   allItems.forEach(function(it){
     if(!it)return;
     if(it.manualQtyOverride===true)return;
     var src=String(it.source||"");
-    var dynamic=computeSource(src);
+    if(src==="ceilingcornice:uno"&&hasColoredUnoRows&&it.sourceVariant!=="white"&&it.sourceVariant!=="black"){
+      it.qty=0;it.unit="м";it.autoFilled=true;it.autoZero=true;it.universalAuto=true;changed++;return;
+    }
+    var dynamic=computeSource(src,it);
     if(dynamic){
-      if(hasColorSpecificUno&&src==="ceilingcornice:uno")dynamic.qty=0;
       it.qty=dynamic.qty;
       it.unit=dynamic.unit;
       it.autoFilled=true;
@@ -321,9 +320,12 @@ function applyUniversal(opts){
 
     var auto=exactAutoSourceForName(it.name);
     if(!auto)return;
-    var val=computeSource(auto.source);
+    if(auto.variant)it.sourceVariant=auto.variant;
+    if(auto.source==="ceilingcornice:uno"&&hasColoredUnoRows&&!auto.variant){
+      it.qty=0;it.unit="м";it.autoFilled=true;it.autoZero=true;it.universalAuto=true;changed++;return;
+    }
+    var val=computeSource(auto.source,it);
     if(!val)return;
-    if(hasColorSpecificUno&&auto.source==="ceilingcornice:uno")val.qty=0;
     it.qty=val.qty;
     it.unit=val.unit;
     it.autoFilled=true;
@@ -367,6 +369,17 @@ function fillEditDynamicSources(){
   });
   sel.appendChild(group);
 }
+/* UNO uses the same Білий/Чорний selector as colored wall elements. */
+var prevExtraVisibility=window.updateSourceExtraFieldsVisibility||(typeof updateSourceExtraFieldsVisibility==="function"?updateSourceExtraFieldsVisibility:null);
+if(typeof prevExtraVisibility==="function"){
+  window.updateSourceExtraFieldsVisibility=function(){
+    var r=prevExtraVisibility.apply(this,arguments);
+    var sel=document.getElementById("editElemSource"),row=document.getElementById("editElemVariantRow");
+    if(row&&sel&&String(sel.value||"").indexOf("ceilingcornice:uno")===0)row.style.display="block";
+    return r;
+  };
+  try{updateSourceExtraFieldsVisibility=window.updateSourceExtraFieldsVisibility}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+}
 var prevOpenEdit=window.openEditElemModal||(typeof openEditElemModal==="function"?openEditElemModal:null);
 if(typeof prevOpenEdit==="function"){
   window.openEditElemModal=function(id){
@@ -375,6 +388,7 @@ if(typeof prevOpenEdit==="function"){
     var items=getElemItems(),it=items.find(function(x){return x&&x.id===id});
     var sel=document.getElementById("editElemSource");
     if(sel&&it&&it.source)sel.value=it.source;
+    try{if(typeof updateSourceExtraFieldsVisibility==="function")updateSourceExtraFieldsVisibility()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     return r;
   };
   try{openEditElemModal=window.openEditElemModal}catch(_){window.__diagSilent&&window.__diagSilent(_)}
