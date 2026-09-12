@@ -89,7 +89,32 @@ function ceilingCorniceCornerCount(profileName){
   var wanted=norm(profileName||""),count=0;
   getCeilingCornices().forEach(function(item){
     if(!item)return;var profile=norm(item.profileName||"UNO");if(wanted&&profile!==wanted)return;
-    if(item.shape==="L")count+=1;else if(item.shape==="U")count+=2;
+    var manual=Number(item.cornerCount);
+    if(item.cornerCount!=null&&isFinite(manual)&&manual>=0)count+=manual;
+    else if(item.shape==="L")count+=1;else if(item.shape==="U")count+=2;
+  });
+  return count;
+}
+function ceilingCorniceBreakCount(profileName){
+  var wanted=norm(profileName||""),count=0;
+  getCeilingCornices().forEach(function(item){
+    if(!item)return;var profile=norm(item.profileName||"UNO");if(wanted&&profile!==wanted)return;
+    /* Для стельового UNO обидва кінці завжди є технологічними обривами. */
+    count+=2;
+  });
+  return count;
+}
+function wallCorniceBreakCount(){
+  var count=0,marks=getWallMarks();
+  marks.forEach(function(m){
+    if(!m||norm(m.type||m.name||m.title||"").indexOf("карниз")<0)return;
+    if(m.forceBreaks===true){count+=2;return;}
+    var side=Number(m.sideIndex)||0,sideLen=0;
+    try{sideLen=typeof _sideLenCm==="function"?Number(_sideLenCm(side))||0:(Array.isArray(lengths)?Number(lengths[side])||0:0)}catch(_){sideLen=0}
+    if(!(sideLen>0)){count+=2;return;}
+    var tolerance=Math.max(1,sideLen*.003),start=Number(m.offsetCm)||0,end=start+(Number(m.lenCm)||0);
+    if(start>tolerance)count++;
+    if(end<sideLen-tolerance)count++;
   });
   return count;
 }
@@ -111,6 +136,7 @@ function dynamicSources(){
   var out=[];
   out.push({key:"ceilingcornice:uno",label:"Карниз ванної UNO (загальна довжина)",icon:"⌜",unit:"м"});
   out.push({key:"ceilingcornicecorners:uno",label:"Кути UNO (кількість)",icon:"⌞",unit:"шт"});
+  out.push({key:"ceilingcornicebreaks:uno",label:"Обриви UNO (кількість)",icon:"✂️",unit:"шт"});
   getLightTypes().forEach(function(t){
     if(!t||!t.id||!String(t.label||"").trim())return;
     out.push({
@@ -148,6 +174,11 @@ function dynamicSources(){
 }
 function computeSource(source){
   source=String(source||"");
+  if(source==="cornice_break")return {qty:wallCorniceBreakCount()+ceilingCorniceBreakCount("uno"),unit:"шт"};
+  if(source.indexOf("ceilingcornicebreaks:")===0){
+    var breakProfile="";try{breakProfile=decodeURIComponent(source.slice(21))}catch(_){breakProfile=source.slice(21)}
+    return {qty:ceilingCorniceBreakCount(breakProfile||"uno"),unit:"шт"};
+  }
   if(source.indexOf("ceilingcornicecorners:")===0){
     var cornerProfile="";try{cornerProfile=decodeURIComponent(source.slice(22))}catch(_){cornerProfile=source.slice(22)}
     return {qty:ceilingCorniceCornerCount(cornerProfile||"uno"),unit:"шт"};
@@ -212,6 +243,9 @@ function exactAutoSourceForName(name){
   }
   if(n==="кут uno"||n==="кути uno"||n==="кут уно"||n==="кути уно"||n.indexOf("кут до uno")>=0||n.indexOf("кут до уно")>=0){
     return {source:"ceilingcornicecorners:uno",unit:"шт"};
+  }
+  if(n==="обрив uno"||n==="обриви uno"||n==="обрив уно"||n==="обриви уно"||n.indexOf("обрив карниза uno")>=0||n.indexOf("обрив карнизу uno")>=0||n.indexOf("обрив карниза уно")>=0||n.indexOf("обрив карнизу уно")>=0){
+    return {source:"ceilingcornicebreaks:uno",unit:"шт"};
   }
 
   var matches=[];
