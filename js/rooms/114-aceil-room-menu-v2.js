@@ -29,21 +29,15 @@ function toggleCleanView(){
   return window.A·CEILCanvasCleanView;
 }
 function toggle(ev){if(ev){ev.preventDefault();ev.stopPropagation();}var e=els();if(!e.popup)return false;var open=e.popup.hidden;e.popup.hidden=!open;document.documentElement.classList.toggle("aceil-room-menu-open",open);if(e.toggle)e.toggle.setAttribute("aria-expanded",open?"true":"false");if(open)syncCanvasAction();return open;}
-function installPopupScroll(){
-  var e=els();if(!e.popup||e.popup.dataset.touchScrollFixed==="1")return;
-  e.popup.dataset.touchScrollFixed="1";
-  var style=document.getElementById("aceilRoomMenuScrollFix");
+function installCompactMenu(){
+  var e=els();if(!e.popup||e.popup.dataset.compactGrid==="1")return;
+  e.popup.dataset.compactGrid="1";
+  var style=document.getElementById("aceilRoomMenuCompactGrid");
   if(!style){
-    style=document.createElement("style");style.id="aceilRoomMenuScrollFix";
-    style.textContent='[id="A·CEILRoomMenuPopup"]{max-height:min(70dvh,420px)!important;overflow-x:hidden!important;overflow-y:scroll!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;touch-action:pan-y!important}html.aceil-room-menu-open,html.aceil-room-menu-open body{overscroll-behavior:none!important}';
+    style=document.createElement("style");style.id="aceilRoomMenuCompactGrid";
+    style.textContent='[id="A·CEILRoomMenuPopup"]{width:min(300px,86vw)!important;max-height:none!important;overflow:visible!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important;padding:9px!important}[id="A·CEILRoomMenuPopup"][hidden]{display:none!important}[id="A·CEILRoomMenuPopup"] .rm-room-menu-action{min-height:72px!important;padding:8px 5px!important;border:1px solid #e2e8f0!important;border-radius:14px!important;background:#f8fafc!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;text-align:center!important}[id="A·CEILRoomMenuPopup"] .rm-room-menu-action:active{background:#eaf1ff!important}[id="A·CEILRoomMenuPopup"] .rm-room-menu-action svg{width:24px!important;height:24px!important;flex:0 0 24px!important}[id="A·CEILRoomMenuPopup"] .rm-room-menu-action span{align-items:center!important;min-width:0!important}[id="A·CEILRoomMenuPopup"] .rm-room-menu-action b{font-size:11.5px!important;line-height:1.15!important}[id="A·CEILRoomMenuPopup"] .rm-room-menu-action small{display:none!important}[id="A·CEILRoomMenuPopup"] .rm-room-menu-separator{display:none!important}';
     document.head.appendChild(style);
   }
-  e.popup.addEventListener("touchmove",function(ev){ev.stopPropagation();},{passive:true});
-  document.addEventListener("touchmove",function(ev){
-    var current=els();if(!current.popup||current.popup.hidden)return;
-    if(current.popup.contains(ev.target))return;
-    ev.preventDefault();
-  },{passive:false});
 }
 function validPoints(){try{return Array.isArray(window.pts)?window.pts.filter(function(p){return p&&isFinite(Number(p.x))&&isFinite(Number(p.y));}):(typeof pts!=="undefined"&&Array.isArray(pts)?pts.filter(function(p){return p&&isFinite(Number(p.x))&&isFinite(Number(p.y));}):[]);}catch(e){return[];}}
 function showWholeRoom(){
@@ -75,6 +69,6 @@ window.addEventListener("A·CEIL:tool-panel-change",syncCanvasAction);
 window.A·CEILCanvasCleanView=readCleanView();
 window.toggleA·CEILRoomMenu=toggle;window.closeA·CEILRoomMenu=close;window.A·CEILShowWholeRoom=showWholeRoom;window.A·CEILToggleCanvasMode=toggleCanvasMode;window.A·CEILToggleCleanCanvasView=toggleCleanView;window.A·CEILDeleteCurrentRoom=deleteCurrent;
 window.A·CEIL=window.A·CEIL||{};window.A·CEIL.RoomMenu={toggle:toggle,close:close,showWholeRoom:showWholeRoom,toggleCanvasMode:toggleCanvasMode,toggleCleanView:toggleCleanView,deleteCurrentRoom:deleteCurrent,syncCanvasAction:syncCanvasAction};
-function boot(){syncCanvasAction();installPopupScroll();}
+function boot(){syncCanvasAction();installCompactMenu();}
 if(typeof rmOnReady==="function")rmOnReady(boot);else if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 })();
