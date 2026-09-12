@@ -125,9 +125,9 @@
 
 /* Film picker v3: compact left-bottom canvas control on phone and desktop. */
 #aceilColorPickerBtn{
-  position:absolute;left:10px;right:auto;top:auto;bottom:14px;z-index:61;
-  width:56px;min-width:56px;height:48px;min-height:48px;padding:4px!important;
-  border:1px solid rgba(99,102,241,.18);border-radius:14px;
+  position:absolute;left:6px;right:auto;top:auto;bottom:8px;z-index:61;
+  width:42px;min-width:42px;height:38px;min-height:38px;padding:2px!important;
+  border:1px solid rgba(99,102,241,.18);border-radius:11px;
   background:rgba(255,255,255,.96);color:#273253;
   box-shadow:0 8px 22px rgba(15,23,42,.15);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
@@ -135,9 +135,9 @@
   touch-action:manipulation
 }
 #aceilColorPickerBtn:active{transform:scale(.94)}
-#aceilColorPickerBtn .acpb-icon{font-size:13px;line-height:1}
-#aceilColorPickerBtn .acpb-code{font-size:10.5px;font-weight:950;line-height:1;letter-spacing:-.02em}
-#aceilColorPickerBtn .acpb-width{opacity:1;font-size:8.5px;font-weight:850;line-height:1.1;color:#2563eb}
+#aceilColorPickerBtn .acpb-icon{font-size:10px;line-height:1}
+#aceilColorPickerBtn .acpb-code{font-size:8.5px;font-weight:950;line-height:1;letter-spacing:-.02em}
+#aceilColorPickerBtn .acpb-width{opacity:1;font-size:7px;font-weight:850;line-height:1.05;color:#2563eb}
 #aceilColorPickerBtn.acpb-error{background:#fff7ed;border-color:#fb923c}
 #aceilColorPickerBtn.acpb-error .acpb-width{color:#c2410c}
 #aceilColorPickerModalV2 .acp2-popular{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:14px}
