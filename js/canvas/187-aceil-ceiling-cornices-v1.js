@@ -83,7 +83,16 @@
     if(item.shape==="straight")return [[0,0],[sx*a,0]];
     return [[0,0],[sx*a,0],[sx*a,sy*b]];
   }
-  function canvasShape(item){return localShape(item).map(function(p){return localToCanvas((+item.offsetX||0)+p[0],(+item.offsetY||0)+p[1],item.baseIndex||0);}).filter(Boolean);}
+  function cornerShape(item){
+    var p=points(),n=p.length,i=Math.max(0,Math.min(n-1,+item.cornerIndex||0));if(n<3)return [];
+    var c=p[i],prev=p[(i-1+n)%n],next=p[(i+1)%n],pvx=prev.x-c.x,pvy=prev.y-c.y,nvx=next.x-c.x,nvy=next.y-c.y,pd=Math.hypot(pvx,pvy),nd=Math.hypot(nvx,nvy);if(!pd||!nd)return [];
+    var prevSide=(i-1+n)%n,prevCm=+sideLengths()[prevSide]||pd,nextCm=+sideLengths()[i]||nd;
+    var prevHorizontal=Math.abs(pvx)>=Math.abs(pvy),longHorizontal=(item.longAxis||"horizontal")==="horizontal";
+    var longOnPrev=prevHorizontal===longHorizontal,prevLen=longOnPrev?(+item.lengthA||160):(+item.lengthB||70),nextLen=longOnPrev?(+item.lengthB||70):(+item.lengthA||160);
+    var ep={x:c.x+pvx/pd*prevLen*(pd/prevCm),y:c.y+pvy/pd*prevLen*(pd/prevCm)},en={x:c.x+nvx/nd*nextLen*(nd/nextCm),y:c.y+nvy/nd*nextLen*(nd/nextCm)};
+    return [ep,{x:ep.x+(en.x-c.x),y:ep.y+(en.y-c.y)},en];
+  }
+  function canvasShape(item){if(item&&item.shape==="L"&&item.placementMode==="corner")return cornerShape(item);return localShape(item).map(function(p){return localToCanvas((+item.offsetX||0)+p[0],(+item.offsetY||0)+p[1],item.baseIndex||0);}).filter(Boolean);}
   function totalLength(item){return item.shape==="straight"?(+item.lengthA||0):(+item.lengthA||0)+(+item.lengthB||0);}
   function directionIcon(item){return (item.flipY?(item.flipX?"┘":"└"):(item.flipX?"┐":"┌"));}
 
@@ -124,29 +133,29 @@
   function ensureModal(){
     if(id("ceilingCorniceModal"))return;
     var modal=document.createElement("div");modal.id="ceilingCorniceModal";
-    modal.innerHTML='<div class="cc-card"><div class="cc-head"><div><div class="cc-title" id="ccTitle">Карниз на стелі</div><div class="cc-sub">Оберіть форму, розмір і колір</div></div><button type="button" class="cc-close" onclick="closeCeilingCorniceModal()">×</button></div><div class="cc-label">Форма</div><div class="cc-choice" id="ccShapes"><button type="button" data-value="straight">— Прямий</button><button type="button" data-value="L">Г-подібний</button></div><div class="cc-grid"><div><label class="cc-label" id="ccLengthALabel">Довга сторона, см</label><input class="cc-input" id="ccLengthA" type="number" inputmode="decimal" value="160"></div><div id="ccLengthBWrap"><label class="cc-label">Коротка сторона, см</label><input class="cc-input" id="ccLengthB" type="number" inputmode="decimal" value="70"></div></div><div id="ccDirectionWrap"><div class="cc-label">Коротка сторона</div><div class="cc-directions" id="ccDirections"><button type="button" data-x="1" data-y="0">↰ Зліва</button><button type="button" data-x="0" data-y="0">↱ Справа</button></div></div><div class="cc-label">Колір</div><div class="cc-colors" id="ccColors"><button type="button" data-value="white">⚪ Білий</button><button type="button" data-value="black">⚫ Чорний</button></div><button type="button" class="cc-gear" onclick="toggleCeilingCorniceAdvanced()">⚙️ Точне розташування і профіль</button><div class="cc-advanced" id="ccAdvanced"><div class="cc-label">Від якої стіни</div><select class="cc-select" id="ccBase"></select><div class="cc-grid"><div><label class="cc-label">Відступ уздовж, см</label><input class="cc-input" id="ccOffsetX" type="number" inputmode="decimal" value="0"></div><div><label class="cc-label">Відступ від стіни, см</label><input class="cc-input" id="ccOffsetY" type="number" inputmode="decimal" value="0"></div></div><label class="cc-label">Профіль номенклатури</label><input class="cc-input" id="ccProfile" placeholder="Можна прив’язати пізніше"><div class="cc-profile-note">Карниз завжди прихований та однорядний. Ціна з’явиться після прив’язки профілю.</div></div><div class="cc-summary" id="ccSummary"></div><div class="cc-footer"><button type="button" class="cc-delete" id="ccDelete" onclick="deleteCeilingCornice()">🗑</button><button type="button" class="cc-cancel" onclick="closeCeilingCorniceModal()">Скасувати</button><button type="button" class="cc-save" id="ccSave" onclick="saveCeilingCornice()">Обрати стіну →</button></div></div>';
+    modal.innerHTML='<div class="cc-card"><div class="cc-head"><div><div class="cc-title" id="ccTitle">Карниз для ванної</div><div class="cc-sub">Кінці карниза спираються на сусідні стіни</div></div><button type="button" class="cc-close" onclick="closeCeilingCorniceModal()">×</button></div><div class="cc-label">Форма</div><div class="cc-choice" id="ccShapes"><button type="button" data-value="straight">— Прямий</button><button type="button" data-value="L">Г-подібний</button></div><div class="cc-grid"><div><label class="cc-label" id="ccLengthALabel">Довга сторона, см</label><input class="cc-input" id="ccLengthA" type="number" inputmode="decimal" value="160"></div><div id="ccLengthBWrap"><label class="cc-label">Коротка сторона, см</label><input class="cc-input" id="ccLengthB" type="number" inputmode="decimal" value="70"></div></div><div id="ccDirectionWrap"><div class="cc-label">Напрям довгої сторони</div><div class="cc-directions" id="ccOrientation"><button type="button" data-value="horizontal">↔ 160 горизонтально</button><button type="button" data-value="vertical">↕ 160 вертикально</button></div></div><div class="cc-label">Колір</div><div class="cc-colors" id="ccColors"><button type="button" data-value="white">⚪ Білий</button><button type="button" data-value="black">⚫ Чорний</button></div><button type="button" class="cc-gear" onclick="toggleCeilingCorniceAdvanced()">⚙️ Профіль</button><div class="cc-advanced" id="ccAdvanced"><label class="cc-label">Профіль номенклатури</label><input class="cc-input" id="ccProfile" placeholder="Можна прив’язати пізніше"><div class="cc-profile-note">Карниз завжди прихований та однорядний. Ціна з’явиться після прив’язки профілю.</div><div style="display:none"><select id="ccBase"></select><input id="ccOffsetX" value="0"><input id="ccOffsetY" value="0"></div></div><div class="cc-summary" id="ccSummary"></div><div class="cc-footer"><button type="button" class="cc-delete" id="ccDelete" onclick="deleteCeilingCornice()">🗑</button><button type="button" class="cc-cancel" onclick="closeCeilingCorniceModal()">Скасувати</button><button type="button" class="cc-save" id="ccSave" onclick="saveCeilingCornice()">Обрати кут →</button></div></div>';
     document.body.appendChild(modal);
-    var hint=document.createElement("div");hint.id="ccPlacementHint";hint.innerHTML='Торкніться потрібної стіни на кресленні<br><button type="button" onclick="cancelCeilingCornicePlacement()">Скасувати</button>';document.body.appendChild(hint);
+    var hint=document.createElement("div");hint.id="ccPlacementHint";hint.innerHTML='<span id="ccPlacementText">Торкніться потрібного кута кімнати</span><br><button type="button" onclick="cancelCeilingCornicePlacement()">Скасувати</button>';document.body.appendChild(hint);
     modal.addEventListener("click",function(e){if(e.target===modal)window.closeCeilingCorniceModal();});
     modal.querySelectorAll("input,select").forEach(function(el){el.addEventListener("input",updateSummary);el.addEventListener("change",updateSummary);});
     id("ccShapes").querySelectorAll("button").forEach(function(btn){btn.onclick=function(){setChoice("ccShapes",btn.dataset.value);updateSummary();};});
     id("ccColors").querySelectorAll("button").forEach(function(btn){btn.onclick=function(){setChoice("ccColors",btn.dataset.value);};});
-    id("ccDirections").querySelectorAll("button").forEach(function(btn){btn.onclick=function(){setDirection(btn.dataset.x==="1",btn.dataset.y==="1");};});
+    id("ccOrientation").querySelectorAll("button").forEach(function(btn){btn.onclick=function(){setChoice("ccOrientation",btn.dataset.value);};});
   }
   function setChoice(group,value){var box=id(group);if(!box)return;box.dataset.value=value;box.querySelectorAll("button").forEach(function(btn){btn.classList.toggle("active",btn.dataset.value===value);});}
-  function setDirection(flipX,flipY){var box=id("ccDirections");box.dataset.x=flipX?"1":"0";box.dataset.y=flipY?"1":"0";box.querySelectorAll("button").forEach(function(btn){btn.classList.toggle("active",btn.dataset.x===box.dataset.x&&btn.dataset.y===box.dataset.y);});}
   window.toggleCeilingCorniceAdvanced=function(){var box=id("ccAdvanced");if(box)box.classList.toggle("open");};
   function fillBaseOptions(selected){var p=points(),select=id("ccBase");if(!select)return;select.innerHTML=(p.length?p:[{}]).map(function(_,i){return '<option value="'+i+'">Кут '+String.fromCharCode(65+i)+'</option>';}).join("");select.value=String(Math.max(0,Math.min(p.length-1,+selected||0)));}
   function updateSummary(){
     var shape=id("ccShapes")&&id("ccShapes").dataset.value||"L",a=Math.max(0,+id("ccLengthA").value||0),b=Math.max(0,+id("ccLengthB").value||0),total=shape==="straight"?a:a+b;
     id("ccLengthBWrap").style.display=shape==="straight"?"none":"block";id("ccDirectionWrap").style.display=shape==="straight"?"none":"block";id("ccLengthALabel").textContent=shape==="straight"?"Довжина, см":"Довга сторона, см";
     id("ccSummary").textContent=shape==="straight"?"Прямий · "+Math.round(a)+" см":"Г-подібний · "+Math.round(b)+" × "+Math.round(a)+" см · загалом "+(total/100).toFixed(2)+" м";
+    if(!editingId&&id("ccSave"))id("ccSave").textContent=shape==="L"?"Обрати кут →":"Обрати стіну →";
   }
   function openEditor(item){
     ensureStyle();ensureModal();editingId=item&&item.id||null;
     var value=item||{shape:"L",lengthA:160,lengthB:70,flipX:false,flipY:false,color:"white",mountingType:"hidden",rows:1,baseIndex:0,offsetX:0,offsetY:0,profileName:""};
     id("ccTitle").textContent=editingId?"Редагувати карниз":"Новий карниз на стелі";
-    setChoice("ccShapes",value.shape||"L");setChoice("ccColors",value.color||"white");setDirection(!!value.flipX,!!value.flipY);
+    setChoice("ccShapes",value.shape||"L");setChoice("ccColors",value.color||"white");setChoice("ccOrientation",value.longAxis||"horizontal");
     id("ccLengthA").value=Math.round(+value.lengthA||160);id("ccLengthB").value=Math.round(+value.lengthB||70);fillBaseOptions(value.baseIndex||0);id("ccOffsetX").value=Math.round(+value.offsetX||0);id("ccOffsetY").value=Math.round(+value.offsetY||0);id("ccProfile").value=value.profileName||"";id("ccDelete").style.display=editingId?"block":"none";id("ccSave").textContent=editingId?"✓ Зберегти":"Обрати стіну →";id("ccAdvanced").classList.toggle("open",!!editingId);updateSummary();id("ceilingCorniceModal").classList.add("open");
   }
   window.openCeilingCorniceModal=function(itemId){var item=itemId?list().find(function(x){return x.id===itemId;}):null;openEditor(item);};
@@ -154,9 +163,9 @@
   window.saveCeilingCornice=function(){
     var shape=id("ccShapes").dataset.value||"L",a=Math.max(1,Math.round(+id("ccLengthA").value||0)),b=Math.max(1,Math.round(+id("ccLengthB").value||0));
     if(!a||(shape!=="straight"&&!b)){toast("Вкажіть розміри карниза");return;}
-    var values={shape:shape,lengthA:a,lengthB:b,flipX:id("ccDirections").dataset.x==="1",flipY:false,color:id("ccColors").dataset.value||"white",mountingType:"hidden",rows:1,baseIndex:Math.max(0,+id("ccBase").value||0),offsetX:Math.max(0,+id("ccOffsetX").value||0),offsetY:Math.max(0,+id("ccOffsetY").value||0),profileName:String(id("ccProfile").value||"").trim()};
+    var values={shape:shape,lengthA:a,lengthB:b,longAxis:id("ccOrientation").dataset.value||"horizontal",flipX:false,flipY:false,color:id("ccColors").dataset.value||"white",mountingType:"hidden",rows:1,baseIndex:Math.max(0,+id("ccBase").value||0),offsetX:Math.max(0,+id("ccOffsetX").value||0),offsetY:Math.max(0,+id("ccOffsetY").value||0),profileName:String(id("ccProfile").value||"").trim()};
     var item=editingId?list().find(function(x){return x.id===editingId;}):null;
-    if(!item){pendingPlacement=values;id("ceilingCorniceModal").classList.remove("open");id("ccPlacementHint").classList.add("open");editingId=null;toast("Торкніться потрібної стіни");return;}
+    if(!item){pendingPlacement=values;id("ceilingCorniceModal").classList.remove("open");id("ccPlacementText").textContent=shape==="L"?"Торкніться потрібного кута кімнати":"Торкніться потрібної стіни";id("ccPlacementHint").classList.add("open");editingId=null;toast(shape==="L"?"Торкніться потрібного кута":"Торкніться потрібної стіни");return;}
     Object.keys(values).forEach(function(k){item[k]=values[k];});item.totalLengthM=Math.round(totalLength(item))/100;
     persistNow();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();window.closeCeilingCorniceModal();toast("✓ Карниз збережено");
   };
@@ -166,7 +175,17 @@
   function distanceToSegment(p,a,b){var vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y,c1=wx*vx+wy*vy;if(c1<=0)return Math.hypot(p.x-a.x,p.y-a.y);var c2=vx*vx+vy*vy;if(c2<=c1)return Math.hypot(p.x-b.x,p.y-b.y);var t=c1/c2;return Math.hypot(p.x-(a.x+t*vx),p.y-(a.y+t*vy));}
   function eventWorld(ev,canvas){var r=canvas.getBoundingClientRect(),rawX=(ev.clientX-r.left)*(canvas.width/r.width),rawY=(ev.clientY-r.top)*(canvas.height/r.height),zoom=1,ox=0,oy=0;try{zoom=typeof viewScale!=="undefined"&&viewScale>0?viewScale:1;ox=typeof viewOffsetX!=="undefined"?viewOffsetX:0;oy=typeof viewOffsetY!=="undefined"?viewOffsetY:0;}catch(e){}return{x:(rawX-ox)/zoom,y:(rawY-oy)/zoom,threshold:18/zoom};}
   function nearestWall(point){var p=points(),best=null;for(var i=0;i<p.length;i++){var a=p[i],b=p[(i+1)%p.length],vx=b.x-a.x,vy=b.y-a.y,len2=vx*vx+vy*vy;if(!len2)continue;var t=Math.max(0,Math.min(1,((point.x-a.x)*vx+(point.y-a.y)*vy)/len2)),q={x:a.x+t*vx,y:a.y+t*vy},distance=Math.hypot(point.x-q.x,point.y-q.y);if(!best||distance<best.distance)best={index:i,t:t,distance:distance};}return best;}
+  function nearestCorner(point){var p=points(),best=null;p.forEach(function(c,i){var distance=Math.hypot(point.x-c.x,point.y-c.y);if(!best||distance<best.distance)best={index:i,distance:distance};});return best;}
+  function placeAtCorner(point){
+    var corner=nearestCorner(point),p=points();if(!corner||p.length<3)return false;
+    var i=corner.index,n=p.length,c=p[i],prev=p[(i-1+n)%n],next=p[(i+1)%n],prevSide=(i-1+n)%n;
+    var prevCm=+sideLengths()[prevSide]||0,nextCm=+sideLengths()[i]||0,prevHorizontal=Math.abs(prev.x-c.x)>=Math.abs(prev.y-c.y),longHorizontal=(pendingPlacement.longAxis||"horizontal")==="horizontal",longOnPrev=prevHorizontal===longHorizontal;
+    var prevNeed=longOnPrev?(+pendingPlacement.lengthA||0):(+pendingPlacement.lengthB||0),nextNeed=longOnPrev?(+pendingPlacement.lengthB||0):(+pendingPlacement.lengthA||0);
+    if((prevCm&&prevNeed>prevCm)||(nextCm&&nextNeed>nextCm)){toast("Карниз не вміщується біля цього кута");return true;}
+    var item=clone(pendingPlacement);item.id="cornice_"+Date.now()+"_"+Math.floor(Math.random()*1000);item.placementMode="corner";item.cornerIndex=i;item.mountingType="hidden";item.rows=1;item.totalLengthM=Math.round(totalLength(item))/100;list().push(item);pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");persistNow();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();toast("✓ Карниз встановлено біля кута "+String.fromCharCode(65+i));return true;
+  }
   function placeOnWall(point){var wall=nearestWall(point);if(!wall)return false;var item=clone(pendingPlacement),map=roomMap(wall.index);if(!map)return false;var sideCm=(+sideLengths()[wall.index]||Math.hypot(points()[(wall.index+1)%points().length].x-points()[wall.index].x,points()[(wall.index+1)%points().length].y-points()[wall.index].y)/map.scale),longCm=Math.max(1,+item.lengthA||1);if(longCm>sideCm){toast("Карниз "+Math.round(longCm)+" см не вміщується на стіні "+Math.round(sideCm)+" см");return true;}var intervalStart=Math.max(0,Math.min(sideCm-longCm,wall.t*sideCm-longCm/2));item.id="cornice_"+Date.now()+"_"+Math.floor(Math.random()*1000);item.baseIndex=wall.index;item.offsetY=0;if(item.flipX)item.offsetX=intervalStart+longCm;else item.offsetX=intervalStart;item.mountingType="hidden";item.rows=1;item.flipY=false;item.totalLengthM=Math.round(totalLength(item))/100;list().push(item);pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");persistNow();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();toast("✓ Карниз поставлено на стіну");return true;}
+  function placePending(point){return pendingPlacement&&pendingPlacement.shape==="L"?placeAtCorner(point):placeOnWall(point);}
   function hitCornice(point){for(var i=list().length-1;i>=0;i--){var ps=canvasShape(list()[i]);for(var j=1;j<ps.length;j++)if(distanceToSegment(point,ps[j-1],ps[j])<=point.threshold)return list()[i];}return null;}
   function bindCanvas(){
     var canvas=id("cv");if(!canvas||canvas.dataset.ceilingCornicesBound==="1")return;canvas.dataset.ceilingCornicesBound="1";
@@ -174,19 +193,19 @@
     window.addEventListener("pointerdown",function(ev){
       if(!pendingPlacement||ev.target!==canvas)return;
       ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
-      suppressCanvasClickUntil=Date.now()+900;placeOnWall(eventWorld(ev,canvas));
+      suppressCanvasClickUntil=Date.now()+900;placePending(eventWorld(ev,canvas));
     },true);
     window.addEventListener("click",function(ev){
       if(ev.target!==canvas||Date.now()>suppressCanvasClickUntil)return;
       ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
     },true);
-    canvas.addEventListener("click",function(ev){var point=eventWorld(ev,canvas);if(pendingPlacement){ev.preventDefault();ev.stopImmediatePropagation();placeOnWall(point);return;}var hit=hitCornice(point);if(!hit)return;ev.preventDefault();ev.stopImmediatePropagation();window.openCeilingCorniceModal(hit.id);},true);
+    canvas.addEventListener("click",function(ev){var point=eventWorld(ev,canvas);if(pendingPlacement){ev.preventDefault();ev.stopImmediatePropagation();placePending(point);return;}var hit=hitCornice(point);if(!hit)return;ev.preventDefault();ev.stopImmediatePropagation();window.openCeilingCorniceModal(hit.id);},true);
   }
 
   function injectLauncher(){
     var host=id("rmLightStartModal"),grid=host&&host.querySelector(".rm-ce-grid, .rm-ls-grid");if(!grid||id("ccLauncher"))return;
     var modern=grid.classList.contains("rm-ce-grid"),button=document.createElement("button");button.type="button";button.id="ccLauncher";button.className=modern?"rm-ce-card":"rm-ls-btn custom-real";
-    button.innerHTML=modern?'<span class="rm-ce-icon cc-launch-icon">⌜</span><span><b>Карниз</b><small>прямий або Г-подібний</small></span>':'<span class="rm-ls-icon cc-launch-icon">⌜</span><span><b>Карниз</b></span>';
+    button.innerHTML=modern?'<span class="rm-ce-icon cc-launch-icon">⌜</span><span><b>Карниз ванної</b><small>прямий або Г-подібний</small></span>':'<span class="rm-ls-icon cc-launch-icon">⌜</span><span><b>Карниз ванної</b></span>';
     button.onclick=function(){try{if(typeof window.closeRmLightStart==="function")window.closeRmLightStart();}catch(e){}window.openCeilingCorniceModal();};
     var settings=grid.querySelector(".settings");grid.insertBefore(button,settings||null);
   }
