@@ -15,6 +15,40 @@
   function list(){if(!Array.isArray(window.ceilingCornices))window.ceilingCornices=[];return window.ceilingCornices;}
   function toast(text){try{if(typeof window.showToast==="function")window.showToast(text);}catch(e){}}
   function redraw(){try{if(typeof window.requestDraw==="function")window.requestDraw();else if(typeof window.draw==="function")window.draw();}catch(e){}}
+  function recalcNomenclature(){try{if(typeof window.autoFillNomenclature==="function")window.autoFillNomenclature({silent:true});}catch(e){window.__diagSilent&&window.__diagSilent(e);}}
+  function runtimeElemItems(){try{return typeof elemItems!=="undefined"&&Array.isArray(elemItems)?elemItems:(Array.isArray(window.elemItems)?window.elemItems:[]);}catch(e){return Array.isArray(window.elemItems)?window.elemItems:[];}}
+  function repairFilmSelection(){
+    var all=runtimeElemItems(),films=all.filter(function(it){return it&&Number(it.filmWidth)>0;});if(!films.length)return;
+    films.forEach(function(it){
+      var series=it.seriesId||it.filmSeriesId||"premium",catalogs=window.ACEIL_COLOR_CATALOG_BY_SERIES||{},catalog=Array.isArray(catalogs[series])?catalogs[series]:(series==="premium"&&Array.isArray(window.ACEIL_COLOR_CATALOG)?window.ACEIL_COLOR_CATALOG:[]),entry=catalog.find(function(c){return c&&String(c.code)===String(it.colorCode||"");});
+      if(!entry||!Array.isArray(entry.filmWidths))return;var nominal=Number(it.filmWidth),width=entry.filmWidths.find(function(w){return Math.abs((Number(w.nominal)||0)-nominal)<1e-6;});if(width)it.filmMaxWidth=Number(width.max)||nominal;
+    });
+    var needed=0;try{needed=Number(typeof getRequiredFilmWidthMeters==="function"?getRequiredFilmWidthMeters():window.getRequiredFilmWidthMeters&&window.getRequiredFilmWidthMeters())||0;}catch(e){}
+    var fitting=films.filter(function(it){return (Number(it.filmMaxWidth)||Number(it.filmWidth)||0)+1e-9>=needed;}).sort(function(a,b){return (Number(a.filmWidth)||99)-(Number(b.filmWidth)||99);});if(!fitting.length)return;
+    var min=Number(fitting[0].filmWidth)||0,best=fitting.filter(function(it){return Math.abs((Number(it.filmWidth)||0)-min)<1e-9;}),chosen=best.find(function(it){return Number(it.qty)>0;})||best.find(function(it){return String(it.colorCode||"").toUpperCase()==="M303"&&(it.seriesId||"premium")==="premium";})||best[0];
+    films.forEach(function(it){it.filmSelected=it===chosen;});
+  }
+  function forceFilmQuantity(){
+    repairFilmSelection();var films=runtimeElemItems().filter(function(it){return it&&Number(it.filmWidth)>0;}),needed=0,area=0;if(!films.length)return;
+    try{needed=Number(typeof getRequiredFilmWidthMeters==="function"?getRequiredFilmWidthMeters():window.getRequiredFilmWidthMeters&&window.getRequiredFilmWidthMeters())||0;}catch(e){}
+    try{area=Number(typeof getProjectAreaMeters==="function"?getProjectAreaMeters():window.getProjectAreaMeters&&window.getProjectAreaMeters())||0;}catch(e){}
+    if(!(area>0)){var areaEl=id("area");area=Number(String(areaEl&&areaEl.textContent||"0").replace(",","."))||0;}
+    var fitting=films.filter(function(it){return (Number(it.filmMaxWidth)||Number(it.filmWidth)||0)+1e-9>=needed;}).sort(function(a,b){return (Number(a.filmWidth)||99)-(Number(b.filmWidth)||99);}),chosen=fitting[0]||null;
+    if(chosen){var min=Number(chosen.filmWidth)||0,same=fitting.filter(function(it){return Math.abs((Number(it.filmWidth)||0)-min)<1e-9;});chosen=same.find(function(it){return Number(it.qty)>0;})||same.find(function(it){return String(it.colorCode||"").toUpperCase()==="M303"&&(it.seriesId||"premium")==="premium";})||same[0];}
+    films.forEach(function(it){it.filmSelected=it===chosen;it.qty=it===chosen&&area>0?Math.round(area*100)/100:0;it.autoFilled=true;it.autoZero=!(Number(it.qty)>0);});
+    try{if(typeof window.renderElemList==="function")window.renderElemList();}catch(e){}try{if(typeof window.updateElemBadge==="function")window.updateElemBadge();}catch(e){}try{if(typeof window.recalcElemTotal==="function")window.recalcElemTotal();}catch(e){}
+  }
+  function wrapFilmAutoFill(){
+    var previous=window.autoFillNomenclature;if(typeof previous!=="function"||previous.__ceilingFilmFix)return;
+    var wrapped=function(){
+      repairFilmSelection();var oldWindowToast=window.showToast,oldLexicalToast=null;
+      var filteredToast=function(message){if(/Кілька рулонів однакової ширини/i.test(String(message||"")))return;return typeof oldWindowToast==="function"?oldWindowToast.apply(this,arguments):undefined;};
+      window.showToast=filteredToast;try{oldLexicalToast=showToast;showToast=filteredToast;}catch(e){}
+      var result;try{result=previous.apply(this,arguments);}finally{window.showToast=oldWindowToast;try{if(oldLexicalToast)showToast=oldLexicalToast;}catch(e){}}
+      forceFilmQuantity();return result;
+    };
+    wrapped.__ceilingFilmFix=true;window.autoFillNomenclature=wrapped;try{autoFillNomenclature=wrapped;}catch(e){}
+  }
   function projectList(){try{return typeof window.getProjects==="function"?window.getProjects():[];}catch(e){return [];}}
   function findProject(value){var wanted=String(value==null?"":value);return projectList().find(function(p){return p&&[p.id,p._dbId,p._localId].some(function(v){return String(v==null?"":v)===wanted;});})||null;}
   function activeObjectId(){try{return typeof _activeObjectId!=="undefined"?_activeObjectId:window._activeObjectId;}catch(e){return window._activeObjectId;}}
@@ -153,7 +187,7 @@
   }
   function openEditor(item){
     ensureStyle();ensureModal();editingId=item&&item.id||null;
-    var value=item||{shape:"L",lengthA:160,lengthB:70,flipX:false,flipY:false,color:"white",mountingType:"hidden",rows:1,baseIndex:0,offsetX:0,offsetY:0,profileName:""};
+    var value=item||{shape:"L",lengthA:160,lengthB:70,flipX:false,flipY:false,color:"white",mountingType:"hidden",rows:1,baseIndex:0,offsetX:0,offsetY:0,profileName:"UNO"};
     id("ccTitle").textContent=editingId?"Редагувати карниз":"Новий карниз на стелі";
     setChoice("ccShapes",value.shape||"L");setChoice("ccColors",value.color||"white");setChoice("ccOrientation",value.longAxis||"horizontal");
     id("ccLengthA").value=Math.round(+value.lengthA||160);id("ccLengthB").value=Math.round(+value.lengthB||70);fillBaseOptions(value.baseIndex||0);id("ccOffsetX").value=Math.round(+value.offsetX||0);id("ccOffsetY").value=Math.round(+value.offsetY||0);id("ccProfile").value=value.profileName||"";id("ccDelete").style.display=editingId?"block":"none";id("ccSave").textContent=editingId?"✓ Зберегти":"Обрати стіну →";id("ccAdvanced").classList.toggle("open",!!editingId);updateSummary();id("ceilingCorniceModal").classList.add("open");
@@ -167,9 +201,9 @@
     var item=editingId?list().find(function(x){return x.id===editingId;}):null;
     if(!item){pendingPlacement=values;id("ceilingCorniceModal").classList.remove("open");id("ccPlacementText").textContent=shape==="L"?"Торкніться потрібного кута кімнати":"Торкніться потрібної стіни";id("ccPlacementHint").classList.add("open");editingId=null;toast(shape==="L"?"Торкніться потрібного кута":"Торкніться потрібної стіни");return;}
     Object.keys(values).forEach(function(k){item[k]=values[k];});item.totalLengthM=Math.round(totalLength(item))/100;
-    persistNow();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();window.closeCeilingCorniceModal();toast("✓ Карниз збережено");
+    persistNow();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();window.closeCeilingCorniceModal();toast("✓ Карниз збережено");
   };
-  window.deleteCeilingCornice=function(){if(!editingId)return;var index=list().findIndex(function(x){return x.id===editingId;});if(index>=0)list().splice(index,1);persistNow();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();window.closeCeilingCorniceModal();toast("Карниз видалено");};
+  window.deleteCeilingCornice=function(){if(!editingId)return;var index=list().findIndex(function(x){return x.id===editingId;});if(index>=0)list().splice(index,1);persistNow();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();window.closeCeilingCorniceModal();toast("Карниз видалено");};
   window.cancelCeilingCornicePlacement=function(){pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");toast("Розміщення скасовано");};
 
   function distanceToSegment(p,a,b){var vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y,c1=wx*vx+wy*vy;if(c1<=0)return Math.hypot(p.x-a.x,p.y-a.y);var c2=vx*vx+vy*vy;if(c2<=c1)return Math.hypot(p.x-b.x,p.y-b.y);var t=c1/c2;return Math.hypot(p.x-(a.x+t*vx),p.y-(a.y+t*vy));}
@@ -182,9 +216,9 @@
     var prevCm=+sideLengths()[prevSide]||0,nextCm=+sideLengths()[i]||0,prevHorizontal=Math.abs(prev.x-c.x)>=Math.abs(prev.y-c.y),longHorizontal=(pendingPlacement.longAxis||"horizontal")==="horizontal",longOnPrev=prevHorizontal===longHorizontal;
     var prevNeed=longOnPrev?(+pendingPlacement.lengthA||0):(+pendingPlacement.lengthB||0),nextNeed=longOnPrev?(+pendingPlacement.lengthB||0):(+pendingPlacement.lengthA||0);
     if((prevCm&&prevNeed>prevCm)||(nextCm&&nextNeed>nextCm)){toast("Карниз не вміщується біля цього кута");return true;}
-    var item=clone(pendingPlacement);item.id="cornice_"+Date.now()+"_"+Math.floor(Math.random()*1000);item.placementMode="corner";item.cornerIndex=i;item.mountingType="hidden";item.rows=1;item.totalLengthM=Math.round(totalLength(item))/100;list().push(item);pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");persistNow();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();toast("✓ Карниз встановлено біля кута "+String.fromCharCode(65+i));return true;
+    var item=clone(pendingPlacement);item.id="cornice_"+Date.now()+"_"+Math.floor(Math.random()*1000);item.placementMode="corner";item.cornerIndex=i;item.mountingType="hidden";item.rows=1;item.profileName=item.profileName||"UNO";item.totalLengthM=Math.round(totalLength(item))/100;list().push(item);pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");persistNow();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();toast("✓ Карниз встановлено біля кута "+String.fromCharCode(65+i));return true;
   }
-  function placeOnWall(point){var wall=nearestWall(point);if(!wall)return false;var item=clone(pendingPlacement),map=roomMap(wall.index);if(!map)return false;var sideCm=(+sideLengths()[wall.index]||Math.hypot(points()[(wall.index+1)%points().length].x-points()[wall.index].x,points()[(wall.index+1)%points().length].y-points()[wall.index].y)/map.scale),longCm=Math.max(1,+item.lengthA||1);if(longCm>sideCm){toast("Карниз "+Math.round(longCm)+" см не вміщується на стіні "+Math.round(sideCm)+" см");return true;}var intervalStart=Math.max(0,Math.min(sideCm-longCm,wall.t*sideCm-longCm/2));item.id="cornice_"+Date.now()+"_"+Math.floor(Math.random()*1000);item.baseIndex=wall.index;item.offsetY=0;if(item.flipX)item.offsetX=intervalStart+longCm;else item.offsetX=intervalStart;item.mountingType="hidden";item.rows=1;item.flipY=false;item.totalLengthM=Math.round(totalLength(item))/100;list().push(item);pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");persistNow();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();toast("✓ Карниз поставлено на стіну");return true;}
+  function placeOnWall(point){var wall=nearestWall(point);if(!wall)return false;var item=clone(pendingPlacement),map=roomMap(wall.index);if(!map)return false;var sideCm=(+sideLengths()[wall.index]||Math.hypot(points()[(wall.index+1)%points().length].x-points()[wall.index].x,points()[(wall.index+1)%points().length].y-points()[wall.index].y)/map.scale),longCm=Math.max(1,+item.lengthA||1);if(longCm>sideCm){toast("Карниз "+Math.round(longCm)+" см не вміщується на стіні "+Math.round(sideCm)+" см");return true;}var intervalStart=Math.max(0,Math.min(sideCm-longCm,wall.t*sideCm-longCm/2));item.id="cornice_"+Date.now()+"_"+Math.floor(Math.random()*1000);item.baseIndex=wall.index;item.offsetY=0;if(item.flipX)item.offsetX=intervalStart+longCm;else item.offsetX=intervalStart;item.mountingType="hidden";item.rows=1;item.flipY=false;item.profileName=item.profileName||"UNO";item.totalLengthM=Math.round(totalLength(item))/100;list().push(item);pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");persistNow();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();toast("✓ Карниз поставлено на стіну");return true;}
   function placePending(point){return pendingPlacement&&pendingPlacement.shape==="L"?placeAtCorner(point):placeOnWall(point);}
   function hitCornice(point){for(var i=list().length-1;i>=0;i--){var ps=canvasShape(list()[i]);for(var j=1;j<ps.length;j++)if(distanceToSegment(point,ps[j-1],ps[j])<=point.threshold)return list()[i];}return null;}
   function bindCanvas(){
@@ -219,7 +253,7 @@
     ["saveState","saveCurrentRoom","saveProject"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){var result=previous.apply(this,arguments);if(!suspendPersistence){persistNow();if(result&&typeof result.then==="function")result.then(function(){persistNow();});}return result;};wrapped.__ceilingCornices=true;window[name]=wrapped;try{eval(name+"=wrapped");}catch(e){}});
     ["resetAll","resetAllSilent"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){window.ceilingCornices=[];return previous.apply(this,arguments);};wrapped.__ceilingCornices=true;window[name]=wrapped;try{eval(name+"=wrapped");}catch(e){}});
   }
-  function init(){ensureStyle();ensureModal();wrapDrawing();wrapLauncher();wrapPersistence();bindCanvas();injectLauncher();}
+  function init(){ensureStyle();ensureModal();wrapDrawing();wrapLauncher();wrapPersistence();wrapFilmAutoFill();forceFilmQuantity();bindCanvas();injectLauncher();}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
   setTimeout(init,300);setTimeout(init,1200);
 })();
