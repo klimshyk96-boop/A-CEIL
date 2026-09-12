@@ -77,6 +77,65 @@
     }
   }
 
+  function currentMark(){
+    var markId=window._rwe2CurrentWallId||window._wallEditId||null;
+    var list=[];
+    try{list=Array.isArray(window.wallMarks)?window.wallMarks:(typeof wallMarks!=="undefined"&&Array.isArray(wallMarks)?wallMarks:[]);}catch(e){list=[];}
+    return list.find(function(mark){return mark&&String(mark.id)===String(markId);})||null;
+  }
+
+  function selectedPresetName(){
+    var select=byId("rwe2Preset"),name=byId("rwe2Name");
+    return String(select&&select.value||name&&name.value||"").trim();
+  }
+
+  function selectedDrawingColor(){
+    var value=byId("rwe2ColorValue");
+    return String(value&&value.value||"#f97316");
+  }
+
+  function savePresetColor(){
+    var name=selectedPresetName(),color=selectedDrawingColor();
+    if(!name){
+      if(typeof window.showToast==="function")window.showToast("Оберіть заготовку");
+      return false;
+    }
+    try{
+      if(typeof window.rwe2WallPresetUpsert==="function"){
+        window.rwe2WallPresetUpsert(name,color);
+      }else{
+        var list=typeof window.rwe2WallPresetRead==="function"?(window.rwe2WallPresetRead()||[]):[];
+        var found=list.find(function(item){return item&&String(item.name||"").toLowerCase()===name.toLowerCase();});
+        if(found)found.color=color;else list.push({name:name,color:color});
+        if(typeof window.rwe2WallPresetWrite==="function")window.rwe2WallPresetWrite(list);
+        else localStorage.setItem("A·CEIL_wall_presets_v32",JSON.stringify(list));
+      }
+      var mark=currentMark();
+      if(mark){mark.type=name;mark.color=color;}
+      if(typeof window.saveState==="function")window.saveState();
+      if(typeof window.requestDraw==="function")window.requestDraw();else if(typeof window.draw==="function")window.draw();
+      syncPresetColorDot();
+      if(typeof window.showToast==="function")window.showToast("✓ Колір збережено для «"+name+"»");
+      return true;
+    }catch(e){
+      window.__diagSilent&&window.__diagSilent(e);
+      if(typeof window.showToast==="function")window.showToast("Не вдалося зберегти колір");
+      return false;
+    }
+  }
+
+  function ensurePresetColorSave(){
+    var colors=byId("rwe2Colors");
+    if(!colors||byId("rwe2SavePresetColor"))return;
+    var button=document.createElement("button");
+    button.type="button";
+    button.id="rwe2SavePresetColor";
+    button.className="rwe2-save-preset-color rwe2-only-adv";
+    button.textContent="💾 Зберегти колір для заготовки";
+    button.onclick=function(event){event.preventDefault();savePresetColor();};
+    colors.insertAdjacentElement("afterend",button);
+  }
+
   function simplifyVisibleLayout(modal){
     var preview = byId("rwe2LivePreview");
     if (preview) preview.classList.add("rwe2-always-hidden");
@@ -169,6 +228,7 @@
     tagHiddenFields(box);
     simplifyVisibleLayout(box);
     ensureBreakModeUi();
+    ensurePresetColorSave();
     syncPresetColorDot();
     var btn = ensureToggleBtn(box);
 
