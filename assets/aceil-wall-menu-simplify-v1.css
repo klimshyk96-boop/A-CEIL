@@ -74,6 +74,20 @@
   z-index:2;
 }
 
+#wallEditModal .rwe2-save-preset-color{
+  width:100%!important;
+  min-height:40px!important;
+  margin-top:8px!important;
+  padding:8px 12px!important;
+  border:1.5px solid #bfdbfe!important;
+  border-radius:13px!important;
+  background:#eff6ff!important;
+  color:#1d4ed8!important;
+  box-shadow:none!important;
+  font-size:12px!important;
+  font-weight:900!important;
+}
+
 /* Compact footer: small delete action + one primary save action. */
 #wallEditModal .rwe2-footer{
   grid-template-columns:minmax(0,1fr)!important;
