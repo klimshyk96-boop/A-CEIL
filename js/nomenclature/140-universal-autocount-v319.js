@@ -73,12 +73,13 @@ function getLinear(){
 function getCeilingCornices(){
   return Array.isArray(window.ceilingCornices)?window.ceilingCornices:[];
 }
-function ceilingCorniceLengthM(profileName){
-  var wanted=norm(profileName||""),cm=0;
+function ceilingCorniceLengthM(profileName,color){
+  var wanted=norm(profileName||""),wantedColor=String(color||"").toLowerCase(),cm=0;
   getCeilingCornices().forEach(function(item){
     if(!item)return;
     var profile=norm(item.profileName||"UNO");
     if(wanted&&profile!==wanted)return;
+    if(wantedColor&&String(item.color||"white").toLowerCase()!==wantedColor)return;
     var saved=Number(item.totalLengthM);
     if(isFinite(saved)&&saved>0)cm+=saved*100;
     else cm+=(Number(item.lengthA)||0)+(item.shape==="L"?(Number(item.lengthB)||0):0);
@@ -135,6 +136,8 @@ function linearTypeLabel(el){
 function dynamicSources(){
   var out=[];
   out.push({key:"ceilingcornice:uno",label:"Карниз ванної UNO (загальна довжина)",icon:"⌜",unit:"м"});
+  out.push({key:"ceilingcornice:uno:white",label:"Карниз UNO — Білий",icon:"⚪",unit:"м"});
+  out.push({key:"ceilingcornice:uno:black",label:"Карниз UNO — Чорний",icon:"⚫",unit:"м"});
   out.push({key:"ceilingcornicecorners:uno",label:"Кути UNO (кількість)",icon:"⌞",unit:"шт"});
   out.push({key:"ceilingcornicebreaks:uno",label:"Обриви UNO (кількість)",icon:"✂️",unit:"шт"});
   getLightTypes().forEach(function(t){
@@ -184,8 +187,9 @@ function computeSource(source){
     return {qty:ceilingCorniceCornerCount(cornerProfile||"uno"),unit:"шт"};
   }
   if(source.indexOf("ceilingcornice:")===0){
-    var profile="";try{profile=decodeURIComponent(source.slice(15))}catch(_){profile=source.slice(15)}
-    return {qty:ceilingCorniceLengthM(profile||"uno"),unit:"м"};
+    var rawProfile="";try{rawProfile=decodeURIComponent(source.slice(15))}catch(_){rawProfile=source.slice(15)}
+    var profileParts=String(rawProfile||"uno").split(":"),profile=profileParts[0]||"uno",profileColor=profileParts[1]||"";
+    return {qty:ceilingCorniceLengthM(profile,profileColor),unit:"м"};
   }
   if(source==="ventilation"){
     return {
@@ -238,6 +242,12 @@ function computeSource(source){
 }
 function exactAutoSourceForName(name){
   var n=norm(name); if(!n)return null;
+  if((n.indexOf("uno")>=0||n.indexOf("уно")>=0)&&/(^| )біл/.test(n)){
+    return {source:"ceilingcornice:uno:white",unit:"м"};
+  }
+  if((n.indexOf("uno")>=0||n.indexOf("уно")>=0)&&/(^| )чорн/.test(n)){
+    return {source:"ceilingcornice:uno:black",unit:"м"};
+  }
   if(n==="uno"||n==="уно"||n.indexOf("карниз uno")>=0||n.indexOf("карниз уно")>=0){
     return {source:"ceilingcornice:uno",unit:"м"};
   }
@@ -286,13 +296,19 @@ function exactAutoSourceForName(name){
 }
 function applyUniversal(opts){
   opts=opts||{};
-  var changed=0;
-  getElemItems().forEach(function(it){
+  var changed=0,allItems=getElemItems();
+  var hasColorSpecificUno=allItems.some(function(it){
+    if(!it)return false;
+    var src=String(it.source||"");if(src==="ceilingcornice:uno:white"||src==="ceilingcornice:uno:black")return true;
+    var n=norm(it.name||"");return (n.indexOf("uno")>=0||n.indexOf("уно")>=0)&&(/(^| )біл/.test(n)||/(^| )чорн/.test(n));
+  });
+  allItems.forEach(function(it){
     if(!it)return;
     if(it.manualQtyOverride===true)return;
     var src=String(it.source||"");
     var dynamic=computeSource(src);
     if(dynamic){
+      if(hasColorSpecificUno&&src==="ceilingcornice:uno")dynamic.qty=0;
       it.qty=dynamic.qty;
       it.unit=dynamic.unit;
       it.autoFilled=true;
@@ -307,6 +323,7 @@ function applyUniversal(opts){
     if(!auto)return;
     var val=computeSource(auto.source);
     if(!val)return;
+    if(hasColorSpecificUno&&auto.source==="ceilingcornice:uno")val.qty=0;
     it.qty=val.qty;
     it.unit=val.unit;
     it.autoFilled=true;
