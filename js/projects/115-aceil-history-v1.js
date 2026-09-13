@@ -120,7 +120,8 @@ function mount(){
   if(!host||document.getElementById("A·CEILHistoryControls"))return;
   var wrap=document.createElement("div");wrap.id="A·CEILHistoryControls";
   undoButton=button("A·CEILUndoBtn","Назад","M9 14 4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 0 11H11");
-  redoButton=button("A·CEILRedoBtn","Вперед","M15 14l5-5-5-5 M20 9H9.5a5.5 5.5 0 0 0 0 11H13");
+  redoButton=button("A·CEILRedoBtn","Вперед","M9 14 4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 0 11H11");
+  redoButton.classList.add("rm-history-btn-mirror");
   wrap.appendChild(undoButton);wrap.appendChild(redoButton);host.appendChild(wrap);
   reset(readSnapshot());
 }
