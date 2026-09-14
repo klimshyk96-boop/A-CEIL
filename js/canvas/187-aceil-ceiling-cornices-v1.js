@@ -18,6 +18,31 @@
   function redraw(){try{if(typeof window.requestDraw==="function")window.requestDraw();else if(typeof window.draw==="function")window.draw();}catch(e){}}
   function recalcNomenclature(){try{if(typeof window.autoFillNomenclature==="function")window.autoFillNomenclature({silent:true});}catch(e){window.__diagSilent&&window.__diagSilent(e);}}
   function runtimeElemItems(){try{return typeof elemItems!=="undefined"&&Array.isArray(elemItems)?elemItems:(Array.isArray(window.elemItems)?window.elemItems:[]);}catch(e){return Array.isArray(window.elemItems)?window.elemItems:[];}}
+  function runtimeElemGroups(){try{if(typeof elemGroups!=="undefined"&&Array.isArray(elemGroups))return elemGroups;if(Array.isArray(window.elemGroups))return window.elemGroups;window.elemGroups=[];return window.elemGroups;}catch(e){if(!Array.isArray(window.elemGroups))window.elemGroups=[];return window.elemGroups;}}
+  var ELEM_GROUP_ID="grp_ceiling_cornice_v1";
+  function corniceElemLabel(item){return item.shape==="straight"?"Карниз ванної, прямий "+Math.round(+item.lengthA||0)+" см":"Карниз ванної, Г-подібний "+Math.round(+item.lengthB||0)+"×"+Math.round(+item.lengthA||0)+" см";}
+  function syncElemItems(){
+    /* Mirror every placed cornice as its own row in the Номенклатура list,
+       named with its size and quantified in meters, so it shows up in the
+       report's materials table instead of only existing as a line on the
+       plan. Matched by __corniceId so edits update the row in place and
+       deletions remove exactly that row, without touching anything the
+       user added manually. */
+    try{
+      var groups=runtimeElemGroups();
+      if(list().length&&!groups.some(function(g){return g&&g.id===ELEM_GROUP_ID;}))groups.push({id:ELEM_GROUP_ID,name:"Карниз ванної"});
+      var items=runtimeElemItems(),liveIds=list().map(function(it){return it.id;});
+      list().forEach(function(item){
+        var qty=Math.round(totalLength(item))/100,existing=items.find(function(it){return it&&it.__corniceId===item.id;});
+        if(existing){existing.name=corniceElemLabel(item);existing.qty=qty;existing.unit="м";existing.groupId=ELEM_GROUP_ID;}
+        else items.push({id:"elem_"+item.id,__corniceId:item.id,groupId:ELEM_GROUP_ID,icon:"▤",name:corniceElemLabel(item),qty:qty,unit:"м",inputMode:"manual",source:"",price:0,autoFilled:true});
+      });
+      for(var i=items.length-1;i>=0;i--)if(items[i]&&items[i].__corniceId&&liveIds.indexOf(items[i].__corniceId)===-1)items.splice(i,1);
+      try{if(typeof window.renderElemList==="function")window.renderElemList();}catch(e){}
+      try{if(typeof window.updateElemBadge==="function")window.updateElemBadge();}catch(e){}
+      try{if(typeof window.recalcElemTotal==="function")window.recalcElemTotal();}catch(e){}
+    }catch(e){window.__diagSilent&&window.__diagSilent(e);}
+  }
   function repairFilmSelection(){
     var all=runtimeElemItems(),films=all.filter(function(it){return it&&Number(it.filmWidth)>0;});if(!films.length)return;
     films.forEach(function(it){
@@ -136,12 +161,17 @@
     var zoom=1;try{zoom=typeof viewScale!=="undefined"&&isFinite(viewScale)&&viewScale>0?viewScale:1;}catch(e){}
     list().forEach(function(item){
       var ps=canvasShape(item);if(ps.length<2)return;
-      var color=item.color==="white"?"#f8fafc":"#111827";
+      /* The line must stay clearly readable on a plain white report
+         background regardless of which physical profile color the user
+         picked. So the outer contour is always a solid, visible orange —
+         matching the "Карниз UNO" legend swatch — and the profile's own
+         color (white/black) is shown as the thinner fill on top of it,
+         instead of swapping the whole line's visibility on/off. */
       ctx.save();ctx.lineCap="round";ctx.lineJoin="round";
       ctx.beginPath();ctx.moveTo(ps[0].x,ps[0].y);for(var i=1;i<ps.length;i++)ctx.lineTo(ps[i].x,ps[i].y);
-      ctx.strokeStyle=item.color==="white"?"#64748b":"rgba(255,255,255,.95)";ctx.lineWidth=8/zoom;ctx.stroke();
+      ctx.strokeStyle="#f97316";ctx.lineWidth=8/zoom;ctx.stroke();
       ctx.beginPath();ctx.moveTo(ps[0].x,ps[0].y);for(var j=1;j<ps.length;j++)ctx.lineTo(ps[j].x,ps[j].y);
-      ctx.strokeStyle=color;ctx.lineWidth=(item.mountingType==="hidden"?5:4)/zoom;
+      ctx.strokeStyle=item.color==="white"?"#ffffff":"#111827";ctx.lineWidth=(item.mountingType==="hidden"?5:4)/zoom;
       if(item.mountingType==="niche")ctx.setLineDash([9/zoom,6/zoom]);ctx.stroke();ctx.setLineDash([]);
       var mid=ps[Math.floor(ps.length/2)],label=item.shape==="straight"?Math.round(+item.lengthA||0)+" см":"Г · "+Math.round(+item.lengthB||0)+"×"+Math.round(+item.lengthA||0)+" см";
       ctx.font="800 "+(11/zoom)+"px -apple-system,Arial";var w=ctx.measureText(label).width+12/zoom;
@@ -204,9 +234,9 @@
     var item=editingId?list().find(function(x){return x.id===editingId;}):null;
     if(!item){pendingPlacement=values;id("ceilingCorniceModal").classList.remove("open");id("ccPlacementText").textContent=shape==="L"?"Торкніться потрібного кута кімнати":"Торкніться потрібної стіни";id("ccPlacementHint").classList.add("open");editingId=null;toast(shape==="L"?"Торкніться потрібного кута":"Торкніться потрібної стіни");return;}
     Object.keys(values).forEach(function(k){item[k]=values[k];});item.totalLengthM=Math.round(totalLength(item))/100;
-    persistNow();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();window.closeCeilingCorniceModal();toast("✓ Карниз збережено");
+    persistNow();syncElemItems();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();window.closeCeilingCorniceModal();toast("✓ Карниз збережено");
   };
-  window.deleteCeilingCornice=function(){if(!editingId)return;var index=list().findIndex(function(x){return x.id===editingId;});if(index>=0)list().splice(index,1);persistNow();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();window.closeCeilingCorniceModal();toast("Карниз видалено");};
+  window.deleteCeilingCornice=function(){if(!editingId)return;var index=list().findIndex(function(x){return x.id===editingId;});if(index>=0)list().splice(index,1);persistNow();syncElemItems();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();window.closeCeilingCorniceModal();toast("Карниз видалено");};
   window.cancelCeilingCornicePlacement=function(){pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");toast("Розміщення скасовано");};
 
   function distanceToSegment(p,a,b){var vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y,c1=wx*vx+wy*vy;if(c1<=0)return Math.hypot(p.x-a.x,p.y-a.y);var c2=vx*vx+vy*vy;if(c2<=c1)return Math.hypot(p.x-b.x,p.y-b.y);var t=c1/c2;return Math.hypot(p.x-(a.x+t*vx),p.y-(a.y+t*vy));}
@@ -221,13 +251,13 @@
     var prevCm=+sideLengths()[prevSide]||0,nextCm=+sideLengths()[i]||0,prevHorizontal=Math.abs(prev.x-c.x)>=Math.abs(prev.y-c.y),longHorizontal=(pendingPlacement.longAxis||"horizontal")==="horizontal",longOnPrev=prevHorizontal===longHorizontal;
     var prevNeed=longOnPrev?(+pendingPlacement.lengthA||0):(+pendingPlacement.lengthB||0),nextNeed=longOnPrev?(+pendingPlacement.lengthB||0):(+pendingPlacement.lengthA||0);
     if((prevCm&&prevNeed>prevCm)||(nextCm&&nextNeed>nextCm)){toast("Карниз не вміщується біля цього кута");return true;}
-    var item=clone(pendingPlacement);item.id="cornice_"+Date.now()+"_"+Math.floor(Math.random()*1000);item.placementMode="corner";item.cornerIndex=i;item.mountingType="hidden";item.rows=1;item.profileName=item.profileName||"UNO";item.totalLengthM=Math.round(totalLength(item))/100;list().push(item);pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");persistNow();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();toast("✓ Карниз встановлено біля кута "+String.fromCharCode(65+i));return true;
+    var item=clone(pendingPlacement);item.id="cornice_"+Date.now()+"_"+Math.floor(Math.random()*1000);item.placementMode="corner";item.cornerIndex=i;item.mountingType="hidden";item.rows=1;item.profileName=item.profileName||"UNO";item.totalLengthM=Math.round(totalLength(item))/100;list().push(item);pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");persistNow();syncElemItems();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();toast("✓ Карниз встановлено біля кута "+String.fromCharCode(65+i));return true;
   }
   function placeOnWall(point){
     if(point&&point.inCanvas===false){toast("Торкніться в межах креслення кімнати");return true;}
     var wall=nearestWall(point);if(!wall)return false;
     if(wall.distance>point.threshold*6){toast("Торкніться ближче до стіни кімнати");return true;}
-    var item=clone(pendingPlacement),map=roomMap(wall.index);if(!map)return false;var sideCm=(+sideLengths()[wall.index]||Math.hypot(points()[(wall.index+1)%points().length].x-points()[wall.index].x,points()[(wall.index+1)%points().length].y-points()[wall.index].y)/map.scale),longCm=Math.max(1,+item.lengthA||1);if(longCm>sideCm){toast("Карниз "+Math.round(longCm)+" см не вміщується на стіні "+Math.round(sideCm)+" см");return true;}var intervalStart=Math.max(0,Math.min(sideCm-longCm,wall.t*sideCm-longCm/2));item.id="cornice_"+Date.now()+"_"+Math.floor(Math.random()*1000);item.baseIndex=wall.index;item.offsetY=0;if(item.flipX)item.offsetX=intervalStart+longCm;else item.offsetX=intervalStart;item.mountingType="hidden";item.rows=1;item.flipY=false;item.profileName=item.profileName||"UNO";item.totalLengthM=Math.round(totalLength(item))/100;list().push(item);pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");persistNow();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();toast("✓ Карниз поставлено на стіну");return true;}
+    var item=clone(pendingPlacement),map=roomMap(wall.index);if(!map)return false;var sideCm=(+sideLengths()[wall.index]||Math.hypot(points()[(wall.index+1)%points().length].x-points()[wall.index].x,points()[(wall.index+1)%points().length].y-points()[wall.index].y)/map.scale),longCm=Math.max(1,+item.lengthA||1);if(longCm>sideCm){toast("Карниз "+Math.round(longCm)+" см не вміщується на стіні "+Math.round(sideCm)+" см");return true;}var intervalStart=Math.max(0,Math.min(sideCm-longCm,wall.t*sideCm-longCm/2));item.id="cornice_"+Date.now()+"_"+Math.floor(Math.random()*1000);item.baseIndex=wall.index;item.offsetY=0;if(item.flipX)item.offsetX=intervalStart+longCm;else item.offsetX=intervalStart;item.mountingType="hidden";item.rows=1;item.flipY=false;item.profileName=item.profileName||"UNO";item.totalLengthM=Math.round(totalLength(item))/100;list().push(item);pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");persistNow();syncElemItems();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();toast("✓ Карниз поставлено на стіну");return true;}
   function placePending(point){return pendingPlacement&&pendingPlacement.shape==="L"?placeAtCorner(point):placeOnWall(point);}
   function hitCornice(point){for(var i=list().length-1;i>=0;i--){var ps=canvasShape(list()[i]);for(var j=1;j<ps.length;j++)if(distanceToSegment(point,ps[j-1],ps[j])<=point.threshold)return list()[i];}return null;}
   function bindCanvas(){
@@ -266,8 +296,8 @@
 
   function restoreFrom(target,key){var state=parse(target&&target.state),saved=Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(target&&target.ceilingCornices)?target.ceilingCornices:backupRead(key);window.ceilingCornices=clone(saved||[]);setTimeout(redraw,30);}
   function wrapPersistence(){
-    var loadRoom=window._loadRoomToCanvas;if(typeof loadRoom==="function"&&!loadRoom.__ceilingCornices){var roomWrapped=function(project,roomIndex){var room=project&&project.rooms&&project.rooms[roomIndex],state=parse(room&&room.state),saved=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(room&&room.ceilingCornices)?room.ceilingCornices:backupRead("room:"+String(project&&project.id)+":"+roomIndex)),result;suspendPersistence=true;try{result=loadRoom.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved||[];setTimeout(redraw,30);return result;};roomWrapped.__ceilingCornices=true;window._loadRoomToCanvas=roomWrapped;try{_loadRoomToCanvas=roomWrapped;}catch(e){}}
-    var loadProject=window.loadProject;if(typeof loadProject==="function"&&!loadProject.__ceilingCornices){var projectWrapped=function(projectId){var project=findProject(projectId),state=parse(project&&project.state),saved=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(project&&project.ceilingCornices)?project.ceilingCornices:backupRead("project:"+projectId)),result;suspendPersistence=true;try{result=loadProject.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved||[];setTimeout(redraw,30);return result;};projectWrapped.__ceilingCornices=true;window.loadProject=projectWrapped;}
+    var loadRoom=window._loadRoomToCanvas;if(typeof loadRoom==="function"&&!loadRoom.__ceilingCornices){var roomWrapped=function(project,roomIndex){var room=project&&project.rooms&&project.rooms[roomIndex],state=parse(room&&room.state),saved=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(room&&room.ceilingCornices)?room.ceilingCornices:backupRead("room:"+String(project&&project.id)+":"+roomIndex)),result;suspendPersistence=true;try{result=loadRoom.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved||[];setTimeout(function(){syncElemItems();redraw();},30);return result;};roomWrapped.__ceilingCornices=true;window._loadRoomToCanvas=roomWrapped;try{_loadRoomToCanvas=roomWrapped;}catch(e){}}
+    var loadProject=window.loadProject;if(typeof loadProject==="function"&&!loadProject.__ceilingCornices){var projectWrapped=function(projectId){var project=findProject(projectId),state=parse(project&&project.state),saved=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(project&&project.ceilingCornices)?project.ceilingCornices:backupRead("project:"+projectId)),result;suspendPersistence=true;try{result=loadProject.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved||[];setTimeout(function(){syncElemItems();redraw();},30);return result;};projectWrapped.__ceilingCornices=true;window.loadProject=projectWrapped;}
     var reportRoom=window._renderRoomForReport;if(typeof reportRoom==="function"&&!reportRoom.__ceilingCornices){var reportWrapped=function(room){var previousList=clone(list()),state=parse(room&&room.state);window.ceilingCornices=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:room&&room.ceilingCornices||[]);if(window.ceilingCornices.length)reportCorniceSeen=reportCorniceSeen.concat(clone(window.ceilingCornices));try{return reportRoom.apply(this,arguments);}finally{window.ceilingCornices=previousList;redraw();}};reportWrapped.__ceilingCornices=true;window._renderRoomForReport=reportWrapped;try{_renderRoomForReport=reportWrapped;}catch(e){}}
     ["saveState","saveCurrentRoom","saveProject"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){
       /* Patch the cornices onto the live room/project object BEFORE the
@@ -317,7 +347,7 @@
     try{
       if(list().length)return;
       var restored=backupRead(currentContextKey());
-      if(restored&&restored.length){window.ceilingCornices=restored;redraw();}
+      if(restored&&restored.length){window.ceilingCornices=restored;syncElemItems();redraw();}
     }catch(e){window.__diagSilent&&window.__diagSilent(e);}
   }
   function init(){ensureStyle();ensureModal();wrapDrawing();wrapLauncher();wrapPersistence();wrapReportLegend();wrapFilmAutoFill();forceFilmQuantity();bindCanvas();injectLauncher();restoreDraftOnInit();}
