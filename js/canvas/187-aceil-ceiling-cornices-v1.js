@@ -6,7 +6,6 @@
   var editingId=null;
   var pendingPlacement=null;
   var suppressCanvasClickUntil=0;
-  var lastPlacementEventTime=0;
   var backupKey="A·CEIL_ceiling_cornices_v1";
   var suspendPersistence=false;
   var reportCorniceSeen=[];
@@ -243,21 +242,13 @@
       window.addEventListener(type,function(ev){
         if(!pendingPlacement||ev.target!==canvas)return;
         ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
-        /* Tie the suppression window to THIS gesture's own timestamp rather
-           than a long fixed wall-clock delay. The synthetic tail events of
-           one physical tap (pointerup/mouseup/click/touchend) all land
-           within a few ms of its pointerdown, so a small window around that
-           timestamp is enough to swallow them — without blocking a genuinely
-           new tap the user makes shortly after (e.g. placing a second
-           cornice, or opening the one just placed to edit it). */
-        lastPlacementEventTime=ev.timeStamp;
-        suppressCanvasClickUntil=lastPlacementEventTime+150;
+        suppressCanvasClickUntil=Date.now()+900;
         if(type==="pointerdown")placePending(eventWorld(ev,canvas));
       },true);
     });
     ["click","pointerup","mouseup","touchend"].forEach(function(type){
       window.addEventListener(type,function(ev){
-        if(ev.target!==canvas||ev.timeStamp>suppressCanvasClickUntil)return;
+        if(ev.target!==canvas||Date.now()>suppressCanvasClickUntil)return;
         ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
       },true);
     });
@@ -314,7 +305,22 @@
     wrapped.__ceilingCorniceLegend=true;window._modernOpenPreview=wrapped;
     try{_modernOpenPreview=wrapped;}catch(e){}
   }
-  function init(){ensureStyle();ensureModal();wrapDrawing();wrapLauncher();wrapPersistence();wrapReportLegend();wrapFilmAutoFill();forceFilmQuantity();bindCanvas();injectLauncher();}
+  function restoreDraftOnInit(){
+    /* saveState() (the base per-session autosave that also restores the
+       draft on every page load) does not know about ceilingCornices — it
+       only round-trips a fixed whitelist of fields (walls, lights, elem
+       items, etc). So a cornice placed in an unsaved draft, or in a
+       project that's already active from a previous session, would
+       vanish on a plain page reload even though everything else survives.
+       Fall back to our own backup (keyed the same way persistNow() writes
+       it) whenever the live list is still empty at load time. */
+    try{
+      if(list().length)return;
+      var restored=backupRead(currentContextKey());
+      if(restored&&restored.length){window.ceilingCornices=restored;redraw();}
+    }catch(e){window.__diagSilent&&window.__diagSilent(e);}
+  }
+  function init(){ensureStyle();ensureModal();wrapDrawing();wrapLauncher();wrapPersistence();wrapReportLegend();wrapFilmAutoFill();forceFilmQuantity();bindCanvas();injectLauncher();restoreDraftOnInit();}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
   setTimeout(init,300);setTimeout(init,1200);
 })();
