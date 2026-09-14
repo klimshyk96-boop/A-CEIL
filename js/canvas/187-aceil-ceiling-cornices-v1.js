@@ -9,6 +9,7 @@
   var backupKey="A·CEIL_ceiling_cornices_v1";
   var suspendPersistence=false;
   var reportCorniceSeen=[];
+  var reportCorniceRooms=[];
 
   function id(value){return document.getElementById(value);}
   function clone(value){try{return JSON.parse(JSON.stringify(value));}catch(e){return Array.isArray(value)?value.slice():value;}}
@@ -159,6 +160,7 @@
   function drawCornices(ctx){
     if(!ctx||!list().length)return;
     var zoom=1;try{zoom=typeof viewScale!=="undefined"&&isFinite(viewScale)&&viewScale>0?viewScale:1;}catch(e){}
+    var reportMode=false;try{reportMode=(typeof _reportMode!=="undefined"&&!!_reportMode)||window.__A·CEILReportRendering===true;}catch(e){}
     list().forEach(function(item){
       var ps=canvasShape(item);if(ps.length<2)return;
       /* The line must stay clearly readable on a plain white report
@@ -169,10 +171,15 @@
          instead of swapping the whole line's visibility on/off. */
       ctx.save();ctx.lineCap="round";ctx.lineJoin="round";
       ctx.beginPath();ctx.moveTo(ps[0].x,ps[0].y);for(var i=1;i<ps.length;i++)ctx.lineTo(ps[i].x,ps[i].y);
-      ctx.strokeStyle="#f97316";ctx.lineWidth=8/zoom;ctx.stroke();
-      ctx.beginPath();ctx.moveTo(ps[0].x,ps[0].y);for(var j=1;j<ps.length;j++)ctx.lineTo(ps[j].x,ps[j].y);
-      ctx.strokeStyle=item.color==="white"?"#ffffff":"#111827";ctx.lineWidth=(item.mountingType==="hidden"?5:4)/zoom;
-      if(item.mountingType==="niche")ctx.setLineDash([9/zoom,6/zoom]);ctx.stroke();ctx.setLineDash([]);
+      ctx.strokeStyle="#f97316";ctx.lineWidth=(reportMode?14:8)/zoom;ctx.stroke();
+      if(!reportMode){
+        ctx.beginPath();ctx.moveTo(ps[0].x,ps[0].y);for(var j=1;j<ps.length;j++)ctx.lineTo(ps[j].x,ps[j].y);
+        ctx.strokeStyle=item.color==="white"?"#ffffff":"#111827";ctx.lineWidth=(item.mountingType==="hidden"?5:4)/zoom;
+        if(item.mountingType==="niche")ctx.setLineDash([9/zoom,6/zoom]);ctx.stroke();ctx.setLineDash([]);
+      }
+      if(reportMode){
+        ps.forEach(function(p){ctx.fillStyle="#f97316";ctx.beginPath();ctx.arc(p.x,p.y,5/zoom,0,Math.PI*2);ctx.fill();});
+      }
       var mid=ps[Math.floor(ps.length/2)],label=item.shape==="straight"?Math.round(+item.lengthA||0)+" см":"Г · "+Math.round(+item.lengthB||0)+"×"+Math.round(+item.lengthA||0)+" см";
       ctx.font="800 "+(11/zoom)+"px -apple-system,Arial";var w=ctx.measureText(label).width+12/zoom;
       ctx.fillStyle="rgba(255,255,255,.94)";ctx.strokeStyle="rgba(15,23,42,.16)";ctx.lineWidth=1/zoom;
@@ -297,8 +304,8 @@
   function restoreFrom(target,key){var state=parse(target&&target.state),saved=Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(target&&target.ceilingCornices)?target.ceilingCornices:backupRead(key);window.ceilingCornices=clone(saved||[]);setTimeout(redraw,30);}
   function wrapPersistence(){
     var loadRoom=window._loadRoomToCanvas;if(typeof loadRoom==="function"&&!loadRoom.__ceilingCornices){var roomWrapped=function(project,roomIndex){var room=project&&project.rooms&&project.rooms[roomIndex],state=parse(room&&room.state),saved=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(room&&room.ceilingCornices)?room.ceilingCornices:backupRead("room:"+String(project&&project.id)+":"+roomIndex)),result;suspendPersistence=true;try{result=loadRoom.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved||[];setTimeout(function(){syncElemItems();redraw();},30);return result;};roomWrapped.__ceilingCornices=true;window._loadRoomToCanvas=roomWrapped;try{_loadRoomToCanvas=roomWrapped;}catch(e){}}
-    var loadProject=window.loadProject;if(typeof loadProject==="function"&&!loadProject.__ceilingCornices){var projectWrapped=function(projectId){var project=findProject(projectId),state=parse(project&&project.state),saved=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(project&&project.ceilingCornices)?project.ceilingCornices:backupRead("project:"+projectId)),result;suspendPersistence=true;try{result=loadProject.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved||[];setTimeout(function(){syncElemItems();redraw();},30);return result;};projectWrapped.__ceilingCornices=true;window.loadProject=projectWrapped;}
-    var reportRoom=window._renderRoomForReport;if(typeof reportRoom==="function"&&!reportRoom.__ceilingCornices){var reportWrapped=function(room){var previousList=clone(list()),state=parse(room&&room.state);window.ceilingCornices=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:room&&room.ceilingCornices||[]);if(window.ceilingCornices.length)reportCorniceSeen=reportCorniceSeen.concat(clone(window.ceilingCornices));try{return reportRoom.apply(this,arguments);}finally{window.ceilingCornices=previousList;redraw();}};reportWrapped.__ceilingCornices=true;window._renderRoomForReport=reportWrapped;try{_renderRoomForReport=reportWrapped;}catch(e){}}
+    var loadProject=window.loadProject;if(typeof loadProject==="function"&&!loadProject.__ceilingCornices){var projectWrapped=function(projectId){var project=findProject(projectId),isMulti=!!(project&&(project.multiRoom===true||(Array.isArray(project.rooms)&&project.rooms.length))),state=parse(project&&project.state),saved=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(project&&project.ceilingCornices)?project.ceilingCornices:backupRead("project:"+projectId)),result;suspendPersistence=true;try{result=loadProject.apply(this,arguments);}finally{suspendPersistence=false;}if(!isMulti)window.ceilingCornices=saved||[];setTimeout(function(){syncElemItems();redraw();},30);return result;};projectWrapped.__ceilingCornices=true;window.loadProject=projectWrapped;}
+    var reportRoom=window._renderRoomForReport;if(typeof reportRoom==="function"&&!reportRoom.__ceilingCornices){var reportWrapped=function(room){var previousList=clone(list()),state=parse(room&&room.state);window.ceilingCornices=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:room&&room.ceilingCornices||[]);if(window.ceilingCornices.length){reportCorniceSeen=reportCorniceSeen.concat(clone(window.ceilingCornices));reportCorniceRooms.push({roomName:String(room&&room.name||"Кімната"),items:clone(window.ceilingCornices)});}try{return reportRoom.apply(this,arguments);}finally{window.ceilingCornices=previousList;redraw();}};reportWrapped.__ceilingCornices=true;window._renderRoomForReport=reportWrapped;try{_renderRoomForReport=reportWrapped;}catch(e){}}
     ["saveState","saveCurrentRoom","saveProject"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){
       /* Patch the cornices onto the live room/project object BEFORE the
          original save runs. Some save routines (e.g. saveCurrentRoom) grab
@@ -320,15 +327,27 @@
   function wrapReportLegend(){
     var previous=window._modernOpenPreview;if(typeof previous!=="function"||previous.__ceilingCorniceLegend)return;
     var wrapped=function(out,fileName){
-      var cornices=reportCorniceSeen.length?reportCorniceSeen.slice():clone(list());reportCorniceSeen=[];
+      var cornices=reportCorniceSeen.length?reportCorniceSeen.slice():clone(list()),roomGroups=reportCorniceRooms.slice();reportCorniceSeen=[];reportCorniceRooms=[];
+      if(!roomGroups.length&&cornices.length)roomGroups=[{roomName:"Поточна кімната",items:clone(cornices)}];
       if(!out||!cornices.length)return previous.apply(this,arguments);
-      var extra=118,next=document.createElement("canvas");next.width=out.width;next.height=out.height+extra;
+      var detailRows=[];
+      roomGroups.forEach(function(group){(group.items||[]).forEach(function(item){
+        var corner=String.fromCharCode(65+Math.max(0,Number(item.cornerIndex)||Number(item.baseIndex)||0));
+        var place=item.placementMode==="corner"?"від кута "+corner:"стіна "+corner+String.fromCharCode(65+((Number(item.baseIndex)||0)+1));
+        var size=item.shape==="straight"?Math.round(+item.lengthA||0)+" см":Math.round(+item.lengthB||0)+" × "+Math.round(+item.lengthA||0)+" см";
+        var color=item.color==="black"?"чорний":"білий";
+        detailRows.push(String(group.roomName||"Кімната")+" · "+(item.shape==="straight"?"прямий":"Г-подібний")+" · "+size+" · "+place+" · "+color);
+      });});
+      var detailsHeight=58+detailRows.length*28,legendHeight=88,extra=detailsHeight+legendHeight+34,next=document.createElement("canvas");next.width=out.width;next.height=out.height+extra;
       var c=next.getContext("2d");c.drawImage(out,0,0);c.fillStyle="#f8fafc";c.fillRect(0,out.height,next.width,extra);
-      var x=28,y=out.height+12,w=next.width-56,h=88;c.fillStyle="#fff";c.strokeStyle="#e2e8f0";c.lineWidth=1;c.beginPath();c.roundRect?c.roundRect(x,y,w,h,18):c.rect(x,y,w,h);c.fill();c.stroke();
+      var x=28,y=out.height+12,w=next.width-56,h=detailsHeight;c.fillStyle="#fff";c.strokeStyle="#dbeafe";c.lineWidth=1;c.beginPath();c.roundRect?c.roundRect(x,y,w,h,18):c.rect(x,y,w,h);c.fill();c.stroke();
+      c.fillStyle="#1e3a8a";c.font="bold 18px Arial";c.textAlign="left";c.fillText("Карниз UNO · розташування і розміри",x+22,y+32);
+      c.fillStyle="#334155";c.font="14px Arial";detailRows.forEach(function(line,index){c.fillText(line,x+22,y+61+index*28);});
+      y+=detailsHeight+10;h=legendHeight;c.fillStyle="#fff";c.strokeStyle="#e2e8f0";c.lineWidth=1;c.beginPath();c.roundRect?c.roundRect(x,y,w,h,18):c.rect(x,y,w,h);c.fill();c.stroke();
       c.strokeStyle="#f97316";c.lineWidth=7;c.lineCap="round";c.beginPath();c.moveTo(x+24,y+44);c.lineTo(x+78,y+44);c.stroke();
       var length=cornices.reduce(function(s,item){return s+totalLength(item);},0)/100;
       var corners=cornices.reduce(function(s,item){var v=Number(item.cornerCount);return s+(item.cornerCount!=null&&isFinite(v)&&v>=0?v:(item.shape==="L"?1:item.shape==="U"?2:0));},0),breaks=cornices.length*2;
-      c.fillStyle="#1d4ed8";c.font="bold 17px Arial";c.textAlign="left";c.fillText("Умовні позначення · Карниз UNO",x+98,y+34);
+      c.fillStyle="#1d4ed8";c.font="bold 17px Arial";c.textAlign="left";c.fillText("Умовне позначення · Карниз UNO",x+98,y+34);
       c.fillStyle="#475569";c.font="14px Arial";c.fillText("Прихований, 1 ряд · "+cornices.length+" шт. · "+length.toFixed(2)+" м · кути "+corners+" · обриви "+breaks,x+98,y+61);
       return previous.call(this,next,fileName);
     };
