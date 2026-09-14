@@ -6,6 +6,7 @@
   var editingId=null;
   var pendingPlacement=null;
   var suppressCanvasClickUntil=0;
+  var lastPlacementEventTime=0;
   var backupKey="A·CEIL_ceiling_cornices_v1";
   var suspendPersistence=false;
   var reportCorniceSeen=[];
@@ -242,13 +243,21 @@
       window.addEventListener(type,function(ev){
         if(!pendingPlacement||ev.target!==canvas)return;
         ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
-        suppressCanvasClickUntil=Date.now()+900;
+        /* Tie the suppression window to THIS gesture's own timestamp rather
+           than a long fixed wall-clock delay. The synthetic tail events of
+           one physical tap (pointerup/mouseup/click/touchend) all land
+           within a few ms of its pointerdown, so a small window around that
+           timestamp is enough to swallow them — without blocking a genuinely
+           new tap the user makes shortly after (e.g. placing a second
+           cornice, or opening the one just placed to edit it). */
+        lastPlacementEventTime=ev.timeStamp;
+        suppressCanvasClickUntil=lastPlacementEventTime+150;
         if(type==="pointerdown")placePending(eventWorld(ev,canvas));
       },true);
     });
     ["click","pointerup","mouseup","touchend"].forEach(function(type){
       window.addEventListener(type,function(ev){
-        if(ev.target!==canvas||Date.now()>suppressCanvasClickUntil)return;
+        if(ev.target!==canvas||ev.timeStamp>suppressCanvasClickUntil)return;
         ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
       },true);
     });
