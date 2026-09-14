@@ -20,6 +20,7 @@
   function runtimeElemItems(){try{return typeof elemItems!=="undefined"&&Array.isArray(elemItems)?elemItems:(Array.isArray(window.elemItems)?window.elemItems:[]);}catch(e){return Array.isArray(window.elemItems)?window.elemItems:[];}}
   function runtimeElemGroups(){try{if(typeof elemGroups!=="undefined"&&Array.isArray(elemGroups))return elemGroups;if(Array.isArray(window.elemGroups))return window.elemGroups;window.elemGroups=[];return window.elemGroups;}catch(e){if(!Array.isArray(window.elemGroups))window.elemGroups=[];return window.elemGroups;}}
   var ELEM_GROUP_ID="grp_ceiling_cornice_v1";
+  function pinFilmGroupFirst(){var groups=runtimeElemGroups();var idx=groups.findIndex(function(g){var name=String(g&&g.name||"").trim().toLowerCase();return g&&(g.roomScopedKind==="film-color"||g.filmSeriesId==="premium"||name.indexOf("плівка premium")===0);});if(idx>0){var film=groups.splice(idx,1)[0];groups.unshift(film);}}
   function corniceElemLabel(item){return item.shape==="straight"?"Карниз ванної, прямий "+Math.round(+item.lengthA||0)+" см":"Карниз ванної, Г-подібний "+Math.round(+item.lengthB||0)+"×"+Math.round(+item.lengthA||0)+" см";}
   function syncElemItems(){
     /* Mirror every placed cornice as its own row in the Номенклатура list,
@@ -71,7 +72,7 @@
       var filteredToast=function(message){if(/Кілька рулонів однакової ширини/i.test(String(message||"")))return;return typeof oldWindowToast==="function"?oldWindowToast.apply(this,arguments):undefined;};
       window.showToast=filteredToast;try{oldLexicalToast=showToast;showToast=filteredToast;}catch(e){}
       var result;try{result=previous.apply(this,arguments);}finally{window.showToast=oldWindowToast;try{if(oldLexicalToast)showToast=oldLexicalToast;}catch(e){}}
-      forceFilmQuantity();return result;
+      pinFilmGroupFirst();forceFilmQuantity();return result;
     };
     wrapped.__ceilingFilmFix=true;window.autoFillNomenclature=wrapped;try{autoFillNomenclature=wrapped;}catch(e){}
   }
@@ -95,16 +96,7 @@
     target.state=JSON.stringify(state);
     target.ceilingCornices=clone(list());
   }
-  function syncProject(project){
-    try{
-      var dbId=project&&(project._dbId||(!String(project.id||"").match(/^(local_|obj_|room_)/)?project.id:null));
-      var client=typeof _sb!=="undefined"?_sb:window._sb,user=typeof _sbUser!=="undefined"?_sbUser:window._sbUser;
-      if(!dbId||!client||!user)return;
-      var cloudState=parse(project.state);
-      if(Array.isArray(project.rooms)){cloudState.multiRoom=true;cloudState.rooms=clone(project.rooms);}
-      Promise.resolve(client.from("projects").update({state:cloudState}).eq("id",dbId)).catch(function(){});
-    }catch(e){}
-  }
+
   function persistNow(){
     backupWrite();
     try{
@@ -113,7 +105,7 @@
       var project=findProject(objectId!=null?objectId:projectId);
       if(project&&objectId!=null&&roomIndex!=null&&project.rooms&&project.rooms[roomIndex])patchState(project.rooms[roomIndex]);
       else if(project)patchState(project);
-      if(project&&typeof window.setProjects==="function"){window.setProjects(projects);syncProject(project);}
+      if(project&&typeof window.setProjects==="function")window.setProjects(projects);
     }catch(e){window.__diagSilent&&window.__diagSilent(e);}
   }
 
