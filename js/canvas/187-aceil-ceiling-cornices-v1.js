@@ -15,6 +15,13 @@
   function clone(value){try{return JSON.parse(JSON.stringify(value));}catch(e){return Array.isArray(value)?value.slice():value;}}
   function parse(value){try{return typeof value==="string"?JSON.parse(value||"{}"):value&&typeof value==="object"?value:{};}catch(e){return {};}}
   function list(){if(!Array.isArray(window.ceilingCornices))window.ceilingCornices=[];return window.ceilingCornices;}
+  function cornicesFrom(target){
+    var state=parse(target&&target.state),direct=Array.isArray(state.ceilingCornices)?state.ceilingCornices:(Array.isArray(target&&target.ceilingCornices)?target.ceilingCornices:null);
+    if(direct&&direct.length)return clone(direct);
+    var items=Array.isArray(state.elemItems)?state.elemItems:(Array.isArray(target&&target.elemItems)?target.elemItems:[]);
+    var embedded=items.map(function(it){return it&&it.__corniceData;}).filter(function(it){return it&&typeof it==="object";});
+    return clone(embedded);
+  }
   function toast(text){try{if(typeof window.showToast==="function")window.showToast(text);}catch(e){}}
   function redraw(){try{if(typeof window.requestDraw==="function")window.requestDraw();else if(typeof window.draw==="function")window.draw();}catch(e){}}
   function recalcNomenclature(){try{if(typeof window.autoFillNomenclature==="function")window.autoFillNomenclature({silent:true});}catch(e){window.__diagSilent&&window.__diagSilent(e);}}
@@ -35,8 +42,8 @@
       var items=runtimeElemItems(),liveIds=list().map(function(it){return it.id;});
       list().forEach(function(item){
         var qty=Math.round(totalLength(item))/100,existing=items.find(function(it){return it&&it.__corniceId===item.id;});
-        if(existing){existing.name=corniceElemLabel(item);existing.qty=qty;existing.unit="м";existing.groupId=ELEM_GROUP_ID;}
-        else items.push({id:"elem_"+item.id,__corniceId:item.id,groupId:ELEM_GROUP_ID,icon:"▤",name:corniceElemLabel(item),qty:qty,unit:"м",inputMode:"manual",source:"",price:0,autoFilled:true});
+        if(existing){existing.name=corniceElemLabel(item);existing.qty=qty;existing.unit="м";existing.groupId=ELEM_GROUP_ID;existing.__corniceData=clone(item);}
+        else items.push({id:"elem_"+item.id,__corniceId:item.id,__corniceData:clone(item),groupId:ELEM_GROUP_ID,icon:"▤",name:corniceElemLabel(item),qty:qty,unit:"м",inputMode:"manual",source:"",price:0,autoFilled:true});
       });
       for(var i=items.length-1;i>=0;i--)if(items[i]&&items[i].__corniceId&&liveIds.indexOf(items[i].__corniceId)===-1)items.splice(i,1);
       try{if(typeof window.renderElemList==="function")window.renderElemList();}catch(e){}
@@ -93,8 +100,12 @@
     if(!target)return;
     var state=parse(target.state);
     state.ceilingCornices=clone(list());
+    state.elemItems=clone(runtimeElemItems());
+    state.elemGroups=clone(runtimeElemGroups());
     target.state=JSON.stringify(state);
     target.ceilingCornices=clone(list());
+    target.elemItems=clone(runtimeElemItems());
+    target.elemGroups=clone(runtimeElemGroups());
   }
   function syncProject(project){
     try{
@@ -301,11 +312,11 @@
   }
   function wrapLauncher(){var previous=window.openRmLightStart;if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){var result=previous.apply(this,arguments);setTimeout(injectLauncher,0);return result;};wrapped.__ceilingCornices=true;window.openRmLightStart=wrapped;try{openRmLightStart=wrapped;}catch(e){}}
 
-  function restoreFrom(target,key){var state=parse(target&&target.state),saved=Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(target&&target.ceilingCornices)?target.ceilingCornices:backupRead(key);window.ceilingCornices=clone(saved||[]);setTimeout(redraw,30);}
+  function restoreFrom(target,key){var saved=cornicesFrom(target);if(!saved.length)saved=backupRead(key);window.ceilingCornices=clone(saved||[]);setTimeout(redraw,30);}
   function wrapPersistence(){
-    var loadRoom=window._loadRoomToCanvas;if(typeof loadRoom==="function"&&!loadRoom.__ceilingCornices){var roomWrapped=function(project,roomIndex){var room=project&&project.rooms&&project.rooms[roomIndex],state=parse(room&&room.state),saved=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(room&&room.ceilingCornices)?room.ceilingCornices:backupRead("room:"+String(project&&project.id)+":"+roomIndex)),result;suspendPersistence=true;try{result=loadRoom.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved||[];setTimeout(function(){syncElemItems();redraw();},30);return result;};roomWrapped.__ceilingCornices=true;window._loadRoomToCanvas=roomWrapped;try{_loadRoomToCanvas=roomWrapped;}catch(e){}}
-    var loadProject=window.loadProject;if(typeof loadProject==="function"&&!loadProject.__ceilingCornices){var projectWrapped=function(projectId){var project=findProject(projectId),isMulti=!!(project&&(project.multiRoom===true||(Array.isArray(project.rooms)&&project.rooms.length))),state=parse(project&&project.state),saved=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(project&&project.ceilingCornices)?project.ceilingCornices:backupRead("project:"+projectId)),result;suspendPersistence=true;try{result=loadProject.apply(this,arguments);}finally{suspendPersistence=false;}if(!isMulti)window.ceilingCornices=saved||[];setTimeout(function(){syncElemItems();redraw();},30);return result;};projectWrapped.__ceilingCornices=true;window.loadProject=projectWrapped;}
-    var reportRoom=window._renderRoomForReport;if(typeof reportRoom==="function"&&!reportRoom.__ceilingCornices){var reportWrapped=function(room){var previousList=clone(list()),state=parse(room&&room.state);window.ceilingCornices=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:room&&room.ceilingCornices||[]);if(window.ceilingCornices.length){reportCorniceSeen=reportCorniceSeen.concat(clone(window.ceilingCornices));reportCorniceRooms.push({roomName:String(room&&room.name||"Кімната"),items:clone(window.ceilingCornices)});}try{return reportRoom.apply(this,arguments);}finally{window.ceilingCornices=previousList;redraw();}};reportWrapped.__ceilingCornices=true;window._renderRoomForReport=reportWrapped;try{_renderRoomForReport=reportWrapped;}catch(e){}}
+    var loadRoom=window._loadRoomToCanvas;if(typeof loadRoom==="function"&&!loadRoom.__ceilingCornices){var roomWrapped=function(project,roomIndex){var room=project&&project.rooms&&project.rooms[roomIndex],saved=cornicesFrom(room);if(!saved.length)saved=backupRead("room:"+String(project&&project.id)+":"+roomIndex);var result;suspendPersistence=true;try{result=loadRoom.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=clone(saved||[]);setTimeout(function(){syncElemItems();redraw();},30);return result;};roomWrapped.__ceilingCornices=true;window._loadRoomToCanvas=roomWrapped;try{_loadRoomToCanvas=roomWrapped;}catch(e){}}
+    var loadProject=window.loadProject;if(typeof loadProject==="function"&&!loadProject.__ceilingCornices){var projectWrapped=function(projectId){var project=findProject(projectId),isMulti=!!(project&&(project.multiRoom===true||(Array.isArray(project.rooms)&&project.rooms.length))),saved=cornicesFrom(project);if(!saved.length)saved=backupRead("project:"+projectId);var result;suspendPersistence=true;try{result=loadProject.apply(this,arguments);}finally{suspendPersistence=false;}if(!isMulti)window.ceilingCornices=clone(saved||[]);setTimeout(function(){syncElemItems();redraw();},30);return result;};projectWrapped.__ceilingCornices=true;window.loadProject=projectWrapped;}
+    var reportRoom=window._renderRoomForReport;if(typeof reportRoom==="function"&&!reportRoom.__ceilingCornices){var reportWrapped=function(room){var previousList=clone(list());window.ceilingCornices=cornicesFrom(room);if(window.ceilingCornices.length){reportCorniceSeen=reportCorniceSeen.concat(clone(window.ceilingCornices));reportCorniceRooms.push({roomName:String(room&&room.name||"Кімната"),items:clone(window.ceilingCornices)});}try{return reportRoom.apply(this,arguments);}finally{window.ceilingCornices=previousList;redraw();}};reportWrapped.__ceilingCornices=true;window._renderRoomForReport=reportWrapped;try{_renderRoomForReport=reportWrapped;}catch(e){}}
     ["saveState","saveCurrentRoom","saveProject"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){
       /* Patch the cornices onto the live room/project object BEFORE the
          original save runs. Some save routines (e.g. saveCurrentRoom) grab
