@@ -45,8 +45,7 @@
       elemItems:clone(typeof elemItems!=='undefined'?elemItems:[]),
       elemGroups:clone(typeof elemGroups!=='undefined'?elemGroups:[]),
       lightMarks:clone(typeof lightMarks!=='undefined'?lightMarks:[]),
-      wallMarks:clone(typeof wallMarks!=='undefined'?wallMarks:[]),linearElements:clone(typeof linearElements!=='undefined'?linearElements:[]),wallTypes:clone(typeof wallTypes!=='undefined'?wallTypes:[]),arcPoints:clone(typeof arcPoints!=='undefined'?arcPoints:[]),
-      ceilingCornices:clone(Array.isArray(window.ceilingCornices)?window.ceilingCornices:[])
+      wallMarks:clone(typeof wallMarks!=='undefined'?wallMarks:[]),linearElements:clone(typeof linearElements!=='undefined'?linearElements:[]),wallTypes:clone(typeof wallTypes!=='undefined'?wallTypes:[]),arcPoints:clone(typeof arcPoints!=='undefined'?arcPoints:[])
     };
   }
   function resolveActive(arr){
