@@ -634,3 +634,82 @@
 }
 
 @media (max-width:900px){#aceilDesktopCanvasZoom{display:none!important}}
+
+/* =====================================================================
+   PC-виправлення (v20260915):
+   1) Кошторис (#elementsModal) на десктопі — нормальний широкий вигляд
+      замість мобільної "шторки", розтягнутої по центру.
+   2) Ліва інструментальна панель на ультраширокому екрані — вища,
+      з опущеним донизу червоним "скинути", а не купкою вгорі.
+   3) Різкість підписів на кресленні — не розтягуємо 750×750 canvas
+      значно ширше за його власну роздільність (це і є причина розмиття
+      цифр на плані), тому обмежуємо CSS-ширину ближче до нативної.
+   ===================================================================== */
+
+/* ---- 1) Кошторис: повноцінна PC-версія модалки редагування ---- */
+@media (min-width:1024px){
+  #elementsModal.open{align-items:center!important}
+  #elementsModal.open>.modal{
+    width:min(92vw,980px)!important;max-width:980px!important;
+    height:auto!important;max-height:86vh!important;
+    border-radius:22px!important;
+    display:flex!important;flex-direction:column!important
+  }
+  #elementsModal .modal>div:first-child{padding:18px 24px 14px!important}
+  #elementsModal .modal>div:first-child h3,#elementsModal h3{font-size:1.28rem!important}
+  #elemList{
+    padding:16px 24px 20px!important;
+    column-count:2;column-gap:18px
+  }
+  #elemList .grp-card{break-inside:avoid;margin-bottom:14px!important}
+  #elemList .grp-header{padding:12px 14px!important}
+  #elemList .grp-name{font-size:14.5px!important}
+  #elemList .em-row{padding:10px 12px!important;gap:8px!important}
+  #elemList .em-name{font-size:13.5px!important}
+  #elemList input.em-qty-input{height:38px!important;font-size:14px!important}
+  #elemList input.em-price-input{height:38px!important;font-size:13px!important}
+  #addGroupPanel{padding:12px 24px 0!important}
+  #elemBottomBar{padding:14px 24px calc(14px + env(safe-area-inset-bottom))!important}
+  #elemTotalBar{font-size:15.5px!important}
+  #elementsModal .modal>div:last-child button,#elemBottomBar button{min-height:46px!important;font-size:14.5px!important}
+}
+@media (min-width:1500px){
+  #elementsModal.open>.modal{width:min(86vw,1120px)!important;max-width:1120px!important}
+  #elemList{column-count:3}
+}
+
+/* ---- 2) Ліва панель інструментів на ультраширокому екрані: вища,
+      з рівномірним відступом і "скинути все" притиснутим донизу ---- */
+@media (min-width:1400px){
+  body.rp-home-pro #A·CEILToolPanel{
+    width:132px!important;padding:12px!important;gap:10px!important;
+    min-height:calc(100vh - 40px)!important;
+    justify-content:flex-start!important;
+    padding-bottom:24px!important
+  }
+  body.rp-home-pro #A·CEILToolPanel>div,
+  body.rp-home-pro #A·CEILToolPanel>button{height:76px!important;min-height:76px!important}
+  body.rp-home-pro #A·CEILToolPanel>div>.tile-btn,
+  body.rp-home-pro #A·CEILToolPanel>.tile-btn{height:76px!important;min-height:76px!important}
+  body.rp-home-pro #A·CEILToolPanel .tile-icon{width:38px!important;height:38px!important}
+  body.rp-home-pro #A·CEILToolPanel .tile-icon .rm-ico{width:21px!important;height:21px!important}
+  body.rp-home-pro #A·CEILToolPanel>.tile-red{margin-top:auto!important}
+}
+@media (min-width:1900px){
+  body.rp-home-pro #A·CEILToolPanel{width:150px!important;padding:14px!important;gap:11px!important}
+  body.rp-home-pro #A·CEILToolPanel>div,
+  body.rp-home-pro #A·CEILToolPanel>button,
+  body.rp-home-pro #A·CEILToolPanel>div>.tile-btn,
+  body.rp-home-pro #A·CEILToolPanel>.tile-btn{height:84px!important;min-height:84px!important}
+  body.rp-home-pro #A·CEILToolPanel .tile-icon{width:42px!important;height:42px!important}
+}
+
+/* ---- 3) Різкіші підписи на плані: canvas — растр 750×750, тому на
+      широкому моніторі не розтягуємо його на всю колонку (це й
+      розмиває цифри розмірів), а обмежуємо ширину близько до нативної ---- */
+@media (min-width:901px){
+  body.rp-home-pro canvas#cv{
+    width:min(100%,860px)!important;max-width:860px!important;
+    margin-left:auto!important;margin-right:auto!important
+  }
+}
