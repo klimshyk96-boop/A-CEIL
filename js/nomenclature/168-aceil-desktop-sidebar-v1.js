@@ -220,7 +220,7 @@ function installHook(){
   }
 }
 
-function boot(){installDesktopCanvasStroke();installDesktopCanvasZoom();installHook();render()}
+function boot(){installDesktopCanvasZoom();installHook();render()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 var _tries=0,_timer=setInterval(function(){
   _tries++;
