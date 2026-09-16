@@ -88,6 +88,22 @@
   font-weight:900!important;
 }
 
+#wallEditModal .rwe2-wall-distance-field{
+  margin:10px 0 2px;
+  padding:11px 12px 12px;
+  border:1.5px solid #dbeafe;
+  border-radius:15px;
+  background:#f8fbff;
+}
+#wallEditModal .rwe2-wall-distance-field .rwe2-label{margin-top:0;}
+#wallEditModal .rwe2-wall-distance-field .rwe2-hint{
+  margin:6px 1px 0;
+  color:#64748b;
+  font-size:11px;
+  font-weight:700;
+  line-height:1.35;
+}
+
 /* Compact footer: small delete action + one primary save action. */
 #wallEditModal .rwe2-footer{
   grid-template-columns:minmax(0,1fr)!important;
