@@ -370,12 +370,39 @@ function fillEditDynamicSources(){
   sel.appendChild(group);
 }
 /* UNO uses the same Білий/Чорний selector as colored wall elements. */
+function ensureFilmEditorFields(){
+  var width=document.getElementById("editElemFilmWidth"),selected=document.getElementById("editElemFilmSelected");
+  if(!width||!selected)return null;
+  var box=document.getElementById("editElemFilmFields");
+  if(box)return box;
+  var first=width.previousElementSibling,last=selected.parentElement&&selected.parentElement.nextElementSibling;
+  if(!first||!last||!first.parentNode||first.parentNode!==last.parentNode)return null;
+  box=document.createElement("div");box.id="editElemFilmFields";box.style.display="none";
+  first.parentNode.insertBefore(box,first);
+  var node=first,after=last.nextSibling;
+  while(node&&node!==after){var next=node.nextSibling;box.appendChild(node);node=next;}
+  return box;
+}
+function editedItemIsFilm(){
+  var currentId=null;
+  try{currentId=typeof _editingElemId!=="undefined"?_editingElemId:window._editingElemId;}catch(_){currentId=window._editingElemId;}
+  var item=getElemItems().find(function(x){return x&&String(x.id)===String(currentId);});
+  if(!item)return false;
+  var groups=[];try{groups=typeof elemGroups!=="undefined"&&Array.isArray(elemGroups)?elemGroups:(Array.isArray(window.elemGroups)?window.elemGroups:[]);}catch(_){groups=Array.isArray(window.elemGroups)?window.elemGroups:[];}
+  var groupSelect=document.getElementById("editElemGroup"),groupId=groupSelect?groupSelect.value:item.groupId;
+  var group=groups.find(function(g){return g&&String(g.id)===String(groupId);});
+  var name=String(group&&group.name||"").toLowerCase();
+  if(group)return !!(group.roomScopedKind==="film-color"||group.filmSeriesId||group.seriesId||/плівк|пленк|film|premium|classic|kralton/.test(name));
+  return !!(Number(item.filmWidth)>0||Number(item.filmMaxWidth)>0||item.seriesId||item.filmSeriesId);
+}
+function syncFilmEditorFields(){var box=ensureFilmEditorFields();if(box)box.style.display=editedItemIsFilm()?"block":"none";}
 var prevExtraVisibility=window.updateSourceExtraFieldsVisibility||(typeof updateSourceExtraFieldsVisibility==="function"?updateSourceExtraFieldsVisibility:null);
 if(typeof prevExtraVisibility==="function"){
   window.updateSourceExtraFieldsVisibility=function(){
     var r=prevExtraVisibility.apply(this,arguments);
     var sel=document.getElementById("editElemSource"),row=document.getElementById("editElemVariantRow");
     if(row&&sel&&String(sel.value||"").indexOf("ceilingcornice:uno")===0)row.style.display="block";
+    syncFilmEditorFields();
     return r;
   };
   try{updateSourceExtraFieldsVisibility=window.updateSourceExtraFieldsVisibility}catch(_){window.__diagSilent&&window.__diagSilent(_)}
@@ -389,9 +416,23 @@ if(typeof prevOpenEdit==="function"){
     var sel=document.getElementById("editElemSource");
     if(sel&&it&&it.source)sel.value=it.source;
     try{if(typeof updateSourceExtraFieldsVisibility==="function")updateSourceExtraFieldsVisibility()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    syncFilmEditorFields();
     return r;
   };
   try{openEditElemModal=window.openEditElemModal}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+}
+document.addEventListener("change",function(event){if(event.target&&event.target.id==="editElemGroup")syncFilmEditorFields();});
+var prevSaveEdit=window.saveElemEdit||(typeof saveElemEdit==="function"?saveElemEdit:null);
+if(typeof prevSaveEdit==="function"&&!prevSaveEdit.__filmFieldsV1){
+  window.saveElemEdit=function(){
+    if(!editedItemIsFilm()){
+      var width=document.getElementById("editElemFilmWidth"),selected=document.getElementById("editElemFilmSelected");
+      if(width)width.value="";if(selected)selected.checked=false;
+    }
+    return prevSaveEdit.apply(this,arguments);
+  };
+  window.saveElemEdit.__filmFieldsV1=true;
+  try{saveElemEdit=window.saveElemEdit}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
 /* Quick-source menu gets the same dynamic sources. */
