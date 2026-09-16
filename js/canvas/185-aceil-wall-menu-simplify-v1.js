@@ -84,6 +84,23 @@
     return list.find(function(mark){return mark&&String(mark.id)===String(markId);})||null;
   }
 
+  function ensureWallDistanceUi(){
+    var modal=byId("wallEditModal"),lengthGrid=modal&&modal.querySelector(".rwe2-grid2");
+    if(!lengthGrid)return null;
+    var input=byId("rwe2WallDistance");
+    if(input)return input;
+    var field=document.createElement("div");
+    field.className="rwe2-wall-distance-field";
+    field.innerHTML='<label class="rwe2-label" for="rwe2WallDistance">Відступ від стіни, см</label><input id="rwe2WallDistance" class="rwe2-input" type="number" inputmode="decimal" min="0" step="1" value="0"><div class="rwe2-hint">0 — елемент на стіні. Інше значення ставить його паралельно всередині кімнати.</div>';
+    lengthGrid.insertAdjacentElement("afterend",field);
+    return byId("rwe2WallDistance");
+  }
+
+  function syncWallDistanceUi(){
+    var input=ensureWallDistanceUi(),mark=currentMark();
+    if(input&&mark)input.value=Math.max(0,Math.round(Number(mark.wallDistanceCm)||0));
+  }
+
   function selectedPresetName(){
     var select=byId("rwe2Preset"),name=byId("rwe2Name");
     return String(select&&select.value||name&&name.value||"").trim();
@@ -229,6 +246,7 @@
     simplifyVisibleLayout(box);
     ensureBreakModeUi();
     ensurePresetColorSave();
+    ensureWallDistanceUi();
     syncPresetColorDot();
     var btn = ensureToggleBtn(box);
 
@@ -244,8 +262,9 @@
     var wrapped = function(){
       var result = prevOpen.apply(this, arguments);
       applyState();
-      setTimeout(applyState, 30);
-      setTimeout(applyState, 120);
+      syncWallDistanceUi();
+      setTimeout(function(){applyState();syncWallDistanceUi();}, 30);
+      setTimeout(function(){applyState();syncWallDistanceUi();}, 120);
       setTimeout(applyState, 300);
       setTimeout(applyState, 520);
       return result;
@@ -253,6 +272,36 @@
     wrapped.__menuSimplify = true;
     window.openWallEditModal = wrapped;
     try { openWallEditModal = wrapped; } catch(e){ window.__diagSilent && window.__diagSilent(e); }
+  }
+
+  function saveWallDistance(){
+    var mark=currentMark(),input=byId("rwe2WallDistance");
+    if(mark&&input)mark.wallDistanceCm=Math.max(0,Math.round(Number(String(input.value||"0").replace(",","."))||0));
+  }
+  var prevRweSave=window.rwe2Save;
+  if(typeof prevRweSave==="function"&&!prevRweSave.__wallDistanceV1){
+    var rweSaveWrapped=function(){saveWallDistance();return prevRweSave.apply(this,arguments);};
+    rweSaveWrapped.__wallDistanceV1=true;window.rwe2Save=rweSaveWrapped;
+    try{rwe2Save=rweSaveWrapped;}catch(e){window.__diagSilent&&window.__diagSilent(e);}
+  }
+  var prevLegacySave=window.saveWallEdit;
+  if(typeof prevLegacySave==="function"&&!prevLegacySave.__wallDistanceV1){
+    var legacySaveWrapped=function(){saveWallDistance();return prevLegacySave.apply(this,arguments);};
+    legacySaveWrapped.__wallDistanceV1=true;window.saveWallEdit=legacySaveWrapped;
+    try{saveWallEdit=legacySaveWrapped;}catch(e){window.__diagSilent&&window.__diagSilent(e);}
+  }
+
+  var prevWallCoordLines=window.getWallCoordLines||(typeof getWallCoordLines==="function"?getWallCoordLines:null);
+  if(typeof prevWallCoordLines==="function"&&!prevWallCoordLines.__wallDistanceV1){
+    var wallCoordLinesWrapped=function(state){
+      var lines=prevWallCoordLines.apply(this,arguments),marks=state&&Array.isArray(state.wallMarks)?state.wallMarks:(Array.isArray(window.wallMarks)?window.wallMarks:[]);
+      return Array.isArray(lines)?lines.map(function(line,index){
+        var distance=Math.max(0,Math.round(Number(marks[index]&&marks[index].wallDistanceCm)||0));
+        return distance>0?line+" · від стіни "+distance+" см":line;
+      }):lines;
+    };
+    wallCoordLinesWrapped.__wallDistanceV1=true;window.getWallCoordLines=wallCoordLinesWrapped;
+    try{getWallCoordLines=wallCoordLinesWrapped;}catch(e){window.__diagSilent&&window.__diagSilent(e);}
   }
 
   // Also keep state correct if other scripts rebuild bits of the modal

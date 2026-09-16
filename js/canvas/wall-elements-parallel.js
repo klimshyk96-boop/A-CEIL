@@ -42,7 +42,7 @@
     var cy=p.reduce(function(s,q){return s+num(q.y)},0)/(p.length||1);
     // nx/ny points OUTSIDE the room. We draw wall elements inside so they stay visible on mobile.
     if((cx-mx)*nx+(cy-my)*ny>0){ nx=-nx; ny=-ny; }
-    return {i:i,x1:x1,y1:y1,x2:x2,y2:y2,mx:mx,my:my,nx:nx,ny:ny,dx:dx,dy:dy,len:len};
+    return {i:i,x1:x1,y1:y1,x2:x2,y2:y2,mx:mx,my:my,nx:nx,ny:ny,dx:dx,dy:dy,len:len,pxPerCm:L/sideLen};
   }
   function laneIndex(list, mark, geom){
     var idx=0;
@@ -53,6 +53,17 @@
       if(g && g.i===geom.i) idx++;
     }
     return idx;
+  }
+  function displayedGeometry(list,mark){
+    var g=geometry(mark);if(!g)return null;
+    var requested=Math.max(0,Number(mark.wallDistanceCm)||0);
+    var lane=laneIndex(list,mark,g);
+    /* A positive value is a real perpendicular distance in centimetres.
+       Zero keeps the old small visual lane so an element placed directly on
+       a wall is still visible and tappable. */
+    var dist=requested>0?requested*g.pxPerCm:7*(lane+1);
+    var sx=-g.nx*dist,sy=-g.ny*dist;
+    return {i:g.i,x1:g.x1+sx,y1:g.y1+sy,x2:g.x2+sx,y2:g.y2+sy,mx:g.mx+sx,my:g.my+sy,nx:g.nx,ny:g.ny,dx:g.dx,dy:g.dy,len:g.len,pxPerCm:g.pxPerCm,lane:lane};
   }
   function drawLabel(c,g,m,col,lane){
     var title=String(m.type||'Елемент').replace(/\s+/g,' ').trim()||'Елемент';
@@ -87,14 +98,11 @@
       c.save();
       c.lineCap='round'; c.lineJoin='round'; c.setLineDash([]);
       list.forEach(function(m,i){
-        var g=geometry(m); if(!g)return;
-        var lane=laneIndex(list,m,g);
-        // Each element gets its own parallel lane. 1st = 7px, 2nd = 14px, 3rd = 21px...
-        var dist=7*(lane+1);
-        var sx=-g.nx*dist, sy=-g.ny*dist;
+        var g=displayedGeometry(list,m); if(!g)return;
+        var lane=g.lane;
         var col=color(m.color,i);
         c.strokeStyle=col; c.lineWidth=5.8;
-        c.beginPath(); c.moveTo(g.x1+sx,g.y1+sy); c.lineTo(g.x2+sx,g.y2+sy); c.stroke();
+        c.beginPath(); c.moveTo(g.x1,g.y1); c.lineTo(g.x2,g.y2); c.stroke();
         drawLabel(c,g,m,col,lane);
       });
       c.restore();
@@ -104,4 +112,22 @@
     }
   };
   try{ drawWallMarks=window.drawWallMarks; }catch(_){ }
+
+  /* Keep tap editing aligned with the actually drawn (possibly offset)
+     segment. This generic hit test works for present and future wall types
+     because placement belongs to the mark, not to a preset name. */
+  window.findWallMarkHit=function(x,y){
+    var list=getMarks(),best={idx:-1,dist:Infinity};
+    list.forEach(function(mark,index){
+      var g=displayedGeometry(list,mark);if(!g)return;
+      var d=(function(px,py,a,b){
+        var vx=b.x-a.x,vy=b.y-a.y,c2=vx*vx+vy*vy||1;
+        var t=clamp(((px-a.x)*vx+(py-a.y)*vy)/c2,0,1);
+        return Math.hypot(px-(a.x+t*vx),py-(a.y+t*vy));
+      })(x,y,{x:g.x1,y:g.y1},{x:g.x2,y:g.y2});
+      if(d<best.dist)best={idx:index,dist:d};
+    });
+    return best.dist<=34?best.idx:-1;
+  };
+  try{findWallMarkHit=window.findWallMarkHit;}catch(_){ }
 })();

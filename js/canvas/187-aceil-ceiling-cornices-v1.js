@@ -91,10 +91,35 @@
     var objectId=activeObjectId(),roomIndex=activeRoomIndex(),projectId=currentProjectId();
     return objectId!=null&&roomIndex!=null?"room:"+objectId+":"+roomIndex:"project:"+(projectId==null?"draft":projectId);
   }
-  function backupWrite(){
-    try{var all=parse(localStorage.getItem(backupKey));all[currentContextKey()]=clone(list());localStorage.setItem(backupKey,JSON.stringify(all));}catch(e){}
+  function currentBackupKeys(){
+    var keys=[currentContextKey()];
+    try{
+      var objectId=activeObjectId(),roomIndex=activeRoomIndex(),projectId=currentProjectId(),project=findProject(objectId!=null?objectId:projectId),room=project&&project.rooms&&project.rooms[roomIndex];
+      if(room&&room.id)keys.push("roomid:"+String(room.id));
+      if(project&&(objectId==null||roomIndex==null))keys.push("projectid:"+String(project.id||project._dbId||project._localId||""));
+    }catch(e){}
+    return keys.filter(function(value,index,self){return value&&self.indexOf(value)===index;});
   }
-  function backupRead(key){try{var all=parse(localStorage.getItem(backupKey));return Array.isArray(all[key])?clone(all[key]):[];}catch(e){return [];}}
+  function backupWrite(){
+    try{var all=parse(localStorage.getItem(backupKey)),snapshot=clone(list());currentBackupKeys().forEach(function(key){all[key]=snapshot;});localStorage.setItem(backupKey,JSON.stringify(all));}catch(e){}
+  }
+  function backupRead(keys){
+    try{
+      var all=parse(localStorage.getItem(backupKey)),arr=Array.isArray(keys)?keys:[keys],empty=null;
+      for(var i=0;i<arr.length;i++)if(Object.prototype.hasOwnProperty.call(all,arr[i])&&Array.isArray(all[arr[i]])){if(all[arr[i]].length)return clone(all[arr[i]]);empty=[];}
+      return empty||[];
+    }catch(e){return [];}
+  }
+  function savedCornices(target,keys){
+    var state=parse(target&&target.state),hasState=Object.prototype.hasOwnProperty.call(state,"ceilingCornices")&&Array.isArray(state.ceilingCornices),hasDirect=target&&Object.prototype.hasOwnProperty.call(target,"ceilingCornices")&&Array.isArray(target.ceilingCornices),saved=hasState?clone(state.ceilingCornices):(hasDirect?clone(target.ceilingCornices):null),backup=backupRead(keys);
+    /* A stale cloud/project snapshot may temporarily omit this newer field
+       or contain an old empty array. Keep the non-empty local room backup in
+       that case. Explicit deletion is safe because persistNow writes an
+       empty backup before the next load. */
+    if(saved&&saved.length)return saved;
+    if(backup.length)return backup;
+    return saved||[];
+  }
   function patchState(target){
     if(!target)return;
     var state=parse(target.state);
@@ -239,7 +264,7 @@
   window.cancelCeilingCornicePlacement=function(){pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");toast("Розміщення скасовано");};
 
   function distanceToSegment(p,a,b){var vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y,c1=wx*vx+wy*vy;if(c1<=0)return Math.hypot(p.x-a.x,p.y-a.y);var c2=vx*vx+vy*vy;if(c2<=c1)return Math.hypot(p.x-b.x,p.y-b.y);var t=c1/c2;return Math.hypot(p.x-(a.x+t*vx),p.y-(a.y+t*vy));}
-  function eventWorld(ev,canvas){var r=canvas.getBoundingClientRect(),rawX=(ev.clientX-r.left)*(canvas.width/r.width),rawY=(ev.clientY-r.top)*(canvas.height/r.height),zoom=1,ox=0,oy=0;try{zoom=typeof viewScale!=="undefined"&&viewScale>0?viewScale:1;ox=typeof viewOffsetX!=="undefined"?viewOffsetX:0;oy=typeof viewOffsetY!=="undefined"?viewOffsetY:0;}catch(e){}var inCanvas=rawX>=0&&rawY>=0&&rawX<=canvas.width&&rawY<=canvas.height;return{x:(rawX-ox)/zoom,y:(rawY-oy)/zoom,threshold:18/zoom,inCanvas:inCanvas};}
+  function eventWorld(ev,canvas){var src=ev&&ev.touches&&ev.touches[0]||ev&&ev.changedTouches&&ev.changedTouches[0]||ev,r=canvas.getBoundingClientRect(),rawX=(((src&&src.clientX)||0)-r.left)*(canvas.width/r.width),rawY=(((src&&src.clientY)||0)-r.top)*(canvas.height/r.height),zoom=1,ox=0,oy=0;try{zoom=typeof viewScale!=="undefined"&&viewScale>0?viewScale:1;ox=typeof viewOffsetX!=="undefined"?viewOffsetX:0;oy=typeof viewOffsetY!=="undefined"?viewOffsetY:0;}catch(e){}var inCanvas=rawX>=0&&rawY>=0&&rawX<=canvas.width&&rawY<=canvas.height;return{x:(rawX-ox)/zoom,y:(rawY-oy)/zoom,threshold:28/zoom,inCanvas:inCanvas};}
   function nearestWall(point){var p=points(),best=null;for(var i=0;i<p.length;i++){var a=p[i],b=p[(i+1)%p.length],vx=b.x-a.x,vy=b.y-a.y,len2=vx*vx+vy*vy;if(!len2)continue;var t=Math.max(0,Math.min(1,((point.x-a.x)*vx+(point.y-a.y)*vy)/len2)),q={x:a.x+t*vx,y:a.y+t*vy},distance=Math.hypot(point.x-q.x,point.y-q.y);if(!best||distance<best.distance)best={index:i,t:t,distance:distance};}return best;}
   function nearestCorner(point){var p=points(),best=null;p.forEach(function(c,i){var distance=Math.hypot(point.x-c.x,point.y-c.y);if(!best||distance<best.distance)best={index:i,distance:distance};});return best;}
   function placeAtCorner(point){
@@ -261,27 +286,27 @@
   function hitCornice(point){for(var i=list().length-1;i>=0;i--){var ps=canvasShape(list()[i]);for(var j=1;j<ps.length;j++)if(distanceToSegment(point,ps[j-1],ps[j])<=point.threshold)return list()[i];}return null;}
   function bindCanvas(){
     var canvas=id("cv");if(!canvas||canvas.dataset.ceilingCornicesBound==="1")return;canvas.dataset.ceilingCornicesBound="1";
-    /* Capture on window before the legacy wall handler can open its editor.
-       Several legacy handlers listen on different event types (pointerdown,
-       mousedown, touchstart on the way down; click, pointerup, mouseup,
-       touchend on the way up), so every one of them needs to be swallowed
-       here — blocking just "click" left the wall-tap menu free to open via
-       pointerup/touchend right after a cornice was placed. */
-    ["pointerdown","mousedown","touchstart"].forEach(function(type){
+    var tapItemId=null;
+    var downTypes=window.PointerEvent?["pointerdown"]:["touchstart","mousedown"];
+    var upTypes=window.PointerEvent?["pointerup","pointercancel"]:["touchend","touchcancel","mouseup"];
+    downTypes.forEach(function(type){
       window.addEventListener(type,function(ev){
-        if(!pendingPlacement||ev.target!==canvas)return;
+        if(ev.target!==canvas)return;
+        var point=eventWorld(ev,canvas);
+        if(!pendingPlacement){var hit=hitCornice(point);if(!hit)return;tapItemId=hit.id;}
         ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
         suppressCanvasClickUntil=Date.now()+900;
-        if(type==="pointerdown")placePending(eventWorld(ev,canvas));
+        if(pendingPlacement)placePending(point);
       },true);
     });
-    ["click","pointerup","mouseup","touchend"].forEach(function(type){
+    upTypes.forEach(function(type){
       window.addEventListener(type,function(ev){
-        if(ev.target!==canvas||Date.now()>suppressCanvasClickUntil)return;
+        if(ev.target!==canvas||(!tapItemId&&Date.now()>suppressCanvasClickUntil))return;
         ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
+        if(tapItemId&&type!=="pointercancel"&&type!=="touchcancel"){var openId=tapItemId;tapItemId=null;window.openCeilingCorniceModal(openId);}else tapItemId=null;
       },true);
     });
-    canvas.addEventListener("click",function(ev){var point=eventWorld(ev,canvas);if(pendingPlacement){ev.preventDefault();ev.stopImmediatePropagation();placePending(point);return;}var hit=hitCornice(point);if(!hit)return;ev.preventDefault();ev.stopImmediatePropagation();window.openCeilingCorniceModal(hit.id);},true);
+    window.addEventListener("click",function(ev){if(ev.target!==canvas||Date.now()>suppressCanvasClickUntil)return;ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();},true);
   }
 
   function injectLauncher(){
@@ -291,12 +316,17 @@
     button.onclick=function(){try{if(typeof window.closeRmLightStart==="function")window.closeRmLightStart();}catch(e){}window.openCeilingCorniceModal();};
     var settings=grid.querySelector(".settings");grid.insertBefore(button,settings||null);
   }
-  function wrapLauncher(){var previous=window.openRmLightStart;if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){var result=previous.apply(this,arguments);setTimeout(injectLauncher,0);return result;};wrapped.__ceilingCornices=true;window.openRmLightStart=wrapped;try{openRmLightStart=wrapped;}catch(e){}}
+  function watchLauncher(){
+    var host=id("rmLightStartModal");if(!host||host.dataset.ceilingCorniceObserved==="1"||typeof MutationObserver!=="function")return;
+    host.dataset.ceilingCorniceObserved="1";var queued=false;
+    new MutationObserver(function(){if(queued)return;queued=true;Promise.resolve().then(function(){queued=false;injectLauncher();});}).observe(host,{childList:true,subtree:true});
+  }
+  function wrapLauncher(){var previous=window.openRmLightStart;if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){var result=previous.apply(this,arguments);watchLauncher();setTimeout(injectLauncher,0);setTimeout(injectLauncher,80);setTimeout(injectLauncher,240);return result;};wrapped.__ceilingCornices=true;window.openRmLightStart=wrapped;try{openRmLightStart=wrapped;}catch(e){}}
 
-  function restoreFrom(target,key){var state=parse(target&&target.state),saved=Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(target&&target.ceilingCornices)?target.ceilingCornices:backupRead(key);window.ceilingCornices=clone(saved||[]);setTimeout(redraw,30);}
+  function restoreFrom(target,key){window.ceilingCornices=savedCornices(target,key);redraw();}
   function wrapPersistence(){
-    var loadRoom=window._loadRoomToCanvas;if(typeof loadRoom==="function"&&!loadRoom.__ceilingCornices){var roomWrapped=function(project,roomIndex){var room=project&&project.rooms&&project.rooms[roomIndex],state=parse(room&&room.state),saved=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(room&&room.ceilingCornices)?room.ceilingCornices:backupRead("room:"+String(project&&project.id)+":"+roomIndex)),result;suspendPersistence=true;try{result=loadRoom.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved||[];setTimeout(function(){syncElemItems();redraw();},30);return result;};roomWrapped.__ceilingCornices=true;window._loadRoomToCanvas=roomWrapped;try{_loadRoomToCanvas=roomWrapped;}catch(e){}}
-    var loadProject=window.loadProject;if(typeof loadProject==="function"&&!loadProject.__ceilingCornices){var projectWrapped=function(projectId){var project=findProject(projectId),state=parse(project&&project.state),saved=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:Array.isArray(project&&project.ceilingCornices)?project.ceilingCornices:backupRead("project:"+projectId)),result;suspendPersistence=true;try{result=loadProject.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved||[];setTimeout(function(){syncElemItems();redraw();},30);return result;};projectWrapped.__ceilingCornices=true;window.loadProject=projectWrapped;}
+    var loadRoom=window._loadRoomToCanvas;if(typeof loadRoom==="function"&&!loadRoom.__ceilingCornices){var roomWrapped=function(project,roomIndex){var room=project&&project.rooms&&project.rooms[roomIndex],keys=["room:"+String(project&&(project.id||project._dbId||project._localId))+":"+roomIndex,room&&room.id?"roomid:"+String(room.id):""],saved=savedCornices(room,keys),result;suspendPersistence=true;try{result=loadRoom.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved;syncElemItems();redraw();return result;};roomWrapped.__ceilingCornices=true;window._loadRoomToCanvas=roomWrapped;try{_loadRoomToCanvas=roomWrapped;}catch(e){}}
+    var loadProject=window.loadProject;if(typeof loadProject==="function"&&!loadProject.__ceilingCornices){var projectWrapped=function(projectId){var project=findProject(projectId),saved=savedCornices(project,["project:"+projectId,"projectid:"+String(project&&project.id||projectId)]),result;suspendPersistence=true;try{result=loadProject.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved;syncElemItems();redraw();return result;};projectWrapped.__ceilingCornices=true;window.loadProject=projectWrapped;}
     var reportRoom=window._renderRoomForReport;if(typeof reportRoom==="function"&&!reportRoom.__ceilingCornices){var reportWrapped=function(room){var previousList=clone(list()),state=parse(room&&room.state);window.ceilingCornices=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:room&&room.ceilingCornices||[]);if(window.ceilingCornices.length)reportCorniceSeen=reportCorniceSeen.concat(clone(window.ceilingCornices));try{return reportRoom.apply(this,arguments);}finally{window.ceilingCornices=previousList;redraw();}};reportWrapped.__ceilingCornices=true;window._renderRoomForReport=reportWrapped;try{_renderRoomForReport=reportWrapped;}catch(e){}}
     ["saveState","saveCurrentRoom","saveProject"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){
       /* Patch the cornices onto the live room/project object BEFORE the
@@ -345,11 +375,11 @@
        it) whenever the live list is still empty at load time. */
     try{
       if(list().length)return;
-      var restored=backupRead(currentContextKey());
+      var restored=backupRead(currentBackupKeys());
       if(restored&&restored.length){window.ceilingCornices=restored;syncElemItems();redraw();}
     }catch(e){window.__diagSilent&&window.__diagSilent(e);}
   }
-  function init(){ensureStyle();ensureModal();wrapDrawing();wrapLauncher();wrapPersistence();wrapFilmAutoFill();forceFilmQuantity();bindCanvas();injectLauncher();restoreDraftOnInit();}
+  function init(){restoreDraftOnInit();ensureStyle();ensureModal();wrapDrawing();wrapLauncher();wrapPersistence();wrapFilmAutoFill();forceFilmQuantity();bindCanvas();watchLauncher();injectLauncher();}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
   setTimeout(init,300);setTimeout(init,1200);
 })();
