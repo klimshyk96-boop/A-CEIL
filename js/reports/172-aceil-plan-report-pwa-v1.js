@@ -15,9 +15,6 @@ function dataUrlToBlob(dataUrl){
   for(var i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);return new Blob([bytes],{type:mime});
 }
 async function publishImageReport(canvas,fileName){
-  var client=window._sb,user=window._sbUser;
-  if(!client)throw new Error("Хмара ще не підключена");
-  if(!user||!user.id)throw new Error("Потрібна авторизація");
   if(!window.A_CEIL_ReportLinks)throw new Error("Модуль захищених посилань не завантажено");
   var structured=null;try{if(typeof window.A_CEIL_buildCloudStructuredReport==="function")structured=window.A_CEIL_buildCloudStructuredReport(fileName)}catch(_){}
   var payload={version:2,createdAt:new Date().toISOString(),meta:{name:String(window._currentProjName||fileName||"Звіт A·CEIL")},structured:structured,image:canvas.toDataURL("image/png")};
@@ -42,7 +39,7 @@ function openReportInsideApp(canvas,fileName){
   function onKey(e){if(e.key==="Escape")close()}
   function save(){var a=document.createElement("a");a.href=dataUrl;a.download=fileName||"A-CEIL-report.png";document.body.appendChild(a);a.click();a.remove()}
   var cloudButton=layer.querySelector("[data-cloud]"),shareButton=layer.querySelector("[data-share]"),cloudBox=layer.querySelector(".aceil-ir-cloud"),cloudInput=layer.querySelector("[data-cloud-url]"),copyButton=layer.querySelector("[data-copy]"),openButton=layer.querySelector("[data-open]");
-  async function cloudUrl(){if(cloudInput.value)return cloudInput.value;cloudButton.disabled=true;cloudButton.textContent="Завантаження…";try{var url=await publishImageReport(canvas,fileName);cloudInput.value=url;cloudBox.hidden=false;cloudButton.textContent="Посилання готове";return url}catch(e){cloudButton.textContent="Помилка хмари";throw e}finally{cloudButton.disabled=false}}
+  async function cloudUrl(){if(cloudInput.value&&!/^Помилка:/.test(cloudInput.value))return cloudInput.value;cloudInput.value="";cloudButton.disabled=true;cloudButton.textContent="Завантаження…";try{var url=await publishImageReport(canvas,fileName);cloudInput.value=url;cloudBox.hidden=false;cloudButton.textContent="Посилання готове";return url}catch(e){var message=String(e&&e.message||e||"Помилка хмари");cloudButton.textContent="Повторити";cloudInput.value="Помилка: "+message;cloudBox.hidden=false;throw e}finally{cloudButton.disabled=false}}
   async function shareUrl(url){if(navigator.share){try{await navigator.share({title:"Звіт A·CEIL",text:"Звіт A·CEIL",url:url});return}catch(e){if(e&&e.name==="AbortError")return}}try{await navigator.clipboard.writeText(url);shareButton.textContent="Посилання скопійовано";setTimeout(function(){shareButton.textContent="Поділитися"},1800)}catch(_){cloudBox.hidden=false;cloudInput.focus();cloudInput.select()}}
   layer.querySelector("[data-close]").onclick=close;layer.querySelector("[data-save]").onclick=save;
   cloudButton.onclick=function(){cloudUrl().catch(function(e){try{showToast(e&&e.message?e.message:"Помилка хмари")}catch(_){}})};

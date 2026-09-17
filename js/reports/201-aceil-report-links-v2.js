@@ -30,7 +30,10 @@
 
   function activeProject(reference) {
     var list = projects();
-    var refs = [reference, window._activeObjectId, window._currentProjectId]
+    var activeObject = null, currentProject = null;
+    try { activeObject = typeof _activeObjectId !== "undefined" ? _activeObjectId : window._activeObjectId; } catch (_) { activeObject = window._activeObjectId; }
+    try { currentProject = typeof _currentProjectId !== "undefined" ? _currentProjectId : window._currentProjectId; } catch (_) { currentProject = window._currentProjectId; }
+    var refs = [reference, activeObject, currentProject]
       .filter(function (x) { return x !== null && x !== undefined && x !== ""; })
       .map(String);
     var found = list.find(function (p) {
@@ -126,20 +129,22 @@
   };
   window.A_CEILRevokeReport = revoke;
 
-  function updateClassicUi(url) {
-    var panel = document.getElementById("cloudReportReady") || document.getElementById("cloudReady");
-    var input = document.getElementById("cloudReportUrl") || document.getElementById("cloudUrl");
-    var status = document.getElementById("cloudStatus");
-    var button = document.getElementById("btnPublishReport");
+  function updateClassicUi(url, sourceButton) {
+    var doc = sourceButton && sourceButton.ownerDocument || document;
+    var panel = doc.getElementById("cloudReportReady") || doc.getElementById("cloudReady");
+    var input = doc.getElementById("cloudReportUrl") || doc.getElementById("cloudUrl");
+    var status = doc.getElementById("cloudStatus") || doc.getElementById("reportStatus");
+    var button = sourceButton || doc.getElementById("btnPublishReport") || doc.getElementById("cloud");
     if (input) input.value = url;
     if (panel) { panel.dataset.url = url; panel.hidden = false; panel.style.display = "block"; }
     if (button) { button.dataset.reportUrl = url; button.style.display = "none"; }
     if (status) status.textContent = "☁️ посилання готове";
   }
 
-  function classicFailure(error) {
-    var panel = document.getElementById("cloudReportReady") || document.getElementById("cloudReady");
-    var button = document.getElementById("btnPublishReport");
+  function classicFailure(error, sourceButton) {
+    var doc = sourceButton && sourceButton.ownerDocument || document;
+    var panel = doc.getElementById("cloudReportReady") || doc.getElementById("cloudReady");
+    var button = sourceButton || doc.getElementById("btnPublishReport") || doc.getElementById("cloud");
     if (panel) { panel.dataset.url = ""; panel.hidden = true; panel.style.display = "none"; }
     if (button) { button.dataset.reportUrl = ""; button.style.display = ""; button.disabled = false; }
     try { if (typeof showToast === "function") showToast("Не вдалося створити посилання: " + (error.message || error)); }
@@ -150,10 +155,19 @@
     var previous = window["A·CEILPublishReport"];
     if (typeof previous !== "function" || previous.__secureReportV2) return;
     var wrapped = async function () {
+      var sourceButton = arguments[1] || null;
       try {
+        // Legacy publisher reads Supabase from window, while the application
+        // keeps the canonical values in top-level lexical bindings.
+        var cloudClient = sb(), cloudUser = user();
+        if (!cloudClient) throw new Error("Хмара ще не підключена");
+        if (!cloudUser || !cloudUser.id) throw new Error("Потрібна авторизація");
+        window._sb = cloudClient;
+        window._sbUser = cloudUser;
         await previous.apply(this, arguments);
-        var button = document.getElementById("btnPublishReport");
-        var panel = document.getElementById("cloudReportReady") || document.getElementById("cloudReady");
+        var reportDocument = sourceButton && sourceButton.ownerDocument || document;
+        var button = sourceButton || reportDocument.getElementById("btnPublishReport") || reportDocument.getElementById("cloud");
+        var panel = reportDocument.getElementById("cloudReportReady") || reportDocument.getElementById("cloudReady");
         var oldUrl = (button && button.dataset.reportUrl) || (panel && panel.dataset.url) || "";
         var match = String(oldUrl).match(/(?:\/report\/|[?&]r=)([a-f0-9]{20})/i);
         if (!match) throw new Error("Не вдалося отримати дані звіту");
@@ -168,10 +182,10 @@
           await revoke();
           throw removal.error;
         }
-        updateClassicUi(url);
+        updateClassicUi(url, sourceButton);
         return url;
       } catch (error) {
-        classicFailure(error);
+        classicFailure(error, sourceButton);
         throw error;
       }
     };
