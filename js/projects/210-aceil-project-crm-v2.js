@@ -14,8 +14,14 @@
   function uuid(value) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || "")); }
   function clean(value) { return String(value == null ? "" : value).trim(); }
   function fingerprint(p) { return [clean(p && p.name).toLowerCase(), clean(p && p.addr).toLowerCase(), clean(p && p.phone).replace(/\D/g, "")].join("|"); }
+  function activeRefs(ref) {
+    var current = null, object = null;
+    try { current = typeof _currentProjectId !== "undefined" ? _currentProjectId : window._currentProjectId; } catch (_) { current = window._currentProjectId; }
+    try { object = typeof _activeObjectId !== "undefined" ? _activeObjectId : window._activeObjectId; } catch (_) { object = window._activeObjectId; }
+    return [ref, current, object].filter(function (x) { return x != null && x !== ""; }).map(String);
+  }
   function projectBy(ref) {
-    var refs = [ref, window._currentProjectId, window._activeObjectId].filter(function (x) { return x != null && x !== ""; }).map(String);
+    var refs = activeRefs(ref);
     var items = list();
     return items.find(function (p) { return [p.id, p._dbId, p._localId].some(function (id) { return id != null && refs.indexOf(String(id)) >= 0; }); }) || (items.length === 1 ? items[0] : null);
   }
@@ -96,7 +102,14 @@
     var c = client(), currentUser = signedUser(); if (!c || !currentUser || !currentUser.id) return;
     var result = await c.from("projects").select("id,order_source,deal_status,report_token,report_published_at,report_expires_at").eq("user_id", currentUser.id);
     if (result.error) return;
-    var items = list(); (result.data || []).forEach(function (row) { var p = items.find(function (x) { return String(x._dbId || x.id) === String(row.id); }); if (p) remember(p, row); }); saveList(items);
+    var items = list(), data = readStore(), changed = false;
+    (result.data || []).forEach(function (row) {
+      var p = items.find(function (x) { return String(x._dbId || x.id) === String(row.id); });
+      if (!p) return;
+      Object.assign(p, row); changed = true;
+      var key = recordKey(p); data[key] = Object.assign({}, data[key] || {}, row, { fingerprint: fingerprint(p), updatedAt: Date.now() });
+    });
+    if (changed) { writeStore(data); saveList(items); }
   }
   function afterSave(prefix, ref) {
     setTimeout(function () { var p = projectBy(ref), v = values(prefix); if (!p) return; remember(p, v); push(p).catch(function () {}); }, 100);
@@ -111,9 +124,9 @@
     var oldEdit = window.editProject; if (typeof oldEdit === "function" && !oldEdit.__crmV2) { window.editProject = function (id) { var r = oldEdit.apply(this, arguments); setTimeout(function () { fill("edit", projectBy(id)); updateReportBox().catch(function (error) { var state = document.getElementById("editReportState"); if (state) state.textContent = "⚠️ Не вдалося перевірити посилання: " + (error.message || error); }); }, 20); return r; }; window.editProject.__crmV2 = true; try { editProject = window.editProject; } catch (_) {} }
     var oldOpen = window.openSaveProjectModal; if (typeof oldOpen === "function" && !oldOpen.__crmV2) { window.openSaveProjectModal = function () { var r = oldOpen.apply(this, arguments); setTimeout(function () { fill("proj", projectBy()); }, 20); return r; }; window.openSaveProjectModal.__crmV2 = true; try { openSaveProjectModal = window.openSaveProjectModal; } catch (_) {} }
     var oldNew = window.openNewObjectModal; if (typeof oldNew === "function" && !oldNew.__crmV2) { window.openNewObjectModal = function () { var r = oldNew.apply(this, arguments); setTimeout(function () { fill("newObj", null); }, 20); return r; }; window.openNewObjectModal.__crmV2 = true; try { openNewObjectModal = window.openNewObjectModal; } catch (_) {} }
-    wrap("saveProject", function () { return { ref: window._currentProjectId, values: values("proj") }; }, function (x) { var p = projectBy(window._currentProjectId || x.ref); if (p) { remember(p, x.values); push(p).catch(function () {}); } });
+    wrap("saveProject", function () { return { refs: activeRefs(), values: values("proj") }; }, function (x) { var p = projectBy(activeRefs()[0] || x.refs[0]); if (p) { remember(p, x.values); push(p).catch(function () {}); } });
     wrap("saveEditProject", function () { return { ref: document.getElementById("editProjId").value, values: values("edit") }; }, function (x) { var p = projectBy(x.ref); if (p) { remember(p, x.values); push(p).catch(function () {}); } });
-    wrap("createObject", function () { return values("newObj"); }, function (v) { afterSave("newObj", window._activeObjectId); var p = projectBy(window._activeObjectId); if (p) remember(p, v); });
+    wrap("createObject", function () { return values("newObj"); }, function (v) { var p = projectBy(activeRefs()[0]); if (p) { remember(p, v); push(p).catch(function () {}); } });
     wrap("loadProjectsFromCloud", null, function () { restoreLocal(); refresh().catch(function () {}); });
     var oldSync = window._syncObjectToCloud;
     if (typeof oldSync === "function" && !oldSync.__crmV2) {
