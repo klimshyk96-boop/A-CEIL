@@ -8,6 +8,7 @@
   var STORE = "A_CEIL_project_crm_v2";
 
   function client() { try { return (typeof _sb !== "undefined" && _sb) || window._sb || null; } catch (_) { return window._sb || null; } }
+  function signedUser() { try { return (typeof _sbUser !== "undefined" && _sbUser) || window._sbUser || null; } catch (_) { return window._sbUser || null; } }
   function list() { try { return typeof getProjects === "function" ? getProjects() || [] : []; } catch (_) { return []; } }
   function saveList(items) { try { if (typeof setProjects === "function") setProjects(items); } catch (_) {} }
   function uuid(value) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || "")); }
@@ -82,8 +83,8 @@
     if (result.error) throw result.error;
   }
   async function refresh() {
-    var c = client(); if (!c || !window._sbUser) return;
-    var result = await c.from("projects").select("id,order_source,deal_status,report_token,report_published_at,report_expires_at").eq("user_id", window._sbUser.id);
+    var c = client(), currentUser = signedUser(); if (!c || !currentUser || !currentUser.id) return;
+    var result = await c.from("projects").select("id,order_source,deal_status,report_token,report_published_at,report_expires_at").eq("user_id", currentUser.id);
     if (result.error) return;
     var items = list(); (result.data || []).forEach(function (row) { var p = items.find(function (x) { return String(x._dbId || x.id) === String(row.id); }); if (p) remember(p, row); }); saveList(items);
   }
@@ -97,7 +98,7 @@
   }
   function install() {
     installFields("saveProjectModal", "projComment", "proj"); installFields("editProjectModal", "editProjComment", "edit"); installFields("newObjectModal", "newObjComment", "newObj"); installReportBox(); restoreLocal();
-    var oldEdit = window.editProject; if (typeof oldEdit === "function" && !oldEdit.__crmV2) { window.editProject = function (id) { var r = oldEdit.apply(this, arguments); setTimeout(function () { fill("edit", projectBy(id)); updateReportBox(); }, 20); return r; }; window.editProject.__crmV2 = true; try { editProject = window.editProject; } catch (_) {} }
+    var oldEdit = window.editProject; if (typeof oldEdit === "function" && !oldEdit.__crmV2) { window.editProject = function (id) { var r = oldEdit.apply(this, arguments); setTimeout(function () { refresh().catch(function () {}).finally(function () { fill("edit", projectBy(id)); updateReportBox(); }); }, 20); return r; }; window.editProject.__crmV2 = true; try { editProject = window.editProject; } catch (_) {} }
     var oldOpen = window.openSaveProjectModal; if (typeof oldOpen === "function" && !oldOpen.__crmV2) { window.openSaveProjectModal = function () { var r = oldOpen.apply(this, arguments); setTimeout(function () { fill("proj", projectBy()); }, 20); return r; }; window.openSaveProjectModal.__crmV2 = true; try { openSaveProjectModal = window.openSaveProjectModal; } catch (_) {} }
     var oldNew = window.openNewObjectModal; if (typeof oldNew === "function" && !oldNew.__crmV2) { window.openNewObjectModal = function () { var r = oldNew.apply(this, arguments); setTimeout(function () { fill("newObj", null); }, 20); return r; }; window.openNewObjectModal.__crmV2 = true; try { openNewObjectModal = window.openNewObjectModal; } catch (_) {} }
     wrap("saveProject", function () { return { ref: window._currentProjectId, values: values("proj") }; }, function (x) { var p = projectBy(window._currentProjectId || x.ref); if (p) { remember(p, x.values); push(p).catch(function () {}); } });
