@@ -55,22 +55,32 @@
     var box = document.createElement("div"); box.id = "editReportAccess"; box.style.cssText = "margin:-4px 0 16px;padding:12px;border-radius:14px;background:#f8fafc;border:1px solid #e2e8f0";
     box.innerHTML = '<div id="editReportState" style="font-size:13px;font-weight:800;color:#64748b">🔗 Посилання на КП не створено</div><div style="display:flex;gap:8px;margin-top:9px"><button type="button" id="editReportOpen" style="display:none;flex:1;padding:10px;border:0;border-radius:10px;background:#dbeafe;color:#1d4ed8;font-weight:800">Відкрити</button><button type="button" id="editReportRevoke" style="display:none;flex:1;padding:10px;border:0;border-radius:10px;background:#fee2e2;color:#b91c1c;font-weight:800">Закрити доступ</button></div>';
     fields.insertAdjacentElement("afterend", box);
-    document.getElementById("editReportOpen").onclick = function () { var status = window.A_CEIL_ReportLinks && window.A_CEIL_ReportLinks.status(document.getElementById("editProjId").value); if (status && status.url) window.open(status.url, "_blank", "noopener"); };
+    document.getElementById("editReportOpen").onclick = function () { var box = document.getElementById("editReportAccess"); if (box && box.dataset.url) window.open(box.dataset.url, "_blank", "noopener"); };
     document.getElementById("editReportRevoke").onclick = async function () {
       if (!confirm("Закрити доступ до опублікованого КП?")) return;
       this.disabled = true;
-      try { await window.A_CEIL_ReportLinks.revoke(document.getElementById("editProjId").value); updateReportBox(); if (typeof showToast === "function") showToast("🔒 Доступ до КП закрито"); }
+      try { await window.A_CEIL_ReportLinks.revoke(document.getElementById("editProjId").value); await updateReportBox(); if (typeof showToast === "function") showToast("🔒 Доступ до КП закрито"); }
       catch (e) { if (typeof showToast === "function") showToast("Не вдалося закрити доступ: " + (e.message || e)); }
       finally { this.disabled = false; }
     };
   }
-  function updateReportBox() {
-    var state = document.getElementById("editReportState"), open = document.getElementById("editReportOpen"), revoke = document.getElementById("editReportRevoke");
-    if (!state || !window.A_CEIL_ReportLinks) return;
-    var status = window.A_CEIL_ReportLinks.status(document.getElementById("editProjId").value);
-    if (status.status === "active") { state.textContent = "🔗 КП активне до " + (status.expiresAt ? status.expiresAt.toLocaleDateString("uk-UA") : "—"); open.style.display = "block"; revoke.style.display = "block"; }
-    else if (status.status === "expired") { state.textContent = "⌛ Термін дії КП закінчився"; open.style.display = "none"; revoke.style.display = "block"; }
-    else { state.textContent = "🔗 Посилання на КП не створено"; open.style.display = "none"; revoke.style.display = "none"; }
+  async function updateReportBox() {
+    var state = document.getElementById("editReportState"), open = document.getElementById("editReportOpen"), revoke = document.getElementById("editReportRevoke"), box = document.getElementById("editReportAccess");
+    if (!state || !open || !revoke || !box) return;
+    state.textContent = "⏳ Перевіряємо посилання на КП…"; open.style.display = "none"; revoke.style.display = "none"; box.dataset.url = "";
+    var ref = document.getElementById("editProjId").value, p = projectBy(ref), db = p && (p._dbId || p.id), row = null, c = client();
+    if (c && uuid(db)) {
+      var result = await c.from("projects").select("id,report_token,report_published_at,report_expires_at").eq("id", db).single();
+      if (result.error) { state.textContent = "⚠️ Не вдалося перевірити посилання: " + (result.error.message || "помилка Supabase"); return; }
+      row = result.data || null;
+      if (p && row) remember(p, row);
+    } else if (p) row = p;
+    if (!row || !row.report_token) { state.textContent = "🔗 Посилання на КП не створено"; return; }
+    var expires = row.report_expires_at ? new Date(row.report_expires_at) : null;
+    if (expires && expires.getTime() <= Date.now()) { state.textContent = "⌛ Термін дії КП закінчився"; revoke.style.display = "block"; return; }
+    box.dataset.url = location.origin.replace(/\/$/, "") + "/report/" + row.report_token;
+    state.textContent = "🔗 КП активне до " + (expires && !isNaN(expires.getTime()) ? expires.toLocaleDateString("uk-UA") : "без вказаної дати");
+    open.style.display = "block"; revoke.style.display = "block";
   }
   function values(prefix) { return { order_source: clean(document.getElementById(prefix + "OrderSource") && document.getElementById(prefix + "OrderSource").value), deal_status: clean(document.getElementById(prefix + "DealStatus") && document.getElementById(prefix + "DealStatus").value) || "new" }; }
   function fill(prefix, p) {
@@ -98,7 +108,7 @@
   }
   function install() {
     installFields("saveProjectModal", "projComment", "proj"); installFields("editProjectModal", "editProjComment", "edit"); installFields("newObjectModal", "newObjComment", "newObj"); installReportBox(); restoreLocal();
-    var oldEdit = window.editProject; if (typeof oldEdit === "function" && !oldEdit.__crmV2) { window.editProject = function (id) { var r = oldEdit.apply(this, arguments); setTimeout(function () { refresh().catch(function () {}).finally(function () { fill("edit", projectBy(id)); updateReportBox(); }); }, 20); return r; }; window.editProject.__crmV2 = true; try { editProject = window.editProject; } catch (_) {} }
+    var oldEdit = window.editProject; if (typeof oldEdit === "function" && !oldEdit.__crmV2) { window.editProject = function (id) { var r = oldEdit.apply(this, arguments); setTimeout(function () { fill("edit", projectBy(id)); updateReportBox().catch(function (error) { var state = document.getElementById("editReportState"); if (state) state.textContent = "⚠️ Не вдалося перевірити посилання: " + (error.message || error); }); }, 20); return r; }; window.editProject.__crmV2 = true; try { editProject = window.editProject; } catch (_) {} }
     var oldOpen = window.openSaveProjectModal; if (typeof oldOpen === "function" && !oldOpen.__crmV2) { window.openSaveProjectModal = function () { var r = oldOpen.apply(this, arguments); setTimeout(function () { fill("proj", projectBy()); }, 20); return r; }; window.openSaveProjectModal.__crmV2 = true; try { openSaveProjectModal = window.openSaveProjectModal; } catch (_) {} }
     var oldNew = window.openNewObjectModal; if (typeof oldNew === "function" && !oldNew.__crmV2) { window.openNewObjectModal = function () { var r = oldNew.apply(this, arguments); setTimeout(function () { fill("newObj", null); }, 20); return r; }; window.openNewObjectModal.__crmV2 = true; try { openNewObjectModal = window.openNewObjectModal; } catch (_) {} }
     wrap("saveProject", function () { return { ref: window._currentProjectId, values: values("proj") }; }, function (x) { var p = projectBy(window._currentProjectId || x.ref); if (p) { remember(p, x.values); push(p).catch(function () {}); } });
