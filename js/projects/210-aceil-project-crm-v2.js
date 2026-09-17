@@ -6,6 +6,7 @@
   var SOURCES = [["", "Не вказано"], ["site", "Сайт"], ["instagram", "Instagram"], ["recommendation", "Рекомендація"], ["call", "Дзвінок"], ["other", "Інше"]];
   var STATUSES = [["new", "Нове КП"], ["in_progress", "В роботі"], ["won", "Договір підписано"], ["lost", "Відмова"]];
   var STORE = "A_CEIL_project_crm_v2";
+  var REPORT_CACHE = Object.create(null);
 
   function client() { try { return (typeof _sb !== "undefined" && _sb) || window._sb || null; } catch (_) { return window._sb || null; } }
   function signedUser() { try { return (typeof _sbUser !== "undefined" && _sbUser) || window._sbUser || null; } catch (_) { return window._sbUser || null; } }
@@ -45,9 +46,12 @@
   }
 
   function hasActiveReport(p) {
-    if (!p || !p.report_token) return false;
-    if (!p.report_expires_at) return true;
-    var expires = new Date(p.report_expires_at).getTime();
+    if (!p) return false;
+    var cached = REPORT_CACHE[String(p._dbId || p.id || "")];
+    var source = p.report_token ? p : cached;
+    if (!source || !source.report_token) return false;
+    if (!source.report_expires_at) return true;
+    var expires = new Date(source.report_expires_at).getTime();
     return !isFinite(expires) || expires > Date.now();
   }
   function decorateReportBadges() {
@@ -62,9 +66,9 @@
         if (old) return;
         var badge = document.createElement("span");
         badge.className = "aceil-report-active-badge";
-        badge.textContent = "🔗 КП";
-        badge.title = "Для цього проєкту створене активне посилання на КП";
-        badge.style.cssText = "display:inline-flex;align-items:center;flex:0 0 auto;white-space:nowrap;padding:5px 8px;border-radius:9px;background:linear-gradient(135deg,#ff3d00,#ff9500);color:#fff;font-size:10px;font-weight:950;letter-spacing:.02em;box-shadow:0 4px 11px rgba(255,82,0,.38);border:1px solid rgba(255,255,255,.7)";
+        badge.textContent = "🔗 ЗВІТ";
+        badge.title = "Для цього проєкту відкрите активне посилання на звіт";
+        badge.style.cssText = "display:inline-flex;align-items:center;flex:0 0 auto;white-space:nowrap;padding:5px 8px;border-radius:9px;background:linear-gradient(135deg,#dc2626,#f97316);color:#fff;font-size:10px;font-weight:950;letter-spacing:.03em;box-shadow:0 4px 11px rgba(220,38,38,.34);border:1px solid rgba(255,255,255,.75)";
         var title = head.querySelector(".rp-project-title");
         head.insertBefore(badge, title && title.nextSibling || head.firstChild);
       });
@@ -77,7 +81,9 @@
     next.__reportBadgesV1 = true;
     window.renderProjects = next;
     try { renderProjects = next; } catch (_) {}
-    window.addEventListener("aceil:report-link-change", function () { setTimeout(decorateReportBadges, 0); });
+    window.addEventListener("aceil:report-link-change", function () {
+      refresh().catch(function () { setTimeout(decorateReportBadges, 0); });
+    });
   }
 
   function options(values) { return values.map(function (x) { return '<option value="' + x[0] + '">' + x[1] + '</option>'; }).join(""); }
@@ -140,12 +146,14 @@
     if (result.error) return;
     var items = list(), data = readStore(), changed = false;
     (result.data || []).forEach(function (row) {
+      REPORT_CACHE[String(row.id)] = row;
       var p = items.find(function (x) { return String(x._dbId || x.id) === String(row.id); });
       if (!p) return;
       Object.assign(p, row); changed = true;
       var key = recordKey(p); data[key] = Object.assign({}, data[key] || {}, row, { fingerprint: fingerprint(p), updatedAt: Date.now() });
     });
     if (changed) { writeStore(data); saveList(items); try { if (typeof renderProjects === "function") renderProjects(); } catch (_) {} }
+    setTimeout(decorateReportBadges, 0);
   }
   function afterSave(prefix, ref) {
     setTimeout(function () { var p = projectBy(ref), v = values(prefix); if (!p) return; remember(p, v); push(p).catch(function () {}); }, 100);
@@ -160,6 +168,16 @@
     var oldEdit = window.editProject; if (typeof oldEdit === "function" && !oldEdit.__crmV2) { window.editProject = function (id) { var r = oldEdit.apply(this, arguments); setTimeout(function () { fill("edit", projectBy(id)); updateReportBox().catch(function (error) { var state = document.getElementById("editReportState"); if (state) state.textContent = "⚠️ Не вдалося перевірити посилання: " + (error.message || error); }); }, 20); return r; }; window.editProject.__crmV2 = true; try { editProject = window.editProject; } catch (_) {} }
     var oldOpen = window.openSaveProjectModal; if (typeof oldOpen === "function" && !oldOpen.__crmV2) { window.openSaveProjectModal = function () { var r = oldOpen.apply(this, arguments); setTimeout(function () { fill("proj", projectBy()); }, 20); return r; }; window.openSaveProjectModal.__crmV2 = true; try { openSaveProjectModal = window.openSaveProjectModal; } catch (_) {} }
     var oldNew = window.openNewObjectModal; if (typeof oldNew === "function" && !oldNew.__crmV2) { window.openNewObjectModal = function () { var r = oldNew.apply(this, arguments); setTimeout(function () { fill("newObj", null); }, 20); return r; }; window.openNewObjectModal.__crmV2 = true; try { openNewObjectModal = window.openNewObjectModal; } catch (_) {} }
+    var oldProjects = window.openProjectsModal; if (typeof oldProjects === "function" && !oldProjects.__reportBadgesV2) {
+      window.openProjectsModal = function () {
+        var result = oldProjects.apply(this, arguments);
+        setTimeout(decorateReportBadges, 0);
+        refresh().catch(function () {});
+        return result;
+      };
+      window.openProjectsModal.__reportBadgesV2 = true;
+      try { openProjectsModal = window.openProjectsModal; } catch (_) {}
+    }
     wrap("saveProject", function () { return { refs: activeRefs(), values: values("proj") }; }, function (x) { var p = projectBy(activeRefs()[0] || x.refs[0]); if (p) { remember(p, x.values); push(p).catch(function () {}); } });
     wrap("saveEditProject", function () { return { ref: document.getElementById("editProjId").value, values: values("edit") }; }, function (x) { var p = projectBy(x.ref); if (p) { remember(p, x.values); push(p).catch(function () {}); } });
     wrap("createObject", function () { return values("newObj"); }, function (v) { var p = projectBy(activeRefs()[0]); if (p) { remember(p, v); push(p).catch(function () {}); } });
