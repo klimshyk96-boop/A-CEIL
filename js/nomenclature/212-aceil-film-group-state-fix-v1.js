@@ -125,6 +125,12 @@
       (typeof toggleGroupCollapse === "function" ? toggleGroupCollapse : null);
     if (typeof oldToggle === "function" && !oldToggle.__filmGroupStateFixV1) {
       var toggleWrapped = function (id) {
+        var before = groups().find(function (row) { return row && String(row.id) === String(id); });
+        if (before) {
+          var data = readUi();
+          data[stateKey(before)] = { collapsed: !before.collapsed, savedAt: Date.now() };
+          try { localStorage.setItem(UI_KEY, JSON.stringify(data)); } catch (_) {}
+        }
         var result = oldToggle.apply(this, arguments);
         var group = groups().find(function (row) { return row && String(row.id) === String(id); });
         saveUi(group);
