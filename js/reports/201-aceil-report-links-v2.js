@@ -3,8 +3,6 @@
   if (window.__A_CEIL_REPORT_LINKS_V2) return;
   window.__A_CEIL_REPORT_LINKS_V2 = true;
 
-  var LEGACY_BUCKET = "roomator-reports";
-
   function sb() {
     try { return (typeof _sb !== "undefined" && _sb) || window._sb || null; }
     catch (_) { return window._sb || null; }
@@ -73,6 +71,10 @@
         window.A_CEIL_ProjectCRM.noteReport(project, values);
       }
     } catch (_) {}
+    try { if (typeof renderProjects === "function") setTimeout(function () { renderProjects(); }, 0); }
+    catch (_) {}
+    try { window.dispatchEvent(new CustomEvent("aceil:report-link-change", { detail: { projectId: dbId(project) || project.id || null } })); }
+    catch (_) {}
   }
 
   async function publishPayload(payload, options) {
@@ -144,9 +146,11 @@
   function classicFailure(error, sourceButton) {
     var doc = sourceButton && sourceButton.ownerDocument || document;
     var panel = doc.getElementById("cloudReportReady") || doc.getElementById("cloudReady");
+    var status = doc.getElementById("cloudStatus") || doc.getElementById("reportStatus");
     var button = sourceButton || doc.getElementById("btnPublishReport") || doc.getElementById("cloud");
     if (panel) { panel.dataset.url = ""; panel.hidden = true; panel.style.display = "none"; }
-    if (button) { button.dataset.reportUrl = ""; button.style.display = ""; button.disabled = false; }
+    if (button) { button.dataset.reportUrl = ""; button.style.display = ""; button.disabled = false; button.textContent = "🔗 Повторити"; }
+    if (status) { status.textContent = "Не вдалося створити посилання: " + (error.message || error); status.style.color = "#b91c1c"; }
     try { if (typeof showToast === "function") showToast("Не вдалося створити посилання: " + (error.message || error)); }
     catch (_) {}
   }
@@ -157,36 +161,15 @@
     var wrapped = async function () {
       var sourceButton = arguments[1] || null;
       try {
-        // Legacy publisher reads Supabase from window, while the application
-        // keeps the canonical values in top-level lexical bindings.
-        var cloudClient = sb(), cloudUser = user();
-        if (!cloudClient) throw new Error("Хмара ще не підключена");
-        if (!cloudUser || !cloudUser.id) throw new Error("Потрібна авторизація");
-        window._sb = cloudClient;
-        window._sbUser = cloudUser;
-        await previous.apply(this, arguments);
-        var reportDocument = sourceButton && sourceButton.ownerDocument || document;
-        var button = sourceButton || reportDocument.getElementById("btnPublishReport") || reportDocument.getElementById("cloud");
-        var panel = reportDocument.getElementById("cloudReportReady") || reportDocument.getElementById("cloudReady");
-        var oldUrl = (button && button.dataset.reportUrl) || (panel && panel.dataset.url) || "";
-        var match = String(oldUrl).match(/(?:\/report\/|[?&]r=)([a-f0-9]{20})/i);
-        if (!match) throw new Error("Не вдалося отримати дані звіту");
-        var base = String(window.SUPABASE_URL || (typeof SUPABASE_URL !== "undefined" ? SUPABASE_URL : "")).replace(/\/$/, "");
-        var path = "r/" + match[1] + ".json";
-        var response = await fetch(base + "/storage/v1/object/public/" + LEGACY_BUCKET + "/" + path, { cache: "no-store" });
-        if (!response.ok) throw new Error("Не вдалося прочитати сформований звіт");
-        var payload = await response.json();
-        var url = await publishPayload(payload);
-        var removal = await sb().storage.from(LEGACY_BUCKET).remove([path]);
-        if (removal.error) {
-          await revoke();
-          throw removal.error;
-        }
+        if (typeof window.A_CEIL_GetReportPayload !== "function") throw new Error("Дані звіту ще не готові. Сформуйте звіт повторно");
+        var report = window.A_CEIL_GetReportPayload(arguments[0]);
+        if (!report || !report.payload) throw new Error("Не вдалося підготувати дані звіту");
+        var url = await publishPayload(report.payload, { projectId: report.projectId });
         updateClassicUi(url, sourceButton);
         return url;
       } catch (error) {
         classicFailure(error, sourceButton);
-        throw error;
+        return null;
       }
     };
     wrapped.__secureReportV2 = true;
