@@ -1321,11 +1321,11 @@ localStorage: lightTypes_v1
 Тип: обгортка (викликає попередню версію функції)
 Визначає: __A·CEILReportMeta; _modernOpenPreview [застаріла, див. #125]; generateModernObjectReport [ФІНАЛЬНА; було в: #034, #087]; generateModernSingleReport [ФІНАЛЬНА; було в: #034, #087]; A·CEILPdfReport; A·CEILPreparePdf; A·CEILPublishReport
 -->
-<script id="A·CEIL-pdf-cloud-report-v1" src="js/reports/091-aceil-pdf-cloud-report-v1.js"></script> 
+<script id="A·CEIL-pdf-cloud-report-v1" src="js/reports/091-aceil-pdf-cloud-report-v1.js?v=20260917-final1"></script> 
 <!--
 === БЛОК #089 ===
 -->
-<script id="A·CEIL-public-report-page-v1" src="js/reports/092-aceil-public-report-page-v1.js"></script>  
+<script id="A·CEIL-public-report-page-v1" src="js/reports/092-aceil-public-report-page-v1.js?v=20260917-final1"></script>  
 <!--
 === БЛОК #090 ===
 Тип: обгортка (викликає попередню версію функції)
@@ -2119,7 +2119,7 @@ localStorage: A·CEIL_cloud_cache_v330
 
 
 
-<script id="A-CEIL-manager-report-v2" src="js/reports/162-aceil-manager-report-v2.js?v=20260905-9"></script>
+<script id="A-CEIL-manager-report-v2" src="js/reports/162-aceil-manager-report-v2.js?v=20260917-final1"></script>
 
 <script id="A-CEIL-price-stability-v2" src="js/nomenclature/163-aceil-price-stability-v2.js"></script>
 
@@ -2133,7 +2133,7 @@ localStorage: A·CEIL_cloud_cache_v330
 <script id="aceil-wall-menu-simplify-v1" src="js/canvas/185-aceil-wall-menu-simplify-v1.js?v=20260912-2"></script>
 <script id="aceil-autocount-menu-v1" src="js/nomenclature/170-aceil-autocount-menu-v1.js?v=20260911-8"></script>
 <script id="aceil-offline-nomenclature-v1" src="js/nomenclature/171-aceil-offline-nomenclature-v1.js?v=20260902-1"></script>
-<script id="aceil-plan-report-pwa-v1" src="js/reports/172-aceil-plan-report-pwa-v1.js?v=20260907-5"></script>
+<script id="aceil-plan-report-pwa-v1" src="js/reports/172-aceil-plan-report-pwa-v1.js?v=20260917-final1"></script>
 <script id="aceil-wall-elements-persistence-v2" src="js/projects/173-aceil-wall-elements-persistence-v2.js?v=20260907-2"></script>
 <script id="aceil-overall-dims-and-light-colors-fix-v1" src="js/canvas/174-aceil-overall-dims-and-light-colors-fix-v1.js?v=20260908-2"></script>
 <script id="aceil-side-input-stepper-v1" src="js/canvas/175-aceil-side-input-stepper-v1.js?v=20260907-2"></script>
@@ -2145,7 +2145,7 @@ localStorage: A·CEIL_cloud_cache_v330
   "use strict";
   if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
   window.addEventListener("load",function(){
-    var updateKey="aceil-pwa-update-20260917-v14";
+    var updateKey="aceil-pwa-update-20260917-final1";
     navigator.serviceWorker.addEventListener("message",function(event){
       if(!event.data||event.data.type!=="A_CEIL_UPDATE_READY"||sessionStorage.getItem(updateKey))return;
       sessionStorage.setItem(updateKey,"1");
@@ -2156,7 +2156,7 @@ localStorage: A·CEIL_cloud_cache_v330
       sessionStorage.setItem(updateKey,"1");
       location.reload();
     });
-    navigator.serviceWorker.register("/sw.js?v=20260917-22",{scope:"/"}).then(function(reg){
+    navigator.serviceWorker.register("/sw.js?v=20260917-23",{scope:"/"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
@@ -2206,8 +2206,8 @@ localStorage: A·CEIL_cloud_cache_v330
 <script id="A-CEIL-projects-menu-clean-v1" src="js/projects/186-aceil-projects-menu-clean-v1.js?v=20260912-1"></script>
 <script id="A-CEIL-ceiling-cornices-v1" src="js/canvas/187-aceil-ceiling-cornices-v1.js?v=20260915-2"></script>
 <script id="A-CEIL-password-reset-v2" src="js/auth/200-aceil-password-reset-v2.js?v=20260917-1"></script>
-<script id="A-CEIL-report-links-v2" src="js/reports/201-aceil-report-links-v2.js?v=20260917-1"></script>
-<script id="A-CEIL-project-crm-v2" src="js/projects/210-aceil-project-crm-v2.js?v=20260917-3"></script>
+<script id="A-CEIL-report-links-v2" src="js/reports/201-aceil-report-links-v2.js?v=20260917-final1"></script>
+<script id="A-CEIL-project-crm-v2" src="js/projects/210-aceil-project-crm-v2.js?v=20260917-final1"></script>
 
 <!-- A·CEIL ACCESS FINAL OVERRIDE v4 — MUST remain last -->
 <!-- A·CEIL ACCESS AUTHORITY v6 — MUST remain last -->
