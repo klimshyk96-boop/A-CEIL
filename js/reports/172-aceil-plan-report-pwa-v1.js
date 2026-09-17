@@ -18,14 +18,10 @@ async function publishImageReport(canvas,fileName){
   var client=window._sb,user=window._sbUser;
   if(!client)throw new Error("Хмара ще не підключена");
   if(!user||!user.id)throw new Error("Потрібна авторизація");
-  var bytes=new Uint8Array(10);try{crypto.getRandomValues(bytes)}catch(_){for(var i=0;i<bytes.length;i++)bytes[i]=Math.floor(256*Math.random())}
-  var token=Array.from(bytes).map(function(x){return x.toString(16).padStart(2,"0")}).join("");
+  if(!window.A_CEIL_ReportLinks)throw new Error("Модуль захищених посилань не завантажено");
   var structured=null;try{if(typeof window.A_CEIL_buildCloudStructuredReport==="function")structured=window.A_CEIL_buildCloudStructuredReport(fileName)}catch(_){}
   var payload={version:2,createdAt:new Date().toISOString(),meta:{name:String(window._currentProjName||fileName||"Звіт A·CEIL")},structured:structured,image:canvas.toDataURL("image/png")};
-  var blob=new Blob([JSON.stringify(payload)],{type:"application/json"});
-  var result=await client.storage.from("roomator-reports").upload("r/"+token+".json",blob,{contentType:"application/json",upsert:false,cacheControl:"3600"});
-  if(result.error)throw result.error;
-  return location.origin+"/?r="+token;
+  return window.A_CEIL_ReportLinks.publishPayload(payload);
 }
 function openReportInsideApp(canvas,fileName){
   var dataUrl=canvas.toDataURL("image/png"),old=document.getElementById("A_CEIL_InAppImageReport");if(old)old.remove();
