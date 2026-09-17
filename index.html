@@ -1321,7 +1321,7 @@ localStorage: lightTypes_v1
 Тип: обгортка (викликає попередню версію функції)
 Визначає: __A·CEILReportMeta; _modernOpenPreview [застаріла, див. #125]; generateModernObjectReport [ФІНАЛЬНА; було в: #034, #087]; generateModernSingleReport [ФІНАЛЬНА; було в: #034, #087]; A·CEILPdfReport; A·CEILPreparePdf; A·CEILPublishReport
 -->
-<script id="A·CEIL-pdf-cloud-report-v1" src="js/reports/091-aceil-pdf-cloud-report-v1.js?v=20260917-final1"></script> 
+<script id="A·CEIL-pdf-cloud-report-v1" src="js/reports/091-aceil-pdf-cloud-report-v1.js?v=20260917-final2"></script> 
 <!--
 === БЛОК #089 ===
 -->
@@ -2145,7 +2145,7 @@ localStorage: A·CEIL_cloud_cache_v330
   "use strict";
   if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
   window.addEventListener("load",function(){
-    var updateKey="aceil-pwa-update-20260917-final1";
+    var updateKey="aceil-pwa-update-20260917-final2";
     navigator.serviceWorker.addEventListener("message",function(event){
       if(!event.data||event.data.type!=="A_CEIL_UPDATE_READY"||sessionStorage.getItem(updateKey))return;
       sessionStorage.setItem(updateKey,"1");
@@ -2156,7 +2156,7 @@ localStorage: A·CEIL_cloud_cache_v330
       sessionStorage.setItem(updateKey,"1");
       location.reload();
     });
-    navigator.serviceWorker.register("/sw.js?v=20260917-23",{scope:"/"}).then(function(reg){
+    navigator.serviceWorker.register("/sw.js?v=20260917-24",{scope:"/"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
@@ -2206,8 +2206,8 @@ localStorage: A·CEIL_cloud_cache_v330
 <script id="A-CEIL-projects-menu-clean-v1" src="js/projects/186-aceil-projects-menu-clean-v1.js?v=20260912-1"></script>
 <script id="A-CEIL-ceiling-cornices-v1" src="js/canvas/187-aceil-ceiling-cornices-v1.js?v=20260915-2"></script>
 <script id="A-CEIL-password-reset-v2" src="js/auth/200-aceil-password-reset-v2.js?v=20260917-1"></script>
-<script id="A-CEIL-report-links-v2" src="js/reports/201-aceil-report-links-v2.js?v=20260917-final1"></script>
-<script id="A-CEIL-project-crm-v2" src="js/projects/210-aceil-project-crm-v2.js?v=20260917-final1"></script>
+<script id="A-CEIL-report-links-v2" src="js/reports/201-aceil-report-links-v2.js?v=20260917-final2"></script>
+<script id="A-CEIL-project-crm-v2" src="js/projects/210-aceil-project-crm-v2.js?v=20260917-final2"></script>
 
 <!-- A·CEIL ACCESS FINAL OVERRIDE v4 — MUST remain last -->
 <!-- A·CEIL ACCESS AUTHORITY v6 — MUST remain last -->
