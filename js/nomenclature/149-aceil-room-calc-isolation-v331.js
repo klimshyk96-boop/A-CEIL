@@ -7,6 +7,7 @@ window.__A·CEILRoomCalcIsolationV331=true;
 function clone(v){try{return typeof structuredClone==='function'?structuredClone(v):JSON.parse(JSON.stringify(v));}catch(_){try{return JSON.parse(JSON.stringify(v));}catch(__){return Array.isArray(v)?v.slice():v;}}}
 function parse(raw){if(raw&&typeof raw==='object')return clone(raw);try{return JSON.parse(raw||'{}');}catch(_){return {};}}
 function key(it){if(!it)return '';return it.id!=null?'id:'+String(it.id):'n:'+String(it.name||'').trim().toLowerCase()+'|g:'+String(it.groupId==null?'':it.groupId);}
+function nameKey(it){if(!it)return '';return 'n:'+String(it.name||'').trim().toLowerCase()+'|g:'+String(it.groupId==null?'':it.groupId);}
 function zeroResult(it){
   var c=clone(it||{});
   c.qty=0;
@@ -50,14 +51,14 @@ function mergedRoomItems(room,catalog){
   var st=parse(room&&room.state), saved=Array.isArray(st.elemItems)?st.elemItems:(room&&Array.isArray(room.elemItems)?room.elemItems:[]);
   var managed=roomFilmItems(saved),managedGroups=filmGroupSet(managed);
   var base=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(managedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0);});
-  var bySaved={};saved.forEach(function(it){var k=key(it);if(k)bySaved[k]=it;});
+  var bySaved={};saved.forEach(function(it){var k=key(it);if(k)bySaved[k]=it;var nk=nameKey(it);if(nk&&!bySaved[nk])bySaved[nk]=it;});
   var ROOM_FIELDS=['qty','manualQtyOverride','autoFilled','autoZero','insertSelected','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount'];
   var out=[],seen={};
   base.forEach(function(cat){
     var k=key(cat);if(!k||seen[k])return;seen[k]=1;
     /* v3.39: catalog owns ALL structure/configuration.
        A room may restore only its calculation/result fields. */
-    var row=zeroResult(cat),old=bySaved[k];
+    var row=zeroResult(cat),old=bySaved[k]||bySaved[nameKey(cat)];
     if(old){
       ROOM_FIELDS.forEach(function(field){
         if(Object.prototype.hasOwnProperty.call(old,field))row[field]=clone(old[field]);
