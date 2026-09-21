@@ -1,0 +1,93 @@
+/* A·CEIL desktop reference layout v2 — 2026-09-21
+   Desktop only. Mirrors the supplied PC reference without touching mobile. */
+@media (min-width:1024px){
+  html,body{width:100%;height:100%;overflow:hidden!important}
+  body.rp-home-pro{height:100vh!important;padding:7px!important;margin:0!important;background:#f5f7fb!important}
+  body.rp-home-pro>.app-header{display:none!important}
+
+  /* reference top bar */
+  body.rp-home-pro #rpCockpit{width:100%!important;max-width:none!important;height:57px!important;margin:0 0 7px!important;padding:0!important}
+  body.rp-home-pro #rpCockpit .rpc-card{height:57px!important;min-height:57px!important;width:100%!important;padding:5px 8px!important;display:grid!important;grid-template-columns:225px minmax(500px,1fr) auto!important;align-items:center!important;gap:7px!important;background:#fff!important;border:1px solid #e2e8f0!important;border-radius:13px!important;box-shadow:0 2px 9px rgba(15,23,42,.045)!important}
+  body.rp-home-pro #rpCockpit .rpc-top{height:47px!important;padding:0 4px!important;margin:0!important;display:flex!important;align-items:center!important}
+  body.rp-home-pro #rpCockpit .rpc-brand{display:flex!important;align-items:center!important;gap:9px!important}
+  body.rp-home-pro #rpCockpit .rpc-logo{width:38px!important;height:38px!important;min-width:38px!important;border-radius:10px!important;background:linear-gradient(145deg,#4b6cff,#3166e9)!important}
+  body.rp-home-pro #rpCockpit .rpc-name{font-size:13px!important;line-height:1.15!important;font-weight:900!important;color:#10213e!important;max-width:160px!important}
+  body.rp-home-pro #rpCockpit .rpc-status{display:none!important}
+  body.rp-home-pro #rpCockpit .rpc-metrics{height:47px!important;display:grid!important;grid-template-columns:repeat(4,minmax(125px,1fr))!important;gap:7px!important;margin:0!important}
+  body.rp-home-pro #rpCockpit .rpc-metric{height:47px!important;padding:5px 11px!important;display:grid!important;grid-template-columns:31px 1fr!important;grid-template-rows:17px 18px!important;column-gap:8px!important;align-items:center!important;background:#fff!important;border:1px solid #e2e8f0!important;border-radius:10px!important;box-shadow:0 1px 4px rgba(15,23,42,.035)!important}
+  body.rp-home-pro #rpCockpit .rpc-metric-icon{display:flex!important;grid-row:1/3!important;width:30px!important;height:30px!important;align-items:center!important;justify-content:center!important;border-radius:9px!important;background:#eef6ff!important}
+  body.rp-home-pro #rpCockpit .rpc-metric small{grid-column:2!important;font-size:9px!important;line-height:1!important;font-weight:800!important;letter-spacing:0!important;text-transform:none!important;color:#718096!important;margin:0!important}
+  body.rp-home-pro #rpCockpit .rpc-metric b{grid-column:2!important;font-size:13px!important;line-height:1!important;font-weight:900!important;color:#10213e!important;white-space:nowrap!important}
+  body.rp-home-pro #rpCockpit .rpc-metric-sum{display:none!important}
+  body.rp-home-pro #rpCockpit .rpc-tools{height:47px!important;margin:0!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:7px!important;border:0!important}
+  body.rp-home-pro #rpCockpit .rpc-tools button{height:39px!important;min-height:39px!important;padding:0 14px!important;border-radius:10px!important;font-size:11px!important;font-weight:850!important;box-shadow:none!important}
+
+  /* 1536 reference ≈ 154 / 900 / 455 */
+  body.rp-home-pro #main-area{width:100%!important;max-width:none!important;height:calc(100vh - 71px)!important;min-height:0!important;max-height:none!important;margin:0!important;padding:0!important;display:grid!important;grid-template-columns:146px minmax(0,1fr) 448px!important;grid-template-rows:minmax(0,1fr)!important;grid-template-areas:"tools canvas side"!important;gap:7px!important;align-items:stretch!important}
+  body.rp-home-pro #main-area>.top-row{display:contents!important}
+
+  /* left rail — horizontal icon + label like reference */
+  body.rp-home-pro #A·CEILToolPanel{grid-area:tools!important;width:146px!important;height:100%!important;min-height:0!important;margin:0!important;padding:9px!important;display:flex!important;flex-direction:column!important;gap:6px!important;background:#fff!important;border:1px solid #e2e8f0!important;border-radius:12px!important;box-shadow:0 2px 9px rgba(15,23,42,.04)!important;overflow:visible!important}
+  body.rp-home-pro #A·CEILToolPanel>div,body.rp-home-pro #A·CEILToolPanel>button{width:100%!important;height:46px!important;min-height:46px!important;flex:0 0 46px!important;margin:0!important}
+  body.rp-home-pro #A·CEILToolPanel>div>.tile-btn,body.rp-home-pro #A·CEILToolPanel>.tile-btn{width:100%!important;height:46px!important;min-height:46px!important;padding:5px 7px!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:9px!important;border:1px solid transparent!important;border-radius:10px!important;background:#fff!important;box-shadow:none!important}
+  body.rp-home-pro #A·CEILToolPanel>div>.tile-btn:hover,body.rp-home-pro #A·CEILToolPanel>.tile-btn:hover{background:#f6f9ff!important;border-color:#e2eaf8!important;transform:none!important}
+  body.rp-home-pro #A·CEILToolPanel .tile-icon{width:31px!important;height:31px!important;min-width:31px!important;margin:0!important;border-radius:9px!important;display:flex!important;align-items:center!important;justify-content:center!important}
+  body.rp-home-pro #A·CEILToolPanel .tile-icon .rm-ico{width:17px!important;height:17px!important}
+  body.rp-home-pro #A·CEILToolPanel .tile-btn-label{font-size:10px!important;line-height:1.12!important;font-weight:850!important;text-align:left!important;white-space:normal!important;color:#46566f!important}
+  body.rp-home-pro #A·CEILToolPanel .tile-sub{display:none!important}
+  body.rp-home-pro #A·CEILToolPanel>.tile-red{margin-top:auto!important;height:43px!important;min-height:43px!important;flex-basis:43px!important}
+  body.rp-home-pro #A·CEILToolPanel>.tile-red>div,body.rp-home-pro #A·CEILToolPanel>.tile-red .tile-btn{height:43px!important;min-height:43px!important;flex-direction:row!important;background:#fff5f5!important;border:1px solid #fee2e2!important;color:#dc2626!important}
+  body.rp-home-pro #A·CEILToolPanel>.tile-red .tile-icon{width:28px!important;height:28px!important;min-width:28px!important}
+  body.rp-home-pro #A·CEILToolPanel>.tile-red .tile-btn-label{color:#dc2626!important}
+  body.rp-home-pro #A·CEILToolPanel .quick-menu{left:calc(100% + 8px)!important;right:auto!important;z-index:10000!important}
+
+  /* central drafting board */
+  body.rp-home-pro .canvas-container{grid-area:canvas!important;position:relative!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;background-color:#fff!important;background-image:linear-gradient(#edf2f7 1px,transparent 1px),linear-gradient(90deg,#edf2f7 1px,transparent 1px),linear-gradient(#f7f9fc 1px,transparent 1px),linear-gradient(90deg,#f7f9fc 1px,transparent 1px)!important;background-size:40px 40px,40px 40px,8px 8px,8px 8px!important;border:1px solid #e2e8f0!important;border-radius:12px!important;box-shadow:0 2px 9px rgba(15,23,42,.04)!important;overflow:auto!important}
+  body.rp-home-pro canvas#cv{display:block!important;max-width:none!important;height:auto!important;margin:45px auto 12px!important;background:transparent!important;border-radius:0!important;box-shadow:none!important}
+  #aceilDesktopCanvasZoom{position:absolute!important;left:14px!important;top:13px!important;right:auto!important;bottom:auto!important;z-index:30!important;height:36px!important;padding:3px!important;display:flex!important;align-items:center!important;gap:3px!important;background:#fff!important;border:1px solid #e2e8f0!important;border-radius:10px!important;box-shadow:0 2px 8px rgba(15,23,42,.08)!important}
+  #aceilDesktopCanvasZoom button{width:32px!important;height:28px!important;min-height:28px!important;padding:0!important;border:0!important;border-radius:7px!important;background:#fff!important;color:#172033!important;font-size:17px!important;box-shadow:none!important}
+  #aceilDesktopCanvasZoom span{min-width:50px!important;font-size:10px!important;font-weight:900!important;color:#334155!important;text-align:center!important}
+
+  /* right estimate card */
+  body.rp-home-pro .panel-column{grid-area:side!important;width:448px!important;min-width:448px!important;height:100%!important;min-height:0!important;margin:0!important;display:flex!important;flex-direction:column!important;position:relative!important;overflow:hidden!important}
+  body.rp-home-pro #aceilDesktopSidebar{width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;margin:0!important;padding:0!important;display:flex!important;flex-direction:column!important;background:#fff!important;border:1px solid #e2e8f0!important;border-radius:12px!important;box-shadow:0 2px 9px rgba(15,23,42,.045)!important;overflow:hidden!important}
+  #aceilDesktopSidebar .adsb-tabs{height:43px!important;flex:0 0 43px!important;padding:5px!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:4px!important;background:#f6f8fb!important;border:0!important}
+  #aceilDesktopSidebar .adsb-tab{height:33px!important;min-height:33px!important;padding:0!important;border:0!important;border-radius:8px!important;background:transparent!important;color:#64748b!important;font-size:10.5px!important;font-weight:900!important;box-shadow:none!important}
+  #aceilDesktopSidebar .adsb-tab.active{background:#fff!important;color:#2467d9!important;box-shadow:0 1px 5px rgba(15,23,42,.08)!important}
+  #aceilDesktopSidebar .adsb-panel{flex:1 1 auto!important;min-height:0!important;padding:10px 12px 9px!important;overflow:hidden!important}
+  #aceilDesktopSidebar #adsbEstimatePanel{height:100%!important;display:flex!important;flex-direction:column!important}
+  #aceilDesktopSidebar #adsbEstimatePanel[hidden],#aceilDesktopSidebar #adsbRoomPanel[hidden]{display:none!important}
+  #aceilDesktopSidebar .adsb-head{flex:0 0 auto!important;margin:0 0 8px!important;min-height:35px!important;display:flex!important;align-items:center!important}
+  #aceilDesktopSidebar .adsb-title{font-size:15px!important;line-height:1.15!important;font-weight:950!important;color:#12213a!important}
+  #aceilDesktopSidebar .adsb-meta{margin-top:3px!important;font-size:9.5px!important;font-weight:750!important;color:#94a3b8!important}
+  #aceilDesktopSidebar .adsb-head-action{display:none!important}
+  #aceilDesktopSidebar .adsb-search{flex:0 0 35px!important;height:35px!important;margin:0 0 7px!important;border:1px solid #e2e8f0!important;border-radius:9px!important;background:#fff!important}
+  #aceilDesktopSidebar .adsb-search input{font-size:10.5px!important}
+  #aceilDesktopSidebar #adsbGroups{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;padding:0 2px 0 0!important;scrollbar-width:thin!important}
+  #aceilDesktopSidebar .adsb-grp{margin:0!important;border:0!important;border-bottom:1px solid #edf1f6!important;border-radius:0!important;background:#fff!important;overflow:hidden!important}
+  #aceilDesktopSidebar .adsb-grp-head{min-height:43px!important;padding:8px 2px!important;display:flex!important;align-items:center!important;gap:8px!important;background:#fff!important}
+  #aceilDesktopSidebar .adsb-grp-ico{width:17px!important;height:17px!important;flex:0 0 17px!important}
+  #aceilDesktopSidebar .adsb-grp-name{font-size:11.5px!important;font-weight:900!important;color:#25344d!important}
+  #aceilDesktopSidebar .adsb-grp-sum{font-size:11px!important;font-weight:900!important;color:#152238!important}
+  #aceilDesktopSidebar .adsb-row{min-height:31px!important;padding:5px 2px 7px 26px!important;gap:7px!important;border-top:0!important}
+  #aceilDesktopSidebar .adsb-rn{font-size:10px!important;font-weight:750!important;color:#53637a!important}
+  #aceilDesktopSidebar .adsb-rq{font-size:9.5px!important;font-weight:800!important;color:#64748b!important}
+  #aceilDesktopSidebar .adsb-rp{min-width:65px!important;font-size:9.5px!important;font-weight:850!important;color:#64748b!important;text-align:right!important}
+  #aceilDesktopSidebar .adsb-total{flex:0 0 auto!important;min-height:55px!important;margin:7px 0 0!important;padding:9px 11px!important;display:flex!important;align-items:center!important;background:#effcf3!important;border:1px solid #ccefd7!important;border-radius:10px!important}
+  #aceilDesktopSidebar .adsb-total span{font-size:9px!important;font-weight:800!important;color:#4b6b59!important}
+  #aceilDesktopSidebar .adsb-total b{margin-top:2px!important;font-size:17px!important;line-height:1!important;font-weight:950!important;color:#159447!important}
+  #aceilDesktopSidebar .adsb-actions{flex:0 0 38px!important;height:38px!important;margin-top:7px!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important}
+  #aceilDesktopSidebar .adsb-actions button{height:38px!important;min-height:38px!important;padding:0 10px!important;border-radius:9px!important;font-size:10px!important;font-weight:900!important;box-shadow:none!important}
+}
+
+@media (min-width:1024px) and (max-width:1250px){
+  body.rp-home-pro #rpCockpit .rpc-card{grid-template-columns:190px minmax(420px,1fr) auto!important}
+  body.rp-home-pro #main-area{grid-template-columns:132px minmax(0,1fr) 350px!important}
+  body.rp-home-pro #A·CEILToolPanel{width:132px!important;padding:7px!important}
+  body.rp-home-pro .panel-column{width:350px!important;min-width:350px!important}
+}
+@media (min-width:1700px){
+  body.rp-home-pro #main-area{grid-template-columns:158px minmax(0,1fr) 470px!important}
+  body.rp-home-pro #A·CEILToolPanel{width:158px!important}
+  body.rp-home-pro .panel-column{width:470px!important;min-width:470px!important}
+}
