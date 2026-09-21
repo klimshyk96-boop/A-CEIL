@@ -1,0 +1,175 @@
+/* assets/aceil-desktop-polish-v1.css
+   Візуальне полірування ПК-версії (>=1024px). ЖОДНОЇ логіки,
+   жодного HTML/JS не чіпає — тільки вигляд наявних елементів.
+   Підключати ОСТАННІМ у <head>, після aceil-wall-menu-simplify-v1.css,
+   щоб каскад CSS діяв на нашу користь без зайвих !important.
+
+   Що виправляє (за скаргою "як дешевий банк"):
+   1. Майже відсутні :hover-стани (було 4 на весь app.css) —
+      додано для кнопок, карток, плиток, рядків списків.
+   2. Один і той самий синій градієнт скрізь (27 разів) —
+      другорядні кнопки отримують нейтральний плоский стиль,
+      акцентний градієнт лишається тільки для головної дії.
+   3. Дрібний мобільний текст (12/11/13px) розтягнутий на великий
+      екран — підняті розміри в ключових панелях саме на десктопі.
+   4. Забагато однакових тіней на кожному елементі — уніфікований,
+      м'якший рівень глибини замість "супу" з тіней.
+
+   Усе в межах @media (min-width:1024px) — мобільна версія
+   лишається БЕЗ ЖОДНИХ змін.
+*/
+
+@media (min-width: 1024px) {
+
+  /* ============ 1. Уніфікована, спокійніша глибина ============ */
+  :root {
+    --aceil-dsk-shadow-sm: 0 2px 8px rgba(15, 23, 42, .05);
+    --aceil-dsk-shadow-md: 0 6px 18px rgba(15, 23, 42, .08);
+    --aceil-dsk-shadow-lg: 0 14px 32px rgba(15, 23, 42, .12);
+    --aceil-dsk-border: rgba(148, 163, 184, .22);
+  }
+
+  .stat-card,
+  .tile-btn,
+  .info-box,
+  .table-scroll,
+  #rpCockpit .rpc-card,
+  #aceilDesktopSidebar,
+  .rpc-room {
+    box-shadow: var(--aceil-dsk-shadow-sm) !important;
+    transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease !important;
+  }
+
+  /* ============ 2. Hover-стани: картки й плитки ============ */
+  .stat-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: var(--aceil-dsk-shadow-md) !important;
+  }
+
+  .tile-btn:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: var(--aceil-dsk-shadow-lg) !important;
+    border-color: #93c5fd !important;
+    cursor: pointer;
+  }
+
+  .rpc-room {
+    transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease !important;
+  }
+  .rpc-room:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: var(--aceil-dsk-shadow-md) !important;
+    border-color: #93c5fd !important;
+    cursor: pointer;
+  }
+
+  #rpCockpit .rpc-card:hover {
+    box-shadow: var(--aceil-dsk-shadow-md) !important;
+  }
+
+  /* ============ 3. Hover-стани: кнопки ============ */
+  button {
+    transition: transform .12s ease, box-shadow .15s ease, filter .15s ease, background .15s ease, border-color .15s ease !important;
+  }
+
+  /* Кнопки з акцентним градієнтом (головна дія) — трохи яскравішають і піднімаються */
+  button:hover:not(:disabled) {
+    filter: brightness(1.04);
+  }
+  button:active:not(:disabled) {
+    filter: brightness(0.98);
+  }
+
+  .header-icon-btn:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: var(--aceil-dsk-shadow-md) !important;
+  }
+
+  .rpc-tools button:hover {
+    transform: translateY(-1px) !important;
+    filter: brightness(1.03);
+  }
+  .rpc-tools button:not(.rpc-save):not(.rpc-logout):hover {
+    background: #eef2f7 !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  #wallPresetActions button:hover,
+  .wall-color-save:hover {
+    background: #e2e8f0 !important;
+  }
+
+  .btn-cancel:hover {
+    background: #e2e8f0 !important;
+  }
+
+  /* ============ 4. Другорядні дії — прибираємо зайвий градієнт ============
+     Один і той самий яскравий синій градієнт на кожній кнопці —
+     головна причина "все виглядає однаково гучно". Явно нейтральні/
+     другорядні дії (закрити, скасувати, назад) переводимо на
+     плоский спокійний стиль; кнопки з .rpc-save, .rwe2-ok, .auth-btn,
+     button.active — це свідомо головні дії, їх НЕ чіпаємо. */
+  .modal .btn-cancel,
+  .rwe2-cancel,
+  .rlight-cancel,
+  #wallPresetActions button:not(.danger) {
+    background: #f1f5f9 !important;
+    color: #334155 !important;
+    box-shadow: none !important;
+  }
+
+  /* ============ 5. Рядки списків/панелей — hover-підсвітка ============ */
+  #aceilDesktopSidebar .adsb-row {
+    transition: background .12s ease;
+    border-radius: 10px;
+  }
+  #aceilDesktopSidebar .adsb-row:hover {
+    background: #f8fafc;
+  }
+
+  table tr:hover td {
+    background: #f8fafc;
+  }
+
+  #elemList > div {
+    transition: box-shadow .15s ease, border-color .15s ease;
+  }
+  #elemList > div:hover {
+    border-color: #93c5fd !important;
+    box-shadow: var(--aceil-dsk-shadow-sm) !important;
+  }
+
+  /* ============ 6. Типографіка під великий екран ============ */
+  .stat-value { font-size: 30px !important; }
+  .stat-label { font-size: 10.5px !important; }
+  .tile-btn-label { font-size: 14.5px !important; }
+  .tile-sub { font-size: 11px !important; }
+
+  #rpCockpit .rpc-metric b { font-size: 15px !important; }
+  #rpCockpit .rpc-metric small { font-size: 8.5px !important; }
+  #rpCockpit .rpc-name { font-size: 19px !important; }
+
+  #aceilDesktopSidebar .adsb-title { font-size: 15px !important; }
+  #aceilDesktopSidebar .adsb-rn { font-size: 12.5px !important; }
+
+  table td, table th { font-size: 13px !important; padding: 10px 8px !important; }
+
+  /* ============ 7. Фокус для клавіатури/миші — акуратний, не браузерний ============ */
+  button:focus-visible,
+  .tile-btn:focus-visible,
+  input:focus-visible,
+  select:focus-visible {
+    outline: 2.5px solid #93c5fd !important;
+    outline-offset: 2px;
+  }
+
+  /* ============ 8. Курсор-підказки там, де їх бракувало ============ */
+  .rpc-name,
+  #rpcRoomName,
+  .adsb-edit,
+  .tile-btn,
+  .rpc-room,
+  #elemList > div {
+    cursor: pointer;
+  }
+}
