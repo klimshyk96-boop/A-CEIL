@@ -1,175 +1,91 @@
-/* assets/aceil-desktop-polish-v1.css
-   Візуальне полірування ПК-версії (>=1024px). ЖОДНОЇ логіки,
-   жодного HTML/JS не чіпає — тільки вигляд наявних елементів.
-   Підключати ОСТАННІМ у <head>, після aceil-wall-menu-simplify-v1.css,
-   щоб каскад CSS діяв на нашу користь без зайвих !important.
+/* A·CEIL FINAL DESKTOP UI — replacement for assets/aceil-desktop-polish-v1.css */
+@media (min-width:1024px){
+html,body{min-height:100%;overflow-x:hidden!important}
+body.rp-home-pro{padding:8px!important;background:#f3f6fb!important}
+body.rp-home-pro #rpCockpit{width:100%!important;max-width:none!important;margin:0 0 8px!important;padding:0!important}
+body.rp-home-pro #rpCockpit .rpc-card{width:100%!important;min-height:48px!important;display:grid!important;grid-template-columns:260px minmax(0,1fr) auto!important;align-items:center!important;gap:0!important;padding:6px 8px!important;border-radius:14px!important;background:#fff!important;border:1px solid #dfe6ef!important;box-shadow:0 5px 18px rgba(15,23,42,.055)!important}
+body.rp-home-pro #rpCockpit .rpc-top{min-width:0!important;margin:0!important;padding:0 8px!important}
+body.rp-home-pro #rpCockpit .rpc-logo{width:34px!important;height:34px!important;border-radius:10px!important}
+body.rp-home-pro #rpCockpit .rpc-name{font-size:15px!important;line-height:1.1!important;font-weight:900!important}
+body.rp-home-pro #rpCockpit .rpc-status{font-size:9px!important}
+body.rp-home-pro #rpCockpit .rpc-metrics{display:grid!important;grid-template-columns:repeat(5,minmax(80px,1fr))!important;height:38px!important;margin:0!important;gap:0!important}
+body.rp-home-pro #rpCockpit .rpc-metric{min-width:0!important;padding:3px 13px!important;border-left:1px solid #e7edf4!important;background:transparent!important;border-radius:0!important;box-shadow:none!important}
+body.rp-home-pro #rpCockpit .rpc-metric-icon{display:none!important}
+body.rp-home-pro #rpCockpit .rpc-metric small{display:block!important;font-size:8px!important;line-height:1!important;color:#94a3b8!important;font-weight:850!important;letter-spacing:.06em!important;text-transform:uppercase!important;margin-bottom:4px!important}
+body.rp-home-pro #rpCockpit .rpc-metric b{display:block!important;font-size:12px!important;line-height:1!important;color:#1e293b!important;font-weight:950!important;white-space:nowrap!important}
+body.rp-home-pro #rpCockpit .rpc-tools{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:5px!important;margin:0!important;padding:0 2px!important;border:0!important}
+body.rp-home-pro #rpCockpit .rpc-tools button{min-height:34px!important;height:34px!important;padding:0 12px!important;border-radius:10px!important;font-size:11px!important;box-shadow:none!important}
 
-   Що виправляє (за скаргою "як дешевий банк"):
-   1. Майже відсутні :hover-стани (було 4 на весь app.css) —
-      додано для кнопок, карток, плиток, рядків списків.
-   2. Один і той самий синій градієнт скрізь (27 разів) —
-      другорядні кнопки отримують нейтральний плоский стиль,
-      акцентний градієнт лишається тільки для головної дії.
-   3. Дрібний мобільний текст (12/11/13px) розтягнутий на великий
-      екран — підняті розміри в ключових панелях саме на десктопі.
-   4. Забагато однакових тіней на кожному елементі — уніфікований,
-      м'якший рівень глибини замість "супу" з тіней.
+body.rp-home-pro #main-area{width:100%!important;max-width:none!important;display:grid!important;grid-template-columns:166px minmax(0,1fr) 430px!important;grid-template-rows:minmax(0,1fr)!important;grid-template-areas:"desktop-tools desktop-canvas desktop-side"!important;gap:8px!important;padding:0!important;margin:0!important;align-items:stretch!important;min-height:calc(100vh - 74px)!important}
+body.rp-home-pro #main-area>.top-row{display:contents!important}
 
-   Усе в межах @media (min-width:1024px) — мобільна версія
-   лишається БЕЗ ЖОДНИХ змін.
-*/
+body.rp-home-pro #A·CEILToolPanel{grid-area:desktop-tools!important;width:166px!important;height:100%!important;min-height:0!important;margin:0!important;padding:10px!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:7px!important;background:#fff!important;border:1px solid #dfe6ef!important;border-radius:14px!important;box-shadow:0 5px 18px rgba(15,23,42,.045)!important;overflow:hidden!important}
+body.rp-home-pro #A·CEILToolPanel>div,body.rp-home-pro #A·CEILToolPanel>button{flex:0 0 auto!important;width:100%!important;height:68px!important;min-height:68px!important}
+body.rp-home-pro #A·CEILToolPanel>div>.tile-btn,body.rp-home-pro #A·CEILToolPanel>.tile-btn{width:100%!important;height:68px!important;min-height:68px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;padding:7px 5px!important;border:1px solid transparent!important;border-radius:11px!important;box-shadow:none!important}
+body.rp-home-pro #A·CEILToolPanel>div>.tile-btn:hover,body.rp-home-pro #A·CEILToolPanel>.tile-btn:hover{background:#f5f8ff!important;border-color:#dbe7ff!important;transform:none!important}
+body.rp-home-pro #A·CEILToolPanel .tile-icon{width:34px!important;height:34px!important;margin:0!important;border-radius:10px!important}
+body.rp-home-pro #A·CEILToolPanel .tile-icon .rm-ico{width:19px!important;height:19px!important}
+body.rp-home-pro #A·CEILToolPanel .tile-btn-label{font-size:11px!important;line-height:1.1!important;text-align:center!important;white-space:normal!important;color:#526173!important;font-weight:850!important}
+body.rp-home-pro #A·CEILToolPanel .tile-sub{display:none!important}
+body.rp-home-pro #A·CEILToolPanel>.tile-red{margin-top:auto!important;margin-left:0!important;height:50px!important;min-height:50px!important;border:1px solid #fecdd3!important;background:#fff7f8!important;color:#dc2626!important}
+body.rp-home-pro #A·CEILToolPanel>.tile-red>div{flex-direction:row!important;gap:7px!important}
+body.rp-home-pro #A·CEILToolPanel>.tile-red .tile-icon{width:30px!important;height:30px!important;margin:0!important}
+body.rp-home-pro #A·CEILToolPanel>.tile-red .tile-btn-label{font-size:11px!important;color:#dc2626!important}
+body.rp-home-pro #A·CEILToolPanel .quick-menu{left:calc(100% + 8px)!important;right:auto!important;top:0!important;bottom:auto!important;z-index:10000!important}
 
-@media (min-width: 1024px) {
+body.rp-home-pro .canvas-container{grid-area:desktop-canvas!important;width:100%!important;height:100%!important;min-height:0!important;padding:7px!important;margin:0!important;border-radius:14px!important;background:#fff!important;border:1px solid #dfe6ef!important;box-shadow:0 5px 18px rgba(15,23,42,.045)!important;overflow:auto!important}
+body.rp-home-pro canvas#cv{display:block!important;width:min(100%,860px)!important;max-width:860px!important;height:auto!important;margin:40px auto 8px!important;background:transparent!important;box-shadow:none!important}
 
-  /* ============ 1. Уніфікована, спокійніша глибина ============ */
-  :root {
-    --aceil-dsk-shadow-sm: 0 2px 8px rgba(15, 23, 42, .05);
-    --aceil-dsk-shadow-md: 0 6px 18px rgba(15, 23, 42, .08);
-    --aceil-dsk-shadow-lg: 0 14px 32px rgba(15, 23, 42, .12);
-    --aceil-dsk-border: rgba(148, 163, 184, .22);
-  }
+body.rp-home-pro .panel-column{grid-area:desktop-side!important;display:block!important;width:430px!important;min-width:430px!important;height:100%!important;max-height:none!important;margin:0!important;position:static!important;overflow:hidden!important}
+body.rp-home-pro #aceilDesktopSidebar{display:flex!important;flex-direction:column!important;width:100%!important;height:100%!important;max-height:none!important;margin:0!important;padding:0!important;border-radius:14px!important;background:#fff!important;border:1px solid #dfe6ef!important;box-shadow:0 5px 18px rgba(15,23,42,.055)!important;overflow:hidden!important}
+#aceilDesktopSidebar .adsb-tabs{display:grid!important;grid-template-columns:1fr 1fr!important;gap:4px!important;padding:6px!important;background:#f4f7fb!important;border-bottom:1px solid #e4eaf2!important}
+#aceilDesktopSidebar .adsb-tab{height:36px!important;border:0!important;border-radius:9px!important;background:transparent!important;color:#718096!important;font-size:11px!important;font-weight:900!important;box-shadow:none!important}
+#aceilDesktopSidebar .adsb-tab.active{background:#fff!important;color:#1d5fc8!important;box-shadow:0 2px 8px rgba(30,50,80,.10)!important}
+#aceilDesktopSidebar .adsb-panel{min-height:0!important;padding:14px!important}
+#aceilDesktopSidebar #adsbEstimatePanel{display:flex!important;flex-direction:column!important;height:100%!important;max-height:none!important;min-height:0!important}
+#aceilDesktopSidebar .adsb-head{margin:0 0 10px!important}
+#aceilDesktopSidebar .adsb-title{font-size:16px!important;font-weight:950!important;color:#172033!important}
+#aceilDesktopSidebar .adsb-meta{font-size:10px!important;color:#94a3b8!important}
+#aceilDesktopSidebar .adsb-search{height:38px!important;margin-bottom:8px!important;border-radius:10px!important}
+#aceilDesktopSidebar .adsb-search input{font-size:12px!important}
+#aceilDesktopSidebar #adsbGroups{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;padding-right:3px!important;scrollbar-width:thin!important}
+#aceilDesktopSidebar .adsb-grp{margin:0!important;border-bottom:1px solid #e8edf4!important;border-radius:0!important}
+#aceilDesktopSidebar .adsb-grp-head{padding:10px 3px!important;background:#fff!important}
+#aceilDesktopSidebar .adsb-grp-name{font-size:12px!important}
+#aceilDesktopSidebar .adsb-grp-sum{font-size:11px!important}
+#aceilDesktopSidebar .adsb-row{padding:6px 3px 8px 27px!important}
+#aceilDesktopSidebar .adsb-rn{font-size:10.5px!important}
+#aceilDesktopSidebar .adsb-rq,#aceilDesktopSidebar .adsb-rp{font-size:10px!important}
+#aceilDesktopSidebar .adsb-total{margin:9px 0 0!important;padding:11px 12px!important;border-radius:11px!important;background:#f0fdf4!important;border:1px solid #bbf7d0!important}
+#aceilDesktopSidebar .adsb-total span{font-size:10px!important;color:#64748b!important}
+#aceilDesktopSidebar .adsb-total b{font-size:17px!important;color:#15803d!important}
+#aceilDesktopSidebar .adsb-actions{gap:7px!important;margin-top:7px!important}
+#aceilDesktopSidebar .adsb-actions button{min-height:38px!important;font-size:11px!important;border-radius:10px!important}
 
-  .stat-card,
-  .tile-btn,
-  .info-box,
-  .table-scroll,
-  #rpCockpit .rpc-card,
-  #aceilDesktopSidebar,
-  .rpc-room {
-    box-shadow: var(--aceil-dsk-shadow-sm) !important;
-    transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease !important;
-  }
+/* нижні дії та переповнення */
+#aceilDesktopSidebar .adsb-panel{display:flex!important;flex-direction:column!important;flex:1 1 auto!important;overflow:hidden!important}
+#aceilDesktopSidebar #adsbRoomPanel[hidden],#aceilDesktopSidebar #adsbEstimatePanel[hidden]{display:none!important}
+}
 
-  /* ============ 2. Hover-стани: картки й плитки ============ */
-  .stat-card:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: var(--aceil-dsk-shadow-md) !important;
-  }
+@media (min-width:1500px){
+ body.rp-home-pro #main-area{grid-template-columns:166px minmax(0,1fr) 460px!important}
+ body.rp-home-pro .panel-column,body.rp-home-pro #aceilDesktopSidebar{width:460px!important;min-width:460px!important}
+ body.rp-home-pro #rpCockpit .rpc-name{font-size:16px!important}
+ body.rp-home-pro #rpCockpit .rpc-metric small{font-size:8.5px!important}
+ body.rp-home-pro #rpCockpit .rpc-metric b{font-size:13px!important}
+}
 
-  .tile-btn:hover {
-    transform: translateY(-3px) !important;
-    box-shadow: var(--aceil-dsk-shadow-lg) !important;
-    border-color: #93c5fd !important;
-    cursor: pointer;
-  }
+@media (min-width:1900px){
+ body.rp-home-pro #main-area{grid-template-columns:175px minmax(0,1fr) 490px!important;gap:10px!important}
+ body.rp-home-pro #A·CEILToolPanel{width:175px!important}
+ body.rp-home-pro .panel-column,body.rp-home-pro #aceilDesktopSidebar{width:490px!important;min-width:490px!important}
+ body.rp-home-pro #A·CEILToolPanel>div,body.rp-home-pro #A·CEILToolPanel>button,body.rp-home-pro #A·CEILToolPanel>div>.tile-btn,body.rp-home-pro #A·CEILToolPanel>.tile-btn{height:72px!important;min-height:72px!important}
+}
 
-  .rpc-room {
-    transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease !important;
-  }
-  .rpc-room:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: var(--aceil-dsk-shadow-md) !important;
-    border-color: #93c5fd !important;
-    cursor: pointer;
-  }
-
-  #rpCockpit .rpc-card:hover {
-    box-shadow: var(--aceil-dsk-shadow-md) !important;
-  }
-
-  /* ============ 3. Hover-стани: кнопки ============ */
-  button {
-    transition: transform .12s ease, box-shadow .15s ease, filter .15s ease, background .15s ease, border-color .15s ease !important;
-  }
-
-  /* Кнопки з акцентним градієнтом (головна дія) — трохи яскравішають і піднімаються */
-  button:hover:not(:disabled) {
-    filter: brightness(1.04);
-  }
-  button:active:not(:disabled) {
-    filter: brightness(0.98);
-  }
-
-  .header-icon-btn:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: var(--aceil-dsk-shadow-md) !important;
-  }
-
-  .rpc-tools button:hover {
-    transform: translateY(-1px) !important;
-    filter: brightness(1.03);
-  }
-  .rpc-tools button:not(.rpc-save):not(.rpc-logout):hover {
-    background: #eef2f7 !important;
-    border-color: #cbd5e1 !important;
-  }
-
-  #wallPresetActions button:hover,
-  .wall-color-save:hover {
-    background: #e2e8f0 !important;
-  }
-
-  .btn-cancel:hover {
-    background: #e2e8f0 !important;
-  }
-
-  /* ============ 4. Другорядні дії — прибираємо зайвий градієнт ============
-     Один і той самий яскравий синій градієнт на кожній кнопці —
-     головна причина "все виглядає однаково гучно". Явно нейтральні/
-     другорядні дії (закрити, скасувати, назад) переводимо на
-     плоский спокійний стиль; кнопки з .rpc-save, .rwe2-ok, .auth-btn,
-     button.active — це свідомо головні дії, їх НЕ чіпаємо. */
-  .modal .btn-cancel,
-  .rwe2-cancel,
-  .rlight-cancel,
-  #wallPresetActions button:not(.danger) {
-    background: #f1f5f9 !important;
-    color: #334155 !important;
-    box-shadow: none !important;
-  }
-
-  /* ============ 5. Рядки списків/панелей — hover-підсвітка ============ */
-  #aceilDesktopSidebar .adsb-row {
-    transition: background .12s ease;
-    border-radius: 10px;
-  }
-  #aceilDesktopSidebar .adsb-row:hover {
-    background: #f8fafc;
-  }
-
-  table tr:hover td {
-    background: #f8fafc;
-  }
-
-  #elemList > div {
-    transition: box-shadow .15s ease, border-color .15s ease;
-  }
-  #elemList > div:hover {
-    border-color: #93c5fd !important;
-    box-shadow: var(--aceil-dsk-shadow-sm) !important;
-  }
-
-  /* ============ 6. Типографіка під великий екран ============ */
-  .stat-value { font-size: 30px !important; }
-  .stat-label { font-size: 10.5px !important; }
-  .tile-btn-label { font-size: 14.5px !important; }
-  .tile-sub { font-size: 11px !important; }
-
-  #rpCockpit .rpc-metric b { font-size: 15px !important; }
-  #rpCockpit .rpc-metric small { font-size: 8.5px !important; }
-  #rpCockpit .rpc-name { font-size: 19px !important; }
-
-  #aceilDesktopSidebar .adsb-title { font-size: 15px !important; }
-  #aceilDesktopSidebar .adsb-rn { font-size: 12.5px !important; }
-
-  table td, table th { font-size: 13px !important; padding: 10px 8px !important; }
-
-  /* ============ 7. Фокус для клавіатури/миші — акуратний, не браузерний ============ */
-  button:focus-visible,
-  .tile-btn:focus-visible,
-  input:focus-visible,
-  select:focus-visible {
-    outline: 2.5px solid #93c5fd !important;
-    outline-offset: 2px;
-  }
-
-  /* ============ 8. Курсор-підказки там, де їх бракувало ============ */
-  .rpc-name,
-  #rpcRoomName,
-  .adsb-edit,
-  .tile-btn,
-  .rpc-room,
-  #elemList > div {
-    cursor: pointer;
-  }
+@media (max-width:1499px) and (min-width:1024px){
+ body.rp-home-pro #main-area{grid-template-columns:96px minmax(0,1fr) 300px!important}
+ body.rp-home-pro #A·CEILToolPanel{width:96px!important;padding:7px!important}
+ body.rp-home-pro #A·CEILToolPanel>div,body.rp-home-pro #A·CEILToolPanel>button,body.rp-home-pro #A·CEILToolPanel>div>.tile-btn,body.rp-home-pro #A·CEILToolPanel>.tile-btn{height:60px!important;min-height:60px!important}
+ body.rp-home-pro #A·CEILToolPanel .tile-icon{width:30px!important;height:30px!important}
+ body.rp-home-pro .panel-column,body.rp-home-pro #aceilDesktopSidebar{width:300px!important;min-width:300px!important}
 }
