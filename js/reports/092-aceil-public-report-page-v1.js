@@ -45,6 +45,18 @@
     if (legacy) return legacy;
     throw new Error("Посилання не знайдено");
   }
+  function notifyReportOpen() {
+    try {
+      var url = baseUrl();
+      if (!url) return;
+      fetch(url + "/functions/v1/notify-report-open", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: value.toLowerCase() }),
+        keepalive: true
+      }).catch(function () {});
+    } catch (_) {}
+  }
   function render(overlay, data) {
     if (data && data.reportType === "manager" && data.managerHtml) { document.open(); document.write(data.managerHtml); document.close(); return; }
     var meta = data.meta || {}, phone = String(meta.phone || "").replace(/[^+\d]/g, ""), map = route(data.location || null);
@@ -53,7 +65,11 @@
   async function start() {
     addStyle();
     var overlay = document.createElement("div"); overlay.id = "A·CEILPublicReportView"; overlay.innerHTML = '<div class="rpr-loading">⏳ Завантаження звіту…</div>'; document.body.appendChild(overlay);
-    try { render(overlay, await securePayload()); }
+    try {
+      var data = await securePayload();
+      notifyReportOpen();
+      render(overlay, data);
+    }
     catch (error) { overlay.innerHTML = '<div class="rpr-error">Звіт недоступний.<br><small>' + esc(error && error.message || error) + '</small></div>'; }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true }); else start();
