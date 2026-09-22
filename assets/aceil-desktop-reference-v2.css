@@ -153,3 +153,108 @@
   #aceilDesktopSidebar .adsb-actions{height:60px!important;flex-basis:60px!important;margin-top:11px!important;gap:11px!important}
   #aceilDesktopSidebar .adsb-actions button{height:60px!important;min-height:60px!important;border-radius:13px!important;font-size:16px!important}
 }
+
+/* A·CEIL desktop 32" readability polish — 2026-09-22
+   Target: installed desktop app / ultrawide. Keep the established v3 geometry,
+   improve contrast, icon treatment, destructive action and debug FAB. */
+@media (min-width:2400px) and (min-height:1100px){
+  /* Left navigation: crisp black labels + clearly visible icon tiles */
+  body.rp-home-pro #A·CEILToolPanel>div>.tile-btn,
+  body.rp-home-pro #A·CEILToolPanel>.tile-btn{
+    border-color:#eef2f7!important;
+    background:#fff!important;
+    box-shadow:0 1px 2px rgba(15,23,42,.025)!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel>div>.tile-btn:hover,
+  body.rp-home-pro #A·CEILToolPanel>.tile-btn:hover{
+    background:#f8fbff!important;
+    border-color:#dce7f5!important;
+    box-shadow:0 5px 16px rgba(30,64,175,.07)!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel .tile-btn-label{
+    color:#111827!important;
+    font-weight:900!important;
+    letter-spacing:-.01em!important;
+    text-rendering:optimizeLegibility;
+    -webkit-font-smoothing:antialiased;
+  }
+  body.rp-home-pro #A·CEILToolPanel .tile-icon{
+    color:#2563eb!important;
+    background:#eef5ff!important;
+    border:1px solid #dceaff!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.9)!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel>div:nth-child(2) .tile-icon{color:#7c3aed!important;background:#f3efff!important;border-color:#e7dcff!important}
+  body.rp-home-pro #A·CEILToolPanel>button:nth-of-type(1) .tile-icon{color:#0f9f6e!important;background:#ecfdf5!important;border-color:#d1fae5!important}
+  body.rp-home-pro #A·CEILToolPanel>div:nth-child(4) .tile-icon{color:#d97706!important;background:#fff8e8!important;border-color:#fdecc8!important}
+  body.rp-home-pro #A·CEILToolPanel>button:nth-of-type(2) .tile-icon{color:#2563eb!important;background:#eef5ff!important;border-color:#dceaff!important}
+  body.rp-home-pro #A·CEILToolPanel>button:nth-of-type(3) .tile-icon{color:#ea580c!important;background:#fff3eb!important;border-color:#ffdfcc!important}
+
+  /* Clear: deliberate destructive action, not a washed-out tile */
+  body.rp-home-pro #A·CEILToolPanel>.tile-red{
+    margin-top:auto!important;
+    border:1px solid #fecaca!important;
+    background:linear-gradient(180deg,#fffafa 0%,#fff1f2 100%)!important;
+    box-shadow:0 4px 14px rgba(220,38,38,.07)!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel>.tile-red:hover{
+    background:linear-gradient(180deg,#fff5f5 0%,#ffe8ea 100%)!important;
+    border-color:#fca5a5!important;
+    box-shadow:0 7px 20px rgba(220,38,38,.12)!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel>.tile-red .tile-icon{
+    color:#dc2626!important;
+    background:#fee2e2!important;
+    border-color:#fecaca!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel>.tile-red .tile-btn-label{
+    color:#b91c1c!important;
+    font-weight:950!important;
+  }
+
+  /* Estimate: readable near-black text rather than low-contrast gray */
+  #aceilDesktopSidebar .adsb-title,
+  #aceilDesktopSidebar .adsb-grp-name,
+  #aceilDesktopSidebar .adsb-gn,
+  #aceilDesktopSidebar .adsb-rn{color:#111827!important;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  #aceilDesktopSidebar .adsb-grp-name,
+  #aceilDesktopSidebar .adsb-gn{font-weight:900!important}
+  #aceilDesktopSidebar .adsb-rn{font-weight:760!important}
+  #aceilDesktopSidebar .adsb-rq,
+  #aceilDesktopSidebar .adsb-rp{color:#334155!important;font-weight:800!important}
+  #aceilDesktopSidebar .adsb-grp-sum,
+  #aceilDesktopSidebar .adsb-gsum{color:#0f172a!important;font-weight:950!important}
+  #aceilDesktopSidebar .adsb-tab{color:#334155!important}
+  #aceilDesktopSidebar .adsb-tab.active{color:#1d4ed8!important}
+  #aceilDesktopSidebar .adsb-meta,
+  #aceilDesktopSidebar .adsb-sub{color:#475569!important}
+  #aceilDesktopSidebar .adsb-search input{color:#111827!important;font-weight:700!important}
+  #aceilDesktopSidebar .adsb-search input::placeholder{color:#64748b!important;opacity:1!important}
+
+  /* Top cockpit: same contrast standard */
+  body.rp-home-pro #rpCockpit .rpc-name,
+  body.rp-home-pro #rpCockpit .rpc-metric b{color:#0f172a!important}
+  body.rp-home-pro #rpCockpit .rpc-metric small{color:#475569!important;font-weight:850!important}
+  body.rp-home-pro #rpCockpit .rpc-tools button{color:#111827!important;font-weight:900!important}
+
+  /* User's bug/debug button: compact floating tool, visually part of A·CEIL */
+  #rmDebugFab{
+    left:22px!important;
+    bottom:22px!important;
+    width:58px!important;
+    height:58px!important;
+    border-radius:17px!important;
+    border:1px solid #cfe0ff!important;
+    background:linear-gradient(145deg,#ffffff 0%,#edf5ff 100%)!important;
+    color:#1d4ed8!important;
+    font-size:27px!important;
+    line-height:1!important;
+    box-shadow:0 10px 28px rgba(30,64,175,.18),inset 0 1px 0 #fff!important;
+    filter:none!important;
+    transition:transform .15s ease,box-shadow .15s ease!important;
+  }
+  #rmDebugFab:hover{
+    transform:translateY(-2px)!important;
+    box-shadow:0 14px 34px rgba(30,64,175,.24),inset 0 1px 0 #fff!important;
+  }
+}
