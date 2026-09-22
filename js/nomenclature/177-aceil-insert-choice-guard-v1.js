@@ -36,9 +36,14 @@
     var selected=list.filter(function(item){return item.insertSelected===true;});
     if(selected.length===1)return selected[0];
 
-    var blackPositive=list.filter(function(item){return colorOf(item)==="black"&&Number(item.qty)>0;});
-    var whitePositive=list.some(function(item){return colorOf(item)==="white"&&Number(item.qty)>0;});
-    return blackPositive.length===1&&!whitePositive?blackPositive[0]:null;
+    var blackPositive=list.filter(function(item){return colorOf(item)==="black"&&Number(item.qty)>0&&(item.manualQtyOverride===true||item.insertSelected===true);});
+    if(blackPositive.length===1)return blackPositive[0];
+
+    /* Без явного локального вибору кімнати дефолт завжди білий.
+       Не дозволяємо кількості/стану глобального каталогу зробити чорну
+       вставку дефолтом для наступної кімнати або іншого проєкту. */
+    var white=list.filter(function(item){return colorOf(item)==="white";});
+    return white.length===1?white[0]:null;
   }
   function refreshAndSave(){
     try{if(typeof renderElemList==="function")renderElemList();}catch(_){window.__diagSilent&&window.__diagSilent(_)}

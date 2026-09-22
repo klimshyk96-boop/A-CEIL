@@ -13,11 +13,15 @@ function zeroResult(it){
   c.qty=0;
   c.manualQtyOverride=false;
   c.autoFilled=false;c.autoZero=true;
-  /* Вибір кольору вставки є станом конкретної кімнати, а не глобальним
-     налаштуванням номенклатури. Нова кімната починається без вибору —
-     AutoFill штатно обере білу. Збережена кімната нижче відновить свій
-     insertSelected, тому вручну обрана чорна не загубиться. */
-  c.insertSelected=false;
+  /* Вставка рахується за замовчуванням завжди. Для НОВОЇ кімнати
+     локальний дефолт — біла вставка. Вибір чорної зберігається лише
+     у snapshot поточної кімнати і не змінює глобальний каталог/дефолт. */
+  var src=String(c.source||'').trim().toLowerCase();
+  var variant=String(c.sourceVariant||'').trim().toLowerCase();
+  var nm=String(c.name||'').trim().toLowerCase();
+  var isInsert=src==='white_insert'||/вставк|insert/.test(nm);
+  var isWhite=variant==='white'||/біл/.test(nm);
+  c.insertSelected=!!(isInsert&&isWhite);
   ['calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount'].forEach(function(k){
     if(Object.prototype.hasOwnProperty.call(c,k))delete c[k];
   });
