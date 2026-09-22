@@ -55,7 +55,7 @@
   }
 
   function publicUrl(value) {
-    return location.origin.replace(/\/$/, "") + "/report/" + value;
+    return "https://a-ceil.pp.ua/report/" + value;
   }
 
   function patchLocal(project, values) {
