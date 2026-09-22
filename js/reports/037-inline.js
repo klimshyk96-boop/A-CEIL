@@ -291,6 +291,19 @@ function reportSectionTitles(flags){
   return titles;
 }
 
+function rmReportCreateHQCanvas(W,H){
+  const requested=3,maxPixels=24e6,maxDimension=12000;
+  const byPixels=Math.sqrt(maxPixels/Math.max(1,W*H)),byWidth=maxDimension/Math.max(1,W),byHeight=maxDimension/Math.max(1,H);
+  let scale=Math.min(requested,byPixels,byWidth,byHeight);
+  scale=Math.max(1,Math.floor(scale*4)/4);
+  const out=document.createElement("canvas");
+  out.width=Math.max(1,Math.round(W*scale));out.height=Math.max(1,Math.round(H*scale));
+  out.dataset.logicalWidth=String(W);out.dataset.logicalHeight=String(H);out.dataset.hdScale=String(scale);
+  const c=out.getContext("2d");if(!c)throw new Error("Canvas 2D context unavailable");
+  try{c.setTransform(scale,0,0,scale,0,0)}catch(_e){c.scale(scale,scale)}
+  try{c.imageSmoothingEnabled=true;c.imageSmoothingQuality="high"}catch(_e){}
+  return{out,c,scale};
+}
 async function alphaSingle(rs){
   const W=1080,st=_modernRoomStatsFromCurrent();
   const allDimLines=!1!==rs.dimensionsList?_allWallDimensionLines({pts:pts,lengths:lengths,realPts:realPts}):[];
@@ -304,7 +317,7 @@ async function alphaSingle(rs){
   const titles=reportSectionTitles({dimensions:!1!==rs.dimensionsList,showTech:showTech,ceilings:ceilingLines.length,exhausts:exhaustLines.length,cornices:cornices.length,diags:showTech&&diagLines.length,legend:!0===rs.showLegend,table:showTable});
   const tableH=64+62*Math.max(1,_modernCountRows(groups))+140,corniceH=corniceLines.length?74+38*corniceLines.length:0;
   const H=Math.max(1560,812+Math.max(190+(allDimLines.length?56+42*allDimLines.length:0)+(lightLines.length?56+52*lightLines.length:98)+(ceilingLines.length?56+42*ceilingLines.length:0)+(exhaustLines.length?56+42*exhaustLines.length:0)+corniceH+(showTech&&diagLines.length?56+42*diagLines.length:0),240+(wallLines.length?56+78*wallLines.length:98)+tableH)+190);
-  const _hd=rm414CreateHDReportCanvas(W,H),out=_hd.out,c=_hd.c;c.fillStyle="#f8fafc";c.fillRect(0,0,W,H);header(c,W,28);
+  const _hd=rmReportCreateHQCanvas(W,H),out=_hd.out,c=_hd.c;c.fillStyle="#f8fafc";c.fillRect(0,0,W,H);header(c,W,28);
   let y=140;y=title(c,28,y,_currentProjName||"Звіт заміру",(!1!==rs.area?`Площа: ${st.area} м²  •  Периметр: ${st.per} м  •  `:"")+`Кути: ${st.inC}/${st.outC}`);
   const planY=y;await plan(c,28,planY,640,590,!1!==rs.drawing?_modernCaptureCurrentDrawing(rs):null,titles.plan);
   let ry=planY;const infoRows=!1!==rs.area?[["Площа полотна",st.area+" м²"],["Периметр",st.per+" м"]]:[];const _od2=_overallDims(st,rs);_od2&&infoRows.push(["Габаритні розміри",_od2]);
@@ -334,7 +347,7 @@ async function alphaObject(obj,rs){
     data.push({r:r,st:st,groups:groups,total:total,dimensions:dimensions,lights:lights,ceilings:ceilings,exhausts:exhausts,walls:walls,diags:diags,cornices:cornices,corniceLines:corniceLines});
     H+=662+Math.max(160+(dimensions.length?56+42*dimensions.length:0)+(lights.length?56+42*lights.length:98)+(ceilings.length?56+42*ceilings.length:0)+(exhausts.length?56+42*exhausts.length:0)+(corniceLines.length?74+38*corniceLines.length:0)+(showTech&&diags.length?56+42*diags.length:0),240+(walls.length?56+42*walls.length:98)+(64+62*Math.max(1,_modernCountRows(groups))+140))+44;
   }
-  H+=180;H=Math.max(H,1850);const _hd=rm414CreateHDReportCanvas(W,H),out=_hd.out,c=_hd.c;c.fillStyle="#f8fafc";c.fillRect(0,0,W,H);header(c,W,28);let y=140;y=title(c,28,y,obj.name||"Звіт обʼєкта",[obj.addr,obj.phone,rooms.length+" кімнат"].filter(Boolean).join("  •  "));
+  H+=180;H=Math.max(H,1850);const _hd=rmReportCreateHQCanvas(W,H),out=_hd.out,c=_hd.c;c.fillStyle="#f8fafc";c.fillRect(0,0,W,H);header(c,W,28);let y=140;y=title(c,28,y,obj.name||"Звіт обʼєкта",[obj.addr,obj.phone,rooms.length+" кімнат"].filter(Boolean).join("  •  "));
   for(const rd of data){
     const showTable=(showPrice||showTech)&&!1!==rs.nomenclature,titles=reportSectionTitles({dimensions:!1!==rs.dimensionsList,showTech:showTech,ceilings:rd.ceilings.length,exhausts:rd.exhausts.length,cornices:rd.cornices.length,diags:showTech&&rd.diags.length,legend:!0===rs.showLegend,table:showTable});
     c.fillStyle="#0f172a";c.font="bold 26px Arial";c.fillText(rd.r.name||"Кімната",28,y+32);y+=54;const planY=y,planH=590,rx=686;
