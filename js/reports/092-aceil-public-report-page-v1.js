@@ -45,14 +45,18 @@
     if (legacy) return legacy;
     throw new Error("Посилання не знайдено");
   }
-  function notifyReportOpen() {
+  function notifyReportOpen(data) {
     try {
       var url = baseUrl();
       if (!url) return;
       fetch(url + "/functions/v1/notify-report-open", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: value.toLowerCase() }),
+        body: JSON.stringify({
+          token: value.toLowerCase(),
+          project_name: data && data.meta ? String(data.meta.name || "").trim() : "",
+          project_address: data && data.meta ? String(data.meta.address || "").trim() : ""
+        }),
         keepalive: true
       }).catch(function () {});
     } catch (_) {}
@@ -67,7 +71,7 @@
     var overlay = document.createElement("div"); overlay.id = "A·CEILPublicReportView"; overlay.innerHTML = '<div class="rpr-loading">⏳ Завантаження звіту…</div>'; document.body.appendChild(overlay);
     try {
       var data = await securePayload();
-      notifyReportOpen();
+      notifyReportOpen(data);
       render(overlay, data);
     }
     catch (error) { overlay.innerHTML = '<div class="rpr-error">Звіт недоступний.<br><small>' + esc(error && error.message || error) + '</small></div>'; }
