@@ -197,13 +197,26 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
   c.fillStyle="rgba(255,255,255,.80)";c.font="bold 17px Arial";c.fillText(installer?"ВАРТІСТЬ ОБʼЄКТА":"ЗАГАЛОМ ДО СПЛАТИ",PAD+34,y+40);
   c.textAlign="right";c.fillStyle="#fff";c.font="bold 44px Arial";c.fillText(money(afterDiscount),W-PAD-34,y+64);
   if(hasExtra){
-    c.font="bold 15px Arial";c.fillStyle="rgba(255,255,255,.92)";
+    c.font="bold 18px Arial";c.fillStyle="rgba(255,255,255,.96)";
     let yy=y+102;
     if(pct>0){c.fillText("Знижка "+String(pct).replace(".",",")+"%: −"+money(discountAmount)+"  ·  було "+money(total),W-PAD-34,yy);yy+=26}
     if(advance>0){c.fillText("Аванс: "+money(advance)+"  ·  залишок: "+money(remainder),W-PAD-34,yy)}
   }
   c.textAlign="left";return y+barH+42
-}function footer(c,W,H,rs){c.fillStyle="#94a3b8",c.font="12px Arial",c.textAlign="center",c.fillText((rs.companyName||"A·CEIL PRO")+" • "+[rs.companyPhone,rs.companySite].filter(Boolean).join(" • "),W/2,H-26),c.textAlign="left"}function _overallDims(st,rs){try{if(!0!==(rs||{}).overall)return"";if(!window.A·CEILGeometry||"function"!=typeof window.A·CEILGeometry.calculate)return"";var data=null;if(st&&(st.realPts||st.points||st.pts))data=st;if(!data)try{if(typeof realPts!=="undefined"&&Array.isArray(realPts)&&realPts.length>1)data={points:realPts}}catch(_e){}if(!data)try{if(typeof pts!=="undefined"&&Array.isArray(pts)&&pts.length>1)data={points:pts}}catch(_e){}if(!data)return"";const b=window.A·CEILGeometry.calculate(data).boundsM;if(!b||!(b.width>0)||!(b.height>0))return"";const a=Math.max(b.width,b.height),s=Math.min(b.width,b.height);return a.toFixed(2)+" × "+s.toFixed(2)+" м"}catch(e){return""}}
+}function _finalizeReportCanvas(out,W,contentBottom,rs){
+  const scale=Math.max(1,Number(out&&out.dataset&&out.dataset.hdScale)||1);
+  const H=Math.max(1,Math.ceil(contentBottom+78));
+  const cropped=document.createElement("canvas");
+  cropped.width=Math.max(1,Math.round(W*scale));cropped.height=Math.max(1,Math.round(H*scale));
+  cropped.dataset.logicalWidth=String(W);cropped.dataset.logicalHeight=String(H);cropped.dataset.hdScale=String(scale);
+  const cc=cropped.getContext("2d");
+  if(!cc)return out;
+  cc.drawImage(out,0,0,cropped.width,Math.min(cropped.height,out.height),0,0,cropped.width,Math.min(cropped.height,out.height));
+  try{cc.setTransform(scale,0,0,scale,0,0)}catch(_e){}
+  footer(cc,W,H,rs);
+  return cropped;
+}
+function footer(c,W,H,rs){c.fillStyle="#94a3b8",c.font="12px Arial",c.textAlign="center",c.fillText((rs.companyName||"A·CEIL PRO")+" • "+[rs.companyPhone,rs.companySite].filter(Boolean).join(" • "),W/2,H-26),c.textAlign="left"}function _overallDims(st,rs){try{if(!0!==(rs||{}).overall)return"";if(!window.A·CEILGeometry||"function"!=typeof window.A·CEILGeometry.calculate)return"";var data=null;if(st&&(st.realPts||st.points||st.pts))data=st;if(!data)try{if(typeof realPts!=="undefined"&&Array.isArray(realPts)&&realPts.length>1)data={points:realPts}}catch(_e){}if(!data)try{if(typeof pts!=="undefined"&&Array.isArray(pts)&&pts.length>1)data={points:pts}}catch(_e){}if(!data)return"";const b=window.A·CEILGeometry.calculate(data).boundsM;if(!b||!(b.width>0)||!(b.height>0))return"";const a=Math.max(b.width,b.height),s=Math.min(b.width,b.height);return a.toFixed(2)+" × "+s.toFixed(2)+" м"}catch(e){return""}}
 function _allWallDimensionLines(st){
   try{
     st=st||{};
@@ -306,7 +319,7 @@ async function alphaSingle(rs){
   if(corniceLines.length)ly+=lines(c,28,ly,640,titles.cornices,corniceLines,"")+18;
   if(showTech&&diagLines.length)ly+=lines(c,28,ly,640,titles.diags,diagLines,"")+18;
   if(showTable)ry+=table(c,686,ry,366,groups,isClient(rs),titles.table)+18;
-  const endY=Math.max(ly,ry)+10;showPrice?totalBar(c,28,endY,W,total,rs):(rr(c,28,endY,1024,86,20,"#fff7ed","#fed7aa"),c.fillStyle="#9a3412",c.font="bold 20px Arial",c.fillText("Монтажний лист: ціни приховано",58,endY+50));footer(c,W,H,rs);_modernOpenPreview(out,`A·CEIL_pro_${audience(rs)}_${(_currentProjName||"steli").replace(/\s+/g,"_")}.png`);
+  const endY=Math.max(ly,ry)+10;let contentBottom;if(showPrice)contentBottom=totalBar(c,28,endY,W,total,rs);else{rr(c,28,endY,1024,86,20,"#fff7ed","#fed7aa"),c.fillStyle="#9a3412",c.font="bold 20px Arial",c.fillText("Монтажний лист: ціни приховано",58,endY+50);contentBottom=endY+108}const finalOut=_finalizeReportCanvas(out,W,contentBottom,rs);_modernOpenPreview(finalOut,`A·CEIL_pro_${audience(rs)}_${(_currentProjName||"steli").replace(/\s+/g,"_")}.png`);
 }
 async function alphaObject(obj,rs){
   const W=1080,rooms=obj.rooms||[];let data=[],totalAll=0,H=180;const showTech=!isClient(rs),showPrice=!isInstaller(rs)||isFull(rs);
@@ -337,6 +350,6 @@ async function alphaObject(obj,rs){
     if(showTech&&rd.diags.length)ly+=lines(c,28,ly,640,titles.diags,rd.diags,"")+18;
     if(showTable)ry+=table(c,rx,ry,366,rd.groups,isClient(rs),titles.table)+18;y=Math.max(ly,ry)+24;
   }
-  if(showPrice)totalBar(c,28,y,W,totalAll,rs);footer(c,W,H,rs);_modernOpenPreview(out,`A·CEIL_pro_${audience(rs)}_${(obj.name||"obekt").replace(/\s+/g,"_")}.png`);
+  let contentBottom=y;if(showPrice)contentBottom=totalBar(c,28,y,W,totalAll,rs);const finalOut=_finalizeReportCanvas(out,W,contentBottom,rs);_modernOpenPreview(finalOut,`A·CEIL_pro_${audience(rs)}_${(obj.name||"obekt").replace(/\s+/g,"_")}.png`);
 }
 function ensureAddRoomButton(){return A·CEILUtils.ensureAddRoom()}window.openReportSettings=function(){"function"==typeof OLD_OPEN&&OLD_OPEN(),setTimeout(()=>{try{const modal=document.getElementById("reportSettingsModal");if(!modal)return;const h=modal.querySelector("h3");h&&(h.innerHTML="📄 Report PRO 3.0");let card=document.getElementById("reportAudienceCard");if(!card){const wrap=document.getElementById("rsToggles")||modal.querySelector("div");card=document.createElement("div"),card.id="reportAudienceCard",card.className="report-audience-card",card.innerHTML='\n<label>ТИП ЗВІТУ</label><select id="rsReportAudience" onchange="saveReportSettings()"><option value="client">Для клієнта — красиво, без зайвої технічки</option><option value="installer">Для монтажника — максимум координат і технічних даних</option><option value="full">Повний — клієнт + монтаж + кошторис</option></select>\n',wrap&&wrap.parentNode&&wrap.parentNode.insertBefore(card,wrap)}const rs=window._loadRS(),aud=document.getElementById("rsReportAudience");aud&&(aud.value=rs.reportAudience||"client")}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}},40)},generateModernSingleReport=alphaSingle,generateModernObjectReport=alphaObject,window.generateModernSingleReport=alphaSingle,window.generateModernObjectReport=alphaObject,document.addEventListener("click",e=>{e.target&&"cv"===e.target.id&&setTimeout(ensureAddRoomButton,250)},!0),setTimeout(ensureAddRoomButton,500)}()
