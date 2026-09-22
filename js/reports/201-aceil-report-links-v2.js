@@ -86,7 +86,7 @@
     if (!projectId) throw new Error("Спочатку збережіть активний проєкт у хмарі");
 
     var value = token();
-    var expires = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+    var expires = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString();
     var safePayload = Object.assign({}, payload || {}, { expiresAt: expires });
     var result = await client.rpc("aceil_publish_report_link", {
       p_project_id: projectId,
