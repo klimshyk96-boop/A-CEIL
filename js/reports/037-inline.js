@@ -176,7 +176,34 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
     c.textAlign="left";
   }
   return h;
-}async function plan(c,x,y,w,h,imgSrc,titleText){return rr(c,x,y,w,h,18,"#fff","#e2e8f0"),section(c,x+18,y+32,titleText||"1. План приміщення"),await new Promise(res=>{if(!imgSrc)return void res();const img=new Image;img.onload=()=>{const s=Math.min(w-52,h-82);c.drawImage(img,x+(w-s)/2,y+50,s,s),res()},img.onerror=res,img.src=imgSrc}),h}function totalBar(c,PAD,y,W,total,rs){const w=W-2*PAD,g=c.createLinearGradient(PAD,y,PAD+w,y+118),latestRS=function(){try{return"function"==typeof window._loadRS?window._loadRS():window.reportSettings||{}}catch(_e){return window.reportSettings||{}}}(),pct=Math.max(0,Math.min(100,Number(latestRS&&latestRS.discountPercent!=null?latestRS.discountPercent:rs&&rs.discountPercent)||0)),hasDiscount=!isInstaller(rs)&&pct>0,finalTotal=hasDiscount?total*(1-pct/100):total;return g.addColorStop(0,"#00399d"),g.addColorStop(1,"#0066ff"),rr(c,PAD,y,w,118,20,g),c.fillStyle="rgba(255,255,255,.80)",c.font="bold 17px Arial",c.fillText(isInstaller(rs)?"ВАРТІСТЬ ОБʼЄКТА":"ЗАГАЛОМ ДО СПЛАТИ",PAD+34,y+40),c.textAlign="right",c.fillStyle="#fff",c.font="bold 44px Arial",c.fillText(function(v){try{return"function"==typeof _fmtMoneyModern?_fmtMoneyModern(v):Math.round(v||0).toLocaleString("uk-UA")+" грн"}catch{return String(v||0)+" грн"}}(finalTotal),W-PAD-34,y+58),hasDiscount&&(c.fillStyle="rgba(255,255,255,.88)",c.font="bold 15px Arial",c.fillText("Знижка: "+String(pct).replace(".",",")+"%  ·  було "+function(v){try{return"function"==typeof _fmtMoneyModern?_fmtMoneyModern(v):Math.round(v||0).toLocaleString("uk-UA")+" грн"}catch{return String(v||0)+" грн"}}(total),W-PAD-34,y+88)),c.textAlign="left",y+118+42}function footer(c,W,H,rs){c.fillStyle="#94a3b8",c.font="12px Arial",c.textAlign="center",c.fillText((rs.companyName||"A·CEIL PRO")+" • "+[rs.companyPhone,rs.companySite].filter(Boolean).join(" • "),W/2,H-26),c.textAlign="left"}function _overallDims(st,rs){try{if(!0!==(rs||{}).overall)return"";if(!window.A·CEILGeometry||"function"!=typeof window.A·CEILGeometry.calculate)return"";var data=null;if(st&&(st.realPts||st.points||st.pts))data=st;if(!data)try{if(typeof realPts!=="undefined"&&Array.isArray(realPts)&&realPts.length>1)data={points:realPts}}catch(_e){}if(!data)try{if(typeof pts!=="undefined"&&Array.isArray(pts)&&pts.length>1)data={points:pts}}catch(_e){}if(!data)return"";const b=window.A·CEILGeometry.calculate(data).boundsM;if(!b||!(b.width>0)||!(b.height>0))return"";const a=Math.max(b.width,b.height),s=Math.min(b.width,b.height);return a.toFixed(2)+" × "+s.toFixed(2)+" м"}catch(e){return""}}
+}async function plan(c,x,y,w,h,imgSrc,titleText){return rr(c,x,y,w,h,18,"#fff","#e2e8f0"),section(c,x+18,y+32,titleText||"1. План приміщення"),await new Promise(res=>{if(!imgSrc)return void res();const img=new Image;img.onload=()=>{const s=Math.min(w-52,h-82);c.drawImage(img,x+(w-s)/2,y+50,s,s),res()},img.onerror=res,img.src=imgSrc}),h}function totalBar(c,PAD,y,W,total,rs){
+  const w=W-2*PAD;
+  function num(v){v=Number(String(v==null?"":v).replace(",","."));return Number.isFinite(v)?v:0}
+  function paymentSettings(){
+    let saved={};
+    try{saved=JSON.parse(localStorage.getItem("reportSettings")||"{}")||{}}catch(_e){}
+    let live={};
+    try{live=(typeof window._loadRS==="function"?window._loadRS():window.reportSettings)||{}}catch(_e){live=window.reportSettings||{}}
+    let d=null,a=null;
+    try{const el=document.getElementById("rsDiscountPercent");if(el&&String(el.value).trim()!=="")d=el.value}catch(_e){}
+    try{const el=document.getElementById("rsAdvanceAmount");if(el&&String(el.value).trim()!=="")a=el.value}catch(_e){}
+    if(d==null)d=saved.discountPercent!=null?saved.discountPercent:(live.discountPercent!=null?live.discountPercent:(rs&&rs.discountPercent));
+    if(a==null)a=saved.advanceAmount!=null?saved.advanceAmount:(live.advanceAmount!=null?live.advanceAmount:(rs&&rs.advanceAmount));
+    return{discount:Math.max(0,Math.min(100,num(d))),advance:Math.max(0,num(a))};
+  }
+  const pay=paymentSettings(),installer=isInstaller(rs),pct=installer?0:pay.discount,discountAmount=total*pct/100,afterDiscount=Math.max(0,total-discountAmount),advance=installer?0:Math.min(pay.advance,afterDiscount),remainder=Math.max(0,afterDiscount-advance),hasExtra=!installer&&(pct>0||advance>0),barH=hasExtra?174:118;
+  const g=c.createLinearGradient(PAD,y,PAD+w,y+barH);g.addColorStop(0,"#00399d");g.addColorStop(1,"#0066ff");rr(c,PAD,y,w,barH,20,g);
+  const money=function(v){try{return typeof _fmtMoneyModern==="function"?_fmtMoneyModern(v):Math.round(v||0).toLocaleString("uk-UA")+" грн"}catch{return String(v||0)+" грн"}};
+  c.fillStyle="rgba(255,255,255,.80)";c.font="bold 17px Arial";c.fillText(installer?"ВАРТІСТЬ ОБʼЄКТА":"ЗАГАЛОМ ДО СПЛАТИ",PAD+34,y+40);
+  c.textAlign="right";c.fillStyle="#fff";c.font="bold 44px Arial";c.fillText(money(afterDiscount),W-PAD-34,y+64);
+  if(hasExtra){
+    c.font="bold 15px Arial";c.fillStyle="rgba(255,255,255,.92)";
+    let yy=y+102;
+    if(pct>0){c.fillText("Знижка "+String(pct).replace(".",",")+"%: −"+money(discountAmount)+"  ·  було "+money(total),W-PAD-34,yy);yy+=26}
+    if(advance>0){c.fillText("Аванс: "+money(advance)+"  ·  залишок: "+money(remainder),W-PAD-34,yy)}
+  }
+  c.textAlign="left";return y+barH+42
+}function footer(c,W,H,rs){c.fillStyle="#94a3b8",c.font="12px Arial",c.textAlign="center",c.fillText((rs.companyName||"A·CEIL PRO")+" • "+[rs.companyPhone,rs.companySite].filter(Boolean).join(" • "),W/2,H-26),c.textAlign="left"}function _overallDims(st,rs){try{if(!0!==(rs||{}).overall)return"";if(!window.A·CEILGeometry||"function"!=typeof window.A·CEILGeometry.calculate)return"";var data=null;if(st&&(st.realPts||st.points||st.pts))data=st;if(!data)try{if(typeof realPts!=="undefined"&&Array.isArray(realPts)&&realPts.length>1)data={points:realPts}}catch(_e){}if(!data)try{if(typeof pts!=="undefined"&&Array.isArray(pts)&&pts.length>1)data={points:pts}}catch(_e){}if(!data)return"";const b=window.A·CEILGeometry.calculate(data).boundsM;if(!b||!(b.width>0)||!(b.height>0))return"";const a=Math.max(b.width,b.height),s=Math.min(b.width,b.height);return a.toFixed(2)+" × "+s.toFixed(2)+" м"}catch(e){return""}}
 function _allWallDimensionLines(st){
   try{
     st=st||{};
