@@ -126,7 +126,7 @@
     if (!row || !row.report_token) { state.textContent = "🔗 Посилання на КП не створено"; return; }
     var expires = row.report_expires_at ? new Date(row.report_expires_at) : null;
     if (expires && expires.getTime() <= Date.now()) { state.textContent = "⌛ Термін дії КП закінчився"; revoke.style.display = "block"; return; }
-    box.dataset.url = location.origin.replace(/\/$/, "") + "/report/" + row.report_token;
+    box.dataset.url = "https://a-ceil.pp.ua/report/" + row.report_token;
     state.textContent = "🔗 КП активне до " + (expires && !isNaN(expires.getTime()) ? expires.toLocaleDateString("uk-UA") : "без вказаної дати");
     open.style.display = "block"; revoke.style.display = "block";
   }
