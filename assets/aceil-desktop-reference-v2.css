@@ -258,3 +258,282 @@
     box-shadow:0 14px 34px rgba(30,64,175,.24),inset 0 1px 0 #fff!important;
   }
 }
+
+/* A·CEIL desktop polish v5 — stronger readability + restored hover feedback */
+@media (min-width:2400px) and (min-height:1100px){
+  /* Smooth, tactile desktop hover feedback */
+  body.rp-home-pro #A·CEILToolPanel .tile-btn,
+  body.rp-home-pro #rpCockpit button,
+  #aceilDesktopSidebar .adsb-tab,
+  #aceilDesktopSidebar .adsb-actions button,
+  #aceilDesktopSidebar .adsb-grp-head,
+  #aceilDesktopCanvasZoom button,
+  #rmDebugFab{
+    transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease, background-color .16s ease, color .16s ease!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel>div>.tile-btn:hover,
+  body.rp-home-pro #A·CEILToolPanel>.tile-btn:hover{
+    transform:translateY(-2px)!important;
+    background:#f8fbff!important;
+    border-color:#cfe0f6!important;
+    box-shadow:0 9px 22px rgba(30,64,175,.11)!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel .tile-btn:hover .tile-icon{
+    transform:scale(1.06)!important;
+    box-shadow:0 5px 12px rgba(15,23,42,.09),inset 0 1px 0 #fff!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel .tile-icon{transition:transform .16s ease,box-shadow .16s ease!important}
+  body.rp-home-pro #rpCockpit button:hover,
+  #aceilDesktopSidebar .adsb-actions button:hover,
+  #aceilDesktopCanvasZoom button:hover{
+    transform:translateY(-2px)!important;
+    box-shadow:0 8px 20px rgba(15,23,42,.12)!important;
+  }
+  #aceilDesktopSidebar .adsb-tab:hover{background:#f3f7ff!important;color:#1d4ed8!important}
+  #aceilDesktopSidebar .adsb-grp-head:hover{background:#f8fafc!important}
+
+  /* Left labels: deliberately dark and readable */
+  body.rp-home-pro #A·CEILToolPanel .tile-btn-label{
+    color:#0b1220!important;
+    font-size:18px!important;
+    font-weight:950!important;
+  }
+
+  /* Clear button — full-width, obvious, polished */
+  body.rp-home-pro #A·CEILToolPanel>.tile-red{
+    width:100%!important;
+    height:76px!important;
+    min-height:76px!important;
+    flex:0 0 76px!important;
+    padding:8px 12px!important;
+    margin-top:auto!important;
+    border:1px solid #fecaca!important;
+    border-radius:16px!important;
+    background:linear-gradient(180deg,#fffafa 0%,#fff0f1 100%)!important;
+    box-shadow:0 7px 20px rgba(220,38,38,.10)!important;
+    overflow:visible!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel>.tile-red>div{
+    width:100%!important;height:100%!important;display:flex!important;align-items:center!important;
+    justify-content:flex-start!important;gap:15px!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel>.tile-red .tile-icon{
+    width:52px!important;height:52px!important;min-width:52px!important;border-radius:14px!important;
+    color:#dc2626!important;background:#fee2e2!important;border:1px solid #fecaca!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel>.tile-red .tile-icon .rm-ico{width:29px!important;height:29px!important}
+  body.rp-home-pro #A·CEILToolPanel>.tile-red .tile-btn-label{font-size:19px!important;color:#c81e1e!important;font-weight:950!important}
+  body.rp-home-pro #A·CEILToolPanel>.tile-red:hover{
+    transform:translateY(-2px)!important;
+    border-color:#f87171!important;
+    background:linear-gradient(180deg,#fff6f6 0%,#ffe4e6 100%)!important;
+    box-shadow:0 12px 28px rgba(220,38,38,.16)!important;
+  }
+
+  /* Estimate typography: one more step up for a 32-inch panel */
+  #aceilDesktopSidebar .adsb-title{font-size:25px!important;color:#080f1c!important}
+  #aceilDesktopSidebar .adsb-grp-name,#aceilDesktopSidebar .adsb-gn{font-size:19px!important;color:#0b1220!important}
+  #aceilDesktopSidebar .adsb-grp-sum,#aceilDesktopSidebar .adsb-gsum{font-size:19px!important;color:#0b1220!important}
+  #aceilDesktopSidebar .adsb-rn{font-size:16px!important;color:#111827!important;font-weight:800!important}
+  #aceilDesktopSidebar .adsb-rq,#aceilDesktopSidebar .adsb-rp{font-size:15px!important;color:#253044!important;font-weight:850!important}
+  #aceilDesktopSidebar .adsb-meta,#aceilDesktopSidebar .adsb-sub{font-size:14px!important;color:#334155!important}
+
+  /* Bug button: dark premium tile + pink bug, with tooltip on hover */
+  #rmDebugFab{
+    left:24px!important;bottom:24px!important;
+    width:68px!important;height:68px!important;
+    border-radius:19px!important;
+    border:1px solid rgba(255,255,255,.10)!important;
+    background:linear-gradient(145deg,#17233a 0%,#0f172a 100%)!important;
+    color:#ff2aa1!important;
+    font-size:31px!important;
+    display:block;
+    box-shadow:0 12px 30px rgba(15,23,42,.25),inset 0 1px 0 rgba(255,255,255,.08)!important;
+    overflow:visible!important;
+  }
+  #rmDebugFab:hover{
+    transform:translateY(-3px) scale(1.03)!important;
+    color:#ff45b1!important;
+    box-shadow:0 17px 38px rgba(15,23,42,.32),0 0 0 4px rgba(255,42,161,.08)!important;
+  }
+  #rmDebugFab::after{
+    content:'Повідомити про помилку';
+    position:absolute;left:calc(100% + 12px);bottom:8px;
+    width:max-content;max-width:230px;padding:10px 13px;border-radius:11px;
+    background:#111827;color:#fff;font:850 14px/1.2 system-ui,-apple-system,'Segoe UI',sans-serif;
+    box-shadow:0 10px 26px rgba(15,23,42,.24);
+    opacity:0;visibility:hidden;transform:translateX(-5px);
+    pointer-events:none;transition:opacity .15s ease,transform .15s ease,visibility .15s ease;
+  }
+  #rmDebugFab:hover::after{opacity:1;visibility:visible;transform:translateX(0)}
+}
+
+/* ===== A·CEIL v6 — desktop modal polish: nomenclature + centered report builder ===== */
+@media (min-width:1200px) and (min-height:760px){
+  /* Nomenclature: fit the whole dialog inside the real viewport. Header/footer stay visible;
+     only the item list scrolls. */
+  #elementsModal.open{
+    align-items:center!important;
+    justify-content:center!important;
+    padding:24px!important;
+    overflow:hidden!important;
+  }
+  #elementsModal.open>.modal{
+    width:min(92vw,1500px)!important;
+    max-width:1500px!important;
+    height:min(92vh,1080px)!important;
+    max-height:calc(100vh - 48px)!important;
+    margin:0!important;
+    padding:0!important;
+    border-radius:28px!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+    background:#fff!important;
+    box-shadow:0 28px 80px rgba(15,23,42,.24)!important;
+  }
+  #elementsModal #elemList{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior:contain!important;
+    padding-bottom:14px!important;
+  }
+  #elementsModal #elemBottomBar{
+    position:relative!important;
+    z-index:8!important;
+    flex:0 0 auto!important;
+    background:rgba(255,255,255,.98)!important;
+    box-shadow:0 -10px 28px rgba(15,23,42,.06)!important;
+  }
+  #elementsModal #elemTotalBar{
+    min-height:54px!important;
+    display:flex!important;
+    align-items:center!important;
+  }
+
+  /* Report builder: centered readable workspace instead of a narrow left sheet. */
+  #reportSettingsModal.rspro-modal{
+    display:none;
+    align-items:center!important;
+    justify-content:center!important;
+    padding:28px!important;
+    overflow:hidden!important;
+    background:rgba(15,23,42,.48)!important;
+    backdrop-filter:blur(7px)!important;
+    -webkit-backdrop-filter:blur(7px)!important;
+  }
+  #reportSettingsModal.rspro-modal[style*="display: block"],
+  #reportSettingsModal.rspro-modal[style*="display:block"]{
+    display:flex!important;
+  }
+  #reportSettingsModal .rspro-sheet{
+    width:min(74vw,1180px)!important;
+    max-width:1180px!important;
+    height:min(88vh,980px)!important;
+    max-height:calc(100vh - 56px)!important;
+    margin:0!important;
+    border-radius:26px!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+    background:linear-gradient(180deg,#fff 0,#f8fbff 100%)!important;
+    box-shadow:0 30px 90px rgba(15,23,42,.30)!important;
+  }
+  #reportSettingsModal .rspro-handle{display:none!important}
+  #reportSettingsModal .rspro-head{
+    flex:0 0 auto!important;
+    position:relative!important;
+    padding:22px 26px 17px!important;
+  }
+  #reportSettingsModal .rspro-title{
+    font-size:27px!important;
+    color:#0b1220!important;
+    font-weight:950!important;
+  }
+  #reportSettingsModal .rspro-sub{
+    font-size:14px!important;
+    color:#475569!important;
+  }
+  #reportSettingsModal .rspro-body{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain!important;
+    padding:18px 22px 20px!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    align-content:start!important;
+    gap:14px!important;
+  }
+  #reportSettingsModal .rspro-mini-actions{
+    grid-column:1/-1!important;
+    gap:12px!important;
+    margin:0!important;
+  }
+  #reportSettingsModal .rspro-mini-actions button{
+    min-height:48px!important;
+    font-size:14px!important;
+    border-radius:14px!important;
+  }
+  #reportSettingsModal .rspro-card{
+    min-width:0!important;
+    border-radius:18px!important;
+    padding:14px!important;
+    box-shadow:0 5px 18px rgba(15,23,42,.045)!important;
+  }
+  #reportSettingsModal .rspro-card-title{
+    font-size:16px!important;
+    color:#0b1220!important;
+    margin-bottom:10px!important;
+  }
+  #reportSettingsModal .rspro-card-title small{color:#64748b!important}
+  #reportSettingsModal .rspro-toggle{
+    min-height:52px!important;
+    padding:9px 12px!important;
+    border-radius:13px!important;
+    transition:background .15s ease,border-color .15s ease,transform .15s ease,box-shadow .15s ease!important;
+  }
+  #reportSettingsModal .rspro-toggle:hover{
+    background:#f1f6ff!important;
+    border-color:#cfe0ff!important;
+    transform:translateY(-1px)!important;
+    box-shadow:0 5px 14px rgba(37,99,235,.06)!important;
+  }
+  #reportSettingsModal .rspro-toggle span{
+    font-size:15px!important;
+    color:#111827!important;
+    font-weight:850!important;
+  }
+  #reportSettingsModal .rspro-toggle em{
+    font-size:11.5px!important;
+    color:#64748b!important;
+  }
+  #reportSettingsModal .rspro-actions{
+    flex:0 0 auto!important;
+    position:relative!important;
+    grid-template-columns:.8fr 1.2fr!important;
+    gap:12px!important;
+    padding:14px 22px 18px!important;
+    background:#fff!important;
+    box-shadow:0 -10px 30px rgba(15,23,42,.055)!important;
+  }
+  #reportSettingsModal .rspro-primary,
+  #reportSettingsModal .rspro-secondary{
+    min-height:54px!important;
+    font-size:15px!important;
+    border-radius:14px!important;
+    transition:transform .15s ease,box-shadow .15s ease,filter .15s ease!important;
+  }
+  #reportSettingsModal .rspro-primary:hover{
+    transform:translateY(-2px)!important;
+    filter:saturate(1.08)!important;
+    box-shadow:0 14px 30px rgba(37,99,235,.28)!important;
+  }
+  #reportSettingsModal .rspro-secondary:hover{
+    transform:translateY(-1px)!important;
+    background:#f8fafc!important;
+    border-color:#cbd5e1!important;
+  }
+}
