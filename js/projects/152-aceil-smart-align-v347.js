@@ -655,7 +655,7 @@ window.rmSa347Apply=function(){
   try{
     var base=Date.now();
     S.aligned.forEach(function(p,i){
-      var m={id:"light_smartalign_"+base+"_"+i,type:"spot",x:Math.round(p.x),y:Math.round(p.y),smartAligned:true,smartWallOffsetCm:Number.isFinite(+p.wallOffsetCm)?+p.wallOffsetCm:null};
+      var __pt=window.__aceilLightPlacementType==="double_spot"?"double_spot":"spot";var m={id:"light_smartalign_"+base+"_"+i,type:__pt,x:Math.round(p.x),y:Math.round(p.y),smartAligned:true,smartWallOffsetCm:Number.isFinite(+p.wallOffsetCm)?+p.wallOffsetCm:null};if(__pt==="double_spot")m.orientation=window.__aceilDoubleSpotOrientation==="vertical"?"vertical":"horizontal";
       try{m.baseIndex=Number.isFinite(+p.baseIndex)?+p.baseIndex:nearestWallIndex(m,poly())}catch(_){try{if(typeof _nearestLightBaseIndex==="function")m.baseIndex=_nearestLightBaseIndex(m.x,m.y)}catch(__){}}
       try{if(typeof _updateLightCoords==="function")_updateLightCoords(m)}catch(_){}
       lightMarks.push(m);
