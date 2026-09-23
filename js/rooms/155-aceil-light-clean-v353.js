@@ -40,7 +40,9 @@ function insidePoly(point,poly){
  }
  return inside;
 }
-function spot(mark){return String(mark&&mark.type||"").toLowerCase()==="spot"}
+function placementType(){return window.__aceilLightPlacementType==="double_spot"?"double_spot":"spot"}
+function placementOrientation(){return window.__aceilDoubleSpotOrientation==="vertical"?"vertical":"horizontal"}
+function spot(mark){return String(mark&&mark.type||"").toLowerCase()===placementType()}
 function replaceSpots(points){
  var list=null;
  try{list=typeof lightMarks!=="undefined"&&Array.isArray(lightMarks)?lightMarks:null}catch(_){}
@@ -49,7 +51,7 @@ function replaceSpots(points){
  for(var i=list.length-1;i>=0;i--)if(spot(list[i]))list.splice(i,1);
  var base=Date.now();
  points.forEach(function(p,index){
-   var mark={id:"light_dim_"+base+"_"+index,type:"spot",x:Math.round(p.x),y:Math.round(p.y)};
+   var mark={id:"light_dim_"+base+"_"+index,type:placementType(),x:Math.round(p.x),y:Math.round(p.y)};if(mark.type==="double_spot")mark.orientation=placementOrientation();
    try{if(typeof _nearestLightBaseIndex==="function")mark.baseIndex=_nearestLightBaseIndex(mark.x,mark.y)}catch(_){}
    try{if(typeof _updateLightCoords==="function")_updateLightCoords(mark)}catch(_){}
    list.push(mark);
@@ -138,9 +140,10 @@ function action(){
  }
  if(S.method==="manual"){
    if(S.mode!=="one")return buildByOffset(D.edge,false);
-   try{call("rmLfClose")}catch(_){};return call("rmLfManualSpot")
+   try{call("rmLfClose")}catch(_){};try{call("setLightMode",placementType())}catch(_){};return call("rmLfManualSpot")
  }
- if(S.method==="room"&&S.mode==="grid")return buildByOffset(50,true);
+ if(S.method==="room"&&(S.mode==="grid"||S.mode==="row"))return buildByOffset(50,true);
+ if(placementType()==="double_spot")try{call("setLightMode","double_spot")}catch(_){}
  return call("rmLfApply");
 }
 document.addEventListener("click",function(e){
