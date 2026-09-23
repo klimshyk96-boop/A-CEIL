@@ -77,7 +77,8 @@ window.__A_CEIL_FinalFixes174=true;
     }catch(_){}
     return{id:id,label:label};
   }
-  function isPoint(info){return info.id==="spot"||/точков|точка|світильник|спот/.test(info.label)}
+  function isDoublePoint(info){return info.id==="double_spot"||/подвійний\s+точков/.test(info.label)}
+  function isPoint(info){return !isDoublePoint(info)&&(info.id==="spot"||/точков|точка|світильник|спот/.test(info.label))}
   function isChandelier(info){return info.id==="chandelier"||/люстр/.test(info.label)}
   function isExhaustMark(mark){
     if(!mark)return false;
@@ -114,6 +115,7 @@ window.__A_CEIL_FinalFixes174=true;
       all.forEach(function(mark,index){
         var info=typeInfo(mark);
         if(isExhaustMark(mark))exhaustTargets.push(mark);
+        else if(isDoublePoint(info))targets.push({mark:mark,index:index,doubleSpot:true,chandelier:false});
         else if(isPoint(info)||isChandelier(info))targets.push({mark:mark,index:index,chandelier:isChandelier(info)});
         else others.push(mark);
       });
@@ -130,6 +132,13 @@ window.__A_CEIL_FinalFixes174=true;
         try{selected=!_reportMode&&lightMode&&mark.id&&mark.id===selectedLightId}catch(_){}
 
         ctx.save();
+        if(entry.doubleSpot){
+          var vertical=String(mark.orientation||"horizontal")==="vertical",gap=7.2,rr=6.2;
+          ctx.shadowColor="rgba(234,179,8,.30)";ctx.shadowBlur=3;ctx.fillStyle="#fff";ctx.strokeStyle="#facc15";ctx.lineWidth=2.2;
+          [-1,1].forEach(function(sign){var dx=vertical?0:sign*gap,dy=vertical?sign*gap:0;ctx.beginPath();ctx.arc(x+dx,y+dy,rr,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.stroke()});
+          if(selected){ctx.beginPath();ctx.roundRect?ctx.roundRect(x-(vertical?10:17),y-(vertical?17:10),vertical?20:34,vertical?34:20,8):ctx.rect(x-17,y-10,34,20);ctx.strokeStyle="#2563eb";ctx.lineWidth=2;ctx.stroke()}
+          ctx.fillStyle="#475569";ctx.font="700 9px Arial";ctx.textAlign="center";ctx.textBaseline="top";ctx.fillText(String(entry.index+1),x,y+(vertical?17:10)+4);ctx.restore();return;
+        }
         ctx.shadowColor="rgba(234,179,8,.35)";
         ctx.shadowBlur=4;
         ctx.beginPath();

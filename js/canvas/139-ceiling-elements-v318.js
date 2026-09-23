@@ -19,7 +19,7 @@ function typeIsCustom(t){
 function typeIsSystem(t){
   var id=String(t&&t.id||"").toLowerCase();
   if(typeIsCustom(t))return false;
-  return id==="spot"||id==="chandelier"||id==="vent"||id==="exhaust"||id==="hood";
+  return id==="spot"||id==="double_spot"||id==="chandelier"||id==="vent"||id==="exhaust"||id==="hood";
 }
 function findVent(){
   var a=types(),i;
@@ -81,6 +81,7 @@ function render(){
     +'<button type="button" class="rm-ce-card primary wide" data-flp="1" onclick="rmOpenLinearLightingV317()"><span class="rm-ce-icon">━</span><span><b>Лінійне освітлення</b><small>Готові фігури • Довільна форма</small></span></button>'
     +'<button type="button" class="rm-ce-card" onclick="rmStartChandelier()"><span class="rm-ce-icon">✶</span><span><b>Люстра</b><small>центр або ручне розташування</small></span></button>'
     +'<button type="button" class="rm-ce-card" onclick="rmStartSpotFlow()"><span class="rm-ce-icon">⊙</span><span><b>Точкові</b><small>один / ряд / сітка</small></span></button>'
+    +'<button type="button" class="rm-ce-card" onclick="rmStartDoubleSpotV1()"><span class="rm-ce-icon" style="letter-spacing:-3px">⊙⊙</span><span><b>Подвійний точковий світильник</b><small>горизонтально / вертикально</small></span></button>'
     +ventBtn
     +'<button type="button" class="rm-ce-card" onclick="rmCeTrackV318()"><span class="rm-ce-icon">▭</span><span><b>Трекове освітлення</b><small>магнітний або накладний трек</small></span></button>'
     +custom
@@ -123,6 +124,46 @@ window.rmCeDeleteCustomV318=function(id){
   render();
   try{if(typeof showToast==="function")showToast("✓ "+String(target.label||"Елемент")+" видалено")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 };
+
+/* Built-in double spot: one placed mark = one nomenclature item. */
+function ensureDoubleSpotType(){
+  var arr=types(),idx=arr.findIndex(function(t){return t&&String(t.id)==="double_spot"});
+  if(idx<0){
+    var spotIdx=arr.findIndex(function(t){return t&&String(t.id)==="spot"});
+    var item={id:"double_spot",label:"Подвійний точковий світильник",icon:"⊙⊙",ceilingElement:false,builtIn:true};
+    arr.splice(spotIdx>=0?spotIdx+1:0,0,item);
+    try{localStorage.setItem("lightTypes_v1",JSON.stringify(arr))}catch(_){}
+    try{window.lightTypes=arr;lightTypes=arr}catch(_){window.lightTypes=arr}
+  }
+  return arr.find(function(t){return t&&String(t.id)==="double_spot"});
+}
+window.rmStartDoubleSpotV1=function(){
+  ensureDoubleSpotType();
+  closeMain();
+  var old=document.getElementById("rmDoubleSpotOrientationV1");if(old)old.remove();
+  var m=document.createElement("div");m.id="rmDoubleSpotOrientationV1";m.className="modal-overlay open";
+  m.innerHTML='<div class="modal" style="max-width:440px"><div class="rm-ce-head"><div><div class="rm-ce-title">Подвійний точковий світильник</div><div class="rm-ce-sub">Оберіть положення пари на кресленні</div></div><button type="button" class="rm-ce-close" onclick="this.closest(\'.modal-overlay\').remove()">×</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:18px"><button type="button" class="rm-ce-card" onclick="rmUseDoubleSpotV1(\'horizontal\')"><span class="rm-ce-icon" style="letter-spacing:-3px">⊙⊙</span><span><b>Горизонтально</b><small>два світильники поруч</small></span></button><button type="button" class="rm-ce-card" onclick="rmUseDoubleSpotV1(\'vertical\')"><span class="rm-ce-icon" style="line-height:.72">⊙<br>⊙</span><span><b>Вертикально</b><small>один над одним</small></span></button></div></div>';
+  document.body.appendChild(m);
+};
+window.rmUseDoubleSpotV1=function(orientation){
+  window.__aceilDoubleSpotOrientation=orientation==="vertical"?"vertical":"horizontal";
+  var m=document.getElementById("rmDoubleSpotOrientationV1");if(m)m.remove();
+  setMode("double_spot");
+};
+/* Generic placement creates the mark. Stamp the chosen orientation onto that new mark. */
+document.addEventListener("pointerup",function(){
+  var orientation=window.__aceilDoubleSpotOrientation;if(!orientation)return;
+  setTimeout(function(){
+    try{
+      var marks=(typeof lightMarks!=="undefined"&&Array.isArray(lightMarks))?lightMarks:(window.lightMarks||[]);
+      for(var i=marks.length-1;i>=0;i--){var mk=marks[i];if(mk&&String(mk.type)==="double_spot"&&!mk.orientation){mk.orientation=orientation;break}}
+      if(typeof saveState==="function")saveState();
+      if(typeof requestDraw==="function")requestDraw();else if(typeof draw==="function")draw();
+    }catch(_){}
+  },0);
+},true);
+ensureDoubleSpotType();
+
 var hostClick=gid("rmLightStartModal");
 if(hostClick)hostClick.addEventListener("click",function(e){
   var b=e.target&&e.target.closest?e.target.closest("[data-custom-ce]"):null;
