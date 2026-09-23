@@ -142,13 +142,14 @@ window.rmStartDoubleSpotV1=function(){
   closeMain();
   var old=document.getElementById("rmDoubleSpotOrientationV1");if(old)old.remove();
   var m=document.createElement("div");m.id="rmDoubleSpotOrientationV1";m.className="modal-overlay open";
-  m.innerHTML='<div class="modal" style="max-width:440px"><div class="rm-ce-head"><div><div class="rm-ce-title">Подвійний точковий світильник</div><div class="rm-ce-sub">Оберіть положення пари на кресленні</div></div><button type="button" class="rm-ce-close" onclick="this.closest(\'.modal-overlay\').remove()">×</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:18px"><button type="button" class="rm-ce-card" onclick="rmUseDoubleSpotV1(\'horizontal\')"><span class="rm-ce-icon" style="letter-spacing:-3px">⊙⊙</span><span><b>Горизонтально</b><small>два світильники поруч</small></span></button><button type="button" class="rm-ce-card" onclick="rmUseDoubleSpotV1(\'vertical\')"><span class="rm-ce-icon" style="line-height:.72">⊙<br>⊙</span><span><b>Вертикально</b><small>один над одним</small></span></button></div></div>';
+  m.innerHTML='<div class="modal" style="max-width:420px"><div class="rm-ce-head"><div><div class="rm-ce-title">Положення світильника</div></div><button type="button" class="rm-ce-close" onclick="this.closest(\'.modal-overlay\').remove()">×</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:20px"><button type="button" class="rm-ce-card" aria-label="Горизонтально" title="Горизонтально" onclick="rmUseDoubleSpotV1(\'horizontal\')" style="min-height:116px;justify-content:center"><span class="rm-ce-icon" style="font-size:42px;letter-spacing:-7px">⊙⊙</span></button><button type="button" class="rm-ce-card" aria-label="Вертикально" title="Вертикально" onclick="rmUseDoubleSpotV1(\'vertical\')" style="min-height:116px;justify-content:center"><span class="rm-ce-icon" style="font-size:38px;line-height:.65">⊙<br>⊙</span></button></div></div>';
   document.body.appendChild(m);
 };
 window.rmUseDoubleSpotV1=function(orientation){
   window.__aceilDoubleSpotOrientation=orientation==="vertical"?"vertical":"horizontal";
   var m=document.getElementById("rmDoubleSpotOrientationV1");if(m)m.remove();
-  setMode("double_spot");
+  window.__aceilLightPlacementType="double_spot";
+  try{if(typeof openLightFlowModal==="function")openLightFlowModal();else setMode("double_spot")}catch(_){setMode("double_spot")}
 };
 /* Generic placement creates the mark. Stamp the chosen orientation onto that new mark. */
 document.addEventListener("pointerup",function(){
