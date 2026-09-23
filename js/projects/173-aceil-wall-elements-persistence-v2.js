@@ -148,8 +148,9 @@
     if(typeof previous!=="function"||previous.__wallPersistenceV2)return;
     var wrapped=function(id){
       var project=findProject(id),snapshot=project?snapshotFromState(project.state,project):null;
-      if(!hasWallData(snapshot))snapshot=backupForProject(project);
       var result=previous.apply(this,arguments);
+      /* Saved project state is authoritative, including an intentionally empty wallMarks array.
+         Never resurrect wall elements from a previous backup on load. */
       if(snapshot)redrawLater(snapshot);
       return result;
     };
@@ -163,8 +164,9 @@
     var wrapped=function(project,roomIndex){
       var room=project&&project.rooms&&project.rooms[roomIndex];
       var snapshot=room?snapshotFromState(room.state,room):null;
-      if(!hasWallData(snapshot))snapshot=backupForRoom(project,roomIndex);
       var result=previous.apply(this,arguments);
+      /* An empty room is valid state. Do not fall back to stale wall-element backups:
+         that was the source of cross-room/project "resurrection" after deletion. */
       if(snapshot)redrawLater(snapshot);
       return result;
     };
