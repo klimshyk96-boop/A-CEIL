@@ -410,27 +410,57 @@ const e=document.getElementById("rs_dimensions");return!0===(e?e.checked:r.dimen
 })()){const mx=(pts[i].x+pts[j].x)/2,my=(pts[i].y+pts[j].y)/2,dx=pts[j].x-pts[i].x,dy=pts[j].y-pts[i].y,len=Math.hypot(dx,dy)||1;let nx=-dy/len,ny=dx/len;(_rmCx-mx)*nx+(_rmCy-my)*ny>0&&(nx=-nx,ny=-ny);const TICK=16,LBL=34;ctx.save(),ctx.strokeStyle="rgba(37,99,235,.55)",ctx.lineWidth=1.3,ctx.beginPath(),ctx.moveTo(pts[i].x,pts[i].y),ctx.lineTo(pts[i].x+nx*TICK,pts[i].y+ny*TICK),ctx.moveTo(pts[j].x,pts[j].y),ctx.lineTo(pts[j].x+nx*TICK,pts[j].y+ny*TICK),ctx.stroke(),ctx.beginPath(),ctx.moveTo(pts[i].x+nx*TICK,pts[i].y+ny*TICK),ctx.lineTo(pts[j].x+nx*TICK,pts[j].y+ny*TICK),ctx.stroke();const lx=mx+nx*LBL,ly=my+ny*LBL,dimText=_isArcSide(i)?"〜"+Math.round(_sideCurveLenCm(i))+" см":lengths[i]+" см";ctx.font="bold 15px Arial";const tw=ctx.measureText(dimText).width,padX=9,boxH=22,bx=lx-tw/2-padX,by=ly-boxH/2-2,bw=tw+2*padX,bh=boxH+4;ctx.beginPath(),ctx.roundRect?ctx.roundRect(bx,by,bw,bh,7):ctx.rect(bx,by,bw,bh),ctx.fillStyle="rgba(255,255,255,.97)",ctx.fill(),ctx.strokeStyle="rgba(37,99,235,.45)",ctx.lineWidth=1,ctx.stroke(),ctx.fillStyle="#1d4ed8",ctx.textAlign="center",ctx.textBaseline="middle",ctx.fillText(dimText,lx,ly+.5),ctx.restore()}}(_hideCanvasServiceLabels()?[]:_diagonalsForCurrentDraw()).forEach(d=>{const _confirmedKey=N(d[0])+N(d[1]);if(_reportMode&&!(Number(diagonalOverrides[_confirmedKey])>0))return;if(!pts[d[0]]||!pts[d[1]])return;const x1=pts[d[0]].x,y1=pts[d[0]].y,x2=pts[d[1]].x,y2=pts[d[1]].y,dx=x2-x1,dy=y2-y1,dist=Math.hypot(dx,dy)||1,nx=-dy/dist,ny=dx/dist,mx=(x1+x2)/2,my=(y1+y2)/2;function drawArrow(fromX,fromY,toX,toY){const ax=toX-fromX,ay=toY-fromY,al=Math.hypot(ax,ay)||1,bx=ax/al,by=ay/al;ctx.beginPath(),ctx.moveTo(toX,toY),ctx.lineTo(toX-11*bx-11*by*.5,toY-11*by+11*bx*.5),ctx.lineTo(toX-11*bx+11*by*.5,toY-11*by-11*bx*.5),ctx.closePath(),ctx.fillStyle="#dc2626",ctx.fill()}ctx.save(),ctx.strokeStyle="#dc2626",ctx.lineWidth=2.2,ctx.setLineDash([10,6]),ctx.beginPath(),ctx.moveTo(x1,y1),ctx.lineTo(x2,y2),ctx.stroke(),ctx.setLineDash([]),drawArrow(x2,y2,x1,y1),drawArrow(x1,y1,x2,y2),ctx.strokeStyle="#dc2626",ctx.lineWidth=2,[[x1,y1],[x2,y2]].forEach(([px,py])=>{ctx.beginPath(),ctx.moveTo(px+10*nx,py+10*ny),ctx.lineTo(px-10*nx,py-10*ny),ctx.stroke()});const overrideKey=N(d[0])+N(d[1]);let len=0;len=realPts.length&&realPts[d[0]]&&realPts[d[1]]?Math.hypot(realPts[d[1]].x-realPts[d[0]].x,realPts[d[1]].y-realPts[d[0]].y):dist;const _reportPair=_reportMode?_getReportDiagPairs({
   pts:pts,realPts:realPts,lengths:lengths,diagonals:[d],diagonalOverrides:diagonalOverrides
 },((typeof _loadRS==="function"?_loadRS():window.reportSettings||{}).diagMode||"manual")).find(function(p){return p.a===Math.min(d[0],d[1])&&p.b===Math.max(d[0],d[1]);}):null,displayLen=_reportPair&&_reportPair.value>0?_reportPair.value:(null!=diagonalOverrides[overrideKey]?diagonalOverrides[overrideKey]:len),cm=Math.round(displayLen),m=(displayLen/100).toFixed(2),label=`${N(d[0])}${N(d[1])}: ${cm} см`,label2=`(${m} м)`;ctx.font="bold 13px -apple-system,Arial";const w1=ctx.measureText(label).width;ctx.font="12px -apple-system,Arial";const w2=ctx.measureText(label2).width,badgeW=Math.max(w1,w2)+22,bx=mx+34*nx-badgeW/2,by=my+34*ny-19;ctx.shadowColor="rgba(0,0,0,0.18)",ctx.shadowBlur=8,ctx.shadowOffsetY=3,ctx.beginPath(),ctx.moveTo(bx+10,by),ctx.lineTo(bx+badgeW-10,by),ctx.quadraticCurveTo(bx+badgeW,by,bx+badgeW,by+10),ctx.lineTo(bx+badgeW,by+38-10),ctx.quadraticCurveTo(bx+badgeW,by+38,bx+badgeW-10,by+38),ctx.lineTo(bx+10,by+38),ctx.quadraticCurveTo(bx,by+38,bx,by+38-10),ctx.lineTo(bx,by+10),ctx.quadraticCurveTo(bx,by,bx+10,by),ctx.closePath();const grad=ctx.createLinearGradient(bx,by,bx,by+38);grad.addColorStop(0,"#fff1f1"),grad.addColorStop(1,"#ffe0e0"),ctx.fillStyle=grad,ctx.fill(),ctx.shadowColor="transparent",ctx.shadowBlur=0,ctx.shadowOffsetY=0,ctx.strokeStyle="#ef4444",ctx.lineWidth=1.5,ctx.stroke(),ctx.fillStyle="#991b1b",ctx.font="bold 13px -apple-system,Arial",ctx.textAlign="center",ctx.fillText(label,bx+badgeW/2,by+15),ctx.fillStyle="#b91c1c",ctx.font="12px -apple-system,Arial",ctx.fillText(label2,bx+badgeW/2,by+29),ctx.textAlign="left",ctx.restore()}),_hideCanvasServiceLabels()||(drawAutoControlDiagonals(ctx),drawConflictZoneHighlight(ctx),drawRecommendedDiagHighlight(ctx)),drawWallSideFlash(ctx),_hideCanvasServiceLabels()||(_reportMode&&_loadRS&&!1===_loadRS().showWallMarks||drawWallMarks(ctx),_reportMode&&_loadRS&&!1===_loadRS().showLights||(drawLightBindings(ctx),drawLightMarks(ctx))),_hideCanvasServiceLabels()||(ctx.save(),ctx.font="bold 22px Arial",ctx.textAlign="center",ctx.textBaseline="middle",pts.forEach((p,i)=>{const t=N(i),lx=p.x+14,ly=p.y-14,w=ctx.measureText(t).width+10;ctx.fillStyle="rgba(255,255,255,.96)",ctx.beginPath(),ctx.roundRect?ctx.roundRect(lx-w/2,ly-13,w,26,5):ctx.rect(lx-w/2,ly-13,w,26),ctx.fill(),ctx.fillStyle="#111827",ctx.fillText(t,lx,ly+.5)}),ctx.restore()),
-/* v7 complex room: one compact wall-size table, drawn natively in canvas screen space. */
+/* v9 complex room: compact wall-size table with geometry-aware placement. */
 (!_reportMode&&!_hideCanvasServiceLabels()&&closed&&pts.length>5&&(()=>{
   const rr=cv.getBoundingClientRect(),u=rr&&rr.width?cv.width/rr.width:1,sc=viewScale||1,ox=viewOffsetX||0,oy=viewOffsetY||0;
-  let minX=Infinity,maxX=-Infinity;
-  pts.forEach(p=>{const sx=p.x*sc+ox;minX=Math.min(minX,sx);maxX=Math.max(maxX,sx)});
-  const W=116*u,row=18*u,pad=8*u,title=20*u,H=pad+title+pts.length*row+pad;
-  const rightFree=cv.width-maxX,leftFree=minX;
-  let x=(rightFree>=leftFree)?cv.width-W-8*u:8*u,y=56*u;
-  y=Math.max(8*u,Math.min(y,cv.height-H-8*u));
+  const W=108*u,row=16*u,pad=7*u,title=19*u,H=pad+title+pts.length*row+pad,margin=7*u;
+  const sp=pts.map(p=>({x:p.x*sc+ox,y:p.y*sc+oy}));
+  const pointInPoly=(x,y)=>{let c=false;for(let i=0,j=sp.length-1;i<sp.length;j=i++){const a=sp[i],b=sp[j];if(((a.y>y)!=(b.y>y))&&(x<(b.x-a.x)*(y-a.y)/(b.y-a.y||1e-9)+a.x))c=!c}return c};
+  const segDist=(px,py,a,b)=>{const vx=b.x-a.x,vy=b.y-a.y,wx=px-a.x,wy=py-a.y,q=vx*vx+vy*vy;if(q<1e-9)return Math.hypot(px-a.x,py-a.y);const z=Math.max(0,Math.min(1,(wx*vx+wy*vy)/q));return Math.hypot(px-a.x-z*vx,py-a.y-z*vy)};
+  const rectPenalty=(x,y)=>{
+    if(x<margin||y<margin||x+W>cv.width-margin||y+H>cv.height-margin)return 1e9;
+    let score=0;
+    /* Heavy penalty when the box covers a vertex or wall. */
+    sp.forEach(p=>{if(p.x>x-10*u&&p.x<x+W+10*u&&p.y>y-10*u&&p.y<y+H+10*u)score+=5000});
+    for(let i=0;i<sp.length;i++){
+      const a=sp[i],b=sp[(i+1)%sp.length];
+      const samples=12;
+      for(let k=0;k<=samples;k++){const q=k/samples,px=a.x+(b.x-a.x)*q,py=a.y+(b.y-a.y)*q;if(px>x-6*u&&px<x+W+6*u&&py>y-6*u&&py<y+H+6*u)score+=700}
+    }
+    /* Prefer empty/non-room areas, but allow a genuine concavity/open pocket. */
+    const probes=[[.12,.12],[.5,.12],[.88,.12],[.12,.5],[.5,.5],[.88,.5],[.12,.88],[.5,.88],[.88,.88]];
+    probes.forEach(q=>{if(pointInPoly(x+W*q[0],y+H*q[1]))score+=110});
+    /* Keep away from geometry even if there is no literal overlap. */
+    const cx=x+W/2,cy=y+H/2;
+    for(let i=0;i<sp.length;i++){const d=segDist(cx,cy,sp[i],sp[(i+1)%sp.length]);if(d<55*u)score+=(55*u-d)*2}
+    return score;
+  };
+  let minX=Math.min(...sp.map(p=>p.x)),maxX=Math.max(...sp.map(p=>p.x)),minY=Math.min(...sp.map(p=>p.y)),maxY=Math.max(...sp.map(p=>p.y));
+  let candidates=[];
+  /* Edge candidates. */
+  [margin,cv.width-W-margin].forEach(x=>{
+    [margin,56*u,Math.max(margin,(cv.height-H)/2),Math.max(margin,cv.height-H-margin)].forEach(y=>candidates.push([x,y]));
+  });
+  /* Search the whole canvas on a coarse grid: this finds L/U-shaped empty pockets. */
+  const stepX=Math.max(28*u,W*.32),stepY=Math.max(24*u,row*2);
+  for(let y=margin;y<=cv.height-H-margin;y+=stepY)for(let x=margin;x<=cv.width-W-margin;x+=stepX)candidates.push([x,y]);
+  /* Explicit concavity-adjacent candidates. */
+  sp.forEach(p=>[[-W-12*u,-H/2],[12*u,-H/2],[-W/2,-H-12*u],[-W/2,12*u]].forEach(d=>candidates.push([p.x+d[0],p.y+d[1]])));
+  let best=[cv.width-W-margin,margin],bestScore=Infinity;
+  candidates.forEach(c=>{const x=Math.max(margin,Math.min(cv.width-W-margin,c[0])),y=Math.max(margin,Math.min(cv.height-H-margin,c[1])),q=rectPenalty(x,y);if(q<bestScore){bestScore=q;best=[x,y]}});
+  const x=best[0],y=best[1];
   ctx.save();ctx.setTransform(1,0,0,1,0,0);
-  ctx.shadowColor="rgba(15,23,42,.10)",ctx.shadowBlur=10*u,ctx.shadowOffsetY=3*u;
-  ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,W,H,10*u):ctx.rect(x,y,W,H);
-  ctx.fillStyle="rgba(255,255,255,.96)",ctx.fill();ctx.shadowColor="transparent";ctx.shadowBlur=0;
-  ctx.strokeStyle="rgba(37,99,235,.28)",ctx.lineWidth=1*u,ctx.stroke();
-  ctx.fillStyle="#2563eb",ctx.font=`800 ${11*u}px -apple-system,Arial`,ctx.textAlign="left",ctx.textBaseline="middle";
+  ctx.shadowColor="rgba(15,23,42,.09)",ctx.shadowBlur=8*u,ctx.shadowOffsetY=2*u;
+  ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,W,H,9*u):ctx.rect(x,y,W,H);
+  ctx.fillStyle="rgba(255,255,255,.965)",ctx.fill();ctx.shadowColor="transparent";ctx.shadowBlur=0;
+  ctx.strokeStyle="rgba(37,99,235,.25)",ctx.lineWidth=1*u,ctx.stroke();
+  ctx.fillStyle="#2563eb",ctx.font=`800 ${10.5*u}px -apple-system,Arial`,ctx.textAlign="left",ctx.textBaseline="middle";
   ctx.fillText("Розміри стін",x+pad,y+pad+title/2);
   for(let i=0;i<pts.length;i++){
-    const yy=y+pad+title+i*row+row/2, nm=N(i)+N((i+1)%pts.length), val=(_isArcSide(i)?"〜"+Math.round(_sideCurveLenCm(i)):Math.round(Number(lengths[i])||0))+" см";
-    if(i){ctx.strokeStyle="rgba(148,163,184,.16)",ctx.lineWidth=.7*u,ctx.beginPath(),ctx.moveTo(x+pad,yy-row/2),ctx.lineTo(x+W-pad,yy-row/2),ctx.stroke()}
-    ctx.fillStyle="#172554",ctx.font=`800 ${10.5*u}px -apple-system,Arial`,ctx.textAlign="left",ctx.fillText(nm,x+pad,yy);
-    ctx.fillStyle="#334155",ctx.font=`650 ${10.5*u}px -apple-system,Arial`,ctx.textAlign="right",ctx.fillText(val,x+W-pad,yy);
+    const yy=y+pad+title+i*row+row/2,nm=N(i)+N((i+1)%pts.length),val=(_isArcSide(i)?"〜"+Math.round(_sideCurveLenCm(i)):Math.round(Number(lengths[i])||0))+" см";
+    if(i){ctx.strokeStyle="rgba(148,163,184,.14)",ctx.lineWidth=.6*u,ctx.beginPath(),ctx.moveTo(x+pad,yy-row/2),ctx.lineTo(x+W-pad,yy-row/2),ctx.stroke()}
+    ctx.fillStyle="#172554",ctx.font=`800 ${10*u}px -apple-system,Arial`,ctx.textAlign="left",ctx.fillText(nm,x+pad,yy);
+    ctx.fillStyle="#334155",ctx.font=`650 ${10*u}px -apple-system,Arial`,ctx.textAlign="right",ctx.fillText(val,x+W-pad,yy);
   }
   ctx.restore();return true;
 })()),
