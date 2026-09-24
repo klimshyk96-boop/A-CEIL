@@ -1,269 +1,121 @@
 (function(){
-  "use strict";
-  if(window.__A_CEIL_SIDE_INPUT_STEPPER_V1)return;
-  window.__A_CEIL_SIDE_INPUT_STEPPER_V1=true;
+"use strict";
+if(window.__A_CEIL_SIDE_INPUT_STEPPER_V17)return;
+window.__A_CEIL_SIDE_INPUT_STEPPER_V17=true;
 
-  var activeIndex=0;
-  var draft=[];
-  var expanded=false;
-  var viewportBound=false;
-  var fullViewportHeight=0;
+var activeIndex=0,draft=[],mode="all",viewportBound=false,fullViewportHeight=0;
 
-  function sideName(index){
-    var next=(index+1)%pts.length;
-    return N(index)+N(next);
-  }
-  function numberValue(value){
-    var parsed=parseFloat(String(value==null?"":value).replace(",","."));
-    return isFinite(parsed)&&parsed>0?parsed:0;
-  }
-  function modal(){return document.querySelector("#sideInputModal>.modal");}
-  function input(){return document.getElementById("aceilSideActiveInput");}
+function sideName(i){return N(i)+N((i+1)%pts.length);}
+function num(v){var x=parseFloat(String(v==null?"":v).replace(",","."));return isFinite(x)&&x>0?x:0;}
+function overlay(){return document.getElementById("sideInputModal");}
+function sheet(){return document.querySelector("#sideInputModal>.modal");}
 
-  function updateVisualViewport(){
-    var overlay=document.getElementById("sideInputModal");
-    if(!overlay)return;
-    var viewport=window.visualViewport;
-    var viewportHeight=viewport?viewport.height:window.innerHeight;
-    var viewportTop=viewport?viewport.offsetTop:0;
-    var referenceHeight=Math.max(fullViewportHeight||0,window.innerHeight||0,viewportHeight||0);
-    var keyboardOpen=viewportHeight<referenceHeight*0.78;
-    overlay.classList.toggle("aceil-keyboard-open",keyboardOpen&&!overlay.classList.contains("aceil-all-sides-open"));
-    if(overlay.classList.contains("open")&&viewport){
-      overlay.style.top=Math.round(viewportTop)+"px";
-      overlay.style.height=Math.round(viewportHeight)+"px";
-      overlay.style.bottom="auto";
-    }else if(!overlay.classList.contains("open")){
-      overlay.style.top="";
-      overlay.style.height="";
-      overlay.style.bottom="";
-    }
+function highlight(i){
+  activeIndex=Math.max(0,Math.min(pts.length-1,i));
+  try{_wallSideFlash=activeIndex;draw();}catch(_){}
+  document.querySelectorAll("#aceilAllRowsV17 .aceil-v17-row").forEach(function(r,k){r.classList.toggle("active",k===activeIndex);});
+}
+function focusAll(i){
+  highlight(i);
+  var f=document.querySelector('#aceilAllRowsV17 [data-v17-i="'+activeIndex+'"]');
+  if(f){
+    try{f.focus({preventScroll:true});}catch(_){f.focus();}
+    try{f.select();}catch(_){}
+    f.closest(".aceil-v17-row")?.scrollIntoView({block:"nearest"});
   }
-  function bindVisualViewport(){
-    if(viewportBound)return;
-    viewportBound=true;
-    if(window.visualViewport){
-      window.visualViewport.addEventListener("resize",updateVisualViewport);
-      window.visualViewport.addEventListener("scroll",updateVisualViewport);
-    }
-    window.addEventListener("orientationchange",updateVisualViewport);
+}
+function commitAll(){
+  document.querySelectorAll("#aceilAllRowsV17 [data-v17-i]").forEach(function(f){
+    draft[+f.dataset.v17I]=num(f.value);
+  });
+}
+function apply(){
+  if(mode==="all")commitAll();else{
+    var f=document.getElementById("aceilSingleV17");
+    if(f)draft[activeIndex]=num(f.value);
   }
-
-  function commitCurrent(){
-    var overlay=document.getElementById("sideInputModal");
-    if(overlay&&overlay.classList.contains("aceil-all-sides-open"))return;
-    var field=input();
-    if(field)draft[activeIndex]=numberValue(field.value);
-  }
-  function drawHighlight(){
-    try{_wallSideFlash=activeIndex;draw();}catch(_){ }
-  }
-  function renderAllSides(){
-    var box=document.getElementById("aceilSideAll");
-    var toggle=document.getElementById("aceilSideAllToggle");
-    var overlay=document.getElementById("sideInputModal");
-    if(!box||!toggle)return;
-    toggle.textContent=expanded?"По одній стороні ▴":"Усі сторони ▾";
-    box.hidden=!expanded;
-    if(overlay)overlay.classList.toggle("aceil-all-sides-open",expanded);
-    if(!expanded)return;
-
-    box.innerHTML=draft.map(function(value,index){
-      return '<div class="aceil-side-all-row'+(index===activeIndex?' active':'')+'" data-side-row="'+index+'">\
-        <button type="button" class="aceil-side-all-name" data-side-focus="'+index+'">'+sideName(index)+'</button>\
-        <div class="aceil-side-all-value"><input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" autocomplete="off" enterkeyhint="'+(index===pts.length-1?'done':'next')+'" data-side-all-input="'+index+'" value="'+(value||"")+'" placeholder="0"><span>см</span></div>\
-        <span class="aceil-side-all-check">'+(value?'✓':'')+'</span>\
-      </div>';
-    }).join("");
-
-    function activateAll(index,focusIt){
-      commitCurrent();
-      activeIndex=Math.max(0,Math.min(pts.length-1,index));
-      box.querySelectorAll("[data-side-row]").forEach(function(row,i){row.classList.toggle("active",i===activeIndex);});
-      var progress=document.getElementById("aceilSideProgress");
-      if(progress)progress.textContent=(activeIndex+1)+"/"+pts.length;
-      drawHighlight();
-      if(focusIt){
-        var target=box.querySelector('[data-side-all-input="'+activeIndex+'"]');
-        if(target){
-          try{target.focus({preventScroll:true});}catch(_){target.focus();}
-          try{target.select();}catch(_){}
-          target.closest("[data-side-row]")?.scrollIntoView({block:"nearest"});
-        }
-      }
-    }
-
-    box.querySelectorAll("[data-side-focus]").forEach(function(button){
-      button.addEventListener("click",function(){activateAll(Number(button.dataset.sideFocus)||0,true);});
-    });
-    box.querySelectorAll("[data-side-all-input]").forEach(function(field){
-      var index=Number(field.dataset.sideAllInput)||0;
-      field.addEventListener("focus",function(){activateAll(index,false);});
-      field.addEventListener("input",function(){
-        draft[index]=numberValue(field.value);
-        var check=field.closest("[data-side-row]").querySelector(".aceil-side-all-check");
-        if(check)check.textContent=draft[index]?"✓":"";
-      });
-      field.addEventListener("keydown",function(event){
-        if(event.key!=="Enter")return;
-        event.preventDefault();
-        draft[index]=numberValue(field.value);
-        if(index<pts.length-1)activateAll(index+1,true);
-        else applyStepper();
-      });
-    });
-  }
-  function renderCurrent(keepKeyboard){
-    var field=input();
-    var label=document.getElementById("aceilSideLabel");
-    var progress=document.getElementById("aceilSideProgress");
-    var previous=document.getElementById("aceilSidePrevious");
-    var next=document.getElementById("aceilSideNext");
-    var arc=document.querySelector("#sideInputModal .aceil-side-arc");
-    var editor=document.querySelector("#sideInputModal .aceil-side-arc-editor");
-    if(label)label.textContent=sideName(activeIndex);
-    if(progress)progress.textContent=(activeIndex+1)+"/"+pts.length;
-    if(field){
-      field.dataset.i=String(activeIndex);
-      field.value=draft[activeIndex]||"";
-      field.placeholder="см";
-    }
-    if(previous)previous.disabled=activeIndex===0;
-    if(next)next.disabled=activeIndex===pts.length-1;
-    if(arc){
-      arc.id="sideArcBtn_"+activeIndex;
-      arc.classList.toggle("active",wallTypes[activeIndex]==="arc");
-      arc.setAttribute("aria-label",wallTypes[activeIndex]==="arc"?"Вимкнути дугу":"Зробити дугою");
-      arc.title=wallTypes[activeIndex]==="arc"?"Дуга":"Пряма стіна";
-    }
-    if(editor){
-      editor.id="sideArcEditor_"+activeIndex;
-      editor.style.display=wallTypes[activeIndex]==="arc"?"block":"none";
-      editor.innerHTML=wallTypes[activeIndex]==="arc"?renderArcPointsEditor(activeIndex):"";
-    }
-    renderAllSides();
-    drawHighlight();
-    if(keepKeyboard&&field){
-      try{field.focus({preventScroll:true});}catch(_){field.focus();}
-      try{field.select();}catch(_){ }
-    }
-  }
-  function move(step){
-    commitCurrent();
-    var target=Math.max(0,Math.min(pts.length-1,activeIndex+step));
-    if(target===activeIndex)return;
-    activeIndex=target;
-    renderCurrent(true);
-  }
-  function toggleArc(){
-    commitCurrent();
-    toggleSideArcType(activeIndex);
-    renderCurrent(true);
-  }
-  function toggleAll(){
-    commitCurrent();
-    expanded=!expanded;
-    renderAllSides();
-    if(expanded){
-      var first=document.querySelector('[data-side-all-input="'+activeIndex+'"]');
-      if(first){try{first.focus({preventScroll:true});first.select();}catch(_){first.focus();}}
-    }else{
-      renderCurrent(true);
-    }
-  }
-  function closeStepper(){
-    var overlay=document.getElementById("sideInputModal");
-    if(overlay)overlay.classList.remove("aceil-all-sides-open");
-    try{_wallSideFlash=-1;draw();}catch(_){ }
-    closeModal("sideInputModal");
-    updateVisualViewport();
-  }
-  function applyStepper(){
-    commitCurrent();
-    lengths=draft.map(function(value){return numberValue(value);});
-    document.querySelectorAll("#tbl input[data-i]").forEach(function(field){
-      var index=Number(field.dataset.i)||0;
-      if(lengths[index]){
-        field.value=lengths[index];
-        field.classList.add("filled");
-      }
-    });
-    var perimeter=_totalPerimeterCm();
-    var per=document.getElementById("per");
-    if(per)per.textContent=(perimeter/100).toFixed(2);
-    try{_wallSideFlash=-1;}catch(_){ }
-    var overlay=document.getElementById("sideInputModal");
-    if(overlay)overlay.classList.remove("aceil-all-sides-open");
-    closeModal("sideInputModal");
-    rebuild();
-    saveState();
-    setTimeout(function(){
-      try{
-        if(window.A·CEILMeasureConfidence&&typeof window.A·CEILMeasureConfidence.notify==="function")window.A·CEILMeasureConfidence.notify(true);
-      }catch(_){ }
-    },250);
-  }
-  function buildMarkup(){
-    var sheet=modal();
-    if(!sheet)return false;
-    sheet.classList.add("aceil-side-stepper");
-    sheet.innerHTML='\
-      <div class="aceil-side-head">\
-        <h3>📋 Розміри</h3>\
-        <span id="aceilSideProgress" class="aceil-side-progress"></span>\
-        <button type="button" class="aceil-side-close" aria-label="Закрити">×</button>\
-      </div>\
-      <div class="aceil-side-current">\
-        <button type="button" id="aceilSidePrevious" class="aceil-side-nav" aria-label="Попередня сторона">‹</button>\
-        <strong id="aceilSideLabel" class="aceil-side-label"></strong>\
-        <div class="aceil-side-value"><input id="aceilSideActiveInput" type="text" inputmode="decimal" enterkeyhint="next" pattern="[0-9]*[.,]?[0-9]*" autocomplete="off"><span>см</span></div>\
-        <button type="button" id="sideArcBtn_0" class="aceil-side-arc" aria-label="Зробити дугою">〰</button>\
-        <button type="button" id="aceilSideNext" class="aceil-side-nav" aria-label="Наступна сторона">›</button>\
-      </div>\
-      <div id="aceilSideArcEditor" class="aceil-side-arc-editor"></div>\
-      <div id="aceilSideAll" class="aceil-side-all" hidden></div>\
-      <div class="aceil-side-actions">\
-        <button type="button" id="aceilSideAllToggle" class="aceil-side-all-toggle">Усі сторони ▾</button>\
-        <button type="button" id="aceilSideApply" class="aceil-side-apply">Побудувати</button>\
-      </div>';
-    sheet.querySelector(".aceil-side-close").addEventListener("click",closeStepper);
-    document.getElementById("aceilSidePrevious").addEventListener("click",function(){move(-1);});
-    document.getElementById("aceilSideNext").addEventListener("click",function(){move(1);});
-    document.getElementById("sideArcBtn_0").addEventListener("click",toggleArc);
-    document.getElementById("aceilSideAllToggle").addEventListener("click",toggleAll);
-    document.getElementById("aceilSideApply").addEventListener("click",applyStepper);
-    var field=input();
-    field.addEventListener("input",function(){draft[activeIndex]=numberValue(field.value);});
-    field.addEventListener("change",commitCurrent);
-    field.addEventListener("blur",commitCurrent);
-    field.addEventListener("keydown",function(event){
-      if(event.key!=="Enter")return;
-      event.preventDefault();
-      if(activeIndex<pts.length-1)move(1);else applyStepper();
-    });
-    return true;
-  }
-
-  function openStepper(){
-    if(!closed||pts.length<3){showToast("Спочатку замкніть контур");return;}
-    activeIndex=0;
-    expanded=false;
-    document.getElementById("sideInputModal")?.classList.remove("aceil-all-sides-open");
-    draft=lengths.map(function(value){return numberValue(value);});
-    if(!buildMarkup())return;
-    fullViewportHeight=window.visualViewport?window.visualViewport.height:window.innerHeight;
-    document.getElementById("sideInputModal").classList.add("open");
-    bindVisualViewport();
-    updateVisualViewport();
-    renderCurrent(false);
-    setTimeout(function(){
-      var field=input();
-      if(field){field.focus();try{field.select();}catch(_){ }}
-      updateVisualViewport();
-    },80);
-  }
-
-  window.openSideInputModal=openStepper;
-  window.applySideInputs=applyStepper;
-  try{openSideInputModal=openStepper;applySideInputs=applyStepper;}catch(_){ }
+  lengths=draft.map(num);
+  document.querySelectorAll("#tbl input[data-i]").forEach(function(f){
+    var i=+f.dataset.i||0;
+    f.value=lengths[i]||"";
+    f.classList.toggle("filled",!!lengths[i]);
+  });
+  var p=document.getElementById("per");if(p)p.textContent=(_totalPerimeterCm()/100).toFixed(2);
+  try{_wallSideFlash=-1;}catch(_){}
+  closeModal("sideInputModal");rebuild();saveState();
+}
+function close(){
+  try{_wallSideFlash=-1;draw();}catch(_){}
+  closeModal("sideInputModal");
+}
+function renderAll(){
+  mode="all";
+  overlay().classList.add("aceil-v17-all");
+  var rows=draft.map(function(v,i){
+    return '<div class="aceil-v17-row'+(i===activeIndex?' active':'')+'">'+
+      '<button type="button" data-v17-label="'+i+'">'+sideName(i)+'</button>'+
+      '<div><input data-v17-i="'+i+'" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" autocomplete="off" enterkeyhint="'+(i===pts.length-1?'done':'next')+'" value="'+(v||"")+'" placeholder="0"><span>см</span></div>'+
+      '<b>'+(v?'✓':'')+'</b></div>';
+  }).join("");
+  sheet().innerHTML=
+    '<div class="aceil-v17-head"><h3>📋 Розміри</h3><button type="button" id="aceilCloseV17">×</button></div>'+
+    '<div class="aceil-v17-note">Всі сторони одночасно · активна стіна червона</div>'+
+    '<div id="aceilAllRowsV17" class="aceil-v17-rows">'+rows+'</div>'+
+    '<div class="aceil-v17-actions"><button type="button" id="aceilSingleModeV17">По одній стороні</button><button type="button" id="aceilApplyV17">Побудувати</button></div>';
+  document.getElementById("aceilCloseV17").onclick=close;
+  document.getElementById("aceilApplyV17").onclick=apply;
+  document.getElementById("aceilSingleModeV17").onclick=function(){commitAll();renderSingle();};
+  document.querySelectorAll("[data-v17-label]").forEach(function(b){b.onclick=function(){focusAll(+b.dataset.v17Label);};});
+  document.querySelectorAll("[data-v17-i]").forEach(function(f){
+    var i=+f.dataset.v17I;
+    f.onfocus=function(){highlight(i);};
+    f.oninput=function(){draft[i]=num(f.value);var b=f.closest(".aceil-v17-row").querySelector("b");b.textContent=draft[i]?"✓":"";};
+    f.onkeydown=function(e){
+      if(e.key!=="Enter")return;
+      e.preventDefault();draft[i]=num(f.value);
+      if(i<pts.length-1)focusAll(i+1);else apply();
+    };
+  });
+  setTimeout(function(){focusAll(activeIndex);},60);
+}
+function renderSingle(){
+  mode="single";
+  overlay().classList.remove("aceil-v17-all");
+  var i=activeIndex;
+  sheet().innerHTML=
+    '<div class="aceil-v17-head"><h3>📋 Розміри</h3><span>'+(i+1)+'/'+pts.length+'</span><button type="button" id="aceilCloseV17">×</button></div>'+
+    '<div class="aceil-v17-single"><button id="aceilPrevV17">‹</button><strong>'+sideName(i)+'</strong><div><input id="aceilSingleV17" type="text" inputmode="decimal" enterkeyhint="next" value="'+(draft[i]||"")+'" placeholder="0"><span>см</span></div><button id="aceilNextV17">›</button></div>'+
+    '<div class="aceil-v17-actions"><button type="button" id="aceilAllModeV17">Усі сторони</button><button type="button" id="aceilApplyV17">Побудувати</button></div>';
+  highlight(i);
+  document.getElementById("aceilCloseV17").onclick=close;
+  document.getElementById("aceilApplyV17").onclick=apply;
+  document.getElementById("aceilAllModeV17").onclick=function(){var f=document.getElementById("aceilSingleV17");draft[activeIndex]=num(f.value);renderAll();};
+  document.getElementById("aceilPrevV17").onclick=function(){var f=document.getElementById("aceilSingleV17");draft[activeIndex]=num(f.value);if(activeIndex>0){activeIndex--;renderSingle();}};
+  document.getElementById("aceilNextV17").onclick=function(){var f=document.getElementById("aceilSingleV17");draft[activeIndex]=num(f.value);if(activeIndex<pts.length-1){activeIndex++;renderSingle();}};
+  var f=document.getElementById("aceilSingleV17");
+  f.oninput=function(){draft[activeIndex]=num(f.value);};
+  f.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();draft[activeIndex]=num(f.value);if(activeIndex<pts.length-1){activeIndex++;renderSingle();}else apply();}};
+  setTimeout(function(){try{f.focus({preventScroll:true});f.select();}catch(_){f.focus();}},60);
+}
+function updateViewport(){
+  var o=overlay();if(!o)return;
+  var vv=window.visualViewport,h=vv?vv.height:innerHeight,top=vv?vv.offsetTop:0;
+  if(o.classList.contains("open")&&vv){o.style.top=Math.round(top)+"px";o.style.height=Math.round(h)+"px";o.style.bottom="auto";}
+  else if(!o.classList.contains("open")){o.style.top="";o.style.height="";o.style.bottom="";}
+}
+function bindViewport(){
+  if(viewportBound)return;viewportBound=true;
+  if(window.visualViewport){visualViewport.addEventListener("resize",updateViewport);visualViewport.addEventListener("scroll",updateViewport);}
+}
+function open(){
+  if(!closed||pts.length<3){showToast("Спочатку замкніть контур");return;}
+  activeIndex=0;mode="all";draft=lengths.map(num);
+  var s=sheet();if(!s)return;
+  s.className="modal aceil-v17-sheet";
+  overlay().classList.add("open","aceil-v17-all");
+  bindViewport();updateViewport();renderAll();
+}
+window.openSideInputModal=open;
+window.applySideInputs=apply;
+try{openSideInputModal=open;applySideInputs=apply;}catch(_){}
 })();
