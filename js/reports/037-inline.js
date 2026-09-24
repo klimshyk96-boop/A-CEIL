@@ -322,15 +322,15 @@ async function alphaSingle(rs){
   const showTech=!isClient(rs),showPrice=!isInstaller(rs)||isFull(rs),showTable=(showPrice||showTech)&&!1!==rs.nomenclature;
   const titles=reportSectionTitles({dimensions:!1!==rs.dimensionsList,showTech:showTech,ceilings:ceilingLines.length,exhausts:exhaustLines.length,cornices:cornices.length,diags:showTech&&diagLines.length,legend:!0===rs.showLegend,table:showTable});
   const tableH=64+62*Math.max(1,_modernCountRows(groups))+140,corniceH=corniceLines.length?74+38*corniceLines.length:0;
-  const H=Math.max(1560,812+Math.max(190+(allDimLines.length?56+42*allDimLines.length:0)+(lightLines.length?56+52*lightLines.length:98)+(ceilingLines.length?56+42*ceilingLines.length:0)+(exhaustLines.length?56+42*exhaustLines.length:0)+corniceH+(showTech&&diagLines.length?56+42*diagLines.length:0),240+(wallLines.length?56+78*wallLines.length:98)+tableH)+190);
+  const H=Math.max(1760,1012+Math.max(190+(allDimLines.length?56+42*allDimLines.length:0)+(lightLines.length?56+52*lightLines.length:98)+(ceilingLines.length?56+42*ceilingLines.length:0)+(exhaustLines.length?56+42*exhaustLines.length:0)+corniceH+(showTech&&diagLines.length?56+42*diagLines.length:0),240+(wallLines.length?56+78*wallLines.length:98)+tableH)+190);
   const _hd=rmReportCreateHQCanvas(W,H),out=_hd.out,c=_hd.c;c.fillStyle="#f8fafc";c.fillRect(0,0,W,H);header(c,W,28,rs,_currentProjName||"Звіт заміру",_currentProjComment||"");
   let y=126;
-  const planY=y;await plan(c,28,planY,640,590,!1!==rs.drawing?_modernCaptureCurrentDrawing(rs):null,titles.plan);
-  let ry=planY;const infoRows=!1!==rs.area?[["Площа полотна",st.area+" м²"],["Периметр",st.per+" м"]]:[];const _od2=_overallDims(st,rs);_od2&&infoRows.push(["Габаритні розміри",_od2]);
+  const planY=y;await plan(c,28,planY,1024,700,!1!==rs.drawing?_modernCaptureCurrentDrawing(rs):null,titles.plan);
+  let ry=planY+718;const infoRows=!1!==rs.area?[["Площа полотна",st.area+" м²"],["Периметр",st.per+" м"]]:[];const _od2=_overallDims(st,rs);_od2&&infoRows.push(["Габаритні розміри",_od2]);
   ry+=info(c,686,ry,366,infoRows,titles.info)+18;
   ry+=lines(c,686,ry,366,titles.placement,wallLines,"Елементи не задані")+18;
   if(!0===rs.showLegend)ry+=legend(c,686,ry,366,Array.isArray(lightMarks)?lightMarks:[],cornices,titles.legend,Array.isArray(wallMarks)?wallMarks:[],Array.isArray(wallTypes)?wallTypes:[],Array.isArray(linearElements)?linearElements:[])+18;
-  let ly=planY+590+18;
+  let ly=planY+718;
   if(!1!==rs.dimensionsList)ly+=wallDimensionsList(c,28,ly,640,allDimLines,"Розміри не задані",titles.dimensions)+18;
   ly+=lines(c,28,ly,640,titles.light,lightLines,"Світло не задано")+18;
   if(ceilingLines.length)ly+=lines(c,28,ly,640,titles.ceilings,ceilingLines,"")+18;
@@ -351,14 +351,14 @@ async function alphaObject(obj,rs){
     const exhausts=!0===rs.showLightCoords&&st&&st.lightMarks&&st.lightMarks.length&&"function"==typeof getExhaustCoordLines?getExhaustCoordLines(st):[];
     const walls=st&&st.wallMarks&&st.wallMarks.length?getWallCoordLines(st):[],diags=!0===rs.diagonals&&st?_getReportDiagLines(st,rs.diagMode||"manual"):[],cornices=reportCornices(st),corniceLines=reportCorniceLines(cornices,st&&Array.isArray(st.pts)?st.pts.length:st&&Array.isArray(st.points)?st.points.length:0);
     data.push({r:r,st:st,groups:groups,total:total,dimensions:dimensions,lights:lights,ceilings:ceilings,exhausts:exhausts,walls:walls,diags:diags,cornices:cornices,corniceLines:corniceLines});
-    H+=662+Math.max(160+(dimensions.length?56+42*dimensions.length:0)+(lights.length?56+42*lights.length:98)+(ceilings.length?56+42*ceilings.length:0)+(exhausts.length?56+42*exhausts.length:0)+(corniceLines.length?74+38*corniceLines.length:0)+(showTech&&diags.length?56+42*diags.length:0),240+(walls.length?56+42*walls.length:98)+(64+62*Math.max(1,_modernCountRows(groups))+140))+44;
+    H+=790+Math.max(160+(dimensions.length?56+42*dimensions.length:0)+(lights.length?56+42*lights.length:98)+(ceilings.length?56+42*ceilings.length:0)+(exhausts.length?56+42*exhausts.length:0)+(corniceLines.length?74+38*corniceLines.length:0)+(showTech&&diags.length?56+42*diags.length:0),240+(walls.length?56+42*walls.length:98)+(64+62*Math.max(1,_modernCountRows(groups))+140))+44;
   }
   H+=180;H=Math.max(H,1850);const _hd=rmReportCreateHQCanvas(W,H),out=_hd.out,c=_hd.c;c.fillStyle="#f8fafc";c.fillRect(0,0,W,H);header(c,W,28,rs,obj.name||"Звіт обʼєкта",obj.addr||"");let y=126;
   for(const rd of data){
     const showTable=(showPrice||showTech)&&!1!==rs.nomenclature,titles=reportSectionTitles({dimensions:!1!==rs.dimensionsList,showTech:showTech,ceilings:rd.ceilings.length,exhausts:rd.exhausts.length,cornices:rd.cornices.length,diags:showTech&&rd.diags.length,legend:!0===rs.showLegend,table:showTable});
-    c.fillStyle="#0f172a";c.font="bold 26px Arial";c.fillText(rd.r.name||"Кімната",28,y+32);y+=54;const planY=y,planH=590,rx=686;
-    await plan(c,28,planY,640,planH,!1!==rs.drawing?_renderRoomForReport(rd.r,rs):null,titles.plan);
-    let ry=planY;const rows=!1!==rs.area?[["Площа полотна",(rd.r.area||"—")+" м²"],["Периметр",(rd.r.per||"—")+" м"]]:[];const _od=_overallDims(rd.st,rs);_od&&rows.push(["Габаритні розміри",_od]);
+    c.fillStyle="#0f172a";c.font="bold 26px Arial";c.fillText(rd.r.name||"Кімната",28,y+32);y+=54;const planY=y,planH=700,rx=686;
+    await plan(c,28,planY,1024,planH,!1!==rs.drawing?_renderRoomForReport(rd.r,rs):null,titles.plan);
+    let ry=planY+planH+18;const rows=!1!==rs.area?[["Площа полотна",(rd.r.area||"—")+" м²"],["Периметр",(rd.r.per||"—")+" м"]]:[];const _od=_overallDims(rd.st,rs);_od&&rows.push(["Габаритні розміри",_od]);
     ry+=info(c,rx,ry,366,rows,titles.info)+18;ry+=lines(c,rx,ry,366,titles.placement,rd.walls,"Елементи не задані")+18;
     if(!0===rs.showLegend)ry+=legend(c,rx,ry,366,rd.st&&rd.st.lightMarks||[],rd.cornices,titles.legend,rd.st&&rd.st.wallMarks||[],rd.st&&rd.st.wallTypes||[],rd.st&&rd.st.linearElements||[])+18;
     let ly=planY+planH+18;if(!1!==rs.dimensionsList)ly+=wallDimensionsList(c,28,ly,640,rd.dimensions,"Розміри не задані",titles.dimensions)+18;
