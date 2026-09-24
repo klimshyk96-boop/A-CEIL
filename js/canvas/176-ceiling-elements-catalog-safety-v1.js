@@ -8,8 +8,8 @@ var READY=[
   {id:"vent",label:"Витяжка",icon:"◯",svgId:"vent_round",system:true,locked:false},
   {id:"ce_magnetic_exhaust",label:"Магнітна витяжка",icon:"◉",svgId:"vent_grille",ceilingElement:true},
   {id:"ce_camera_sensor",label:"Датчик/камера",icon:"◌",svgId:"camera",ceilingElement:true},
-  {id:"ce_pipe_bypass_lt50",label:"Обхід труби < 50 мм",icon:"◆",svgId:"niche",ceilingElement:true},
-  {id:"ce_pipe_bypass_gt50",label:"Обхід труби > 50 мм",icon:"◆",svgId:"niche",ceilingElement:true}
+  {id:"ce_pipe_bypass_lt50",label:"Обхід труби <50",icon:"◆",svgId:"niche",ceilingElement:true},
+  {id:"ce_pipe_bypass_gt50",label:"Обхід труби >50 мм",icon:"◆",svgId:"niche",ceilingElement:true}
 ];
 
 function read(){
@@ -38,12 +38,6 @@ function merge(){
 var startupSnapshot=read();
 function repair(){
   var next=merge(READY,startupSnapshot,read(),current());
-  next.forEach(function(t){
-    if(!t)return;
-    var id=String(t.id||""),lab=String(t.label||"");
-    if(id==="ce_pipe_bypass_lt50" && (!lab || /^ce_pipe_bypass_lt50$/i.test(lab) || /^Обхід труби\s*<\s*50(?:\s*мм)?$/i.test(lab))) t.label="Обхід труби < 50 мм";
-    if(id==="ce_pipe_bypass_gt50" && (!lab || /^ce_pipe_bypass_gt50$/i.test(lab) || /^Обхід труби\s*>\s*50(?:\s*мм)?$/i.test(lab))) t.label="Обхід труби > 50 мм";
-  });
   if(!next.length)return;
   try{localStorage.setItem(KEY,JSON.stringify(next))}catch(_){/* noop */}
   try{window.lightTypes=next;lightTypes=next}catch(_){window.lightTypes=next}
