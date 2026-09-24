@@ -28,7 +28,7 @@
     var viewportTop=viewport?viewport.offsetTop:0;
     var referenceHeight=Math.max(fullViewportHeight||0,window.innerHeight||0,viewportHeight||0);
     var keyboardOpen=viewportHeight<referenceHeight*0.78;
-    overlay.classList.toggle("aceil-keyboard-open",keyboardOpen);
+    overlay.classList.toggle("aceil-keyboard-open",keyboardOpen&&!overlay.classList.contains("aceil-all-sides-open"));
     if(overlay.classList.contains("open")&&viewport){
       overlay.style.top=Math.round(viewportTop)+"px";
       overlay.style.height=Math.round(viewportHeight)+"px";
@@ -50,6 +50,8 @@
   }
 
   function commitCurrent(){
+    var overlay=document.getElementById("sideInputModal");
+    if(overlay&&overlay.classList.contains("aceil-all-sides-open"))return;
     var field=input();
     if(field)draft[activeIndex]=numberValue(field.value);
   }
@@ -59,19 +61,55 @@
   function renderAllSides(){
     var box=document.getElementById("aceilSideAll");
     var toggle=document.getElementById("aceilSideAllToggle");
+    var overlay=document.getElementById("sideInputModal");
     if(!box||!toggle)return;
-    toggle.textContent=expanded?"Сховати сторони ▴":"Усі сторони ▾";
+    toggle.textContent=expanded?"По одній стороні ▴":"Усі сторони ▾";
     box.hidden=!expanded;
+    if(overlay)overlay.classList.toggle("aceil-all-sides-open",expanded);
     if(!expanded)return;
+
     box.innerHTML=draft.map(function(value,index){
-      return '<button type="button" class="aceil-side-chip'+(index===activeIndex?' active':'')+'" data-side-index="'+index+'"><b>'+sideName(index)+'</b><span>'+(value||"—")+'</span></button>';
+      return '<div class="aceil-side-all-row'+(index===activeIndex?' active':'')+'" data-side-row="'+index+'">\
+        <button type="button" class="aceil-side-all-name" data-side-focus="'+index+'">'+sideName(index)+'</button>\
+        <div class="aceil-side-all-value"><input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" autocomplete="off" enterkeyhint="'+(index===pts.length-1?'done':'next')+'" data-side-all-input="'+index+'" value="'+(value||"")+'" placeholder="0"><span>см</span></div>\
+        <span class="aceil-side-all-check">'+(value?'✓':'')+'</span>\
+      </div>';
     }).join("");
-    box.querySelectorAll("[data-side-index]").forEach(function(button){
-      button.addEventListener("click",function(){
-        commitCurrent();
-        activeIndex=Number(button.dataset.sideIndex)||0;
-        expanded=false;
-        renderCurrent(true);
+
+    function activateAll(index,focusIt){
+      commitCurrent();
+      activeIndex=Math.max(0,Math.min(pts.length-1,index));
+      box.querySelectorAll("[data-side-row]").forEach(function(row,i){row.classList.toggle("active",i===activeIndex);});
+      var progress=document.getElementById("aceilSideProgress");
+      if(progress)progress.textContent=(activeIndex+1)+"/"+pts.length;
+      drawHighlight();
+      if(focusIt){
+        var target=box.querySelector('[data-side-all-input="'+activeIndex+'"]');
+        if(target){
+          try{target.focus({preventScroll:true});}catch(_){target.focus();}
+          try{target.select();}catch(_){}
+          target.closest("[data-side-row]")?.scrollIntoView({block:"nearest"});
+        }
+      }
+    }
+
+    box.querySelectorAll("[data-side-focus]").forEach(function(button){
+      button.addEventListener("click",function(){activateAll(Number(button.dataset.sideFocus)||0,true);});
+    });
+    box.querySelectorAll("[data-side-all-input]").forEach(function(field){
+      var index=Number(field.dataset.sideAllInput)||0;
+      field.addEventListener("focus",function(){activateAll(index,false);});
+      field.addEventListener("input",function(){
+        draft[index]=numberValue(field.value);
+        var check=field.closest("[data-side-row]").querySelector(".aceil-side-all-check");
+        if(check)check.textContent=draft[index]?"✓":"";
+      });
+      field.addEventListener("keydown",function(event){
+        if(event.key!=="Enter")return;
+        event.preventDefault();
+        draft[index]=numberValue(field.value);
+        if(index<pts.length-1)activateAll(index+1,true);
+        else applyStepper();
       });
     });
   }
@@ -126,8 +164,16 @@
     commitCurrent();
     expanded=!expanded;
     renderAllSides();
+    if(expanded){
+      var first=document.querySelector('[data-side-all-input="'+activeIndex+'"]');
+      if(first){try{first.focus({preventScroll:true});first.select();}catch(_){first.focus();}}
+    }else{
+      renderCurrent(true);
+    }
   }
   function closeStepper(){
+    var overlay=document.getElementById("sideInputModal");
+    if(overlay)overlay.classList.remove("aceil-all-sides-open");
     try{_wallSideFlash=-1;draw();}catch(_){ }
     closeModal("sideInputModal");
     updateVisualViewport();
@@ -146,6 +192,8 @@
     var per=document.getElementById("per");
     if(per)per.textContent=(perimeter/100).toFixed(2);
     try{_wallSideFlash=-1;}catch(_){ }
+    var overlay=document.getElementById("sideInputModal");
+    if(overlay)overlay.classList.remove("aceil-all-sides-open");
     closeModal("sideInputModal");
     rebuild();
     saveState();
@@ -200,6 +248,7 @@
     if(!closed||pts.length<3){showToast("Спочатку замкніть контур");return;}
     activeIndex=0;
     expanded=false;
+    document.getElementById("sideInputModal")?.classList.remove("aceil-all-sides-open");
     draft=lengths.map(function(value){return numberValue(value);});
     if(!buildMarkup())return;
     fullViewportHeight=window.visualViewport?window.visualViewport.height:window.innerHeight;
