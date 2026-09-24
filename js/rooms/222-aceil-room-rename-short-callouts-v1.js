@@ -35,31 +35,61 @@ function enhanceRoomList(){
 }
 new MutationObserver(enhanceRoomList).observe(document.documentElement,{childList:true,subtree:true}); setTimeout(enhanceRoomList,400);
 
-/* Short wall dimensions: replace cramped labels with outside callouts.
-   Applies to normal canvas and report capture because both use draw(). */
-var threshold=90, proto=window.CanvasRenderingContext2D&&CanvasRenderingContext2D.prototype;
-if(!proto||proto.__aceilShortCallouts)return; proto.__aceilShortCallouts=true;
-var nativeFill=proto.fillText, suppress=false, shortValues={};
-proto.fillText=function(text,x,y,maxWidth){
-  if(suppress){var s=String(text||'').replace(/\s+/g,' ').trim(),m=s.match(/^(\d+(?:[.,]\d+)?)\s*см$/i);if(m&&shortValues[Math.round(parseFloat(m[1].replace(',','.')))])return;}
-  return arguments.length>3?nativeFill.call(this,text,x,y,maxWidth):nativeFill.call(this,text,x,y);
-};
-function label(i){var s='',n=i+1;while(n>0){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26);}return s;}
+/* Short wall dimensions v3.
+   Short sides use ONE clean outside callout instead of the standard badge.
+   Geometry follows canvas pan/zoom; typography/spacing are counter-scaled so labels stay readable. */
+var SHORT_CM=90;
 function getPts(){try{return Array.isArray(pts)?pts:[];}catch(e){return Array.isArray(window.pts)?window.pts:[];}}
 function getLens(){try{return Array.isArray(lengths)?lengths:[];}catch(e){return Array.isArray(window.lengths)?window.lengths:[];}}
-function ctx(){try{return cv&&cv.getContext?cv.getContext('2d'):null;}catch(e){var c=document.getElementById('cv');return c&&c.getContext?c.getContext('2d'):null;}}
-function callouts(){
-  var p=getPts(),ls=getLens(),c=ctx(); if(!c||p.length<2)return;
-  var isClosed=false;try{isClosed=!!closed;}catch(e){isClosed=!!window.closed;}
-  var count=isClosed?p.length:Math.max(0,p.length-1), cx=0,cy=0;p.forEach(function(q){cx+=Number(q.x)||0;cy+=Number(q.y)||0;});cx/=p.length;cy/=p.length;
-  var groups={};
-  for(var i=0;i<count;i++){var L=Math.round(Number(ls[i])||0);if(!(L>0&&L<=threshold))continue;var a=p[i],b=p[(i+1)%p.length],mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,nx=-dy/d,ny=dx/d;if((mx+nx*20-cx)*(mx-cx)+(my+ny*20-cy)*(my-cy)<0){nx=-nx;ny=-ny;}var key=Math.round(Math.atan2(dy,dx)*8/Math.PI);(groups[key]||(groups[key]=[])).push({i:i,L:L,mx:mx,my:my,nx:nx,ny:ny});}
-  Object.keys(groups).forEach(function(k){groups[k].sort(function(a,b){return a.my-b.my||a.mx-b.mx;});groups[k].forEach(function(o,j){
-    var off=30+j*24, ex=o.mx+o.nx*off,ey=o.my+o.ny*off, tx=ex+o.nx*16,ty=ey+o.ny*16, text=label(o.i)+label((o.i+1)%p.length)+' · '+o.L+' см';
-    c.save();c.strokeStyle='#64748b';c.fillStyle='rgba(255,255,255,.97)';c.lineWidth=1.2;c.setLineDash([]);c.beginPath();c.moveTo(o.mx,o.my);c.lineTo(ex,ey);c.lineTo(tx,ty);c.stroke();c.font='700 12px Arial';var w=c.measureText(text).width+14,h=24, bx=tx+(o.nx>=0?4:-w-4),by=ty-h/2;c.beginPath();if(c.roundRect)c.roundRect(bx,by,w,h,7);else c.rect(bx,by,w,h);c.fill();c.strokeStyle='#cbd5e1';c.stroke();c.fillStyle='#334155';c.textAlign='center';c.textBaseline='middle';nativeFill.call(c,text,bx+w/2,by+h/2);c.restore();
-  });});
+function isClosed(){try{return !!closed;}catch(e){return !!window.closed;}}
+function getCtx(){try{return cv&&cv.getContext?cv.getContext('2d'):null;}catch(e){var c=document.getElementById('cv');return c&&c.getContext?c.getContext('2d'):null;}}
+function alphaLabel(i){var s='',n=i+1;while(n>0){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26);}return s;}
+window.ACEILIsShortWall=function(i){var ls=getLens(),v=Math.round(Number(ls[i])||0);return v>0&&v<=SHORT_CM;};
+function rounded(c,x,y,w,h,r){c.beginPath();if(c.roundRect)c.roundRect(x,y,w,h,r);else c.rect(x,y,w,h);}
+function drawShortCallouts(){
+  var p=getPts(),ls=getLens(),c=getCtx(); if(!c||p.length<2)return;
+  var count=isClosed()?p.length:Math.max(0,p.length-1),cx=0,cy=0;
+  p.forEach(function(q){cx+=Number(q.x)||0;cy+=Number(q.y)||0;});cx/=p.length;cy/=p.length;
+  var sc=1,ox=0,oy=0;try{sc=Math.max(.5,Number(viewScale)||1);ox=Number(viewOffsetX)||0;oy=Number(viewOffsetY)||0;}catch(e){sc=Math.max(.5,Number(window.viewScale)||1);}
+  var inv=1/sc, items=[];
+  for(var i=0;i<count;i++){
+    var L=Math.round(Number(ls[i])||0); if(!(L>0&&L<=SHORT_CM))continue;
+    var a=p[i],b=p[(i+1)%p.length],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    var nx=-dy/d,ny=dx/d; if((cx-mx)*nx+(cy-my)*ny>0){nx=-nx;ny=-ny;}
+    items.push({i:i,L:L,mx:mx,my:my,nx:nx,ny:ny,angle:Math.atan2(dy,dx)});
+  }
+  /* Neighbours on the same outside edge are staggered, but never into the room. */
+  items.sort(function(a,b){return a.my-b.my||a.mx-b.mx;});
+  items.forEach(function(o,idx){
+    var neighbours=items.filter(function(q){return Math.abs(q.angle-o.angle)<.35&&Math.hypot(q.mx-o.mx,q.my-o.my)<180*inv;});
+    var rank=Math.max(0,neighbours.indexOf(o));
+    var lead=(34+rank*28)*inv, elbow=12*inv, gap=7*inv;
+    var ex=o.mx+o.nx*lead,ey=o.my+o.ny*lead;
+    /* short tangential elbow makes ownership of the callout obvious */
+    var tx=-o.ny,ty=o.nx, side=(o.nx<-.25||Math.abs(o.nx)<.25&&o.ny<0)?-1:1;
+    var ax=ex+tx*elbow*side, ay=ey+ty*elbow*side;
+    var text=alphaLabel(o.i)+alphaLabel((o.i+1)%p.length)+' · '+o.L+' см';
+    c.save();
+    c.lineWidth=1.15*inv;c.strokeStyle='#94a3b8';c.setLineDash([]);c.lineCap='round';c.lineJoin='round';
+    c.beginPath();c.moveTo(o.mx,o.my);c.lineTo(ex,ey);c.lineTo(ax,ay);c.stroke();
+    c.font='700 '+(11.5*inv)+'px -apple-system,BlinkMacSystemFont,Arial';
+    var w=c.measureText(text).width+14*inv,h=22*inv;
+    var bx=ax+(side>0?gap:-w-gap),by=ay-h/2;
+    rounded(c,bx,by,w,h,6*inv);c.fillStyle='rgba(255,255,255,.98)';c.fill();c.strokeStyle='#cbd5e1';c.lineWidth=.9*inv;c.stroke();
+    c.fillStyle='#475569';c.textAlign='center';c.textBaseline='middle';c.fillText(text,bx+w/2,by+h/2+.2*inv);
+    c.restore();
+  });
 }
-var oldDraw=window.draw;if(typeof oldDraw==='function'&&!oldDraw.__aceilShortCallouts){
-  var wrapped=function(){shortValues={};getLens().forEach(function(v){v=Math.round(Number(v)||0);if(v>0&&v<=threshold)shortValues[v]=1;});suppress=true;try{return oldDraw.apply(this,arguments);}finally{suppress=false;try{callouts();}catch(e){}}};wrapped.__aceilShortCallouts=true;window.draw=wrapped;try{draw=wrapped;}catch(e){}
+var oldDraw=window.draw;
+if(typeof oldDraw==='function'&&!oldDraw.__aceilShortCalloutsV3){
+  var wrapped=function(){
+    var r=oldDraw.apply(this,arguments);
+    try{
+      var c=getCtx(),sc=1,ox=0,oy=0;try{sc=Number(viewScale)||1;ox=Number(viewOffsetX)||0;oy=Number(viewOffsetY)||0;}catch(e){}
+      if(c){c.save();c.translate(ox,oy);c.scale(sc,sc);drawShortCallouts();c.restore();}
+    }catch(e){}
+    return r;
+  };
+  wrapped.__aceilShortCalloutsV3=true;window.draw=wrapped;try{draw=wrapped;}catch(e){}
 }
 })();
