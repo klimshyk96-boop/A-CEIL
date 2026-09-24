@@ -35,60 +35,66 @@ function enhanceRoomList(){
 }
 new MutationObserver(enhanceRoomList).observe(document.documentElement,{childList:true,subtree:true}); setTimeout(enhanceRoomList,400);
 
-/* Short wall dimensions v4.
-   Screen-space callouts: anchors follow the transformed drawing, while label size stays
-   constant on screen. This is intentionally drawn AFTER the canvas transform is restored. */
+/* Short wall dimensions v5.
+   Geometry decides the side: labels always go to the polygon exterior, so concave
+   notches naturally use the opposite side from the outside contour. All sizes below
+   are CSS pixels, converted to canvas backing pixels; zoom changes the anchor position,
+   not the readable label size. */
 var SHORT_CM=90;
 function getPts(){try{return Array.isArray(pts)?pts:[];}catch(e){return Array.isArray(window.pts)?window.pts:[];}}
 function getLens(){try{return Array.isArray(lengths)?lengths:[];}catch(e){return Array.isArray(window.lengths)?window.lengths:[];}}
 function isClosed(){try{return !!closed;}catch(e){return !!window.closed;}}
-function getCtx(){try{return cv&&cv.getContext?cv.getContext('2d'):null;}catch(e){var q=document.getElementById('cv');return q&&q.getContext?q.getContext('2d'):null;}}
+function getCanvas(){try{return cv&&cv.getContext?cv:document.getElementById('cv');}catch(e){return document.getElementById('cv');}}
+function getCtx(){var q=getCanvas();return q&&q.getContext?q.getContext('2d'):null;}
 function alphaLabel(i){var s='',n=i+1;while(n>0){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26);}return s;}
 window.ACEILIsShortWall=function(i){var ls=getLens(),v=Math.round(Number(ls[i])||0);return v>0&&v<=SHORT_CM;};
 function rr(c,x,y,w,h,r){c.beginPath();if(c.roundRect)c.roundRect(x,y,w,h,r);else c.rect(x,y,w,h);}
 function viewport(){var sc=1,ox=0,oy=0;try{sc=Number(viewScale)||1;ox=Number(viewOffsetX)||0;oy=Number(viewOffsetY)||0;}catch(e){sc=Number(window.viewScale)||1;ox=Number(window.viewOffsetX)||0;oy=Number(window.viewOffsetY)||0;}return{sc:sc,ox:ox,oy:oy};}
 function toScreen(q,v){return{x:q.x*v.sc+v.ox,y:q.y*v.sc+v.oy};}
+function signedArea(a){var z=0;for(var i=0;i<a.length;i++){var p=a[i],q=a[(i+1)%a.length];z+=p.x*q.y-q.x*p.y;}return z/2;}
+function overlap(a,b,pad){pad=pad||0;return !(a.x+a.w+pad<b.x||b.x+b.w+pad<a.x||a.y+a.h+pad<b.y||b.y+b.h+pad<a.y);}
 function drawShortCalloutsScreen(){
-  var p=getPts(),ls=getLens(),c=getCtx();if(!c||p.length<2)return;
-  var v=viewport(),count=isClosed()?p.length:Math.max(0,p.length-1),sp=p.map(function(q){return toScreen(q,v);}),cx=0,cy=0;
-  sp.forEach(function(q){cx+=q.x;cy+=q.y;});cx/=sp.length;cy/=sp.length;
+  var p=getPts(),ls=getLens(),c=getCtx(),canvas=getCanvas();if(!c||!canvas||p.length<2)return;
+  var rect=canvas.getBoundingClientRect?canvas.getBoundingClientRect():null;
+  var pxPerCss=rect&&rect.width?canvas.width/rect.width:1; if(!isFinite(pxPerCss)||pxPerCss<=0)pxPerCss=1;
+  var U=pxPerCss, v=viewport(), count=isClosed()?p.length:Math.max(0,p.length-1), sp=p.map(function(q){return toScreen(q,v);});
+  var orient=signedArea(sp)>=0?1:-1; /* y-down canvas: + area = clockwise */
   var items=[];
   for(var i=0;i<count;i++){
     var L=Math.round(Number(ls[i])||0);if(!(L>0&&L<=SHORT_CM))continue;
     var a=sp[i],b=sp[(i+1)%sp.length],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
-    var nx=-dy/d,ny=dx/d;if((cx-mx)*nx+(cy-my)*ny>0){nx=-nx;ny=-ny;}
-    items.push({i:i,L:L,mx:mx,my:my,nx:nx,ny:ny,ang:Math.atan2(dy,dx)});
+    /* For clockwise screen polygons the left normal is exterior; reverse for CCW. */
+    var nx=(-dy/d)*orient,ny=(dx/d)*orient;
+    items.push({i:i,L:L,mx:mx,my:my,nx:nx,ny:ny,dx:dx,dy:dy});
   }
-  /* Stable lane assignment in SCREEN pixels. Zooming therefore never shrinks the labels. */
+  /* Put neighbouring short segments into progressively farther exterior lanes. */
   items.sort(function(a,b){return a.my-b.my||a.mx-b.mx;});
-  var lanes=[];
+  var placed=[];
   items.forEach(function(o){
-    var lane=0;
-    for(;;lane++){
-      var hit=lanes.some(function(q){return q.lane===lane&&Math.abs(q.ang-o.ang)<.38&&Math.hypot(q.mx-o.mx,q.my-o.my)<92;});
-      if(!hit)break;
-    }
-    o.lane=lane;lanes.push(o);
-  });
-  items.forEach(function(o){
-    var lead=34+o.lane*29, ex=o.mx+o.nx*lead,ey=o.my+o.ny*lead;
     var text=alphaLabel(o.i)+alphaLabel((o.i+1)%p.length)+' · '+o.L+' см';
-    c.save();c.setTransform(1,0,0,1,0,0);c.setLineDash([]);c.lineCap='round';c.lineJoin='round';
-    c.font='700 12px -apple-system,BlinkMacSystemFont,Arial';var w=Math.max(76,c.measureText(text).width+20),h=28;
-    /* Label is placed on the outward side. Connector terminates at the near edge of badge. */
-    var horizontal=Math.abs(o.nx)>.45,bx,by,edgeX,edgeY;
-    if(horizontal){bx=ex+(o.nx<0?-w-12:12);by=ey-h/2;edgeX=o.nx<0?bx+w:bx;edgeY=ey;}
-    else{bx=ex-w/2;by=ey+(o.ny<0?-h-12:12);edgeX=ex;edgeY=o.ny<0?by+h:by;}
-    c.strokeStyle='#2563eb';c.lineWidth=1.35;c.beginPath();c.moveTo(o.mx,o.my);c.lineTo(ex,ey);c.lineTo(edgeX,edgeY);c.stroke();
-    c.fillStyle='#2563eb';c.beginPath();c.arc(o.mx,o.my,2.8,0,Math.PI*2);c.fill();
-    rr(c,bx,by,w,h,7);c.fillStyle='rgba(255,255,255,.985)';c.fill();c.strokeStyle='#2563eb';c.lineWidth=1.15;c.stroke();
-    c.fillStyle='#172554';c.textAlign='center';c.textBaseline='middle';c.fillText(text,bx+w/2,by+h/2+.25);c.restore();
+    c.save();c.setTransform(1,0,0,1,0,0);c.font='700 '+(12*U)+'px -apple-system,BlinkMacSystemFont,Arial';
+    var w=Math.max(78*U,c.measureText(text).width+18*U),h=27*U;
+    var sideHorizontal=Math.abs(o.nx)>=Math.abs(o.ny),lane=0,bx=0,by=0,ex=0,ey=0,box=null;
+    for(;lane<8;lane++){
+      var lead=(30+lane*34)*U; ex=o.mx+o.nx*lead;ey=o.my+o.ny*lead;
+      if(sideHorizontal){bx=ex+(o.nx<0?-w-10*U:10*U);by=ey-h/2;}
+      else{bx=ex-w/2;by=ey+(o.ny<0?-h-10*U:10*U);}
+      box={x:bx,y:by,w:w,h:h};
+      if(!placed.some(function(q){return overlap(box,q,8*U);}))break;
+    }
+    placed.push(box);
+    var edgeX=Math.max(bx,Math.min(ex,bx+w)),edgeY=Math.max(by,Math.min(ey,by+h));
+    c.setLineDash([]);c.lineCap='round';c.lineJoin='round';c.strokeStyle='#2563eb';c.lineWidth=1.25*U;
+    c.beginPath();c.moveTo(o.mx,o.my);c.lineTo(ex,ey);c.lineTo(edgeX,edgeY);c.stroke();
+    c.fillStyle='#2563eb';c.beginPath();c.arc(o.mx,o.my,2.5*U,0,Math.PI*2);c.fill();
+    rr(c,bx,by,w,h,7*U);c.fillStyle='rgba(255,255,255,.985)';c.fill();c.strokeStyle='#2563eb';c.lineWidth=1.1*U;c.stroke();
+    c.fillStyle='#172554';c.textAlign='center';c.textBaseline='middle';c.fillText(text,bx+w/2,by+h/2+.2*U);c.restore();
   });
 }
 
 var oldDraw=window.draw;
-if(typeof oldDraw==='function'&&!oldDraw.__aceilShortCalloutsV4){
+if(typeof oldDraw==='function'&&!oldDraw.__aceilShortCalloutsV5){
   var wrapped=function(){var r=oldDraw.apply(this,arguments);try{drawShortCalloutsScreen();}catch(e){}return r;};
-  wrapped.__aceilShortCalloutsV4=true;window.draw=wrapped;try{draw=wrapped;}catch(e){}
+  wrapped.__aceilShortCalloutsV5=true;window.draw=wrapped;try{draw=wrapped;}catch(e){}
 }
 })();
