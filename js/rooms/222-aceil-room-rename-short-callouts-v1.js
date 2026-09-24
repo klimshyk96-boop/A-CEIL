@@ -98,3 +98,143 @@ if(typeof oldDraw==='function'&&!oldDraw.__aceilShortCalloutsV5){
   wrapped.__aceilShortCalloutsV5=true;window.draw=wrapped;try{draw=wrapped;}catch(e){}
 }
 })();
+
+
+/* A·CEIL v6 — adaptive wall-size list for complex rooms (>5 sides)
+   Complex contour: suppress blue segment callout pills and show one compact,
+   screen-space list.  The list stays readable while canvas zoom/pan changes. */
+(function(){
+  "use strict";
+  if (window.__ACEIL_COMPLEX_WALL_LIST_V6__) return;
+  window.__ACEIL_COMPLEX_WALL_LIST_V6__ = true;
+
+  function canvas(){
+    return document.querySelector("canvas");
+  }
+  function vertices(){
+    var pts = window.points || window.vertices || window.roomPoints ||
+              (window.currentRoom && (currentRoom.points || currentRoom.vertices)) || [];
+    if (!Array.isArray(pts)) return [];
+    return pts.filter(function(p){ return p && isFinite(+p.x) && isFinite(+p.y); });
+  }
+  function sideCount(){ return vertices().length; }
+  function complex(){ return sideCount() > 5; }
+
+  function label(i){
+    // Match A·CEIL vertex convention for normal room sizes.
+    var n=i, out="";
+    do { out=String.fromCharCode(65+(n%26))+out; n=Math.floor(n/26)-1; } while(n>=0);
+    return out;
+  }
+  function distance(a,b){
+    var dx=(+b.x)-(+a.x), dy=(+b.y)-(+a.y);
+    return Math.sqrt(dx*dx+dy*dy);
+  }
+  function scaleToCm(){
+    // Prefer the application's own known conversion when available.
+    var candidates=[window.pxPerCm, window.PX_PER_CM, window.scalePxPerCm];
+    for(var i=0;i<candidates.length;i++){
+      var v=+candidates[i]; if(isFinite(v)&&v>0) return 1/v;
+    }
+    // Most A·CEIL room points are already in cm; detect by plausible perimeter.
+    var p=vertices(), per=0;
+    for(var j=0;j<p.length;j++) per+=distance(p[j],p[(j+1)%p.length]);
+    if(per>300 && per<20000) return 1;
+    return 1;
+  }
+  function rows(){
+    var p=vertices(), k=scaleToCm(), out=[];
+    for(var i=0;i<p.length;i++){
+      var cm=Math.round(distance(p[i],p[(i+1)%p.length])*k);
+      out.push({name:label(i)+label((i+1)%p.length), cm:cm});
+    }
+    return out;
+  }
+
+  function ensure(){
+    var host = canvas();
+    if(!host) return null;
+    var wrap = host.parentElement;
+    if(!wrap) return null;
+    if(getComputedStyle(wrap).position==="static") wrap.style.position="relative";
+
+    var el=wrap.querySelector(".aceil-wall-size-list-v6");
+    if(!el){
+      el=document.createElement("div");
+      el.className="aceil-wall-size-list-v6";
+      el.innerHTML='<div class="aceil-wall-size-list-v6__title">Розміри стін</div><div class="aceil-wall-size-list-v6__rows"></div>';
+      wrap.appendChild(el);
+    }
+    return el;
+  }
+  function chooseSide(el){
+    var host=canvas(), p=vertices();
+    if(!host||!p.length) return;
+    var min=Infinity,max=-Infinity;
+    p.forEach(function(q){ min=Math.min(min,+q.x); max=Math.max(max,+q.x); });
+    // Prefer the side with more apparent free screen space; fallback right.
+    var mid=(min+max)/2, cw=host.width||host.clientWidth||1;
+    var rightFree=cw-max, leftFree=min;
+    el.classList.toggle("is-left", leftFree>rightFree);
+  }
+  function render(){
+    var el=ensure(); if(!el) return;
+    if(!complex()){
+      el.hidden=true;
+      document.documentElement.classList.remove("aceil-complex-room-v6");
+      return;
+    }
+    document.documentElement.classList.add("aceil-complex-room-v6");
+    el.hidden=false;
+    chooseSide(el);
+    var box=el.querySelector(".aceil-wall-size-list-v6__rows");
+    box.innerHTML=rows().map(function(r){
+      return '<div class="aceil-wall-size-list-v6__row"><b>'+r.name+'</b><span>'+r.cm+' см</span></div>';
+    }).join("");
+  }
+
+  var css=document.createElement("style");
+  css.textContent=`
+    .aceil-wall-size-list-v6{
+      position:absolute; z-index:28; right:10px; top:64px;
+      width:126px; max-height:calc(100% - 84px); overflow:auto;
+      padding:8px 9px; border:1px solid rgba(37,99,235,.28);
+      border-radius:12px; background:rgba(255,255,255,.94);
+      box-shadow:0 5px 18px rgba(15,23,42,.10);
+      backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px);
+      color:#14213d; font:600 11px/1.25 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      pointer-events:none;
+    }
+    .aceil-wall-size-list-v6.is-left{left:10px;right:auto}
+    .aceil-wall-size-list-v6__title{
+      color:#2563eb;font-size:11px;font-weight:800;margin:0 0 5px;
+    }
+    .aceil-wall-size-list-v6__row{
+      display:flex;justify-content:space-between;gap:7px;padding:3px 0;
+      border-top:1px solid rgba(148,163,184,.18);white-space:nowrap;
+    }
+    .aceil-wall-size-list-v6__row:first-child{border-top:0}
+    .aceil-wall-size-list-v6__row b{font-weight:800}
+    /* In complex rooms the compact list replaces v3/v4/v5 blue wall callout pills. */
+    .aceil-complex-room-v6 .aceil-short-callout,
+    .aceil-complex-room-v6 .aceil-wall-callout,
+    .aceil-complex-room-v6 [data-aceil-short-callout],
+    .aceil-complex-room-v6 .wall-dimension-callout{display:none!important}
+  `;
+  document.head.appendChild(css);
+
+  var raf=0;
+  function schedule(){
+    cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(render);
+  }
+  ["pointerup","touchend","wheel","resize"].forEach(function(ev){
+    window.addEventListener(ev,schedule,{passive:true});
+  });
+  document.addEventListener("click",function(){setTimeout(schedule,0);},true);
+  var mo=new MutationObserver(schedule);
+  mo.observe(document.body,{subtree:true,childList:true});
+  setTimeout(schedule,100);
+  setTimeout(schedule,500);
+})();
+
