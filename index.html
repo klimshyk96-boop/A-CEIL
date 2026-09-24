@@ -819,50 +819,25 @@ wallElementPresets_v1  ->  #043
 
 
 
-<link rel="stylesheet" href="assets/ui2.css?v=20260907-5"><link rel="stylesheet" href="assets/aceil-color-desktop-v1.css?v=20260912-1"><style id="aceil-all-dims-v11-css">
-.aceil-open-all-dims-v11{width:100%;margin:8px 0 2px;padding:11px 12px;border:1.5px solid #bfdbfe;border-radius:12px;background:#eff6ff;color:#1d4ed8;font-weight:800;box-shadow:none}
-#allSideInputsModalV11 .aceil-all-dims-modal-v11{width:min(94vw,430px);max-height:min(84vh,700px);overflow:hidden;padding:16px}
-.aceil-all-dims-head-v11{display:flex;align-items:center;gap:10px}.aceil-all-dims-head-v11 h3{margin:0;flex:1}
-.aceil-all-dims-close-v11{width:38px;height:38px;padding:0;border:0;border-radius:12px;background:#f1f5f9;color:#334155;font-size:24px;box-shadow:none}
-.aceil-all-dims-hint-v11{font-size:11.5px;line-height:1.35;color:#64748b;font-weight:650;margin:5px 0 10px}
-#allSideInputsContainerV11{max-height:calc(84vh - 170px);overflow:auto;-webkit-overflow-scrolling:touch;padding-right:2px}
-.aceil-all-dims-v11{display:flex;flex-direction:column;gap:6px}
-.aceil-all-dim-row-v11{display:grid;grid-template-columns:48px minmax(0,1fr) 38px 22px;gap:6px;align-items:center;padding:6px;border:1px solid #e2e8f0;border-radius:11px;background:#fff}
-.aceil-all-dim-row-v11.is-active{border-color:#ef4444;background:#fff7f7}
-.aceil-all-dim-name-v11{padding:8px 4px;border:0;background:transparent;box-shadow:none;color:#172554;font-size:14px;font-weight:850}
-.aceil-all-dim-row-v11.is-active .aceil-all-dim-name-v11{color:#dc2626}
-.aceil-all-dim-input-v11{display:flex;align-items:center;border:1.5px solid #cbd5e1;border-radius:9px;background:#fff;overflow:hidden}
-.aceil-all-dim-row-v11.is-active .aceil-all-dim-input-v11{border-color:#ef4444}
-.aceil-all-dim-input-v11 input{min-width:0;width:100%;border:0!important;outline:0!important;box-shadow:none!important;padding:8px 4px 8px 10px!important;font-size:16px!important;font-weight:800!important;background:transparent!important}
-.aceil-all-dim-input-v11 span{padding-right:8px;color:#94a3b8;font-size:11px;font-weight:800}
-.aceil-all-dim-arc-v11{height:36px;padding:0;border:0;border-radius:9px;background:#f1f5f9;color:#475569;font-size:19px;box-shadow:none}.aceil-all-dim-arc-v11.is-arc{background:#ede9fe;color:#7c3aed}
-.aceil-all-dim-ok-v11{color:#16a34a;font-weight:900;text-align:center}.aceil-all-dims-actions-v11{position:sticky;bottom:0;background:#fff;padding-top:10px;margin-top:8px}
-@media(max-width:430px){#allSideInputsModalV11 .aceil-all-dims-modal-v11{width:calc(100vw - 24px);padding:14px}.aceil-all-dim-row-v11{grid-template-columns:42px minmax(0,1fr) 36px 20px}}
-</style>
-<style id="aceil-all-dims-workspace-v12-css">
-.aceil-all-dims-nav-v12{display:grid;grid-template-columns:46px 1fr 46px;gap:8px;align-items:center;margin:0 0 8px}
-.aceil-all-dims-nav-v12 span{text-align:center;color:#64748b;font-size:11px;font-weight:800}
-.aceil-all-dims-nav-v12 button{height:38px;border:0;border-radius:11px;background:#eff6ff;color:#2563eb;font-size:26px;font-weight:800;box-shadow:none;padding:0}
-.aceil-all-dims-nav-v12 button:disabled{opacity:.32}
-body.aceil-all-dims-workspace-v12 #allSideInputsModalV11{align-items:flex-end!important;justify-content:center!important;padding:0!important;background:rgba(15,23,42,.12)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-body.aceil-all-dims-workspace-v12 #allSideInputsModalV11 .aceil-all-dims-modal-v11{width:100%!important;max-width:none!important;height:52vh!important;max-height:52vh!important;border-radius:22px 22px 0 0!important;padding:13px 14px calc(12px + env(safe-area-inset-bottom))!important;margin:0!important}
-body.aceil-all-dims-workspace-v12 #allSideInputsContainerV11{max-height:calc(52vh - 184px)!important}
-body.aceil-all-dims-workspace-v12 .aceil-all-dim-row-v11{padding:4px 6px;gap:5px}
-body.aceil-all-dims-workspace-v12 .aceil-all-dim-input-v11 input{padding:7px 4px 7px 9px!important}
-body.aceil-all-dims-workspace-v12 .aceil-all-dims-actions-v11{margin-top:6px;padding-top:7px}
-/* Keep the plan visible while the lower editor grows. We scale the main canvas card,
-   not the canvas coordinate system, so hit-testing/data remain unchanged. */
-body.aceil-all-dims-workspace-v12 .canvas-wrap,
-body.aceil-all-dims-workspace-v12 #canvasWrap,
-body.aceil-all-dims-workspace-v12 .canvas-container{
-  transform:scale(.52)!important;
-  transform-origin:top center!important;
-  transition:transform .18s ease!important;
-}
-@media(max-width:430px){
- body.aceil-all-dims-workspace-v12 #allSideInputsModalV11 .aceil-all-dims-modal-v11{height:54vh!important;max-height:54vh!important}
- body.aceil-all-dims-workspace-v12 #allSideInputsContainerV11{max-height:calc(54vh - 184px)!important}
-}
+<link rel="stylesheet" href="assets/ui2.css?v=20260907-5"><link rel="stylesheet" href="assets/aceil-color-desktop-v1.css?v=20260912-1"><style id="aceil-all-dims-v13-css">
+/* Old one-wall #sideInputModal remains unchanged. This styling applies only to the optional all-wall mode. */
+#allSideInputsModalV11{align-items:flex-end!important;justify-content:center!important;padding:0!important;background:rgba(15,23,42,.10)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+#allSideInputsModalV11 .aceil-all-modal-v13{width:100%!important;max-width:none!important;height:58vh!important;max-height:58vh!important;margin:0!important;border-radius:22px 22px 0 0!important;padding:14px 14px calc(12px + env(safe-area-inset-bottom))!important;overflow:hidden!important;display:flex;flex-direction:column}
+.aceil-all-head-v13{display:flex;align-items:center;gap:10px}.aceil-all-head-v13 h3{margin:0;flex:1;font-size:20px}.aceil-all-head-v13 span{background:#eff6ff;color:#2563eb;border-radius:999px;padding:6px 10px;font-weight:850;font-size:13px}.aceil-all-head-v13>button{width:38px;height:38px;border:0;border-radius:12px;background:#f1f5f9;color:#475569;font-size:25px;padding:0;box-shadow:none}
+.aceil-all-sub-v13{font-size:11.5px;color:#64748b;font-weight:700;margin:2px 0 9px}
+#allSideInputsContainerV11{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
+.aceil-all-table-v13{display:flex;flex-direction:column;gap:6px;padding:1px}
+.aceil-all-row-v13{display:grid;grid-template-columns:48px minmax(0,1fr) 38px 22px;gap:6px;align-items:center;padding:5px 6px;border:1px solid #e2e8f0;border-radius:11px;background:#fff}
+.aceil-all-row-v13.is-active{border-color:#ef4444;background:#fff7f7}
+.aceil-all-name-v13{border:0;background:transparent;box-shadow:none;color:#172554;font-weight:900;font-size:14px;padding:7px 2px}.aceil-all-row-v13.is-active .aceil-all-name-v13{color:#dc2626}
+.aceil-all-input-v13{display:flex;align-items:center;border:1.5px solid #cbd5e1;border-radius:9px;background:#fff;overflow:hidden}.aceil-all-row-v13.is-active .aceil-all-input-v13{border-color:#ef4444;box-shadow:0 0 0 1px rgba(239,68,68,.08)}
+.aceil-all-input-v13 input{width:100%;min-width:0;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;padding:8px 4px 8px 10px!important;font-size:17px!important;font-weight:850!important}.aceil-all-input-v13 span{padding-right:9px;color:#94a3b8;font-size:11px;font-weight:850}
+.aceil-all-arc-v13{height:36px;padding:0;border:0;border-radius:9px;background:#f1f5f9;color:#475569;font-size:19px;box-shadow:none}.aceil-all-arc-v13.is-arc{background:#ede9fe;color:#7c3aed}.aceil-all-ok-v13{color:#16a34a;font-weight:900;text-align:center}
+.aceil-all-nav-v13{display:grid;grid-template-columns:44px 1fr 44px;gap:8px;align-items:center;margin-top:8px}.aceil-all-nav-v13 div{text-align:center;font-size:11px;color:#64748b;font-weight:750}.aceil-all-nav-v13 button{height:38px;border:0;border-radius:11px;background:#eff6ff;color:#2563eb;font-size:26px;font-weight:900;padding:0;box-shadow:none}.aceil-all-nav-v13 button:disabled{opacity:.3}
+.aceil-all-actions-v13{display:grid;grid-template-columns:.8fr 1.2fr;gap:9px;margin-top:8px}.aceil-all-actions-v13 button{height:46px;border:0;border-radius:13px;font-weight:900;font-size:15px}.aceil-all-back-v13{background:#f1f5f9;color:#334155}.aceil-all-build-v13{background:linear-gradient(135deg,#2563eb,#5b5ff5);color:#fff}
+/* Keep plan clear above the sheet; do NOT blur it. Compress only the visible drawing card while all-wall mode is open. */
+body.aceil-all-mode-v13 .canvas-wrap,body.aceil-all-mode-v13 #canvasWrap,body.aceil-all-mode-v13 .canvas-container{transform:scale(.62)!important;transform-origin:top center!important;transition:transform .16s ease!important}
+@media(max-width:430px){#allSideInputsModalV11 .aceil-all-modal-v13{height:60vh!important;max-height:60vh!important}}
 </style></head><body><div id="aceilBootOverlay"><div class="aceil-spin"></div><div class="aceil-label">A·CEIL PRO завантажується…</div></div><script>
 (function(){
   "use strict";
@@ -896,7 +871,7 @@ body.aceil-all-dims-workspace-v12 .canvas-container{
 Визначає: A·CEILAutoDiagonalDebug; __A·CEILSelectedSideV89 [застаріла, див. #127]; _autoControlDiagonals; _conflictZoneHighlight; _diagHighlightLoopRunning; _formatReportCm [ФІНАЛЬНА; було в: #000]; _recommendedDiagHighlight; getArcSidesCount [застаріла, див. #126]; requestDraw [застаріла, див. #110]; rmCurveOpenV87 [застаріла, див. #132]; rmWallTapOpenV84 [застаріла, див. #131]; totalCurveLength [застаріла, див. #126]
 localStorage: lightAutoQtyOn, lightGridCm, lightGridOn, lightSnapOn, lightTypes_v1
 -->
-<script src="js/nomenclature/019-inline.js?v=20260924-v12-dimension-workspace"></script>
+<script src="js/nomenclature/019-inline.js?v=20260924-v13-real-all-table"></script>
 
 <!--
 === БЛОК #018 ===
@@ -910,7 +885,13 @@ localStorage: lightAutoQtyOn, lightGridCm, lightGridOn, lightSnapOn, lightTypes_
 
 
 <div class="modal-overlay" id="sideInputModal"><div class="modal" style="width:360px;max-height:80vh;overflow:auto"><h3>📋 Ввести розміри сторін</h3><div id="sideInputsContainer"></div><button type="button" class="aceil-open-all-dims-v11" onclick='closeModal("sideInputModal");openAllSideInputsModalV11()'>📋 Ввести всі розміри</button><div class="modal-btns"><button class="btn-cancel" onclick='closeModal("sideInputModal")'>Скасувати</button><button onclick="applySideInputs()">Побудувати</button></div></div></div>
-<div class="modal-overlay" id="allSideInputsModalV11"><div class="modal aceil-all-dims-modal-v11"><div class="aceil-all-dims-head-v11"><h3>📋 Усі розміри</h3><button type="button" class="aceil-all-dims-close-v11" onclick='_wallSideFlash=-1;document.body.classList.remove("aceil-all-dims-workspace-v12");closeModal("allSideInputsModalV11");draw()'>×</button></div><div class="aceil-all-dims-hint-v11">Активна стіна підсвічується червоним. Return або › — наступний розмір.</div><div class="aceil-all-dims-nav-v12"><button type="button" id="aceilAllDimsPrevV12">‹</button><span>Перехід між стінами</span><button type="button" id="aceilAllDimsNextV12">›</button></div><div id="allSideInputsContainerV11"></div><div class="modal-btns aceil-all-dims-actions-v11"><button class="btn-cancel" onclick='_wallSideFlash=-1;document.body.classList.remove("aceil-all-dims-workspace-v12");closeModal("allSideInputsModalV11");draw()'>Назад</button><button onclick="applyAllSideInputsV11()">✓ Побудувати</button></div></div></div><div class="modal-overlay" id="diagModal"><div class="modal" style="width:360px;max-height:80vh;overflow:auto"><h3>📐 Контрольні діагоналі</h3><div id="diagSelector"></div><div class="modal-btns"><button class="btn-cancel" onclick='closeModal("diagModal")'>Закрити</button></div></div></div><div class="modal-overlay" id="diagEditModal"><div class="modal"><h3>✏️ Введіть діагональ</h3><input type="hidden" id="diagEditKey"><label id="diagEditLabel">Діагональ (см)</label><input type="number" inputmode="decimal" id="diagEditInput" placeholder="напр. 450" style="width:100%;padding:10px;border:1px solid #dbe4f0;border-radius:10px;font-size:18px;font-weight:700;text-align:center;margin-top:8px" onkeydown='"Enter"===event.key&&applyDiagEdit()'><div class="modal-btns" style="margin-top:14px"><button class="btn-cancel" onclick='_pendingDiagPair=null;closeModal("diagEditModal")'>Скасувати</button><button onclick="applyDiagEdit()">✓ Зберегти</button></div></div></div>
+<div class="modal-overlay" id="allSideInputsModalV11"><div class="modal aceil-all-modal-v13">
+<div class="aceil-all-head-v13"><h3>📋 Усі розміри</h3><span id="aceilAllPositionV13">1/1</span><button type="button" onclick="closeAllSideInputsV13()">×</button></div>
+<div class="aceil-all-sub-v13">Всі стіни одночасно • активна стіна червона</div>
+<div id="allSideInputsContainerV11"></div>
+<div class="aceil-all-nav-v13"><button id="aceilAllPrevV13" type="button">‹</button><div>Return / стрілка — наступна стіна</div><button id="aceilAllNextV13" type="button">›</button></div>
+<div class="aceil-all-actions-v13"><button type="button" class="aceil-all-back-v13" onclick="closeAllSideInputsV13()">Назад</button><button type="button" class="aceil-all-build-v13" onclick="applyAllSideInputsV11()">✓ Побудувати</button></div>
+</div></div></div><div class="modal-overlay" id="diagModal"><div class="modal" style="width:360px;max-height:80vh;overflow:auto"><h3>📐 Контрольні діагоналі</h3><div id="diagSelector"></div><div class="modal-btns"><button class="btn-cancel" onclick='closeModal("diagModal")'>Закрити</button></div></div></div><div class="modal-overlay" id="diagEditModal"><div class="modal"><h3>✏️ Введіть діагональ</h3><input type="hidden" id="diagEditKey"><label id="diagEditLabel">Діагональ (см)</label><input type="number" inputmode="decimal" id="diagEditInput" placeholder="напр. 450" style="width:100%;padding:10px;border:1px solid #dbe4f0;border-radius:10px;font-size:18px;font-weight:700;text-align:center;margin-top:8px" onkeydown='"Enter"===event.key&&applyDiagEdit()'><div class="modal-btns" style="margin-top:14px"><button class="btn-cancel" onclick='_pendingDiagPair=null;closeModal("diagEditModal")'>Скасувати</button><button onclick="applyDiagEdit()">✓ Зберегти</button></div></div></div>
 <!--
 === БЛОК #019 ===
 -->
