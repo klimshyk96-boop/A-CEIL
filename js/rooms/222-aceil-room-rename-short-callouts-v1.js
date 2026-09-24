@@ -35,61 +35,60 @@ function enhanceRoomList(){
 }
 new MutationObserver(enhanceRoomList).observe(document.documentElement,{childList:true,subtree:true}); setTimeout(enhanceRoomList,400);
 
-/* Short wall dimensions v3.
-   Short sides use ONE clean outside callout instead of the standard badge.
-   Geometry follows canvas pan/zoom; typography/spacing are counter-scaled so labels stay readable. */
+/* Short wall dimensions v4.
+   Screen-space callouts: anchors follow the transformed drawing, while label size stays
+   constant on screen. This is intentionally drawn AFTER the canvas transform is restored. */
 var SHORT_CM=90;
 function getPts(){try{return Array.isArray(pts)?pts:[];}catch(e){return Array.isArray(window.pts)?window.pts:[];}}
 function getLens(){try{return Array.isArray(lengths)?lengths:[];}catch(e){return Array.isArray(window.lengths)?window.lengths:[];}}
 function isClosed(){try{return !!closed;}catch(e){return !!window.closed;}}
-function getCtx(){try{return cv&&cv.getContext?cv.getContext('2d'):null;}catch(e){var c=document.getElementById('cv');return c&&c.getContext?c.getContext('2d'):null;}}
+function getCtx(){try{return cv&&cv.getContext?cv.getContext('2d'):null;}catch(e){var q=document.getElementById('cv');return q&&q.getContext?q.getContext('2d'):null;}}
 function alphaLabel(i){var s='',n=i+1;while(n>0){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26);}return s;}
 window.ACEILIsShortWall=function(i){var ls=getLens(),v=Math.round(Number(ls[i])||0);return v>0&&v<=SHORT_CM;};
-function rounded(c,x,y,w,h,r){c.beginPath();if(c.roundRect)c.roundRect(x,y,w,h,r);else c.rect(x,y,w,h);}
-function drawShortCallouts(){
-  var p=getPts(),ls=getLens(),c=getCtx(); if(!c||p.length<2)return;
-  var count=isClosed()?p.length:Math.max(0,p.length-1),cx=0,cy=0;
-  p.forEach(function(q){cx+=Number(q.x)||0;cy+=Number(q.y)||0;});cx/=p.length;cy/=p.length;
-  var sc=1,ox=0,oy=0;try{sc=Math.max(.5,Number(viewScale)||1);ox=Number(viewOffsetX)||0;oy=Number(viewOffsetY)||0;}catch(e){sc=Math.max(.5,Number(window.viewScale)||1);}
-  var inv=1/sc, items=[];
+function rr(c,x,y,w,h,r){c.beginPath();if(c.roundRect)c.roundRect(x,y,w,h,r);else c.rect(x,y,w,h);}
+function viewport(){var sc=1,ox=0,oy=0;try{sc=Number(viewScale)||1;ox=Number(viewOffsetX)||0;oy=Number(viewOffsetY)||0;}catch(e){sc=Number(window.viewScale)||1;ox=Number(window.viewOffsetX)||0;oy=Number(window.viewOffsetY)||0;}return{sc:sc,ox:ox,oy:oy};}
+function toScreen(q,v){return{x:q.x*v.sc+v.ox,y:q.y*v.sc+v.oy};}
+function drawShortCalloutsScreen(){
+  var p=getPts(),ls=getLens(),c=getCtx();if(!c||p.length<2)return;
+  var v=viewport(),count=isClosed()?p.length:Math.max(0,p.length-1),sp=p.map(function(q){return toScreen(q,v);}),cx=0,cy=0;
+  sp.forEach(function(q){cx+=q.x;cy+=q.y;});cx/=sp.length;cy/=sp.length;
+  var items=[];
   for(var i=0;i<count;i++){
-    var L=Math.round(Number(ls[i])||0); if(!(L>0&&L<=SHORT_CM))continue;
-    var a=p[i],b=p[(i+1)%p.length],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
-    var nx=-dy/d,ny=dx/d; if((cx-mx)*nx+(cy-my)*ny>0){nx=-nx;ny=-ny;}
-    items.push({i:i,L:L,mx:mx,my:my,nx:nx,ny:ny,angle:Math.atan2(dy,dx)});
+    var L=Math.round(Number(ls[i])||0);if(!(L>0&&L<=SHORT_CM))continue;
+    var a=sp[i],b=sp[(i+1)%sp.length],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    var nx=-dy/d,ny=dx/d;if((cx-mx)*nx+(cy-my)*ny>0){nx=-nx;ny=-ny;}
+    items.push({i:i,L:L,mx:mx,my:my,nx:nx,ny:ny,ang:Math.atan2(dy,dx)});
   }
-  /* Neighbours on the same outside edge are staggered, but never into the room. */
+  /* Stable lane assignment in SCREEN pixels. Zooming therefore never shrinks the labels. */
   items.sort(function(a,b){return a.my-b.my||a.mx-b.mx;});
-  items.forEach(function(o,idx){
-    var neighbours=items.filter(function(q){return Math.abs(q.angle-o.angle)<.35&&Math.hypot(q.mx-o.mx,q.my-o.my)<180*inv;});
-    var rank=Math.max(0,neighbours.indexOf(o));
-    var lead=(34+rank*28)*inv, elbow=12*inv, gap=7*inv;
-    var ex=o.mx+o.nx*lead,ey=o.my+o.ny*lead;
-    /* short tangential elbow makes ownership of the callout obvious */
-    var tx=-o.ny,ty=o.nx, side=(o.nx<-.25||Math.abs(o.nx)<.25&&o.ny<0)?-1:1;
-    var ax=ex+tx*elbow*side, ay=ey+ty*elbow*side;
+  var lanes=[];
+  items.forEach(function(o){
+    var lane=0;
+    for(;;lane++){
+      var hit=lanes.some(function(q){return q.lane===lane&&Math.abs(q.ang-o.ang)<.38&&Math.hypot(q.mx-o.mx,q.my-o.my)<92;});
+      if(!hit)break;
+    }
+    o.lane=lane;lanes.push(o);
+  });
+  items.forEach(function(o){
+    var lead=34+o.lane*29, ex=o.mx+o.nx*lead,ey=o.my+o.ny*lead;
     var text=alphaLabel(o.i)+alphaLabel((o.i+1)%p.length)+' · '+o.L+' см';
-    c.save();
-    c.lineWidth=1.15*inv;c.strokeStyle='#94a3b8';c.setLineDash([]);c.lineCap='round';c.lineJoin='round';
-    c.beginPath();c.moveTo(o.mx,o.my);c.lineTo(ex,ey);c.lineTo(ax,ay);c.stroke();
-    c.font='700 '+(11.5*inv)+'px -apple-system,BlinkMacSystemFont,Arial';
-    var w=c.measureText(text).width+14*inv,h=22*inv;
-    var bx=ax+(side>0?gap:-w-gap),by=ay-h/2;
-    rounded(c,bx,by,w,h,6*inv);c.fillStyle='rgba(255,255,255,.98)';c.fill();c.strokeStyle='#cbd5e1';c.lineWidth=.9*inv;c.stroke();
-    c.fillStyle='#475569';c.textAlign='center';c.textBaseline='middle';c.fillText(text,bx+w/2,by+h/2+.2*inv);
-    c.restore();
+    c.save();c.setTransform(1,0,0,1,0,0);c.setLineDash([]);c.lineCap='round';c.lineJoin='round';
+    c.font='700 12px -apple-system,BlinkMacSystemFont,Arial';var w=Math.max(76,c.measureText(text).width+20),h=28;
+    /* Label is placed on the outward side. Connector terminates at the near edge of badge. */
+    var horizontal=Math.abs(o.nx)>.45,bx,by,edgeX,edgeY;
+    if(horizontal){bx=ex+(o.nx<0?-w-12:12);by=ey-h/2;edgeX=o.nx<0?bx+w:bx;edgeY=ey;}
+    else{bx=ex-w/2;by=ey+(o.ny<0?-h-12:12);edgeX=ex;edgeY=o.ny<0?by+h:by;}
+    c.strokeStyle='#2563eb';c.lineWidth=1.35;c.beginPath();c.moveTo(o.mx,o.my);c.lineTo(ex,ey);c.lineTo(edgeX,edgeY);c.stroke();
+    c.fillStyle='#2563eb';c.beginPath();c.arc(o.mx,o.my,2.8,0,Math.PI*2);c.fill();
+    rr(c,bx,by,w,h,7);c.fillStyle='rgba(255,255,255,.985)';c.fill();c.strokeStyle='#2563eb';c.lineWidth=1.15;c.stroke();
+    c.fillStyle='#172554';c.textAlign='center';c.textBaseline='middle';c.fillText(text,bx+w/2,by+h/2+.25);c.restore();
   });
 }
+
 var oldDraw=window.draw;
-if(typeof oldDraw==='function'&&!oldDraw.__aceilShortCalloutsV3){
-  var wrapped=function(){
-    var r=oldDraw.apply(this,arguments);
-    try{
-      var c=getCtx(),sc=1,ox=0,oy=0;try{sc=Number(viewScale)||1;ox=Number(viewOffsetX)||0;oy=Number(viewOffsetY)||0;}catch(e){}
-      if(c){c.save();c.translate(ox,oy);c.scale(sc,sc);drawShortCallouts();c.restore();}
-    }catch(e){}
-    return r;
-  };
-  wrapped.__aceilShortCalloutsV3=true;window.draw=wrapped;try{draw=wrapped;}catch(e){}
+if(typeof oldDraw==='function'&&!oldDraw.__aceilShortCalloutsV4){
+  var wrapped=function(){var r=oldDraw.apply(this,arguments);try{drawShortCalloutsScreen();}catch(e){}return r;};
+  wrapped.__aceilShortCalloutsV4=true;window.draw=wrapped;try{draw=wrapped;}catch(e){}
 }
 })();
