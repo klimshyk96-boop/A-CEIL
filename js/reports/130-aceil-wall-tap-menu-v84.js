@@ -46,7 +46,9 @@ function openCurveEditorForSide(i){
     if(!hasCurve(i)&&typeof window.toggleSideArcType==="function")window.toggleSideArcType(i);
   }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   try{
-    if(typeof window.openSideInputModal==="function")window.openSideInputModal();
+    /* Редактор дуг живе у старому вікні розмірів; нова таблиця «Розміри» його не містить. */
+    if(typeof window.openSideInputModalLegacy==="function")window.openSideInputModalLegacy();
+    else if(typeof window.openSideInputModal==="function")window.openSideInputModal();
     else if(typeof openSideInputModal==="function")openSideInputModal();
   }catch(e){
     try{showToast("Не вдалося відкрити редактор кривої")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
