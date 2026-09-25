@@ -20,26 +20,19 @@ function clampAmount(v){
   return v;
 }
 
-function loadPaymentSettings(){
-  var raw={};
-  try{raw=JSON.parse(localStorage.getItem("reportSettings")||"{}")||{};}catch(e){}
-  return {discountPercent:clampPct(raw.discountPercent),advanceAmount:clampAmount(raw.advanceAmount)};
-}
-
 // --- 1. Persist discount/advance % inside reportSettings ---
 var oldSaveRS = window.saveReportSettings;
 if ("function" == typeof oldSaveRS && !oldSaveRS.__discAdv401) {
   var wrappedSaveRS = function(){
     var r = oldSaveRS.apply(this, arguments);
     try {
-      var rs={};
-      try{rs=JSON.parse(localStorage.getItem("reportSettings")||"{}")||{};}catch(_e){rs={};}
-      var dEl=document.getElementById("rsDiscountPercent");
-      var aEl=document.getElementById("rsAdvanceAmount");
-      if(dEl)rs.discountPercent=clampPct(dEl.value);
-      if(aEl)rs.advanceAmount=clampAmount(aEl.value);
-      localStorage.setItem("reportSettings",JSON.stringify(rs));
-      window.reportSettings=Object.assign(window.reportSettings||{},rs);
+      var rs = ("function" == typeof _loadRS) ? _loadRS() : (window.reportSettings || {});
+      var dEl = document.getElementById("rsDiscountPercent");
+      var aEl = document.getElementById("rsAdvanceAmount");
+      if (dEl) rs.discountPercent = clampPct(dEl.value);
+      if (aEl) rs.advanceAmount = clampAmount(aEl.value);
+      localStorage.setItem("reportSettings", JSON.stringify(rs));
+      window.reportSettings = rs;
     } catch(e){window.__diagSilent&&window.__diagSilent(e)}
     return r;
   };
@@ -50,7 +43,7 @@ if ("function" == typeof oldSaveRS && !oldSaveRS.__discAdv401) {
 
 // --- 2. Inject two number inputs into the "Кошторис" card of report settings modal ---
 function injectDiscountAdvanceUI(){
-  var rs = loadPaymentSettings();
+  var rs = ("function" == typeof _loadRS) ? _loadRS() : (window.reportSettings || {});
   var existing = document.getElementById("rsDiscountPercent");
   if (existing) {
     existing.value = (rs.discountPercent != null) ? rs.discountPercent : "";
@@ -123,13 +116,12 @@ function computeRawTotal(){
   return 0;
 }
 
-// --- 4. Build the summary rows (label, value, style) ---
-function buildSummaryRows(rawTotal, rs){
-  if (rs && rs.reportAudience === "installer") return null; // installer-only report hides pricing
-  var persistedPayment=loadPaymentSettings();
-  var discountPct=clampPct(rs&&rs.discountPercent!=null?rs.discountPercent:persistedPayment.discountPercent);
-  var advanceAmountRaw=clampAmount(rs&&rs.advanceAmount!=null?rs.advanceAmount:persistedPayment.advanceAmount);
-  if (!(rawTotal > 0) || (discountPct <= 0 && advanceAmountRaw <= 0)) return null;
+// --- 4. Build HTML summary card ---
+function buildSummaryHtml(rawTotal, rs){
+  if (rs && rs.reportAudience === "installer") return ""; // installer-only report hides pricing
+  var discountPct = clampPct(rs && rs.discountPercent);
+  var advanceAmountRaw = clampAmount(rs && rs.advanceAmount);
+  if (!(rawTotal > 0) || (discountPct <= 0 && advanceAmountRaw <= 0)) return "";
 
   var discountAmount = rawTotal * discountPct / 100;
   var afterDiscount = rawTotal - discountAmount;
@@ -138,138 +130,27 @@ function buildSummaryRows(rawTotal, rs){
 
   var rows = [];
   if (discountPct > 0) {
-    rows.push({label:"Сума без знижки", value:fmtUAH(rawTotal), color:"#334155", weight:"normal", size:17});
-    rows.push({label:"Знижка ("+discountPct+"%)", value:"-"+fmtUAH(discountAmount), color:"#dc2626", weight:"bold", size:17});
+    rows.push('<div class="ps-row"><span>Сума без знижки</span><span>' + fmtUAH(rawTotal) + '</span></div>');
+    rows.push('<div class="ps-row ps-discount"><span>Знижка (' + discountPct + '%)</span><span>-' + fmtUAH(discountAmount) + '</span></div>');
   }
-  rows.push({label:"До сплати", value:fmtUAH(afterDiscount), color:"#1e3a8a", weight:"bold", size:22});
+  rows.push('<div class="ps-row ps-final"><span>До сплати</span><span>' + fmtUAH(afterDiscount) + '</span></div>');
   if (advanceAmount > 0) {
-    rows.push({label:"Аванс", value:fmtUAH(advanceAmount), color:"#334155", weight:"normal", size:17});
-    rows.push({label:"Залишок при монтажі", value:fmtUAH(remainder), color:"#15803d", weight:"bold", size:17});
+    rows.push('<div class="ps-row"><span>Аванс</span><span>' + fmtUAH(advanceAmount) + '</span></div>');
+    rows.push('<div class="ps-row ps-remainder"><span>Залишок при монтажі</span><span>' + fmtUAH(remainder) + '</span></div>');
   }
-  return rows;
+  return '<div class="ps-card"><div class="ps-title">💳 Розрахунок оплати</div>' + rows.join("") + '</div>';
 }
 
-// --- 5. Draw the "💳 Розрахунок оплати" card directly onto the report canvas.
-// Earlier versions tried to inject an HTML card into the report's popup window
-// by capturing window.open(). That silently failed for two reasons: (a) some
-// report paths resolve the outer promise before their popup actually opens
-// (canvas.toBlob() callbacks that aren't awaited), and (b) when A·CEIL runs
-// as an installed PWA (Додано на головний екран), the report is shown with
-// _modernOpenPreview -> openReportInsideApp(), which never calls window.open()
-// at all — it paints the image straight into the current page. So there was
-// often no popup window to inject into in the first place.
-// Baking the card into the canvas pixels themselves works no matter how the
-// resulting image is later displayed (popup tab or in-app PWA viewer), and
-// matches the pattern already used elsewhere in this codebase (see the
-// ceiling-cornice legend helper in js/canvas/187-*.js) for appending extra
-// canvas content before a report image is finalized.
-function roundedRectPath(c, x, y, w, h, r){
-  if (typeof c.roundRect === "function") { c.beginPath(); c.roundRect(x, y, w, h, r); return; }
-  c.beginPath();
-  c.moveTo(x+r, y);
-  c.arcTo(x+w, y, x+w, y+h, r);
-  c.arcTo(x+w, y+h, x, y+h, r);
-  c.arcTo(x, y+h, x, y, r);
-  c.arcTo(x, y, x+w, y, r);
-  c.closePath();
-}
+var PS_STYLE = '<style>' +
+  '.ps-card{max-width:520px;width:100%;background:#fff;border-radius:16px;padding:18px 20px;margin:0 0 12px;box-shadow:0 4px 14px rgba(0,0,0,.10);font-family:Arial,sans-serif;box-sizing:border-box}' +
+  '.ps-title{font-weight:800;font-size:15px;color:#1e293b;margin-bottom:10px}' +
+  '.ps-row{display:flex;justify-content:space-between;padding:6px 0;font-size:15px;color:#334155;border-bottom:1px solid #f1f5f9}' +
+  '.ps-row:last-child{border-bottom:none}' +
+  '.ps-discount span:last-child{color:#dc2626;font-weight:700}' +
+  '.ps-final{font-weight:800;font-size:18px;color:#1e3a8a}' +
+  '.ps-remainder span:last-child{font-weight:800;color:#15803d}' +
+  '</style>';
 
-function appendPaymentSummary(sourceCanvas, rawTotal, rs){
-  var rows = buildSummaryRows(rawTotal, rs);
-  if (!rows || !rows.length || !sourceCanvas || !sourceCanvas.width) return sourceCanvas;
-
-  var W = sourceCanvas.width;
-  var PADX = Math.round(W * 0.044);
-  var cardW = W - PADX * 2;
-  var rowH = 46;
-  var titleH = 54;
-  var cardH = titleH + rows.length * rowH + 16;
-  var extra = cardH + 24;
-
-  var next = document.createElement("canvas");
-  next.width = W;
-  next.height = sourceCanvas.height + extra;
-  var c = next.getContext("2d");
-  c.fillStyle = "#f8fafc";
-  c.fillRect(0, 0, next.width, next.height);
-  c.drawImage(sourceCanvas, 0, 0);
-
-  var y = sourceCanvas.height + 12;
-  c.save();
-  c.shadowColor = "rgba(15,23,42,.12)";
-  c.shadowBlur = 16;
-  c.shadowOffsetY = 4;
-  c.fillStyle = "#ffffff";
-  roundedRectPath(c, PADX, y, cardW, cardH, 18);
-  c.fill();
-  c.restore();
-
-  c.textAlign = "left";
-  c.fillStyle = "#1e293b";
-  c.font = "bold 20px Arial";
-  c.fillText("💳 Розрахунок оплати", PADX + 22, y + 34);
-
-  var ry = y + titleH;
-  rows.forEach(function(row, i){
-    c.fillStyle = "#334155";
-    c.font = (row.weight === "bold" ? "bold " : "") + row.size + "px Arial";
-    c.textAlign = "left";
-    c.fillText(row.label, PADX + 22, ry + 26);
-    c.fillStyle = row.color;
-    c.textAlign = "right";
-    c.fillText(row.value, PADX + cardW - 22, ry + 26);
-    c.textAlign = "left";
-    if (i < rows.length - 1) {
-      c.strokeStyle = "#f1f5f9";
-      c.lineWidth = 1;
-      c.beginPath();
-      c.moveTo(PADX + 18, ry + rowH - 8);
-      c.lineTo(PADX + cardW - 18, ry + rowH - 8);
-      c.stroke();
-    }
-    ry += rowH;
-  });
-
-  return next;
-}
-
-// --- 6. Hook the single real chokepoint every report path funnels through:
-// _modernOpenPreview(canvas, fileName), right before the canvas is handed off
-// for display. We deliberately wait for window "load" before grabbing it, so
-// that every other script that also wraps _modernOpenPreview (there are
-// several, loaded at various points in index.html) has already registered
-// its own wrapper. That way our wrapper becomes the outermost one and always
-// runs first, guaranteeing the payment card is baked in before any of those
-// other wrappers decide how to actually show the image (popup window vs the
-// in-app PWA viewer vs anything added later).
-function installPaymentSummaryHook(){
-  var current = window._modernOpenPreview;
-  if ("function" != typeof current || current.__discAdv401Final) return;
-  var wrapped = function(canvasArg, fileName){
-    var finalCanvas = canvasArg;
-    try {
-      var rs = ("function" == typeof _loadRS) ? _loadRS() : (window.reportSettings || {});
-      var rawTotal = computeRawTotal();
-      finalCanvas = appendPaymentSummary(canvasArg, rawTotal, rs) || canvasArg;
-    } catch(e){ window.__diagSilent&&window.__diagSilent(e); finalCanvas = canvasArg; }
-    return current.call(this, finalCanvas, fileName);
-  };
-  wrapped.__discAdv401Final = true;
-  window._modernOpenPreview = wrapped;
-  try { _modernOpenPreview = wrapped; } catch(e){window.__diagSilent&&window.__diagSilent(e)}
-}
-
-if (document.readyState === "complete") {
-  setTimeout(installPaymentSummaryHook, 0);
-} else {
-  window.addEventListener("load", function(){ setTimeout(installPaymentSummaryHook, 0); });
-}
-
-// --- 7. Also cover the legacy (non-modern) canvas.toBlob-based saveToPhone /
-// generateObjectReport path, in case reportStyle is ever not "modern". These
-// build their own popup synchronously most of the time, but call
-// canvas.toBlob() without awaiting it, so we poll briefly for the popup
-// before giving up on adding the back button / summary there too.
 function injectReportBackButton(win){
   if (!win || !win.document) return;
   try {
@@ -310,6 +191,26 @@ function injectReportBackButton(win){
   } catch(e){window.__diagSilent&&window.__diagSilent(e)}
 }
 
+function injectIntoPopup(win, html){
+  if (!win || !win.document) return;
+  try {
+    var doc = win.document;
+    var attempt = function(){
+      if (!doc.body) { setTimeout(attempt, 20); return; }
+      var holder = doc.createElement("div");
+      holder.innerHTML = PS_STYLE + html;
+      var img = doc.getElementById("img");
+      if (img && img.parentNode) {
+        img.parentNode.insertBefore(holder, img.nextSibling);
+      } else {
+        doc.body.insertBefore(holder, doc.body.firstChild);
+      }
+    };
+    attempt();
+  } catch(e){window.__diagSilent&&window.__diagSilent(e)}
+}
+
+// --- 5. Wrap saveToPhone (covers classic + modern, single + multi-room, via window.open capture) ---
 var oldSaveToPhone = window.saveToPhone;
 if ("function" == typeof oldSaveToPhone && !oldSaveToPhone.__discAdv401) {
   var wrappedSaveToPhone = async function(){
@@ -321,18 +222,22 @@ if ("function" == typeof oldSaveToPhone && !oldSaveToPhone.__discAdv401) {
     };
     try {
       await oldSaveToPhone.apply(this, arguments);
-      if (!capturedWin) {
-        var waited = 0;
-        while (!capturedWin && waited < 4000) {
-          await new Promise(function(res){ setTimeout(res, 50); });
-          waited += 50;
-        }
-      }
     } finally {
       window.open = nativeOpen;
     }
-    if (capturedWin) {
-      setTimeout(function(){ injectReportBackButton(capturedWin); }, 20);
+    try {
+      var rs = ("function" == typeof _loadRS) ? _loadRS() : (window.reportSettings || {});
+      var rawTotal = computeRawTotal();
+      var html = buildSummaryHtml(rawTotal, rs);
+      if (capturedWin) {
+        setTimeout(function(){ injectReportBackButton(capturedWin); }, 20);
+      }
+      if (html && capturedWin) {
+        setTimeout(function(){ injectIntoPopup(capturedWin, html); }, 60);
+      }
+    } catch(e){
+      try{ if(capturedWin) injectReportBackButton(capturedWin); }catch(_){}
+      window.__diagSilent&&window.__diagSilent(e)
     }
   };
   wrappedSaveToPhone.__discAdv401 = true;
