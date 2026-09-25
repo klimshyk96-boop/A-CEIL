@@ -186,7 +186,7 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
     c.textAlign="left";
   }
   return h;
-}async function plan(c,x,y,w,h,imgSrc,titleText){return rr(c,x,y,w,h,18,"#fff","#e2e8f0"),section(c,x+18,y+32,titleText||"1. План приміщення"),await new Promise(res=>{if(!imgSrc)return void res();const img=new Image;img.onload=()=>{const s=Math.min(w-52,h-82);c.drawImage(img,x+(w-s)/2,y+50,s,s),res()},img.onerror=res,img.src=imgSrc}),h}function totalBar(c,PAD,y,W,total,rs){
+}async function plan(c,x,y,w,h,imgSrc,titleText){return rr(c,x,y,w,h,18,"#fff","#e2e8f0"),section(c,x+18,y+32,titleText||"1. План приміщення"),await new Promise(res=>{if(!imgSrc)return void res();const img=new Image;img.onload=()=>{const boxW=w-40,boxH=h-64,hasLinear=(()=>{try{return Array.isArray(linearElements)&&linearElements.some(e=>e&&e.visible!==false&&e.elementType==="lightLine")}catch(_){return false}})(),zoom=hasLinear?1.22:1,sw=img.naturalWidth/zoom,sh=img.naturalHeight/zoom,sx=(img.naturalWidth-sw)/2,sy=(img.naturalHeight-sh)/2,scale=Math.min(boxW/sw,boxH/sh),dw=sw*scale,dh=sh*scale;c.save();c.beginPath();c.rect(x+14,y+42,w-28,h-52);c.clip();c.drawImage(img,sx,sy,sw,sh,x+(w-dw)/2,y+44+(boxH-dh)/2,dw,dh);c.restore();res()},img.onerror=res,img.src=imgSrc}),h}function totalBar(c,PAD,y,W,total,rs){
   const w=W-2*PAD;
   function num(v){v=Number(String(v==null?"":v).replace(",","."));return Number.isFinite(v)?v:0}
   function paymentSettings(){
@@ -319,7 +319,7 @@ async function alphaSingle(rs){
   const allDimLines=!1!==rs.dimensionsList?_allWallDimensionLines({pts:pts,lengths:lengths,realPts:realPts}):[];
   const groups=_modernGetNomenclatureGroupsFromState({elemItems:elemItems,elemGroups:elemGroups}),total=_modernGroupsTotal(groups);
   const lightLines=!0===rs.showLightCoords&&Array.isArray(lightMarks)&&lightMarks.length?getLightCoordLines({pts:pts,lengths:lengths,realPts:realPts,circleMode:circleMode,circleDiamCm:circleDiamCm,lightMarks:lightMarks.filter(m=>window.rmIsFixtureMarkV326?window.rmIsFixtureMarkV326(m):true)}):[];
-  const linearMountLines=_reportLinearMountingLines(); linearMountLines.forEach(v=>lightLines.push(v));
+  const linearMountLines=!1!==rs.mountingLightBindings?_reportLinearMountingLines():[]; linearMountLines.forEach(v=>lightLines.push(v));
   const ceilingLines=!0===rs.showLightCoords&&Array.isArray(lightMarks)&&lightMarks.length&&window.getCeilingElementCoordLinesV326?window.getCeilingElementCoordLinesV326():[];
   const exhaustLines=!0===rs.showLightCoords&&"function"==typeof getExhaustCoordLines&&Array.isArray(lightMarks)&&lightMarks.length?getExhaustCoordLines({pts:pts,lengths:lengths,realPts:realPts,circleMode:circleMode,circleDiamCm:circleDiamCm,lightMarks:lightMarks}):[];
   const wallLines=!1!==rs.showWallCoords&&Array.isArray(wallMarks)&&wallMarks.length?getWallCoordLines({pts:pts,lengths:lengths,realPts:realPts,wallMarks:wallMarks}):[];
@@ -330,7 +330,7 @@ async function alphaSingle(rs){
   /* Compact mounting-sheet layout:
      large plan on top, then two dense columns, no artificial empty A4 tail. */
   const PAD=28,GAP=18,LEFT=520,RIGHT=486,RX=PAD+LEFT+GAP;
-  const PLAN_H=520;
+  const PLAN_H=470;
   const dimH=!1!==rs.dimensionsList?(58+Math.max(38,42*Math.max(1,allDimLines.length))):0;
   const lightH=lightLines.length?(58+Math.max(38,52*lightLines.length)):96;
   const wallH=wallLines.length?(58+Math.max(38,78*wallLines.length)):96;
