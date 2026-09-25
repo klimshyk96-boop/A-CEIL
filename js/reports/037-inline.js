@@ -106,15 +106,13 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
         innerX=x+18,
         innerW=w-36,
         narrow=w<500;
-  let payRaw={};
-  try{payRaw=JSON.parse(localStorage.getItem("reportSettings")||"{}")||{}}catch(_e){}
-  const payNum=v=>{v=Number(String(v==null?"":v).replace(",","."));return Number.isFinite(v)?v:0},
-        discountPct=Math.max(0,Math.min(100,payNum(payRaw.discountPercent))),
-        discountAmount=total*discountPct/100,
-        afterDiscount=Math.max(0,total-discountAmount),
-        advanceAmount=Math.max(0,Math.min(payNum(payRaw.advanceAmount),afterDiscount)),
-        remainder=Math.max(0,afterDiscount-advanceAmount),
-        hasPayment=discountPct>0||advanceAmount>0;
+  const _rs=(typeof window._loadRS==="function"?window._loadRS():(window.reportSettings||{})),
+        _pct=Math.max(0,Math.min(100,Number(_rs.discountPercent)||0)),
+        _disc=total*_pct/100,
+        _due=Math.max(0,total-_disc),
+        _adv=Math.max(0,Math.min(Number(_rs.advanceAmount)||0,_due)),
+        _rest=Math.max(0,_due-_adv),
+        _payExtra=_pct>0||_adv>0;
 
   c.font=narrow?"13px Arial":"14px Arial";
   let h=82;
@@ -126,7 +124,7 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
     }
   });
   if(!rows.length)h+=44;
-  if(showTotal&&total>0)h+=76+(hasPayment?(discountPct>0&&advanceAmount>0?50:28):0);
+  if(showTotal&&total>0)h+=76+(_payExtra?(_pct>0&&_adv>0?50:28):0);
 
   rr(c,x,y,w,h,18,"#fff","#e2e8f0");
   section(c,x+18,y+32,titleText||"Кошторис");
@@ -186,23 +184,11 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
   if(showTotal&&total>0){
     yy+=8;
     rr(c,x+12,yy,w-24,54,10,"#f7fff9","#16a34a");
-    c.fillStyle="#15803d";
-    c.font="bold 16px Arial";
-    c.fillText("ДО СПЛАТИ",x+24,yy+32);
-    c.textAlign="right";
-    c.font="bold 21px Arial";
-    c.fillText(fmtNum(afterDiscount)+" грн",x+w-24,yy+33);
-    c.textAlign="left";
+    c.fillStyle="#15803d";c.font="bold 16px Arial";c.fillText("ДО СПЛАТИ",x+24,yy+32);
+    c.textAlign="right";c.font="bold 21px Arial";c.fillText(fmtNum(_due)+" грн",x+w-24,yy+33);c.textAlign="left";
     let py=yy+73;c.font="bold 12px Arial";
-    if(discountPct>0){
-      c.fillStyle="#dc2626";
-      c.fillText("Знижка "+String(discountPct).replace(".",",")+"%: −"+fmtNum(discountAmount)+" грн · було "+fmtNum(total)+" грн",x+18,py);
-      py+=22;
-    }
-    if(advanceAmount>0){
-      c.fillStyle="#475569";c.fillText("Аванс: "+fmtNum(advanceAmount)+" грн",x+18,py);
-      c.textAlign="right";c.fillStyle="#15803d";c.fillText("Залишок: "+fmtNum(remainder)+" грн",x+w-18,py);c.textAlign="left";
-    }
+    if(_pct>0){c.fillStyle="#dc2626";c.fillText("Знижка "+String(_pct).replace(".",",")+"%: −"+fmtNum(_disc)+" грн · було "+fmtNum(total)+" грн",x+18,py);py+=22}
+    if(_adv>0){c.fillStyle="#475569";c.fillText("Аванс: "+fmtNum(_adv)+" грн",x+18,py);c.textAlign="right";c.fillStyle="#15803d";c.fillText("Залишок: "+fmtNum(_rest)+" грн",x+w-18,py);c.textAlign="left"}
   }
   return h;
 }async function plan(c,x,y,w,h,imgSrc,titleText){
