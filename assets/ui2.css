@@ -703,41 +703,81 @@ body:has(#sideInputModal.open) #recoveryBanner{display:none!important}
 }
 
 
-/* v17 FINAL — dimensions only. Default view is a compact simultaneous table. */
-#sideInputModal.open.aceil-v17-all{
-  background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
-  align-items:flex-end!important;padding:0 10px calc(8px + env(safe-area-inset-bottom))!important;
+/* «Розміри» v18 — таблиця всіх сторін над клавіатурою + прев'ю канваса.
+   Живе в окремому шарі #aceilDimsV18 (js/canvas/175-…). Старе вікно #sideInputModal не чіпаємо. */
+#aceilDimsV18{
+  position:fixed;left:0;top:0;width:100%;height:100%;z-index:9100;
+  display:flex;flex-direction:column;background:#eef3fb;
+  overscroll-behavior:contain;touch-action:manipulation;-webkit-text-size-adjust:100%;
 }
-#sideInputModal.open>.aceil-v17-sheet{
-  width:min(96vw,560px)!important;max-width:560px!important;
-  max-height:46dvh!important;height:auto!important;
-  padding:11px!important;border-radius:20px!important;overflow:hidden!important;
-  background:#fff!important;box-shadow:0 -8px 28px rgba(15,23,42,.16)!important;
-  display:flex!important;flex-direction:column!important;
+#aceilDimsV18[hidden]{display:none!important}
+#aceilDimsV18 .aceil-dims-view{
+  flex:1 1 0;min-height:0;display:flex;align-items:center;justify-content:center;
+  padding:8px 10px;touch-action:none;
 }
-.aceil-v17-head{display:flex;align-items:center;gap:8px;flex:0 0 auto}
-.aceil-v17-head h3{margin:0!important;flex:1;font-size:20px!important}.aceil-v17-head>span{font-weight:900;color:#2563eb}
-.aceil-v17-head>button{width:36px!important;height:36px!important;min-height:36px!important;padding:0!important;border:0!important;border-radius:11px!important;background:#f1f5f9!important;color:#64748b!important;font-size:23px!important;box-shadow:none!important}
-.aceil-v17-note{font-size:11px;color:#64748b;font-weight:750;margin:2px 0 7px}
-.aceil-v17-rows{display:flex;flex-direction:column;gap:4px;overflow:auto;min-height:0;max-height:calc(46dvh - 116px);-webkit-overflow-scrolling:touch}
-.aceil-v17-row{display:grid;grid-template-columns:48px minmax(0,1fr) 22px;gap:6px;align-items:center;padding:3px 6px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;flex:0 0 auto}
-.aceil-v17-row.active{border-color:#ef4444;background:#fff7f7}
-.aceil-v17-row>button{height:34px!important;min-height:34px!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;color:#334155!important;font-size:14px!important;font-weight:950!important}
-.aceil-v17-row.active>button{color:#dc2626!important}
-.aceil-v17-row>div{height:36px;display:flex;align-items:center;border:1.5px solid #cbd5e1;border-radius:9px;overflow:hidden;background:#fff}
-.aceil-v17-row.active>div{border-color:#ef4444}
-.aceil-v17-row input{width:100%;min-width:0;height:100%;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;padding:4px 4px 4px 10px!important;font-size:17px!important;font-weight:900!important;color:#0f172a!important}
-.aceil-v17-row>div span{padding-right:8px;color:#94a3b8;font-size:11px;font-weight:850}.aceil-v17-row>b{color:#16a34a;text-align:center}
-.aceil-v17-actions{display:grid;grid-template-columns:.9fr 1.1fr;gap:8px;margin-top:7px;flex:0 0 auto}
-.aceil-v17-actions button{height:42px!important;min-height:42px!important;padding:6px!important;border-radius:12px!important;font-size:13px!important;font-weight:950!important}
-.aceil-v17-actions button:first-child{background:#f1f5f9!important;color:#475569!important;box-shadow:none!important}.aceil-v17-actions button:last-child{background:linear-gradient(135deg,#2563eb,#6366f1)!important;color:#fff!important}
-.aceil-v17-single{display:grid;grid-template-columns:42px 42px minmax(0,1fr) 42px;gap:6px;align-items:center;margin-top:8px}
-.aceil-v17-single>button{height:42px!important;min-height:42px!important;padding:0!important;border:0!important;border-radius:12px!important;background:#eff6ff!important;color:#2563eb!important;font-size:25px!important;box-shadow:none!important}
-.aceil-v17-single>strong{text-align:center}.aceil-v17-single>div{height:42px;display:flex;align-items:center;border:1.5px solid #cbd5e1;border-radius:11px;overflow:hidden}
-.aceil-v17-single input{width:100%;min-width:0;height:100%;border:0!important;outline:0!important;padding:5px 8px!important;font-size:18px!important;font-weight:900!important}.aceil-v17-single span{padding-right:8px;color:#94a3b8;font-size:11px;font-weight:850}
-/* Never collapse/hide the table merely because the iPhone keyboard appears. */
-#sideInputModal.aceil-v17-all.aceil-keyboard-open .aceil-v17-head,
-#sideInputModal.aceil-v17-all.aceil-keyboard-open .aceil-v17-rows,
-#sideInputModal.aceil-v17-all.aceil-keyboard-open .aceil-v17-actions{display:flex}
-#sideInputModal.aceil-v17-all.aceil-keyboard-open .aceil-v17-actions{display:grid}
-@media(max-width:390px){#sideInputModal.open>.aceil-v17-sheet{max-height:48dvh!important}.aceil-v17-rows{max-height:calc(48dvh - 116px)}}
+#aceilDimsV18:not(.aceil-dims--kb) .aceil-dims-view{padding-top:calc(8px + env(safe-area-inset-top))}
+#aceilDimsV18 .aceil-dims-cv{
+  display:block;border-radius:14px;background-color:#fbfdff;
+  background-image:linear-gradient(rgba(47,102,243,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(47,102,243,.05) 1px,transparent 1px);
+  background-size:22px 22px;box-shadow:0 0 0 1px rgba(47,102,243,.10),0 6px 18px rgba(35,62,103,.08);
+}
+#aceilDimsV18 .aceil-dims-sheet{
+  flex:0 1 auto;min-height:0;display:flex;flex-direction:column;box-sizing:border-box;
+  background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -6px 22px rgba(15,23,42,.14);
+  padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+}
+#aceilDimsV18.aceil-dims--kb .aceil-dims-sheet{padding-bottom:8px}
+#aceilDimsV18 .aceil-dims-head{display:flex;align-items:center;gap:8px;flex:0 0 auto;min-height:34px}
+#aceilDimsV18 .aceil-dims-head h3{margin:0!important;padding:0!important;font-size:16px!important;line-height:1!important;font-weight:900;color:#0f172a;flex:0 0 auto}
+#aceilDimsV18 .aceil-dims-count{font-size:12px;font-weight:900;color:#2563eb;background:#eff6ff;border-radius:999px;padding:3px 8px;line-height:1.2}
+#aceilDimsV18 .aceil-dims-mode{
+  margin-left:auto!important;height:32px!important;min-height:32px!important;width:auto!important;padding:0 10px!important;
+  border:0!important;border-radius:10px!important;background:#f1f5f9!important;color:#475569!important;
+  font-size:12px!important;font-weight:900!important;box-shadow:none!important;white-space:nowrap;
+}
+#aceilDimsV18 .aceil-dims-x{
+  width:32px!important;height:32px!important;min-height:32px!important;padding:0!important;border:0!important;border-radius:10px!important;
+  background:#f1f5f9!important;color:#64748b!important;font-size:22px!important;line-height:1!important;box-shadow:none!important;
+}
+#aceilDimsV18 .aceil-dims-body{
+  flex:1 1 auto;min-height:0;position:relative;overflow-y:auto;margin:6px 0;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+}
+#aceilDimsV18 .aceil-dims-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+#aceilDimsV18 .aceil-dims-cell{
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:2px;
+  height:38px;box-sizing:border-box;padding:0 8px 0 2px;border:1.5px solid #e2e8f0;border-radius:11px;background:#fff;
+}
+#aceilDimsV18 .aceil-dims-cell.filled{background:#f8fafc}
+#aceilDimsV18 .aceil-dims-cell.active{border-color:#ef4444;background:#fff7f7}
+#aceilDimsV18 .aceil-dims-lab{
+  width:auto!important;min-width:32px;height:34px!important;min-height:34px!important;padding:0 4px!important;border:0!important;background:transparent!important;
+  box-shadow:none!important;color:#334155!important;font-size:14px!important;font-weight:900!important;line-height:1!important;
+}
+#aceilDimsV18 .aceil-dims-lab i{font-style:normal;color:#7c3aed;margin-left:1px;font-size:11px}
+#aceilDimsV18 .aceil-dims-cell.active .aceil-dims-lab{color:#dc2626!important}
+#aceilDimsV18 input{
+  width:100%;min-width:0;height:34px!important;margin:0!important;padding:0 2px 0 4px!important;border:0!important;outline:0!important;
+  box-shadow:none!important;background:transparent!important;border-radius:0!important;
+  font-size:16px!important;font-weight:850!important;color:#0f172a!important;text-align:left;-webkit-appearance:none;appearance:none;
+}
+#aceilDimsV18 em{font-style:normal;color:#94a3b8;font-size:11px;font-weight:850}
+#aceilDimsV18 .aceil-dims-single{display:grid;grid-template-columns:auto minmax(0,1fr) ;align-items:center;gap:8px;padding:2px 0}
+#aceilDimsV18 .aceil-dims-single strong{font-size:22px;font-weight:950;color:#dc2626;min-width:48px;text-align:center}
+#aceilDimsV18 .aceil-dims-field{display:flex;align-items:center;height:48px;padding:0 12px;border:1.5px solid #ef4444;border-radius:13px;background:#fff7f7}
+#aceilDimsV18 .aceil-dims-field input{height:44px!important;font-size:22px!important}
+#aceilDimsV18 .aceil-dims-field em{font-size:13px}
+#aceilDimsV18 .aceil-dims-actions{display:grid;grid-template-columns:44px 44px minmax(0,1fr);gap:6px;flex:0 0 auto}
+#aceilDimsV18 .aceil-dims-nav{
+  width:auto!important;height:42px!important;min-height:42px!important;padding:0!important;border:0!important;border-radius:12px!important;
+  background:#eff6ff!important;color:#2563eb!important;font-size:26px!important;line-height:1!important;box-shadow:none!important;
+}
+#aceilDimsV18 .aceil-dims-nav:disabled{opacity:.35}
+#aceilDimsV18 .aceil-dims-apply{
+  width:auto!important;height:42px!important;min-height:42px!important;padding:0 10px!important;border:0!important;border-radius:12px!important;
+  background:linear-gradient(135deg,#2563eb,#6366f1)!important;color:#fff!important;font-size:15px!important;font-weight:900!important;
+}
+/* ПК / широкий екран: без прев'ю, реальний канвас лишається видимим; таблиця — плаваюча внизу. */
+#aceilDimsV18.aceil-dims--float{background:transparent;pointer-events:none;align-items:center;justify-content:flex-end}
+#aceilDimsV18.aceil-dims--float .aceil-dims-view{display:none}
+#aceilDimsV18.aceil-dims--float .aceil-dims-sheet{pointer-events:auto;width:min(560px,96vw);max-height:60vh}
