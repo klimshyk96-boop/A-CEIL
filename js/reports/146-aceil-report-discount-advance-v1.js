@@ -20,19 +20,26 @@ function clampAmount(v){
   return v;
 }
 
+function loadPaymentSettings(){
+  var raw={};
+  try{raw=JSON.parse(localStorage.getItem("reportSettings")||"{}")||{};}catch(e){}
+  return {discountPercent:clampPct(raw.discountPercent),advanceAmount:clampAmount(raw.advanceAmount)};
+}
+
 // --- 1. Persist discount/advance % inside reportSettings ---
 var oldSaveRS = window.saveReportSettings;
 if ("function" == typeof oldSaveRS && !oldSaveRS.__discAdv401) {
   var wrappedSaveRS = function(){
     var r = oldSaveRS.apply(this, arguments);
     try {
-      var rs = ("function" == typeof _loadRS) ? _loadRS() : (window.reportSettings || {});
-      var dEl = document.getElementById("rsDiscountPercent");
-      var aEl = document.getElementById("rsAdvanceAmount");
-      if (dEl) rs.discountPercent = clampPct(dEl.value);
-      if (aEl) rs.advanceAmount = clampAmount(aEl.value);
-      localStorage.setItem("reportSettings", JSON.stringify(rs));
-      window.reportSettings = rs;
+      var rs={};
+      try{rs=JSON.parse(localStorage.getItem("reportSettings")||"{}")||{};}catch(_e){rs={};}
+      var dEl=document.getElementById("rsDiscountPercent");
+      var aEl=document.getElementById("rsAdvanceAmount");
+      if(dEl)rs.discountPercent=clampPct(dEl.value);
+      if(aEl)rs.advanceAmount=clampAmount(aEl.value);
+      localStorage.setItem("reportSettings",JSON.stringify(rs));
+      window.reportSettings=Object.assign(window.reportSettings||{},rs);
     } catch(e){window.__diagSilent&&window.__diagSilent(e)}
     return r;
   };
@@ -43,7 +50,7 @@ if ("function" == typeof oldSaveRS && !oldSaveRS.__discAdv401) {
 
 // --- 2. Inject two number inputs into the "Кошторис" card of report settings modal ---
 function injectDiscountAdvanceUI(){
-  var rs = ("function" == typeof _loadRS) ? _loadRS() : (window.reportSettings || {});
+  var rs = loadPaymentSettings();
   var existing = document.getElementById("rsDiscountPercent");
   if (existing) {
     existing.value = (rs.discountPercent != null) ? rs.discountPercent : "";
@@ -119,8 +126,9 @@ function computeRawTotal(){
 // --- 4. Build HTML summary card ---
 function buildSummaryHtml(rawTotal, rs){
   if (rs && rs.reportAudience === "installer") return ""; // installer-only report hides pricing
-  var discountPct = clampPct(rs && rs.discountPercent);
-  var advanceAmountRaw = clampAmount(rs && rs.advanceAmount);
+  var persistedPayment=loadPaymentSettings();
+  var discountPct=clampPct(rs&&rs.discountPercent!=null?rs.discountPercent:persistedPayment.discountPercent);
+  var advanceAmountRaw=clampAmount(rs&&rs.advanceAmount!=null?rs.advanceAmount:persistedPayment.advanceAmount);
   if (!(rawTotal > 0) || (discountPct <= 0 && advanceAmountRaw <= 0)) return "";
 
   var discountAmount = rawTotal * discountPct / 100;

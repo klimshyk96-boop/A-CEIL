@@ -106,6 +106,14 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
         innerX=x+18,
         innerW=w-36,
         narrow=w<500;
+  let _payRaw={};try{_payRaw=JSON.parse(localStorage.getItem("reportSettings")||"{}")||{}}catch(_e){}
+  const _payNum=v=>{v=Number(String(v==null?"":v).replace(",","."));return Number.isFinite(v)?v:0},
+        _discount=Math.max(0,Math.min(100,_payNum(_payRaw.discountPercent))),
+        _discountAmount=total*_discount/100,
+        _afterDiscount=Math.max(0,total-_discountAmount),
+        _advance=Math.max(0,Math.min(_payNum(_payRaw.advanceAmount),_afterDiscount)),
+        _remainder=Math.max(0,_afterDiscount-_advance),
+        _hasPaymentAdjustments=_discount>0||_advance>0;
 
   c.font=narrow?"13px Arial":"14px Arial";
   let h=82;
@@ -117,7 +125,7 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
     }
   });
   if(!rows.length)h+=44;
-  if(showTotal&&total>0)h+=76;
+  if(showTotal&&total>0)h+=76+(_hasPaymentAdjustments?(_discount>0&&_advance>0?54:32):0);
 
   rr(c,x,y,w,h,18,"#fff","#e2e8f0");
   section(c,x+18,y+32,titleText||"Кошторис");
@@ -177,13 +185,11 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
   if(showTotal&&total>0){
     yy+=8;
     rr(c,x+12,yy,w-24,54,10,"#f7fff9","#16a34a");
-    c.fillStyle="#15803d";
-    c.font="bold 16px Arial";
-    c.fillText("ДО СПЛАТИ",x+24,yy+32);
-    c.textAlign="right";
-    c.font="bold 21px Arial";
-    c.fillText(fmtNum(total)+" грн",x+w-24,yy+33);
-    c.textAlign="left";
+    c.fillStyle="#15803d";c.font="bold 16px Arial";c.fillText("ДО СПЛАТИ",x+24,yy+32);
+    c.textAlign="right";c.font="bold 21px Arial";c.fillText(fmtNum(_afterDiscount)+" грн",x+w-24,yy+33);c.textAlign="left";
+    let py=yy+72;c.font="bold 12px Arial";
+    if(_discount>0){c.fillStyle="#dc2626";c.fillText("Знижка "+String(_discount).replace(".",",")+"%: −"+fmtNum(_discountAmount)+" грн  ·  було "+fmtNum(total)+" грн",x+18,py);py+=22}
+    if(_advance>0){c.fillStyle="#475569";c.fillText("Аванс: "+fmtNum(_advance)+" грн",x+18,py);c.textAlign="right";c.fillStyle="#15803d";c.fillText("Залишок: "+fmtNum(_remainder)+" грн",x+w-18,py);c.textAlign="left"}
   }
   return h;
 }async function plan(c,x,y,w,h,imgSrc,titleText){
