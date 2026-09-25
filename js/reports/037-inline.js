@@ -106,11 +106,33 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
         innerX=x+18,
         innerW=w-36,
         narrow=w<500;
-  const _rs=(typeof window._loadRS==="function"?window._loadRS():(window.reportSettings||{})),
-        _pct=Math.max(0,Math.min(100,Number(_rs.discountPercent)||0)),
+
+  /* PAYMENT: the settings modal is still open while the report is generated.
+     Read the actual inputs FIRST. This bypasses every reportSettings wrapper/load-order issue. */
+  function _payNumber(v){
+    v=Number(String(v==null?"":v).trim().replace(",","."));
+    return Number.isFinite(v)?v:0;
+  }
+  function _paymentNow(){
+    let d=null,a=null;
+    const de=document.getElementById("rsDiscountPercent");
+    const ae=document.getElementById("rsAdvanceAmount");
+    if(de && String(de.value).trim()!=="") d=de.value;
+    if(ae && String(ae.value).trim()!=="") a=ae.value;
+    let saved={};
+    try{saved=JSON.parse(localStorage.getItem("reportSettings")||"{}")||{}}catch(_e){}
+    if(d==null)d=saved.discountPercent;
+    if(a==null)a=saved.advanceAmount;
+    return {
+      discount:Math.max(0,Math.min(100,_payNumber(d))),
+      advance:Math.max(0,_payNumber(a))
+    };
+  }
+  const _pay=_paymentNow(),
+        _pct=_pay.discount,
         _disc=total*_pct/100,
         _due=Math.max(0,total-_disc),
-        _adv=Math.max(0,Math.min(Number(_rs.advanceAmount)||0,_due)),
+        _adv=Math.max(0,Math.min(_pay.advance,_due)),
         _rest=Math.max(0,_due-_adv),
         _payExtra=_pct>0||_adv>0;
 
@@ -184,11 +206,26 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
   if(showTotal&&total>0){
     yy+=8;
     rr(c,x+12,yy,w-24,54,10,"#f7fff9","#16a34a");
-    c.fillStyle="#15803d";c.font="bold 16px Arial";c.fillText("ДО СПЛАТИ",x+24,yy+32);
-    c.textAlign="right";c.font="bold 21px Arial";c.fillText(fmtNum(_due)+" грн",x+w-24,yy+33);c.textAlign="left";
+    c.fillStyle="#15803d";
+    c.font="bold 16px Arial";
+    c.fillText(_adv>0?"ЗАЛИШОК":"ДО СПЛАТИ",x+24,yy+32);
+    c.textAlign="right";
+    c.font="bold 21px Arial";
+    c.fillText(fmtNum(_adv>0?_rest:_due)+" грн",x+w-24,yy+33);
+    c.textAlign="left";
     let py=yy+73;c.font="bold 12px Arial";
-    if(_pct>0){c.fillStyle="#dc2626";c.fillText("Знижка "+String(_pct).replace(".",",")+"%: −"+fmtNum(_disc)+" грн · було "+fmtNum(total)+" грн",x+18,py);py+=22}
-    if(_adv>0){c.fillStyle="#475569";c.fillText("Аванс: "+fmtNum(_adv)+" грн",x+18,py);c.textAlign="right";c.fillStyle="#15803d";c.fillText("Залишок: "+fmtNum(_rest)+" грн",x+w-18,py);c.textAlign="left"}
+    if(_pct>0){
+      c.fillStyle="#dc2626";
+      c.fillText("Знижка "+String(_pct).replace(".",",")+"%: −"+fmtNum(_disc)+" грн · після знижки "+fmtNum(_due)+" грн",x+18,py);
+      py+=22;
+    }
+    if(_adv>0){
+      c.fillStyle="#475569";
+      c.fillText("Аванс: "+fmtNum(_adv)+" грн",x+18,py);
+      c.textAlign="right";c.fillStyle="#15803d";
+      c.fillText("Залишок: "+fmtNum(_rest)+" грн",x+w-18,py);
+      c.textAlign="left";
+    }
   }
   return h;
 }async function plan(c,x,y,w,h,imgSrc,titleText){
