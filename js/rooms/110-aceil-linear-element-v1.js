@@ -368,7 +368,7 @@
          not a filled construction rectangle. */
       var physicalPx=(num(el.profileWidth,35)/10)*px;
       var reportMode=(typeof _reportMode!=='undefined'&&_reportMode)||window.__A·CEILReportRendering===true;
-      var w=Math.max(3,Math.min(reportMode?15:9,physicalPx+(reportMode?4:0)));
+      var w=Math.max(3,Math.min(reportMode?24:9,physicalPx+(reportMode?10:0)));
       var color=el.elementType==='curtainHidden'?'#8b5cf6':(el.elementType==='lightLine'?'#f59e0b':'#64748b');
       c.lineCap='round'; c.lineJoin='round';
       c.strokeStyle='rgba(255,255,255,.95)'; c.lineWidth=w+3;
@@ -399,12 +399,12 @@
         }
         var label=Math.round(labelCm)+' см';
         var angle=Math.atan2(p2.y-p1.y,p2.x-p1.x);
-        var nx=-Math.sin(angle),ny=Math.cos(angle),offset=reportMode?12:0;
+        var nx=-Math.sin(angle),ny=Math.cos(angle),offset=reportMode?18:0;
         mx+=nx*offset;my+=ny*offset;
-        c.font='bold '+(reportMode?'18':'11')+'px Arial'; c.textAlign='center'; c.textBaseline='middle';
+        c.font='900 '+(reportMode?'28':'11')+'px Arial'; c.textAlign='center'; c.textBaseline='middle';
         var tw=c.measureText(label).width;
-        c.fillStyle='rgba(255,255,255,.96)'; c.fillRect(mx-tw/2-4,my-(reportMode?14:9),tw+12,reportMode?28:18);
-        c.fillStyle=reportMode?'#92400e':'#0f172a'; c.fillText(label,mx,my);
+        c.fillStyle='rgba(255,255,255,.96)'; c.fillRect(mx-tw/2-8,my-(reportMode?20:9),tw+16,reportMode?40:18);
+        c.fillStyle=reportMode?'#c2410c':'#0f172a'; c.fillText(label,mx,my);
       }
     });
     c.restore();
