@@ -401,9 +401,9 @@
         var angle=Math.atan2(p2.y-p1.y,p2.x-p1.x);
         var nx=-Math.sin(angle),ny=Math.cos(angle),offset=reportMode?12:0;
         mx+=nx*offset;my+=ny*offset;
-        c.font='bold '+(reportMode?'12':'11')+'px Arial'; c.textAlign='center'; c.textBaseline='middle';
+        c.font='bold '+(reportMode?'18':'11')+'px Arial'; c.textAlign='center'; c.textBaseline='middle';
         var tw=c.measureText(label).width;
-        c.fillStyle='rgba(255,255,255,.96)'; c.fillRect(mx-tw/2-4,my-(reportMode?10:9),tw+8,reportMode?20:18);
+        c.fillStyle='rgba(255,255,255,.96)'; c.fillRect(mx-tw/2-4,my-(reportMode?14:9),tw+12,reportMode?28:18);
         c.fillStyle=reportMode?'#92400e':'#0f172a'; c.fillText(label,mx,my);
       }
     });
@@ -448,36 +448,98 @@
   }
   if(typeof rmOnReady==='function')rmOnReady(attachCanvasTap);else setTimeout(attachCanvasTap,0);
 
-  /* ── AutoFill: загальна довжина + кількість кутів/обривів ── */
+  /* ── AutoFill v21: довжина + геометричні перехрестя + реальні обриви ── */
+  function _leDistPointSeg(p,a,b){
+    var dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy;if(l2<1e-9)return Math.hypot(p.x-a.x,p.y-a.y);
+    var t=((p.x-a.x)*dx+(p.y-a.y)*dy)/l2;t=Math.max(0,Math.min(1,t));
+    return Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy));
+  }
+  function _leTouchesMainProfile(p,tol){
+    var wall=roomCanvasPoints();if(!wall||wall.length<2)return false;
+    tol=tol||12;
+    for(var i=0;i<wall.length;i++)if(_leDistPointSeg(p,wall[i],wall[(i+1)%wall.length])<=tol)return true;
+    return false;
+  }
+  function _leSegIntersection(a,b,c,d){
+    var r={x:b.x-a.x,y:b.y-a.y},q={x:d.x-c.x,y:d.y-c.y};
+    var den=r.x*q.y-r.y*q.x;if(Math.abs(den)<1e-7)return null;
+    var ac={x:c.x-a.x,y:c.y-a.y};
+    var t=(ac.x*q.y-ac.y*q.x)/den,u=(ac.x*r.y-ac.y*r.x)/den;
+    /* Endpoint touching is a join/attachment, not a crossing. */
+    var eps=1e-4;if(t<=eps||t>=1-eps||u<=eps||u>=1-eps)return null;
+    return {x:a.x+t*r.x,y:a.y+t*r.y,t:t,u:u};
+  }
+  function _leIntersectionKey(a,ai,b,bi){
+    var x=String(a.id||'' )+':'+ai,y=String(b.id||'')+':'+bi;return x<y?x+'|'+y:y+'|'+x;
+  }
+  function _leGetOverride(a,b,key){
+    var av=a&&a.intersectionCornerOverrides&&a.intersectionCornerOverrides[key];
+    var bv=b&&b.intersectionCornerOverrides&&b.intersectionCornerOverrides[key];
+    var v=av!=null?av:bv;v=parseInt(v,10);return isFinite(v)?Math.max(0,Math.min(4,v)):4;
+  }
+  function _leFindIntersections(src){
+    var lights=(src||[]).filter(function(e){return e&&e.elementType==='lightLine';}),out=[];
+    for(var i=0;i<lights.length;i++){
+      var a=lights[i],ap=canvasPointsOf(a);
+      for(var j=i;j<lights.length;j++){
+        var b=lights[j],bp=canvasPointsOf(b);
+        for(var ai=0;ai<ap.length-1;ai++)for(var bi=0;bi<bp.length-1;bi++){
+          if(a===b && Math.abs(ai-bi)<=1)continue;
+          if(a===b && ai===0 && bi===bp.length-2 && Math.hypot(ap[0].x-ap[ap.length-1].x,ap[0].y-ap[ap.length-1].y)<2)continue;
+          var hit=_leSegIntersection(ap[ai],ap[ai+1],bp[bi],bp[bi+1]);if(!hit)continue;
+          var key=_leIntersectionKey(a,ai,b,bi);
+          if(out.some(function(x){return x.key===key;}))continue;
+          out.push({key:key,a:a,b:b,ai:ai,bi:bi,x:hit.x,y:hit.y,corners:_leGetOverride(a,b,key)});
+        }
+      }
+    }
+    return out;
+  }
+  function _leBreakCount(el){
+    var closedFigure=el.shape==='rectangle'||(el.elementType==='lightLine'&&el.lightShapeMode==='rhombus');
+    if(closedFigure)return 0;
+    var ps=canvasPointsOf(el);if(!ps||ps.length<2)return 0;
+    var n=0;if(!_leTouchesMainProfile(ps[0],12))n++;if(!_leTouchesMainProfile(ps[ps.length-1],12))n++;return n;
+  }
+  window.getLinearLightIntersections=function(state){
+    var src=state&&Array.isArray(state.linearElements)?state.linearElements:arr();return _leFindIntersections(src);
+  };
+  window.setLinearIntersectionCorners=function(key,value){
+    var list=arr(),hits=_leFindIntersections(list),h=hits.find(function(x){return x.key===key;});if(!h)return;
+    var v=Math.max(0,Math.min(4,parseInt(value,10)||0));
+    [h.a,h.b].forEach(function(e){e.intersectionCornerOverrides=e.intersectionCornerOverrides||{};e.intersectionCornerOverrides[key]=v;});
+    try{persist();}catch(_){try{saveState();}catch(__){}} applyLinearNomenclature();
+    if(curId)openEditor(curId);
+  };
   window.linearElementsSummary=function(state){
     var src=state&&Array.isArray(state.linearElements)?state.linearElements:arr();
-    var out={count:0,totalLengthCm:0,cornerCount:0,breakCount:0,byType:{}};
+    var out={count:0,totalLengthCm:0,cornerCount:0,breakCount:0,baseCornerCount:0,intersectionCount:0,intersectionCornerCount:0,byType:{}};
     src.forEach(function(e){
-      var el=computeTotals(Object.assign({},e));
-      var closedFigure=el.shape==='rectangle'||(el.elementType==='lightLine'&&el.lightShapeMode==='rhombus');
-      var breaks=closedFigure?0:2;
-      out.count++; out.totalLengthCm+=el.totalLengthCm; out.cornerCount+=el.cornerCount; out.breakCount+=breaks;
-      var k=el.elementType||'custom';
-      if(!out.byType[k]) out.byType[k]={label:typeDef(k).label,lengthCm:0,corners:0,breaks:0,count:0};
-      out.byType[k].lengthCm+=el.totalLengthCm; out.byType[k].corners+=el.cornerCount; out.byType[k].breaks+=breaks; out.byType[k].count++;
+      var el=computeTotals(Object.assign({},e));var isLight=el.elementType==='lightLine';var breaks=isLight?_leBreakCount(e):0;
+      out.count++;out.totalLengthCm+=el.totalLengthCm;out.baseCornerCount+=isLight?el.cornerCount:0;out.breakCount+=breaks;
+      var k=el.elementType||'custom';if(!out.byType[k])out.byType[k]={label:typeDef(k).label,lengthCm:0,corners:0,breaks:0,count:0};
+      out.byType[k].lengthCm+=el.totalLengthCm;out.byType[k].corners+=isLight?el.cornerCount:0;out.byType[k].breaks+=breaks;out.byType[k].count++;
     });
-    out.totalLengthM=Math.round((out.totalLengthCm/100)*100)/100;
-    return out;
+    var hits=_leFindIntersections(src);out.intersectionCount=hits.length;
+    hits.forEach(function(h){out.intersectionCornerCount+=h.corners;});
+    out.cornerCount=out.baseCornerCount+out.intersectionCornerCount;
+    if(out.byType.lightLine)out.byType.lightLine.corners+=out.intersectionCornerCount;
+    out.totalLengthM=Math.round((out.totalLengthCm/100)*100)/100;return out;
   };
   function applyLinearNomenclature(){
     try{
       if(typeof elemItems==='undefined'||!Array.isArray(elemItems))return 0;
       var sum=window.linearElementsSummary(),updated=0;
       elemItems.forEach(function(it){
-        if(!it)return; var n=String(it.name||'').trim().toLowerCase(),src=String(it.source||'').trim().toLowerCase();
-        var related=n.indexOf('світлов')>=0||n.indexOf('ліні')>=0||src.indexOf('linear_')===0;
-        if(!related)return;
-        if(src==='linear_corner'||n.indexOf('кут')>=0){it.qty=sum.cornerCount;it.unit='шт';updated++;}
-        else if(src==='linear_break'||n.indexOf('обрив')>=0||n.indexOf('закінч')>=0){it.qty=sum.breakCount;it.unit='шт';updated++;}
-        else if(src==='linear_length'||(n.indexOf('світлов')>=0&&n.indexOf('ліні')>=0)){it.qty=sum.totalLengthM;it.unit='м';updated++;}
-        if(updated){it.autoFilled=true;it.autoZero=!(Number(it.qty)>0);}
+        if(!it)return;var n=String(it.name||'').trim().toLowerCase(),src=String(it.source||'').trim().toLowerCase();
+        var related=n.indexOf('світлов')>=0||n.indexOf('ліні')>=0||src.indexOf('linear_')===0;if(!related)return;
+        var changed=false;
+        if(src==='linear_corner'||n.indexOf('кут')>=0){it.qty=sum.cornerCount;it.unit='шт';changed=true;}
+        else if(src==='linear_break'||n.indexOf('обрив')>=0||n.indexOf('закінч')>=0){it.qty=sum.breakCount;it.unit='шт';changed=true;}
+        else if(src==='linear_length'||(n.indexOf('світлов')>=0&&n.indexOf('ліні')>=0)){it.qty=sum.totalLengthM;it.unit='м';changed=true;}
+        if(changed){updated++;it.autoFilled=true;it.autoZero=!(Number(it.qty)>0);}
       });
-      if(updated){try{renderElemList();}catch(_){window.__diagSilent&&window.__diagSilent(_)}try{updateElemBadge();}catch(_){window.__diagSilent&&window.__diagSilent(_)}try{recalcElemTotal();}catch(_){window.__diagSilent&&window.__diagSilent(_)}try{saveState();}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
+      if(updated){try{renderElemList();}catch(_){}try{updateElemBadge();}catch(_){}try{recalcElemTotal();}catch(_){}try{saveState();}catch(_){}}
       return updated;
     }catch(_){return 0;}
   }
@@ -485,7 +547,7 @@
   var _prevAutoFill=window.autoFillNomenclature||(typeof autoFillNomenclature==='function'?autoFillNomenclature:null);
   if(typeof _prevAutoFill==='function'){
     window.autoFillNomenclature=function(){var r=_prevAutoFill.apply(this,arguments);applyLinearNomenclature();return r;};
-    try{autoFillNomenclature=window.autoFillNomenclature;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    try{autoFillNomenclature=window.autoFillNomenclature;}catch(_){}
   }
 
   /* ── Звіт: форма, довжини сегментів, загальна довжина ── */
@@ -702,6 +764,17 @@
       +'<span style="background:#f0fdf4;color:#15803d;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800">Кутів: '+e.cornerCount+'</span>'
       +'<span id="leTotal" style="background:#f8fafc;color:#334155;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800">'+Math.round(e.totalLengthCm)+' см</span></div>'
       +segmentFields
+      +(e.elementType==='lightLine'?(function(){
+        var hits=_leFindIntersections(arr()).filter(function(h){return h.a===e||h.b===e;});
+        var breaks=_leBreakCount(e);
+        if(!hits.length&&!breaks)return '<div style="margin:10px 0;padding:10px 12px;border-radius:12px;background:#f8fafc;color:#475569;font-size:11px;font-weight:800">Автопрорахунок: перехресть 0 · обривів 0</div>';
+        return '<div style="margin:10px 0;padding:11px;border:1px solid #fed7aa;background:#fff7ed;border-radius:14px">'
+          +'<div style="font-size:12px;font-weight:950;color:#9a3412;margin-bottom:7px">Автопрорахунок монтажу</div>'
+          +'<div style="font-size:11px;font-weight:800;color:#475569;margin-bottom:8px">Обривів цієї лінії: <b>'+breaks+'</b>. Обрив — вільний кінець, який не торкається основного профілю.</div>'
+          +(hits.length?'<div style="font-size:11px;font-weight:800;color:#475569;margin-bottom:5px">Перехрестя (за замовчуванням 4 кути):</div>':'')
+          +hits.map(function(h,idx){return '<div style="display:grid;grid-template-columns:1fr 92px;gap:8px;align-items:center;margin-top:6px"><span style="font-size:11px;font-weight:850;color:#334155">Перехрестя '+(idx+1)+'</span><select onchange="setLinearIntersectionCorners(\''+h.key+'\',this.value)" style="height:36px;border:1px solid #fdba74;border-radius:10px;background:#fff;padding:0 7px;font-weight:900">'+[0,1,2,3,4].map(function(v){return '<option value="'+v+'" '+(v===h.corners?'selected':'')+'>'+v+' кути</option>';}).join('')+'</select></div>';}).join('')
+          +'</div>';
+      })():'')
       +'<div style="font-size:12px;font-weight:900;color:#334155;margin:14px 0 7px">Ширина профілю</div>'
       +'<input id="leW" type="hidden" value="'+(width35?35:50)+'">'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
