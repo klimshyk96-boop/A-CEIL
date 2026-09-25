@@ -230,6 +230,19 @@ if ("function" == typeof oldSaveToPhone && !oldSaveToPhone.__discAdv401) {
     };
     try {
       await oldSaveToPhone.apply(this, arguments);
+      // NOTE: the legacy report generators (saveToPhone / generateObjectReport)
+      // build the canvas and call canvas.toBlob(cb) WITHOUT awaiting it, so the
+      // actual window.open() for the report popup can happen *after* this
+      // promise has already resolved. If we restore window.open immediately,
+      // we miss it and capturedWin stays null forever (bug: discount/advance
+      // card never appears). Poll briefly for the popup before giving up.
+      if (!capturedWin) {
+        var waited = 0;
+        while (!capturedWin && waited < 4000) {
+          await new Promise(function(res){ setTimeout(res, 50); });
+          waited += 50;
+        }
+      }
     } finally {
       window.open = nativeOpen;
     }
