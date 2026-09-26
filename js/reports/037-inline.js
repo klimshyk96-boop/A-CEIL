@@ -4,7 +4,17 @@
   c.textAlign="left";c.textBaseline="alphabetic";c.fillStyle="#0f172a";c.font="900 27px Arial";c.fillText("A·CEIL",lx+66,40);c.fillStyle="#2563eb";c.font="900 24px Arial";c.fillText("PRO",lx+66,67);c.fillStyle="#64748b";c.font="bold 9px Arial";c.fillText("PROFESSIONAL CEILING DESIGNER",lx+66,84);
   if(projectName){c.fillStyle="#0f172a";c.font="900 22px Arial";c.textAlign="center";c.fillText(String(projectName),W/2,39);if(roomName){c.fillStyle="#64748b";c.font="17px Arial";c.fillText(String(roomName),W/2,67);}}
   c.textAlign="right";c.fillStyle="#0f172a";c.font="900 20px Arial";c.fillText("Монтажний лист",W-PAD,39);c.fillStyle="#64748b";c.font="14px Arial";c.fillText("Дата: "+(new Date).toLocaleDateString("uk-UA"),W-PAD,66);c.textAlign="left";c.strokeStyle="#e2e8f0";c.lineWidth=1;c.beginPath();c.moveTo(PAD,103);c.lineTo(W-PAD,103);c.stroke();
-}function section(c,x,y,t){c.fillStyle="#0043b8",c.font="bold 18px Arial",c.fillText(t,x,y)}function title(c,PAD,y,name,meta,rs){return c.fillStyle="#0f172a",c.font="bold 34px Arial",c.fillText(name||"Звіт заміру",PAD,y),c.fillStyle="#475569",c.font="16px Arial",meta&&c.fillText(meta,PAD,y+34),y+60}
+}function quickSummary(c,PAD,y,W,st){
+  const bits=[];
+  if(st&&st.area!=null)bits.push("Площа: "+st.area+" м²");
+  if(st&&st.per!=null)bits.push("Периметр: "+st.per+" м");
+  try{if(Array.isArray(pts)&&pts.length)bits.push("Кути: "+pts.length)}catch(_e){}
+  if(!bits.length)return;
+  c.fillStyle="#64748b";c.font="bold 13px Arial";c.textAlign="left";
+  c.fillText(bits.join("  •  "),PAD,y);
+  c.strokeStyle="#eef2f7";c.lineWidth=1;c.beginPath();c.moveTo(PAD,y+13);c.lineTo(W-PAD,y+13);c.stroke();
+}
+function section(c,x,y,t){c.fillStyle="#0043b8",c.font="bold 18px Arial",c.fillText(t,x,y)}function title(c,PAD,y,name,meta,rs){return c.fillStyle="#0f172a",c.font="bold 34px Arial",c.fillText(name||"Звіт заміру",PAD,y),c.fillStyle="#475569",c.font="16px Arial",meta&&c.fillText(meta,PAD,y+34),y+60}
 
 function infoCards(c,x,y,w,rows,titleText){
   rows=Array.isArray(rows)?rows:[];
@@ -163,7 +173,7 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
     }
   });
   if(!rows.length)h+=44;
-  if(showTotal&&total>0)h+=76+(_payExtra?(_pct>0&&_adv>0?50:28):0);
+  if(showTotal&&total>0)h+=146;
 
   rr(c,x,y,w,h,18,"#fff","#e2e8f0");
   section(c,x+18,y+32,titleText||"Кошторис");
@@ -221,28 +231,21 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
   });
 
   if(showTotal&&total>0){
-    yy+=8;
-    rr(c,x+12,yy,w-24,54,10,"#f7fff9","#16a34a");
-    c.fillStyle="#15803d";
-    c.font="bold 16px Arial";
-    c.fillText(_adv>0?"ЗАЛИШОК":"ДО СПЛАТИ",x+24,yy+32);
-    c.textAlign="right";
-    c.font="bold 21px Arial";
-    c.fillText(fmtNum(_adv>0?_rest:_due)+" грн",x+w-24,yy+33);
-    c.textAlign="left";
-    let py=yy+73;c.font="bold 12px Arial";
-    if(_pct>0){
-      c.fillStyle="#dc2626";
-      c.fillText("Знижка "+String(_pct).replace(".",",")+"%: −"+fmtNum(_disc)+" грн · після знижки "+fmtNum(_due)+" грн",x+18,py);
-      py+=22;
-    }
-    if(_adv>0){
-      c.fillStyle="#475569";
-      c.fillText("Аванс: "+fmtNum(_adv)+" грн",x+18,py);
-      c.textAlign="right";c.fillStyle="#15803d";
-      c.fillText("Залишок: "+fmtNum(_rest)+" грн",x+w-18,py);
-      c.textAlign="left";
-    }
+    yy+=10;
+    const boxH=126;
+    rr(c,x+12,yy,w-24,boxH,12,"#fbfdff","#dbe7f5");
+    const rowsPay=[
+      ["Загальна сума",fmtNum(total)+" грн","#0f172a"],
+      ["Знижка"+(_pct>0?" "+String(_pct).replace(".",",")+"%":""),_pct>0?"− "+fmtNum(_disc)+" грн":"0 грн","#dc2626"],
+      ["Аванс",fmtNum(_adv)+" грн","#475569"],
+      ["ЗАЛИШОК",fmtNum(_rest)+" грн","#15803d"]
+    ];
+    rowsPay.forEach((r,i)=>{
+      const ry=yy+26+i*27;
+      if(i===3){c.fillStyle="#f0fdf4";c.fillRect(x+13,ry-20,w-26,31);}
+      c.fillStyle=r[2];c.font=i===3?"bold 17px Arial":"bold 14px Arial";c.textAlign="left";c.fillText(r[0],x+26,ry);
+      c.textAlign="right";c.font=i===3?"bold 22px Arial":"bold 15px Arial";c.fillText(r[1],x+w-26,ry);c.textAlign="left";
+    });
   }
   return h;
 }async function plan(c,x,y,w,h,imgSrc,titleText){
@@ -252,10 +255,28 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
     if(!imgSrc)return void res();
     const img=new Image;
     img.onload=()=>{
-      const aw=w-44,ah=h-66;
-      const sc=Math.min(aw/img.width,ah/img.height);
-      const dw=img.width*sc,dh=img.height*sc;
-      c.drawImage(img,x+(w-dw)/2,y+48+(ah-dh)/2,dw,dh);
+      const aw=w-54,ah=h-72;
+      let sx=0,sy=0,sw=img.width,sh=img.height;
+      try{
+        const t=document.createElement("canvas");t.width=img.width;t.height=img.height;
+        const tc=t.getContext("2d",{willReadFrequently:true});tc.drawImage(img,0,0);
+        const d=tc.getImageData(0,0,t.width,t.height).data;
+        let minX=t.width,minY=t.height,maxX=-1,maxY=-1;
+        const step=Math.max(1,Math.floor(Math.max(t.width,t.height)/900));
+        for(let yy=0;yy<t.height;yy+=step)for(let xx=0;xx<t.width;xx+=step){
+          const i=(yy*t.width+xx)*4,a=d[i+3],r=d[i],g=d[i+1],b=d[i+2];
+          if(a>30 && (r<242||g<242||b<242)){
+            if(xx<minX)minX=xx;if(xx>maxX)maxX=xx;if(yy<minY)minY=yy;if(yy>maxY)maxY=yy;
+          }
+        }
+        if(maxX>minX&&maxY>minY){
+          const pad=Math.max(18,Math.round(Math.max(maxX-minX,maxY-minY)*.06));
+          sx=Math.max(0,minX-pad);sy=Math.max(0,minY-pad);
+          sw=Math.min(t.width-sx,maxX-minX+pad*2);sh=Math.min(t.height-sy,maxY-minY+pad*2);
+        }
+      }catch(_e){}
+      const sc=Math.min(aw/sw,ah/sh),dw=sw*sc,dh=sh*sc;
+      c.drawImage(img,sx,sy,sw,sh,x+(w-dw)/2,y+48+(ah-dh)/2,dw,dh);
       res();
     };
     img.onerror=res;img.src=imgSrc;
@@ -403,7 +424,7 @@ async function alphaSingle(rs){
 
   /* v30 presentation-only redesign. Data/calculations stay untouched. */
   const titles={plan:"1. План приміщення",info:"2. Основна інформація",dimensions:"3. Розміри стін",legend:"4. Умовні позначення",light:"5. Світло",placement:"6. Розташування елементів",table:"7. Кошторис",ceilings:"Елементи стелі",exhausts:"Витяжка",cornices:"Карниз ванної",diags:"Діагоналі приміщення"};
-  const PAD=28,GAP=18,COL=(W-PAD*2-GAP)/2,RIGHT_X=PAD+COL+GAP,PLAN_H=470;
+  const PAD=28,GAP=18,COL=(W-PAD*2-GAP)/2,RIGHT_X=PAD+COL+GAP,PLAN_H=560;
   const infoRows=!1!==rs.area?[["Площа полотна",st.area+" м²"],["Периметр",st.per+" м"]]:[];
   const od=_overallDims(st,rs);od&&infoRows.push(["Габаритні розміри",od]);
   if(Array.isArray(pts)&&pts.length)infoRows.push(["Кількість кутів",String(pts.length)]);
@@ -413,7 +434,8 @@ async function alphaSingle(rs){
   c.fillStyle="#ffffff";c.fillRect(0,0,W,5200);
   header(c,W,PAD,rs,_currentProjName||"Звіт заміру",_currentProjComment||"");
 
-  let y=126;
+  quickSummary(c,PAD,122,W,st);
+  let y=148;
   y+=await plan(c,PAD,y,W-PAD*2,PLAN_H,!1!==rs.drawing?_modernCaptureCurrentDrawing(rs):null,titles.plan)+18;
   y+=infoCards(c,PAD,y,W-PAD*2,infoRows,titles.info)+18;
 
@@ -422,10 +444,8 @@ async function alphaSingle(rs){
   if(!0===rs.showLegend)rightY+=legend(c,RIGHT_X,rightY,COL,Array.isArray(lightMarks)?lightMarks:[],cornices,titles.legend,Array.isArray(wallMarks)?wallMarks:[],Array.isArray(wallTypes)?wallTypes:[],Array.isArray(linearElements)?linearElements:[]);
   y=Math.max(leftY,rightY)+18;
 
-  leftY=y;rightY=y;
-  leftY+=lines(c,PAD,leftY,COL,titles.light,lightLines,"Світло не задано");
-  rightY+=lines(c,RIGHT_X,rightY,COL,titles.placement,wallLines,"Елементи не задані");
-  y=Math.max(leftY,rightY)+18;
+  y+=lines(c,PAD,y,W-PAD*2,titles.light,lightLines,"Світло не задано")+18;
+  y+=lines(c,PAD,y,W-PAD*2,titles.placement,wallLines,"Елементи не задані")+18;
 
   /* Technical optional blocks remain presentation-only and do not alter source data. */
   if(ceilingLines.length)y+=lines(c,PAD,y,W-PAD*2,titles.ceilings,ceilingLines,"")+18;
