@@ -418,6 +418,7 @@ function rmReportCreateHQCanvas(W,H){
   return{out,c,scale};
 }
 async function alphaSingle(room,rs){
+  rs=rs||((typeof window._loadRS==="function"&&window._loadRS())||window.reportSettings||{});
   /*
    * Unified report renderer:
    * a one-room report is rendered by the very same alphaObject layout used
@@ -432,6 +433,7 @@ async function alphaSingle(room,rs){
   return alphaObject(obj,rs);
 }
 async function alphaObject(obj,rs){
+  rs=rs||((typeof window._loadRS==="function"&&window._loadRS())||window.reportSettings||{});
   const W=1080,rooms=obj.rooms||[];let data=[],totalAll=0,H=180;
   const showTech=!isClient(rs),showPrice=!isInstaller(rs)||isFull(rs);
   for(const r of rooms){
