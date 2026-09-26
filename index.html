@@ -2347,44 +2347,5 @@ localStorage: A·CEIL_cloud_cache_v330
   });
 })();
 </script>
-
-<!-- A·CEIL START HUB TEST v1 — 2026-09-26. Remove this block to rollback. -->
-<style id="aceil-start-hub-test-v1-style">
-#aceilStartHub{position:fixed;inset:0;z-index:8800;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(238,245,252,.48);backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px)}
-#aceilStartHub.is-open{display:flex}#aceilStartHub *{box-sizing:border-box}
-.ash-card{width:min(94vw,560px);max-height:calc(100dvh - 36px);overflow:auto;background:rgba(255,255,255,.96);border:1px solid rgba(203,213,225,.8);border-radius:26px;box-shadow:0 24px 70px rgba(15,23,42,.18);padding:22px}
-.ash-brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}.ash-logo{width:44px;height:44px;border-radius:13px;background:linear-gradient(145deg,#0f1d3a,#2563eb);color:#fff;display:grid;place-items:center;font-weight:900;font-size:19px}.ash-brand b{display:block;font-size:20px;color:#0f172a}.ash-brand small{display:block;color:#94a3b8;font-size:10px;font-weight:800;letter-spacing:.08em;margin-top:2px}
-.ash-primary{display:grid;grid-template-columns:1.3fr 1fr;gap:10px}.ash-btn{border:1px solid #dbe4ef!important;box-shadow:none!important;border-radius:16px!important;padding:15px 14px!important;font:800 14px/1.15 inherit!important;min-height:58px}.ash-btn-main{background:linear-gradient(135deg,#2563eb,#5b5cf0)!important;color:#fff!important;border:0!important}.ash-btn-open{background:#fff!important;color:#172033!important}.ash-btn span{display:block;font-size:11px;font-weight:600;opacity:.65;margin-top:5px}
-.ash-section{margin-top:16px}.ash-title{font-size:11px;font-weight:900;color:#94a3b8;letter-spacing:.08em;text-transform:uppercase;margin:0 2px 7px}.ash-last,.ash-report{border:1px solid #e2e8f0;border-radius:16px;background:#f8fafc;padding:12px 13px}.ash-last{display:flex;align-items:center;gap:10px}.ash-last-main{min-width:0;flex:1}.ash-last-name{font-size:14px;font-weight:850;color:#172033;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ash-last-meta{font-size:11px;color:#64748b;margin-top:3px}.ash-continue{border:0!important;box-shadow:none!important;background:#e8f0ff!important;color:#1d4ed8!important;border-radius:11px!important;padding:9px 11px!important;font-size:12px!important;font-weight:850!important}.ash-report{padding:0;overflow:hidden}.ash-report-row{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid #e8edf3}.ash-report-row:last-child{border-bottom:0}.ash-report-icon{width:30px;height:30px;border-radius:9px;background:#eaf2ff;display:grid;place-items:center}.ash-report-text{flex:1;min-width:0}.ash-report-text b{display:block;font-size:12px;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ash-report-text small{font-size:10px;color:#94a3b8}.ash-empty{padding:13px;color:#94a3b8;font-size:11px;text-align:center}
-.ash-admin{display:flex;align-items:center;gap:7px;border-top:1px solid #edf1f5;margin-top:17px;padding-top:14px}.ash-admin-label{font-size:11px;font-weight:850;color:#94a3b8;margin-right:auto}.ash-admin button{border:1px solid #e2e8f0!important;box-shadow:none!important;background:#fff!important;color:#475569!important;border-radius:10px!important;padding:8px 10px!important;font-size:11px!important;font-weight:750!important}.ash-test{margin-top:13px;text-align:center;color:#b0bac8;font-size:9px;font-weight:700;letter-spacing:.05em}
-@media(max-width:430px){.ash-card{padding:17px;border-radius:23px}.ash-primary{grid-template-columns:1fr 1fr}.ash-btn{padding:13px 9px!important;font-size:13px!important}.ash-admin{flex-wrap:wrap}.ash-admin-label{width:100%;flex-basis:100%}.ash-admin button{flex:1}.ash-brand{margin-bottom:14px}}
-</style>
-<div id="aceilStartHub" aria-hidden="true"><div class="ash-card">
-  <div class="ash-brand"><div class="ash-logo">A</div><div><b>A·CEIL PRO</b><small>PROFESSIONAL CEILING DESIGNER</small></div></div>
-  <div class="ash-primary">
-    <button class="ash-btn ash-btn-main" type="button" onclick="A_CEIL_StartHub.create()">＋ Створити кімнату / проєкт<span>Новий обʼєкт</span></button>
-    <button class="ash-btn ash-btn-open" type="button" onclick="A_CEIL_StartHub.projects()">▣ Відкрити проєкт<span>Збережені обʼєкти</span></button>
-  </div>
-  <div class="ash-section"><div class="ash-title">Останній проєкт</div><div id="ashLastProject" class="ash-last"><div class="ash-last-main"><div class="ash-last-name">Завантаження…</div><div class="ash-last-meta"></div></div><button class="ash-continue" type="button" onclick="A_CEIL_StartHub.projects()">Продовжити ›</button></div></div>
-  <div class="ash-section"><div class="ash-title">Останні хмарні звіти</div><div id="ashCloudReports" class="ash-report"><div class="ash-empty">Звіти з хмарним посиланням зʼявляться тут як нагадування</div></div></div>
-  <div class="ash-admin"><div class="ash-admin-label">Адміністрування</div><button type="button" onclick="A_CEIL_StartHub.nomen()">Номенклатура</button><button type="button" onclick="A_CEIL_StartHub.admin('users')">Користувачі</button><button type="button" onclick="A_CEIL_StartHub.admin('activity')">Активність</button></div>
-  <div class="ash-test">ТЕСТОВИЙ СТАРТОВИЙ ЕКРАН</div>
-</div></div>
-<script id="aceil-start-hub-test-v1-script">
-(function(){
- var hub=document.getElementById('aceilStartHub');
- function close(){hub.classList.remove('is-open');hub.setAttribute('aria-hidden','true')}
- function open(){if(document.getElementById('authScreen')&&getComputedStyle(document.getElementById('authScreen')).display!=='none')return;hub.classList.add('is-open');hub.setAttribute('aria-hidden','false');renderLast()}
- function projects(){close();setTimeout(function(){if(typeof window.openProjectsModal==='function')window.openProjectsModal()},30)}
- function create(){close();setTimeout(function(){if(typeof window.openNewObjectModal==='function')window.openNewObjectModal();else if(typeof window.resetAll==='function')window.resetAll()},30)}
- function nomen(){close();setTimeout(function(){if(typeof window.openElementsModal==='function')window.openElementsModal()},30)}
- function admin(tab){close();setTimeout(function(){try{var m=document.getElementById('aceilAdminModal');if(m){m.classList.add('open');m.style.display='flex';m.setAttribute('aria-hidden','false')}if(window.A_CEIL_Admin){if(typeof A_CEIL_Admin.open==='function')A_CEIL_Admin.open();if(typeof A_CEIL_Admin.showTab==='function'){var b=document.querySelector('#aceilAdminModal [data-tab="'+tab+'"]');A_CEIL_Admin.showTab(tab,b)}if(typeof A_CEIL_Admin.load==='function'&&tab==='users')A_CEIL_Admin.load()}}catch(e){console.warn('[StartHub admin]',e)}},30)}
- function renderLast(){var box=document.getElementById('ashLastProject');if(!box)return;try{var ps=typeof window.getProjects==='function'?window.getProjects():[];if(!Array.isArray(ps)||!ps.length){box.querySelector('.ash-last-name').textContent='Проєктів ще немає';box.querySelector('.ash-last-meta').textContent='Створіть перший проєкт';return}var p=ps[ps.length-1]||{};box.querySelector('.ash-last-name').textContent=p.name||p.title||p.projectName||'Останній проєкт';var rooms=Array.isArray(p.rooms)?p.rooms.length:null;var bits=[];if(rooms!=null)bits.push(rooms+' кімн.');if(p.updatedAt||p.updated_at)bits.push('оновлено '+String(p.updatedAt||p.updated_at).slice(0,10));box.querySelector('.ash-last-meta').textContent=bits.join(' · ')||'Натисніть «Продовжити»'}catch(e){box.querySelector('.ash-last-name').textContent='Останній проєкт';box.querySelector('.ash-last-meta').textContent='Відкрити зі списку проєктів'}}
- window.A_CEIL_StartHub={open:open,close:close,projects:projects,create:create,nomen:nomen,admin:admin};
- function tryOpen(){var a=document.getElementById('authScreen');if(a&&getComputedStyle(a).display!=='none'){setTimeout(tryOpen,600);return}open()}
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(tryOpen,700)},{once:true});else setTimeout(tryOpen,700);
-})();
-</script>
-
 </body>
 </html>
