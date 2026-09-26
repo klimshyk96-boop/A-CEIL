@@ -434,7 +434,7 @@ async function alphaSingle(rs){
   const _hd=rmReportCreateHQCanvas(W,5200),out=_hd.out,c=_hd.c;c.fillStyle="#f8fafc";c.fillRect(0,0,W,5200);
   header(c,W,28,rs,_currentProjName||"Звіт заміру",_currentProjComment||"");
   let y=126;
-  c.fillStyle="#0f172a";c.font="bold 25px Arial";c.fillText(_currentRoomName||"Кімната",24,y+30);y+=48;
+  c.fillStyle="#0f172a";c.font="bold 25px Arial";c.fillText((typeof window._currentRoomName==="string"&&window._currentRoomName)||"Кімната",24,y+30);y+=48;
   const planY=y;
   await plan(c,LX,planY,LW,PLAN_H,!1!==rs.drawing?_modernCaptureCurrentDrawing(rs):null,titles.plan);
   let ry=planY;
