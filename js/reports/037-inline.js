@@ -417,57 +417,19 @@ function rmReportCreateHQCanvas(W,H){
   try{c.imageSmoothingEnabled=true;c.imageSmoothingQuality="high"}catch(_e){}
   return{out,c,scale};
 }
-async function alphaSingle(rs){
-  const W=1080,st=_modernRoomStatsFromCurrent();
-  const allDimLines=!1!==rs.dimensionsList?_allWallDimensionLines({pts:pts,lengths:lengths,realPts:realPts}):[];
-  const groups=_modernGetNomenclatureGroupsFromState({elemItems:elemItems,elemGroups:elemGroups});
-  const lightLines=!0===rs.showLightCoords&&Array.isArray(lightMarks)&&lightMarks.length?getLightCoordLines({pts:pts,lengths:lengths,realPts:realPts,circleMode:circleMode,circleDiamCm:circleDiamCm,lightMarks:lightMarks.filter(m=>window.rmIsFixtureMarkV326?window.rmIsFixtureMarkV326(m):true)}):[];
-  const linearMountLines=_reportLinearMountingLines(); linearMountLines.forEach(v=>lightLines.push(v));
-  const ceilingLines=!0===rs.showLightCoords&&Array.isArray(lightMarks)&&lightMarks.length&&window.getCeilingElementCoordLinesV326?window.getCeilingElementCoordLinesV326():[];
-  const exhaustLines=!0===rs.showLightCoords&&"function"==typeof getExhaustCoordLines&&Array.isArray(lightMarks)&&lightMarks.length?getExhaustCoordLines({pts:pts,lengths:lengths,realPts:realPts,circleMode:circleMode,circleDiamCm:circleDiamCm,lightMarks:lightMarks}):[];
-  const wallLines=!1!==rs.showWallCoords&&Array.isArray(wallMarks)&&wallMarks.length?getWallCoordLines({pts:pts,lengths:lengths,realPts:realPts,wallMarks:wallMarks}):[];
-  const diagLines=!0===rs.diagonals?getCurrentReportDiagLines(rs.diagMode||"manual"):[],cornices=reportCornices(),corniceLines=reportCorniceLines(cornices,Array.isArray(pts)?pts.length:0);
-  const showTech=!isClient(rs),showPrice=!isInstaller(rs)||isFull(rs),showTable=(showPrice||showTech)&&!1!==rs.nomenclature;
-
-  /* v30 presentation-only redesign. Data/calculations stay untouched. */
-  const titles={plan:"1. План приміщення",info:"2. Основна інформація",dimensions:"3. Розміри стін",legend:"4. Умовні позначення",light:"5. Світло",placement:"6. Розташування елементів",table:"7. Кошторис",ceilings:"Елементи стелі",exhausts:"Витяжка",cornices:"Карниз ванної",diags:"Діагоналі приміщення"};
-  const PAD=24,GAP=14,COL=(W-PAD*2-GAP)/2,RIGHT_X=PAD+COL+GAP,PLAN_H=430;
-  const infoRows=!1!==rs.area?[["Площа полотна",st.area+" м²"],["Периметр",st.per+" м"]]:[];
-  const od=_overallDims(st,rs);od&&infoRows.push(["Габаритні розміри",od]);
-  if(Array.isArray(pts)&&pts.length)infoRows.push(["Кількість кутів",String(pts.length)]);
-
-  /* generous work canvas; _finalizeReportCanvas crops it to real content */
-  const _hd=rmReportCreateHQCanvas(W,5200),out=_hd.out,c=_hd.c;
-  c.fillStyle="#ffffff";c.fillRect(0,0,W,5200);
-  header(c,W,PAD,rs,_currentProjName||"Звіт заміру",_currentProjComment||"");
-
-  quickSummary(c,PAD,116,W,st);
-  let y=136;
-  y+=await plan(c,PAD,y,W-PAD*2,PLAN_H,!1!==rs.drawing?_modernCaptureCurrentDrawing(rs):null,titles.plan)+18;
-  y+=infoCards(c,PAD,y,W-PAD*2,infoRows,titles.info)+18;
-
-  let leftY=y,rightY=y;
-  const DIM_W=Math.round((W-PAD*2-GAP)*0.66), LEG_X=PAD+DIM_W+GAP, LEG_W=W-PAD-LEG_X;
-  if(!1!==rs.dimensionsList)leftY+=wallDimensionsList(c,PAD,leftY,DIM_W,allDimLines,"Розміри не задані",titles.dimensions);
-  if(!0===rs.showLegend)rightY+=legend(c,LEG_X,rightY,LEG_W,Array.isArray(lightMarks)?lightMarks:[],cornices,titles.legend,Array.isArray(wallMarks)?wallMarks:[],Array.isArray(wallTypes)?wallTypes:[],Array.isArray(linearElements)?linearElements:[]);
-  y=Math.max(leftY,rightY)+10;
-
-  y+=lines(c,PAD,y,W-PAD*2,titles.light,lightLines,"Світло не задано")+10;
-  y+=lines(c,PAD,y,W-PAD*2,titles.placement,wallLines,"Елементи не задані")+10;
-
-  /* Technical optional blocks remain presentation-only and do not alter source data. */
-  if(ceilingLines.length)y+=lines(c,PAD,y,W-PAD*2,titles.ceilings,ceilingLines,"")+18;
-  if(exhaustLines.length)y+=lines(c,PAD,y,W-PAD*2,titles.exhausts,exhaustLines,"")+18;
-  if(corniceLines.length)y+=lines(c,PAD,y,W-PAD*2,titles.cornices,corniceLines,"")+18;
-  if(showTech&&diagLines.length)y+=lines(c,PAD,y,W-PAD*2,titles.diags,diagLines,"")+18;
-
-  if(showTable)y+=table(c,PAD,y,W-PAD*2,groups,isClient(rs),titles.table)+18;
-  if(!showPrice){
-    rr(c,PAD,y,W-PAD*2,70,18,"#fff7ed","#fed7aa");
-    c.fillStyle="#9a3412";c.font="bold 18px Arial";c.fillText("Монтажний лист: ціни приховано",58,y+43);y+=88;
-  }
-  const finalOut=_finalizeReportCanvas(out,W,y+8,rs);
-  _modernOpenPreview(finalOut,`A·CEIL_pro_${audience(rs)}_${(_currentProjName||"steli").replace(/\s+/g,"_")}.png`);
+async function alphaSingle(room,rs){
+  /*
+   * Unified report renderer:
+   * a one-room report is rendered by the very same alphaObject layout used
+   * for multi-room reports. This prevents the two report modes drifting apart.
+   */
+  const r=room||{};
+  const obj={
+    name:r.projectName||r.objectName||r.name||"Звіт заміру",
+    addr:r.addr||r.address||"",
+    rooms:[r]
+  };
+  return alphaObject(obj,rs);
 }
 async function alphaObject(obj,rs){
   const W=1080,rooms=obj.rooms||[];let data=[],totalAll=0,H=180;
@@ -495,6 +457,13 @@ async function alphaObject(obj,rs){
   for(const rd of data){
     const showTable=(showPrice||showTech)&&!1!==rs.nomenclature;
     const titles=reportSectionTitles({dimensions:!1!==rs.dimensionsList,showTech,ceilings:rd.ceilings.length,exhausts:rd.exhausts.length,cornices:rd.cornices.length,diags:showTech&&rd.diags.length,legend:!0===rs.showLegend,table:showTable});
+    titles.plan="1. План приміщення";
+    titles.info="2. Основна інформація";
+    titles.dimensions="3. Розміри стін";
+    titles.placement="4. Розташування елементів";
+    titles.light="5. Світло";
+    titles.legend="6. Умовні позначення";
+    titles.table="7. Кошторис";
     c.fillStyle="#0f172a";c.font="bold 25px Arial";c.fillText(rd.r.name||"Кімната",24,y+30);y+=48;
     const planY=y,planH=500,LX=24,LW=646,RX=686,RW=370;
     await plan(c,LX,planY,LW,planH,!1!==rs.drawing?_renderRoomForReport(rd.r,rs):null,titles.plan);
