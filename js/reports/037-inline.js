@@ -34,18 +34,25 @@ function infoCards(c,x,y,w,rows,titleText){
 }
 function info(c,x,y,w,rows,titleText){const h=56+42*rows.length;rr(c,x,y,w,h,18,"#fff","#e2e8f0"),section(c,x+18,y+32,titleText||"Основна інформація");let yy=y+62;return rows.forEach(r=>{c.strokeStyle="#e5e7eb",c.beginPath(),c.moveTo(x+16,yy+17),c.lineTo(x+w-16,yy+17),c.stroke(),c.fillStyle="#475569",c.font="15px Arial",c.fillText(r[0],x+20,yy),c.textAlign="right",c.fillStyle="#0f172a",c.font="bold 16px Arial",c.fillText(r[1],x+w-20,yy),c.textAlign="left",yy+=42}),h}function lines(c,x,y,w,t,lines,empty){lines=Array.isArray(lines)?lines:[];const isWallBlock=/елемент/i.test(String(t||""));function wrap(txt,maxW,maxLines){if(!(txt=String(txt||"").replace(/^•\s*/,"").trim()))return[""];const words=txt.split(/\s+/).filter(Boolean),out=[];let line="";if(words.forEach(word=>{const test=line?line+" "+word:word;if(c.measureText(test).width<=maxW)line=test;else if(line&&out.push(line),c.measureText(word).width>maxW){let cut=word;for(;cut.length>4&&c.measureText(cut+"…").width>maxW;)cut=cut.slice(0,-1);out.push(cut+"…"),line=""}else line=word}),line&&out.push(line),maxLines&&out.length>maxLines){const clipped=out.slice(0,maxLines);let last=clipped[clipped.length-1]||"";for(;last.length>4&&c.measureText(last+"…").width>maxW;)last=last.slice(0,-1);return clipped[clipped.length-1]=last+"…",clipped}return out.length?out:[""]}function splitWallLine(line){const s=String(line||"").replace(/^•\s*/,"").trim(),m=s.match(/^(.*?):\s*([A-ZА-ЯІЇЄҐ]{1,3})\s*—\s*([^—]+)\s*—\s*(.*)$/i);return m?{name:m[1].trim(),meta:m[2].trim()+" • "+m[3].trim()+" • "+m[4].trim()}:{name:s,meta:""}}c.font="15px Arial";let h=58;lines.length?lines.forEach(line=>{if(isWallBlock){const p=splitWallLine(line),nameLines=wrap(p.name,w-98,2);h+=34+19*nameLines.length+(p.meta?20:0)}else{const arr=wrap(line,w-54,2);h+=Math.max(38,20*arr.length+16)}}):h+=38,rr(c,x,y,w,h,18,"#fff","#e2e8f0"),section(c,x+18,y+32,t);let yy=y+64;return lines.length?lines.forEach(line=>{if(isWallBlock){const p=splitWallLine(line),nameLines=wrap(p.name,w-98,2),rowH=34+19*nameLines.length+(p.meta?20:0);c.strokeStyle="#d7dee9",c.setLineDash([2,2]),c.beginPath(),c.moveTo(x+16,yy+rowH-7),c.lineTo(x+w-16,yy+rowH-7),c.stroke(),c.setLineDash([]),c.fillStyle="#003b91",c.font="bold 22px Arial",c.textAlign="center",c.fillText(function(line){const s=String(line||"").toLowerCase();return s.includes("карниз")?"▥":s.includes("парящ")?"━━":s.includes("профіль")||s.includes("профил")||s.includes("брус")?"▰":s.includes("трек")?"▭":"•"}(line),x+38,yy+22),c.textAlign="left",c.fillStyle="#0f172a",c.font="bold 15px Arial",nameLines.forEach((ln,i)=>c.fillText(ln,x+64,yy+14+19*i)),p.meta&&(c.fillStyle="#334155",c.font="bold 14px Arial",c.fillText(p.meta,x+64,yy+16+19*nameLines.length)),yy+=rowH}else{const arr=wrap(line,w-54,2),rowH=Math.max(38,20*arr.length+16);c.strokeStyle="#e5e7eb",c.beginPath(),c.moveTo(x+16,yy+rowH-8),c.lineTo(x+w-16,yy+rowH-8),c.stroke(),c.fillStyle="#0f172a",c.font="bold 15px Arial",arr.forEach((ln,i)=>c.fillText("• "+ln,x+22,yy+14+20*i)),yy+=rowH}}):(c.fillStyle="#94a3b8",c.font="15px Arial",c.fillText(empty||"Немає даних",x+22,yy)),h}function wallDimensionsList(c,x,y,w,items,empty,titleText){
   items=Array.isArray(items)?items:[];
-  const h=items.length?92+items.length*34:104;
+  const rows=items.map(v=>{const t=String(v||"").replace(/^•\s*/,"").trim(),m=t.match(/^([^—-]+)\s*[—-]\s*(.+)$/);return m?[m[1].trim(),m[2].trim()]:[t,""];});
+  const n=Math.ceil(rows.length/2),h=rows.length?92+n*34:104;
   rr(c,x,y,w,h,18,"#fff","#e2e8f0");
   section(c,x+18,y+32,titleText||"Розміри стін");
-  if(!items.length){c.fillStyle="#94a3b8";c.font="15px Arial";c.fillText(empty||"Розміри не задані",x+22,y+76);return h;}
-  const rows=items.map(v=>{const t=String(v||"").replace(/^•\s*/,"").trim(),m=t.match(/^([^—-]+)\s*[—-]\s*(.+)$/);return m?[m[1].trim(),m[2].trim()]:[t,""];});
-  const top=y+52,left=x+16,inner=w-32,col1=Math.round(inner*.34);
-  c.fillStyle="#f1f5f9";c.fillRect(left,top,inner,32);
-  c.fillStyle="#64748b";c.font="bold 13px Arial";c.fillText("СТОРОНА",left+12,top+21);c.fillText("ДОВЖИНА",left+col1+12,top+21);
-  rows.forEach((r,i)=>{const yy=top+32+i*34;c.strokeStyle="#e2e8f0";c.beginPath();c.moveTo(left,yy+34);c.lineTo(left+inner,yy+34);c.stroke();c.fillStyle="#0f172a";c.font="bold 15px Arial";c.fillText(r[0],left+12,yy+22);c.font="15px Arial";c.fillText(r[1],left+col1+12,yy+22);});
+  if(!rows.length){c.fillStyle="#94a3b8";c.font="15px Arial";c.fillText(empty||"Розміри не задані",x+22,y+76);return h;}
+  const top=y+52,left=x+16,inner=w-32,gap=18,half=(inner-gap)/2;
+  function drawHalf(hx,arr){
+    const col1=Math.round(half*.38);
+    c.fillStyle="#f1f5f9";c.fillRect(hx,top,half,32);
+    c.fillStyle="#64748b";c.font="bold 12px Arial";
+    c.fillText("СТОРОНА",hx+10,top+21);c.fillText("ДОВЖИНА",hx+col1+10,top+21);
+    arr.forEach((r,i)=>{const yy=top+32+i*34;c.strokeStyle="#e2e8f0";c.beginPath();c.moveTo(hx,yy+34);c.lineTo(hx+half,yy+34);c.stroke();
+      c.fillStyle="#0f172a";c.font="bold 14px Arial";c.fillText(r[0],hx+10,yy+22);
+      c.font="14px Arial";c.fillText(r[1],hx+col1+10,yy+22);});
+  }
+  drawHalf(left,rows.slice(0,n)); drawHalf(left+half+gap,rows.slice(n));
+  c.strokeStyle="#dbe7f5";c.beginPath();c.moveTo(left+half+gap/2,top);c.lineTo(left+half+gap/2,top+32+n*34);c.stroke();
   return h;
 }
-
 function _reportLinearMountingLines(){
   const src=(typeof linearElements!=="undefined"&&Array.isArray(linearElements))?linearElements:(Array.isArray(window.linearElements)?window.linearElements:[]);
   const room=(typeof pts!=="undefined"&&Array.isArray(pts))?pts:[];
@@ -440,8 +447,9 @@ async function alphaSingle(rs){
   y+=infoCards(c,PAD,y,W-PAD*2,infoRows,titles.info)+18;
 
   let leftY=y,rightY=y;
-  if(!1!==rs.dimensionsList)leftY+=wallDimensionsList(c,PAD,leftY,COL,allDimLines,"Розміри не задані",titles.dimensions);
-  if(!0===rs.showLegend)rightY+=legend(c,RIGHT_X,rightY,COL,Array.isArray(lightMarks)?lightMarks:[],cornices,titles.legend,Array.isArray(wallMarks)?wallMarks:[],Array.isArray(wallTypes)?wallTypes:[],Array.isArray(linearElements)?linearElements:[]);
+  const DIM_W=Math.round((W-PAD*2-GAP)*0.66), LEG_X=PAD+DIM_W+GAP, LEG_W=W-PAD-LEG_X;
+  if(!1!==rs.dimensionsList)leftY+=wallDimensionsList(c,PAD,leftY,DIM_W,allDimLines,"Розміри не задані",titles.dimensions);
+  if(!0===rs.showLegend)rightY+=legend(c,LEG_X,rightY,LEG_W,Array.isArray(lightMarks)?lightMarks:[],cornices,titles.legend,Array.isArray(wallMarks)?wallMarks:[],Array.isArray(wallTypes)?wallTypes:[],Array.isArray(linearElements)?linearElements:[]);
   y=Math.max(leftY,rightY)+18;
 
   y+=lines(c,PAD,y,W-PAD*2,titles.light,lightLines,"Світло не задано")+18;
