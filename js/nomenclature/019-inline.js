@@ -920,6 +920,16 @@ if(_lightTouchHit>=0){
   return;
 }
 if(diagonalMode)return void handleInputEvent(touch.clientX,touch.clientY);
+
+/* iOS/Safari: while drawing a new polygon at normal scale, create the point
+   on touchstart instead of waiting for touchend. Existing touchend logic is
+   preserved for closed shapes, wall interaction and zoom/pan. */
+if(!closed&&!circleMode&&viewScale<=1){
+  _wallTouchTapPending=null;
+  _wallTouchTapMoved=!1;
+  handleInputEvent(touch.clientX,touch.clientY);
+  return;
+}
   longPressTimer=setTimeout(()=>{},9999),
   _wallTouchTapPending={clientX:touch.clientX,clientY:touch.clientY},
   _wallTouchTapMoved=!1
