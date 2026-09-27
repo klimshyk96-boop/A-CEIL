@@ -2354,7 +2354,7 @@ localStorage: A·CEIL_cloud_cache_v330
 'use strict';
 if(window.ACEILPlanViewerV1)return;
 window.ACEILPlanViewerV1=true;
-var state={url:null,type:null,scale:1,x:0,y:0,rot:0,pointers:new Map(),pinch:null};
+var state={url:null,type:null,file:null,scale:1,x:0,y:0,rot:0,pointers:new Map(),pinch:null};
 function el(id){return document.getElementById(id)}
 function svg(name){var m={upload:'<path d="M12 16V4m0 0-4 4m4-4 4 4M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>',close:'<path d="M6 6l12 12M18 6 6 18"/>',plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',fit:'<path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/>',rotate:'<path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7"/>',trash:'<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/>',plan:'<path d="M4 4h16v16H4zM4 10h10M10 4v6M14 10v10"/>'};return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+m[name]+'</svg>'}
 function inject(){if(el('aceilPlanViewer'))return;
@@ -2364,7 +2364,7 @@ function inject(){if(el('aceilPlanViewer'))return;
 @media(min-width:760px){.apv-head{padding-left:20px;padding-right:20px}.apv-tools{right:20px;bottom:20px}.apv-foot{padding-left:20px;padding-right:20px}.apv-empty-card{padding:34px}}
 `;
  document.head.appendChild(st);
- var d=document.createElement('div');d.id='aceilPlanViewer';d.innerHTML=`<div class="apv-head"><button class="apv-ib" id="apvClose" aria-label="Закрити">${svg('close')}</button><div class="apv-title"><b>Прорахунок з плану</b><small>Перегляд обмірного плану</small></div><button class="apv-ib" id="apvPickTop" aria-label="Завантажити план">${svg('upload')}</button></div><div class="apv-main"><div class="apv-stage" id="apvStage"></div><div class="apv-empty" id="apvEmpty"><div class="apv-empty-card"><div class="apv-empty-ico">${svg('plan')}</div><h3>Додайте обмірний план</h3><p>Фото, скріншот або PDF. План відкриється окремо від канваса — його можна збільшувати, рухати та повертати.</p><button class="apv-primary" id="apvPick">${svg('upload')} Вибрати план</button></div></div><div class="apv-hint" id="apvHint" style="display:none">Два пальці — масштаб · один — переміщення</div><div class="apv-tools" id="apvTools" style="display:none"><button id="apvMinus" aria-label="Зменшити">${svg('minus')}</button><button id="apvPlus" aria-label="Збільшити">${svg('plus')}</button><button id="apvFit" aria-label="Вмістити">${svg('fit')}</button><button id="apvRotate" aria-label="Повернути">${svg('rotate')}</button></div></div><div class="apv-foot" id="apvFoot" style="display:none"><div class="apv-file"><b id="apvName">План</b><small id="apvMeta">Готовий до перегляду</small></div><button id="apvChange">Замінити</button><button class="danger" id="apvRemove">Видалити</button></div><input id="apvInput" type="file" accept="image/*,application/pdf,.pdf" hidden>`;
+ var d=document.createElement('div');d.id='aceilPlanViewer';d.innerHTML=`<div class="apv-head"><button class="apv-ib" id="apvClose" aria-label="Закрити">${svg('close')}</button><div class="apv-title"><b>Прорахунок з плану</b><small>Перегляд обмірного плану</small></div><button class="apv-ib" id="apvPickTop" aria-label="Завантажити план">${svg('upload')}</button></div><div class="apv-main"><div class="apv-stage" id="apvStage"></div><div class="apv-empty" id="apvEmpty"><div class="apv-empty-card"><div class="apv-empty-ico">${svg('plan')}</div><h3>Додайте обмірний план</h3><p>Фото, скріншот або PDF. План відкриється окремо від канваса — його можна збільшувати, рухати та повертати.</p><button class="apv-primary" id="apvPick">${svg('upload')} Вибрати план</button></div></div><div class="apv-hint" id="apvHint" style="display:none">Два пальці — масштаб · один — переміщення</div><div class="apv-tools" id="apvTools" style="display:none"><button id="apvMinus" aria-label="Зменшити">${svg('minus')}</button><button id="apvPlus" aria-label="Збільшити">${svg('plus')}</button><button id="apvFit" aria-label="Вмістити">${svg('fit')}</button><button id="apvRotate" aria-label="Повернути">${svg('rotate')}</button></div></div><div class="apv-foot" id="apvFoot" style="display:none"><div class="apv-file"><b id="apvName">План</b><small id="apvMeta">Готовий до перегляду</small></div><button id="apvRooms" style="background:#eaf2ff;color:#155bd7">Приміщення</button><button id="apvChange">Замінити</button><button class="danger" id="apvRemove">Видалити</button></div><input id="apvInput" type="file" accept="image/*,application/pdf,.pdf" hidden>`;
  document.body.appendChild(d);
  bind();
 }
@@ -2373,8 +2373,8 @@ function apply(){var m=media();if(!m)return;m.style.transform='translate(calc(-5
 function resetView(){state.scale=1;state.x=0;state.y=0;state.rot=0;requestAnimationFrame(function(){fit()})}
 function fit(){var m=media(),s=el('apvStage');if(!m||!s)return;if(state.type==='pdf'){state.scale=1;state.x=0;state.y=0;state.rot=0;apply();return}var w=m.naturalWidth||m.clientWidth,h=m.naturalHeight||m.clientHeight;if(!w||!h)return;var r=s.getBoundingClientRect(),sw=(r.width-28)/w,sh=(r.height-28)/h;state.scale=Math.min(sw,sh,1.2);state.x=0;state.y=0;apply()}
 function clearMedia(){var m=media();if(m)m.remove();if(state.url){URL.revokeObjectURL(state.url);state.url=null}state.type=null;el('apvEmpty').style.display='flex';el('apvTools').style.display='none';el('apvFoot').style.display='none';el('apvHint').style.display='none'}
-function load(file){if(!file)return;clearMedia();state.url=URL.createObjectURL(file);state.type=file.type==='application/pdf'||/\.pdf$/i.test(file.name)?'pdf':'image';var m;if(state.type==='pdf'){m=document.createElement('iframe');m.src=state.url;m.className='apv-media apv-pdf';m.title='Обмірний план PDF'}else{m=document.createElement('img');m.src=state.url;m.className='apv-media';m.alt='Обмірний план';m.draggable=false;m.onload=resetView}m.id='apvMedia';el('apvStage').appendChild(m);el('apvEmpty').style.display='none';el('apvTools').style.display=state.type==='image'?'flex':'none';el('apvHint').style.display=state.type==='image'?'block':'none';el('apvFoot').style.display='flex';el('apvName').textContent=file.name||'Обмірний план';el('apvMeta').textContent=state.type==='pdf'?'PDF · перегляд':'Зображення · масштаб і переміщення';if(state.type==='pdf'){state.scale=1;state.x=0;state.y=0;state.rot=0;apply()}}
-function bind(){var input=el('apvInput'),stage=el('apvStage');function pick(){input.value='';input.click()}el('apvPick').onclick=pick;el('apvPickTop').onclick=pick;el('apvChange').onclick=pick;input.onchange=function(){load(input.files&&input.files[0])};el('apvClose').onclick=close;el('apvRemove').onclick=function(){if(confirm('Прибрати завантажений план?'))clearMedia()};el('apvPlus').onclick=function(){state.scale=Math.min(8,state.scale*1.18);apply()};el('apvMinus').onclick=function(){state.scale=Math.max(.08,state.scale/1.18);apply()};el('apvFit').onclick=fit;el('apvRotate').onclick=function(){state.rot=(state.rot+90)%360;fit()};
+function load(file){if(!file)return;clearMedia();state.file=file;state.url=URL.createObjectURL(file);state.type=file.type==='application/pdf'||/\.pdf$/i.test(file.name)?'pdf':'image';var m;if(state.type==='pdf'){m=document.createElement('iframe');m.src=state.url;m.className='apv-media apv-pdf';m.title='Обмірний план PDF'}else{m=document.createElement('img');m.src=state.url;m.className='apv-media';m.alt='Обмірний план';m.draggable=false;m.onload=resetView}m.id='apvMedia';el('apvStage').appendChild(m);el('apvEmpty').style.display='none';el('apvTools').style.display=state.type==='image'?'flex':'none';el('apvHint').style.display=state.type==='image'?'block':'none';el('apvFoot').style.display='flex';el('apvName').textContent=file.name||'Обмірний план';el('apvMeta').textContent=state.type==='pdf'?'PDF · перегляд':'Зображення · масштаб і переміщення';if(state.type==='pdf'){state.scale=1;state.x=0;state.y=0;state.rot=0;apply()}}
+function bind(){var input=el('apvInput'),stage=el('apvStage');function pick(){input.value='';input.click()}el('apvPick').onclick=pick;el('apvPickTop').onclick=pick;el('apvChange').onclick=pick;el('apvRooms').onclick=function(){if(window.ACEILPlanRoomsOpen)window.ACEILPlanRoomsOpen(state.file,state.type);};input.onchange=function(){load(input.files&&input.files[0])};el('apvClose').onclick=close;el('apvRemove').onclick=function(){if(confirm('Прибрати завантажений план?'))clearMedia()};el('apvPlus').onclick=function(){state.scale=Math.min(8,state.scale*1.18);apply()};el('apvMinus').onclick=function(){state.scale=Math.max(.08,state.scale/1.18);apply()};el('apvFit').onclick=fit;el('apvRotate').onclick=function(){state.rot=(state.rot+90)%360;fit()};
  stage.addEventListener('pointerdown',function(e){if(state.type!=='image')return;stage.setPointerCapture(e.pointerId);state.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(state.pointers.size===2){var a=[...state.pointers.values()];state.pinch={dist:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),scale:state.scale}}});
  stage.addEventListener('pointermove',function(e){if(state.type!=='image'||!state.pointers.has(e.pointerId))return;var old=state.pointers.get(e.pointerId);state.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(state.pointers.size===1){state.x+=e.clientX-old.x;state.y+=e.clientY-old.y;apply()}else if(state.pointers.size===2){var a=[...state.pointers.values()],dist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);if(state.pinch&&state.pinch.dist)state.scale=Math.max(.08,Math.min(8,state.pinch.scale*dist/state.pinch.dist));apply()}});
  function up(e){state.pointers.delete(e.pointerId);if(state.pointers.size<2)state.pinch=null}stage.addEventListener('pointerup',up);stage.addEventListener('pointercancel',up);
@@ -2488,6 +2488,85 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   document.addEventListener('DOMContentLoaded',hidePlanTile,{once:true});
   setTimeout(hidePlanTile,800);
   setTimeout(hidePlanTile,2000);
+})();
+</script>
+
+
+<script id="A-CEIL-plan-rooms-ocr-v5">
+(function(){
+'use strict';
+var rows=[];
+
+function css(){
+ if(document.getElementById('aprStyle'))return;
+ var st=document.createElement('style');st.id='aprStyle';st.textContent=`
+#aprSheet{position:fixed;inset:0;z-index:31000;background:rgba(17,27,45,.28);display:none;align-items:flex-end;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#aprSheet.open{display:flex}.apr-card{width:100%;max-height:78vh;background:#fff;border-radius:24px 24px 0 0;padding:16px 14px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -14px 45px rgba(18,30,50,.18);overflow:auto;color:#14213a}
+.apr-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}.apr-head h3{margin:0;flex:1;font-size:20px}.apr-x{border:0;background:#f1f4f8;width:40px;height:40px;border-radius:12px;font-size:22px}
+.apr-note{font-size:12px;line-height:1.4;color:#748196;background:#f7f9fc;border-radius:12px;padding:10px;margin-bottom:12px}
+.apr-actions{display:flex;gap:8px;margin-bottom:12px}.apr-btn{border:0;border-radius:13px;padding:12px 14px;font-weight:800;font-size:14px;background:#edf2f7;color:#26364f}.apr-btn.primary{background:#246fe5;color:#fff;flex:1}.apr-btn.add{background:#eaf8f1;color:#168455}
+.apr-status{font-size:12px;color:#66758b;margin:8px 2px}.apr-row{display:grid;grid-template-columns:34px 1fr 90px 34px;gap:7px;align-items:center;padding:8px 0;border-bottom:1px solid #edf0f4}
+.apr-row input{width:100%;box-sizing:border-box;border:1px solid #dfe5ed;border-radius:10px;padding:9px 8px;font:inherit;font-size:14px;background:#fff}.apr-num{text-align:center;font-weight:800;color:#66758b}.apr-del{border:0;background:#fff0f0;color:#c63d3d;width:34px;height:34px;border-radius:10px;font-size:18px}
+.apr-empty{text-align:center;color:#8995a7;padding:24px 10px}.apr-summary{display:flex;justify-content:space-between;gap:10px;padding:12px 2px 4px;font-weight:800}.apr-warn{color:#b26a00;font-size:11px;line-height:1.35;margin-top:10px}
+`;
+ document.head.appendChild(st);
+}
+function shell(){
+ css(); var d=document.getElementById('aprSheet'); if(d)return d;
+ d=document.createElement('div');d.id='aprSheet';d.innerHTML=`<div class="apr-card"><div class="apr-head"><h3>Приміщення з плану</h3><button class="apr-x" id="aprClose">×</button></div><div class="apr-note">Без платного AI. Спроба прочитати експлікацію локальним OCR. Результат завжди можна виправити вручну перед передачею далі.</div><div class="apr-actions"><button class="apr-btn primary" id="aprRecognize">Розпізнати експлікацію</button><button class="apr-btn add" id="aprAdd">+ Додати</button></div><div class="apr-status" id="aprStatus">Ще не аналізовано</div><div id="aprRows"></div><div class="apr-summary"><span>Знайдено: <b id="aprCount">0</b></span><span>Площа: <b id="aprArea">0.00 м²</b></span></div><div class="apr-warn">Периметр навмисно не вигадується. Якщо його немає в експлікації — залишаємо «—». Наступний етап: передача цих кімнат у багатокімнатний проєкт і ручний/автоматичний контур.</div></div>`;
+ document.body.appendChild(d);
+ d.addEventListener('click',e=>{if(e.target===d)d.classList.remove('open')});
+ document.getElementById('aprClose').onclick=()=>d.classList.remove('open');
+ document.getElementById('aprAdd').onclick=()=>{rows.push({n:rows.length+1,name:'',area:''});render();};
+ return d;
+}
+function render(){
+ var box=document.getElementById('aprRows'); if(!box)return;
+ if(!rows.length){box.innerHTML='<div class="apr-empty">Приміщень поки немає</div>';}
+ else box.innerHTML=rows.map((r,i)=>`<div class="apr-row"><div class="apr-num">${i+1}</div><input data-i="${i}" data-k="name" value="${esc(r.name)}" placeholder="Назва"><input data-i="${i}" data-k="area" inputmode="decimal" value="${esc(r.area)}" placeholder="м²"><button class="apr-del" data-del="${i}">×</button></div>`).join('');
+ box.querySelectorAll('input').forEach(x=>x.oninput=function(){rows[+this.dataset.i][this.dataset.k]=this.value;summary();});
+ box.querySelectorAll('[data-del]').forEach(x=>x.onclick=function(){rows.splice(+this.dataset.del,1);render();});
+ summary();
+}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function summary(){document.getElementById('aprCount').textContent=rows.length;var a=rows.reduce((s,r)=>s+(parseFloat(String(r.area).replace(',','.'))||0),0);document.getElementById('aprArea').textContent=a.toFixed(2)+' м²';}
+function loadTesseract(){
+ return new Promise((resolve,reject)=>{
+  if(window.Tesseract)return resolve(window.Tesseract);
+  var sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';sc.onload=()=>resolve(window.Tesseract);sc.onerror=()=>reject(new Error('Не вдалося завантажити безкоштовний OCR'));document.head.appendChild(sc);
+ });
+}
+function parse(text){
+ var out=[], seen=new Set();
+ text.split(/\n+/).map(x=>x.replace(/[|]/g,' ').replace(/\s+/g,' ').trim()).forEach(line=>{
+   var m=line.match(/^(\d{1,2})\s+(.{2,40}?)\s+(\d{1,3}[.,]\d{1,2})\s*$/);
+   if(!m)return;
+   var n=+m[1], name=m[2].replace(/^[^\p{L}]+/u,'').trim(), area=m[3].replace('.',',');
+   if(n<1||n>99||!name||seen.has(n))return;
+   seen.add(n); out.push({n:n,name:name,area:area});
+ });
+ out.sort((a,b)=>a.n-b.n);
+ return out;
+}
+async function recognize(file,type){
+ var st=document.getElementById('aprStatus');
+ if(!file){st.textContent='Спочатку завантаж план.';return}
+ if(type!=='image'){st.textContent='У v5 OCR працює з JPG/PNG. PDF залишаємо на наступний крок.';return}
+ try{
+   st.textContent='Завантажую безкоштовний OCR…';
+   var T=await loadTesseract();
+   st.textContent='Читаю експлікацію… це може зайняти до хвилини.';
+   var res=await T.recognize(file,'ukr+eng',{logger:m=>{if(m.status==='recognizing text')st.textContent='Розпізнавання: '+Math.round((m.progress||0)*100)+'%';}});
+   var got=parse(res.data.text||'');
+   rows=got; render();
+   st.textContent=got.length?'Знайдено рядків: '+got.length+'. Перевір назви та площі.':'Таблицю автоматично не прочитано. Можна додати кімнати вручну.';
+ }catch(e){console.error(e);st.textContent='OCR не запустився. Додай кімнати вручну — план при цьому не втрачено.';}
+}
+window.ACEILPlanRoomsOpen=function(file,type){
+ var d=shell(); d.classList.add('open');
+ document.getElementById('aprRecognize').onclick=()=>recognize(file,type);
+ render();
+};
 })();
 </script>
 
