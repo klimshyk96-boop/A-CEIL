@@ -2492,84 +2492,97 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 
 
-<script id="A-CEIL-plan-digitizer-v7">
+<script id="A-CEIL-auto-room-detector-v8">
 (function(){
 'use strict';
-let file=null,type=null,imgURL=null,scaleCmPerPx=null,calPts=[],roomPts=[],mode=null,roomName='',knownArea='';
+let file=null,type=null,url=null,rooms=[],srcCanvas=null;
 
-function style(){
- if(document.getElementById('dig7style'))return;
- let x=document.createElement('style');x.id='dig7style';x.textContent=`
-#dig7{position:fixed;inset:0;z-index:33000;background:#eef3f8;display:none;flex-direction:column;color:#12213b;font-family:inherit}#dig7.open{display:flex}
-.d7head{display:flex;gap:10px;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;background:#fff;border-bottom:1px solid #dfe6ef}.d7head b{flex:1;font-size:18px}.d7head button{border:0;border-radius:12px;padding:10px 13px;font-weight:800;background:#f0f4f8;color:#26364f}
-#d7stage{position:relative;flex:1;overflow:hidden;background:#dfe6ed;touch-action:none}#d7img{position:absolute;max-width:none;user-select:none;-webkit-user-drag:none}
-#d7svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}.d7pt{fill:#1769e8;stroke:white;stroke-width:2}.d7line{stroke:#1769e8;stroke-width:3;fill:none}.d7cal{stroke:#e53935;stroke-width:3;stroke-dasharray:8 5}
-.d7bar{background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #dfe6ef}.d7row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}.d7btn{border:0;border-radius:12px;padding:11px 12px;font-weight:800;background:#eaf1fb;color:#1757b8}.d7btn.primary{background:#246fe5;color:#fff}.d7btn.red{background:#fff0f0;color:#c53d3d}.d7info{font-size:13px;color:#617087;line-height:1.45}.d7result{font-size:14px;font-weight:800;color:#183251;margin-top:5px}.d7modal{position:fixed;inset:0;z-index:34000;background:rgba(10,20,35,.35);display:none;align-items:center;justify-content:center;padding:18px}.d7modal.open{display:flex}.d7box{background:#fff;width:min(420px,100%);border-radius:20px;padding:18px}.d7box h3{margin:0 0 12px}.d7box input{width:100%;box-sizing:border-box;border:1px solid #dce3ec;border-radius:12px;padding:12px;font:inherit;margin-bottom:10px}.d7box button{width:100%;border:0;border-radius:12px;padding:12px;background:#246fe5;color:#fff;font-weight:800}
+function addStyle(){
+ if(document.getElementById('ard8style'))return;
+ let st=document.createElement('style');st.id='ard8style';st.textContent=`
+#ard8{position:fixed;inset:0;z-index:33000;background:#eef3f8;display:none;flex-direction:column;color:#12213b;font-family:inherit}#ard8.open{display:flex}
+.a8head{display:flex;gap:9px;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 11px 9px;background:#fff;border-bottom:1px solid #dfe6ef}.a8head b{flex:1;font-size:17px}.a8head button{border:0;border-radius:11px;padding:9px 11px;font-weight:800;background:#f0f4f8;color:#26364f}
+#ard8stage{position:relative;flex:1;overflow:hidden;background:#dfe6ed}#ard8img{position:absolute;max-width:none;user-select:none;-webkit-user-drag:none}
+#ard8svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:auto}.a8poly{fill:rgba(35,111,229,.18);stroke:#1769e8;stroke-width:2.5}.a8poly.off{fill:rgba(120,130,145,.08);stroke:#9aa5b4}.a8label{font-size:15px;font-weight:800;fill:#0c4eae;paint-order:stroke;stroke:white;stroke-width:4px}
+.a8bar{background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #dfe6ef}.a8row{display:flex;gap:8px;align-items:center}.a8btn{border:0;border-radius:12px;padding:12px 13px;font-weight:800;background:#edf2f7;color:#25354d}.a8btn.primary{background:#246fe5;color:#fff;flex:1}.a8status{font-size:12px;color:#66758b;line-height:1.4;margin-top:8px}.a8list{max-height:118px;overflow:auto;margin-top:7px}.a8item{display:flex;align-items:center;gap:7px;border-top:1px solid #edf0f4;padding:6px 1px;font-size:12px}.a8item b{flex:1}.a8item button{border:0;border-radius:8px;padding:6px 8px;background:#eef3f8;font-weight:700;color:#41526a}
 `;
- document.head.appendChild(x);
+ document.head.appendChild(st);
 }
 function ui(){
- style();let d=document.getElementById('dig7');if(d)return d;
- d=document.createElement('div');d.id='dig7';d.innerHTML=`<div class="d7head"><button id="d7close">← Назад</button><b>Оцифрування плану</b><button id="d7fit">Вмістити</button></div>
- <div id="d7stage"><img id="d7img" draggable="false"><svg id="d7svg"></svg></div>
- <div class="d7bar"><div class="d7row"><button class="d7btn primary" id="d7cal">1. Калібрувати</button><button class="d7btn" id="d7room">2. Обвести кімнату</button><button class="d7btn red" id="d7undo">↶ Точка</button><button class="d7btn red" id="d7clear">Очистити</button></div>
- <div class="d7info" id="d7info">Спочатку натисни «Калібрувати», постав 2 точки на відомому розмірі креслення і введи реальну довжину.</div><div class="d7result" id="d7result"></div></div>`;
+ addStyle();let d=document.getElementById('ard8');if(d)return d;
+ d=document.createElement('div');d.id='ard8';d.innerHTML=`<div class="a8head"><button id="a8back">← Назад</button><b>Автопошук приміщень</b><button id="a8fit">Вмістити</button></div>
+ <div id="ard8stage"><img id="ard8img" draggable="false"><svg id="ard8svg"></svg></div>
+ <div class="a8bar"><div class="a8row"><button class="a8btn primary" id="a8find">Знайти приміщення</button><button class="a8btn" id="a8retry">Інший поріг</button></div><div class="a8status" id="a8status">Натисни «Знайти приміщення». Програма сама шукатиме внутрішні замкнені області між стінами.</div><div class="a8list" id="a8list"></div></div>`;
  document.body.appendChild(d);
- let m=document.createElement('div');m.className='d7modal';m.id='d7modal';m.innerHTML=`<div class="d7box"><h3 id="d7mt">Введи довжину</h3><input id="d7in1" inputmode="decimal"><input id="d7in2" style="display:none"><button id="d7ok">Готово</button></div>`;document.body.appendChild(m);
- document.getElementById('d7close').onclick=()=>d.classList.remove('open');
- document.getElementById('d7cal').onclick=()=>{mode='cal';calPts=[];msg('Постав 2 точки на кінцях одного відомого розміру.');draw();};
- document.getElementById('d7room').onclick=()=>{if(!scaleCmPerPx){msg('Спочатку відкалібруй масштаб.');return} askRoom();};
- document.getElementById('d7undo').onclick=()=>{if(mode==='room')roomPts.pop();else if(mode==='cal')calPts.pop();draw();calc();};
- document.getElementById('d7clear').onclick=()=>{roomPts=[];draw();calc();};
+ document.getElementById('a8back').onclick=()=>d.classList.remove('open');
+ document.getElementById('a8fit').onclick=fit;
+ document.getElementById('a8find').onclick=()=>detect(205);
+ document.getElementById('a8retry').onclick=()=>detect(225);
  return d;
 }
-function msg(t){document.getElementById('d7info').textContent=t}
-function modal(title,p1,p2,cb){
- let m=document.getElementById('d7modal'),a=document.getElementById('d7in1'),b=document.getElementById('d7in2');
- document.getElementById('d7mt').textContent=title;a.placeholder=p1;a.value='';b.style.display=p2?'block':'none';b.placeholder=p2||'';b.value='';m.classList.add('open');
- document.getElementById('d7ok').onclick=()=>{let v1=a.value,v2=b.value;m.classList.remove('open');cb(v1,v2)};
-}
-function askCal(px){modal('Відомий розмір','Довжина, см',null,v=>{let cm=parseFloat(v.replace(',','.'));if(cm>0){scaleCmPerPx=cm/px;mode=null;msg('Масштаб задано: '+cm+' см. Тепер обведи кімнату по внутрішніх кутах.');calc()}else msg('Некоректна довжина.');});}
-function askRoom(){modal('Кімната','Назва кімнати','Відома площа, м² (необов’язково)',(n,a)=>{roomName=n.trim()||'Кімната';knownArea=parseFloat(a.replace(',','.'))||0;roomPts=[];mode='room';msg('Торкайся внутрішніх кутів «'+roomName+'» по порядку. Мінімум 3 точки. Контур замикається автоматично.');draw();calc();});}
 function fit(){
- let st=document.getElementById('d7stage'),im=document.getElementById('d7img'),r=st.getBoundingClientRect(),sc=Math.min(r.width/im.naturalWidth,r.height/im.naturalHeight);
- im.dataset.sc=sc;im.dataset.ox=(r.width-im.naturalWidth*sc)/2;im.dataset.oy=(r.height-im.naturalHeight*sc)/2;
- Object.assign(im.style,{width:im.naturalWidth*sc+'px',height:im.naturalHeight*sc+'px',left:im.dataset.ox+'px',top:im.dataset.oy+'px'});draw();
+ let st=document.getElementById('ard8stage'),im=document.getElementById('ard8img'),r=st.getBoundingClientRect();
+ let sc=Math.min(r.width/im.naturalWidth,r.height/im.naturalHeight),ox=(r.width-im.naturalWidth*sc)/2,oy=(r.height-im.naturalHeight*sc)/2;
+ im.dataset.sc=sc;im.dataset.ox=ox;im.dataset.oy=oy;Object.assign(im.style,{width:im.naturalWidth*sc+'px',height:im.naturalHeight*sc+'px',left:ox+'px',top:oy+'px'});draw();
 }
-function imagePoint(e){
- let st=document.getElementById('d7stage'),im=document.getElementById('d7img'),r=st.getBoundingClientRect(),sc=+im.dataset.sc,ox=+im.dataset.ox,oy=+im.dataset.oy;
- let x=(e.clientX-r.left-ox)/sc,y=(e.clientY-r.top-oy)/sc;
- if(x<0||y<0||x>im.naturalWidth||y>im.naturalHeight)return null;return{x,y};
+function screen(p){let im=document.getElementById('ard8img');return{x:+im.dataset.ox+p.x*(+im.dataset.sc),y:+im.dataset.oy+p.y*(+im.dataset.sc)}}
+function simplify(poly,eps){
+ if(poly.length<4)return poly;
+ function pd(p,a,b){let dx=b.x-a.x,dy=b.y-a.y;if(!dx&&!dy)return Math.hypot(p.x-a.x,p.y-a.y);let t=((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy);t=Math.max(0,Math.min(1,t));return Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy))}
+ function rdp(a){if(a.length<3)return a;let m=0,ix=0;for(let i=1;i<a.length-1;i++){let d=pd(a[i],a[0],a[a.length-1]);if(d>m){m=d;ix=i}}if(m>eps){let l=rdp(a.slice(0,ix+1)),r=rdp(a.slice(ix));return l.slice(0,-1).concat(r)}return[a[0],a[a.length-1]]}
+ return rdp(poly.concat([poly[0]])).slice(0,-1);
 }
-function screen(p){let im=document.getElementById('d7img');return{x:(+im.dataset.ox)+p.x*(+im.dataset.sc),y:(+im.dataset.oy)+p.y*(+im.dataset.sc)}}
+function detect(thr){
+ let st=document.getElementById('a8status');st.textContent='Аналізую стіни та замкнені області…';rooms=[];
+ setTimeout(()=>{
+  let c=srcCanvas,w=c.width,h=c.height,ctx=c.getContext('2d',{willReadFrequently:true}),im=ctx.getImageData(0,0,w,h),d=im.data;
+  // Work on reduced mask for speed.
+  let max=1000,sc=Math.min(1,max/Math.max(w,h)),W=Math.max(1,Math.round(w*sc)),H=Math.max(1,Math.round(h*sc));
+  let tc=document.createElement('canvas');tc.width=W;tc.height=H;let x=tc.getContext('2d',{willReadFrequently:true});x.drawImage(c,0,0,W,H);
+  let id=x.getImageData(0,0,W,H),p=id.data,wall=new Uint8Array(W*H);
+  for(let i=0,j=0;i<p.length;i+=4,j++){let g=.299*p[i]+.587*p[i+1]+.114*p[i+2];wall[j]=g<thr?1:0}
+  // Dilate black drawing to close door gaps/thin discontinuities.
+  let rad=Math.max(2,Math.round(Math.min(W,H)*.006)),dil=new Uint8Array(W*H);
+  for(let y=0;y<H;y++)for(let xx=0;xx<W;xx++)if(wall[y*W+xx])for(let yy=Math.max(0,y-rad);yy<=Math.min(H-1,y+rad);yy++)for(let xxx=Math.max(0,xx-rad);xxx<=Math.min(W-1,xx+rad);xxx++)dil[yy*W+xxx]=1;
+  // Flood white components; ignore border-connected outside and tiny/huge regions.
+  let seen=new Uint8Array(W*H), comps=[],qX=new Int32Array(W*H),qY=new Int32Array(W*H);
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  for(let sy=0;sy<H;sy++)for(let sx=0;sx<W;sx++){let si=sy*W+sx;if(dil[si]||seen[si])continue;
+    let head=0,tail=0;qX[tail]=sx;qY[tail++]=sy;seen[si]=1;let pts=[],border=false,minx=sx,maxx=sx,miny=sy,maxy=sy;
+    while(head<tail){let xx=qX[head],y=qY[head++];pts.push({x:xx,y});if(xx===0||y===0||xx===W-1||y===H-1)border=true;minx=Math.min(minx,xx);maxx=Math.max(maxx,xx);miny=Math.min(miny,y);maxy=Math.max(maxy,y);
+      for(let k=0;k<4;k++){let nx=xx+dirs[k][0],ny=y+dirs[k][1];if(nx<0||ny<0||nx>=W||ny>=H)continue;let ni=ny*W+nx;if(!dil[ni]&&!seen[ni]){seen[ni]=1;qX[tail]=nx;qY[tail++]=ny}}
+    }
+    let area=pts.length,frac=area/(W*H);if(!border&&frac>.002&&frac<.22&&(maxx-minx)>18&&(maxy-miny)>18)comps.push({pts,area,minx,maxx,miny,maxy});
+  }
+  // Boundary extraction + angular ordering around centroid; sufficient for test overlay.
+  comps.sort((a,b)=>b.area-a.area);comps=comps.slice(0,20);
+  rooms=comps.map((o,idx)=>{
+    let set=new Set(o.pts.map(p=>p.y*W+p.x)),bd=[];
+    for(let p of o.pts){if(!set.has(p.y*W+p.x+1)||!set.has(p.y*W+p.x-1)||!set.has((p.y+1)*W+p.x)||!set.has((p.y-1)*W+p.x))bd.push(p)}
+    let cx=bd.reduce((s,p)=>s+p.x,0)/bd.length,cy=bd.reduce((s,p)=>s+p.y,0)/bd.length;
+    bd.sort((a,b)=>Math.atan2(a.y-cy,a.x-cx)-Math.atan2(b.y-cy,b.x-cx));
+    let step=Math.max(1,Math.floor(bd.length/180)),sample=bd.filter((_,i)=>i%step===0),poly=simplify(sample,Math.max(2,Math.min(W,H)*.006));
+    poly=poly.map(p=>({x:p.x/sc,y:p.y/sc}));return{id:idx+1,poly,active:true,cx:cx/sc,cy:cy/sc,area:o.area/(sc*sc)}
+  });
+  st.textContent=rooms.length?'Знайдено кандидатів: '+rooms.length+'. Сині області — те, що алгоритм вважає приміщеннями. Натисни на область або «×» у списку, щоб відкинути зайве.':'Замкнених приміщень не знайдено. Спробуй «Інший поріг».';
+  draw();list();
+ },40);
+}
 function draw(){
- let svg=document.getElementById('d7svg'),pts=mode==='cal'?calPts:roomPts;svg.innerHTML='';
- if(pts.length>1){let q=pts.map(screen),path='M '+q.map(p=>p.x+' '+p.y).join(' L ');if(mode==='room'&&pts.length>2)path+=' Z';svg.innerHTML+=`<path class="${mode==='cal'?'d7cal':'d7line'}" d="${path}"/>`;}
- pts.forEach(p=>{let q=screen(p);svg.innerHTML+=`<circle class="d7pt" cx="${q.x}" cy="${q.y}" r="6"/>`;});
+ let svg=document.getElementById('ard8svg');if(!svg)return;svg.innerHTML='';
+ rooms.forEach(r=>{let q=r.poly.map(screen),pts=q.map(p=>p.x+','+p.y).join(' '),c=screen({x:r.cx,y:r.cy});
+   svg.innerHTML+=`<polygon data-id="${r.id}" class="a8poly ${r.active?'':'off'}" points="${pts}"></polygon><text class="a8label" x="${c.x}" y="${c.y}">${r.id}</text>`;
+ });
+ svg.querySelectorAll('polygon').forEach(p=>p.onclick=()=>{let r=rooms.find(x=>x.id==p.dataset.id);r.active=!r.active;draw();list()});
 }
-function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
-function calc(){
- let o=document.getElementById('d7result');if(!scaleCmPerPx){o.textContent='';return}
- if(roomPts.length<3){o.textContent=roomPts.length?'Точок контуру: '+roomPts.length:'';return}
- let per=0,area=0;
- for(let i=0;i<roomPts.length;i++){let a=roomPts[i],b=roomPts[(i+1)%roomPts.length];per+=dist(a,b);area+=a.x*b.y-b.x*a.y}
- per=per*scaleCmPerPx/100;area=Math.abs(area)/2*Math.pow(scaleCmPerPx/100,2);
- let txt=(roomName||'Кімната')+' · площа '+area.toFixed(2)+' м² · периметр '+per.toFixed(2)+' м';
- if(knownArea){let d=(area-knownArea)/knownArea*100;txt+=' · контроль '+knownArea.toFixed(2)+' м² ('+(d>=0?'+':'')+d.toFixed(1)+'%)';}
- o.textContent=txt;
+function list(){
+ let b=document.getElementById('a8list');b.innerHTML=rooms.map(r=>`<div class="a8item"><span>${r.active?'✓':'—'}</span><b>Кандидат ${r.id}</b><span>${r.poly.length} вершин</span><button data-id="${r.id}">${r.active?'Відкинути':'Повернути'}</button></div>`).join('');
+ b.querySelectorAll('button').forEach(x=>x.onclick=()=>{let r=rooms.find(q=>q.id==x.dataset.id);r.active=!r.active;draw();list()});
 }
 window.ACEILPlanRoomsOpen=function(f,t){
- file=f;type=t;if(!file||type!=='image'){alert('Оцифрування v7 поки працює з JPG/PNG.');return}
- let d=ui();d.classList.add('open');scaleCmPerPx=null;calPts=[];roomPts=[];mode=null;roomName='';knownArea='';
- let im=document.getElementById('d7img');if(imgURL)URL.revokeObjectURL(imgURL);imgURL=URL.createObjectURL(file);im.onload=fit;im.src=imgURL;
- document.getElementById('d7fit').onclick=fit;
- document.getElementById('d7stage').onclick=e=>{
-   if(!mode)return;let p=imagePoint(e);if(!p)return;
-   if(mode==='cal'){calPts.push(p);if(calPts.length===2){draw();let px=dist(calPts[0],calPts[1]);askCal(px)}else draw();}
-   else {roomPts.push(p);draw();calc();}
- };
- msg('1. Калібруй масштаб по будь-якому чітко відомому розміру креслення.');
- document.getElementById('d7result').textContent='';
+ file=f;type=t;if(!file||type!=='image'){alert('Автопошук v8 поки працює з JPG/PNG.');return}
+ let d=ui();d.classList.add('open');rooms=[];list();document.getElementById('a8status').textContent='Натисни «Знайти приміщення». Програма сама шукатиме внутрішні замкнені області між стінами.';
+ let im=document.getElementById('ard8img');if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(file);im.onload=function(){srcCanvas=document.createElement('canvas');srcCanvas.width=im.naturalWidth;srcCanvas.height=im.naturalHeight;srcCanvas.getContext('2d').drawImage(im,0,0);fit()};im.src=url;
 };
 })();
 </script>
