@@ -2354,7 +2354,7 @@ localStorage: A·CEIL_cloud_cache_v330
 'use strict';
 if(window.ACEILPlanViewerV1)return;
 window.ACEILPlanViewerV1=true;
-var state={url:null,type:null,file:null,scale:1,x:0,y:0,rot:0,pointers:new Map(),pinch:null};
+var state={url:null,type:null,scale:1,x:0,y:0,rot:0,pointers:new Map(),pinch:null};
 function el(id){return document.getElementById(id)}
 function svg(name){var m={upload:'<path d="M12 16V4m0 0-4 4m4-4 4 4M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>',close:'<path d="M6 6l12 12M18 6 6 18"/>',plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',fit:'<path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/>',rotate:'<path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7"/>',trash:'<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/>',plan:'<path d="M4 4h16v16H4zM4 10h10M10 4v6M14 10v10"/>'};return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+m[name]+'</svg>'}
 function inject(){if(el('aceilPlanViewer'))return;
@@ -2364,7 +2364,7 @@ function inject(){if(el('aceilPlanViewer'))return;
 @media(min-width:760px){.apv-head{padding-left:20px;padding-right:20px}.apv-tools{right:20px;bottom:20px}.apv-foot{padding-left:20px;padding-right:20px}.apv-empty-card{padding:34px}}
 `;
  document.head.appendChild(st);
- var d=document.createElement('div');d.id='aceilPlanViewer';d.innerHTML=`<div class="apv-head"><button class="apv-ib" id="apvClose" aria-label="Закрити">${svg('close')}</button><div class="apv-title"><b>Прорахунок з плану</b><small>Перегляд обмірного плану</small></div><button class="apv-ib" id="apvPickTop" aria-label="Завантажити план">${svg('upload')}</button></div><div class="apv-main"><div class="apv-stage" id="apvStage"></div><div class="apv-empty" id="apvEmpty"><div class="apv-empty-card"><div class="apv-empty-ico">${svg('plan')}</div><h3>Додайте обмірний план</h3><p>Фото, скріншот або PDF. План відкриється окремо від канваса — його можна збільшувати, рухати та повертати.</p><button class="apv-primary" id="apvPick">${svg('upload')} Вибрати план</button></div></div><div class="apv-hint" id="apvHint" style="display:none">Два пальці — масштаб · один — переміщення</div><div class="apv-tools" id="apvTools" style="display:none"><button id="apvMinus" aria-label="Зменшити">${svg('minus')}</button><button id="apvPlus" aria-label="Збільшити">${svg('plus')}</button><button id="apvFit" aria-label="Вмістити">${svg('fit')}</button><button id="apvRotate" aria-label="Повернути">${svg('rotate')}</button></div></div><div class="apv-foot" id="apvFoot" style="display:none"><div class="apv-file"><b id="apvName">План</b><small id="apvMeta">Готовий до перегляду</small></div><button id="apvRooms" style="background:#eaf2ff;color:#155bd7">Приміщення</button><button id="apvChange">Замінити</button><button class="danger" id="apvRemove">Видалити</button></div><input id="apvInput" type="file" accept="image/*,application/pdf,.pdf" hidden>`;
+ var d=document.createElement('div');d.id='aceilPlanViewer';d.innerHTML=`<div class="apv-head"><button class="apv-ib" id="apvClose" aria-label="Закрити">${svg('close')}</button><div class="apv-title"><b>Прорахунок з плану</b><small>Перегляд обмірного плану</small></div><button class="apv-ib" id="apvPickTop" aria-label="Завантажити план">${svg('upload')}</button></div><div class="apv-main"><div class="apv-stage" id="apvStage"></div><div class="apv-empty" id="apvEmpty"><div class="apv-empty-card"><div class="apv-empty-ico">${svg('plan')}</div><h3>Додайте обмірний план</h3><p>Фото, скріншот або PDF. План відкриється окремо від канваса — його можна збільшувати, рухати та повертати.</p><button class="apv-primary" id="apvPick">${svg('upload')} Вибрати план</button></div></div><div class="apv-hint" id="apvHint" style="display:none">Два пальці — масштаб · один — переміщення</div><div class="apv-tools" id="apvTools" style="display:none"><button id="apvMinus" aria-label="Зменшити">${svg('minus')}</button><button id="apvPlus" aria-label="Збільшити">${svg('plus')}</button><button id="apvFit" aria-label="Вмістити">${svg('fit')}</button><button id="apvRotate" aria-label="Повернути">${svg('rotate')}</button></div></div><div class="apv-foot" id="apvFoot" style="display:none"><div class="apv-file"><b id="apvName">План</b><small id="apvMeta">Готовий до перегляду</small></div><button id="apvChange">Замінити</button><button class="danger" id="apvRemove">Видалити</button></div><input id="apvInput" type="file" accept="image/*,application/pdf,.pdf" hidden>`;
  document.body.appendChild(d);
  bind();
 }
@@ -2373,8 +2373,8 @@ function apply(){var m=media();if(!m)return;m.style.transform='translate(calc(-5
 function resetView(){state.scale=1;state.x=0;state.y=0;state.rot=0;requestAnimationFrame(function(){fit()})}
 function fit(){var m=media(),s=el('apvStage');if(!m||!s)return;if(state.type==='pdf'){state.scale=1;state.x=0;state.y=0;state.rot=0;apply();return}var w=m.naturalWidth||m.clientWidth,h=m.naturalHeight||m.clientHeight;if(!w||!h)return;var r=s.getBoundingClientRect(),sw=(r.width-28)/w,sh=(r.height-28)/h;state.scale=Math.min(sw,sh,1.2);state.x=0;state.y=0;apply()}
 function clearMedia(){var m=media();if(m)m.remove();if(state.url){URL.revokeObjectURL(state.url);state.url=null}state.type=null;el('apvEmpty').style.display='flex';el('apvTools').style.display='none';el('apvFoot').style.display='none';el('apvHint').style.display='none'}
-function load(file){if(!file)return;clearMedia();state.file=file;state.url=URL.createObjectURL(file);state.type=file.type==='application/pdf'||/\.pdf$/i.test(file.name)?'pdf':'image';var m;if(state.type==='pdf'){m=document.createElement('iframe');m.src=state.url;m.className='apv-media apv-pdf';m.title='Обмірний план PDF'}else{m=document.createElement('img');m.src=state.url;m.className='apv-media';m.alt='Обмірний план';m.draggable=false;m.onload=resetView}m.id='apvMedia';el('apvStage').appendChild(m);el('apvEmpty').style.display='none';el('apvTools').style.display=state.type==='image'?'flex':'none';el('apvHint').style.display=state.type==='image'?'block':'none';el('apvFoot').style.display='flex';el('apvName').textContent=file.name||'Обмірний план';el('apvMeta').textContent=state.type==='pdf'?'PDF · перегляд':'Зображення · масштаб і переміщення';if(state.type==='pdf'){state.scale=1;state.x=0;state.y=0;state.rot=0;apply()}}
-function bind(){var input=el('apvInput'),stage=el('apvStage');function pick(){input.value='';input.click()}el('apvPick').onclick=pick;el('apvPickTop').onclick=pick;el('apvChange').onclick=pick;el('apvRooms').onclick=function(){if(window.ACEILPlanRoomsOpen)window.ACEILPlanRoomsOpen(state.file,state.type);};input.onchange=function(){load(input.files&&input.files[0])};el('apvClose').onclick=close;el('apvRemove').onclick=function(){if(confirm('Прибрати завантажений план?'))clearMedia()};el('apvPlus').onclick=function(){state.scale=Math.min(8,state.scale*1.18);apply()};el('apvMinus').onclick=function(){state.scale=Math.max(.08,state.scale/1.18);apply()};el('apvFit').onclick=fit;el('apvRotate').onclick=function(){state.rot=(state.rot+90)%360;fit()};
+function load(file){if(!file)return;clearMedia();state.url=URL.createObjectURL(file);state.type=file.type==='application/pdf'||/\.pdf$/i.test(file.name)?'pdf':'image';var m;if(state.type==='pdf'){m=document.createElement('iframe');m.src=state.url;m.className='apv-media apv-pdf';m.title='Обмірний план PDF'}else{m=document.createElement('img');m.src=state.url;m.className='apv-media';m.alt='Обмірний план';m.draggable=false;m.onload=resetView}m.id='apvMedia';el('apvStage').appendChild(m);el('apvEmpty').style.display='none';el('apvTools').style.display=state.type==='image'?'flex':'none';el('apvHint').style.display=state.type==='image'?'block':'none';el('apvFoot').style.display='flex';el('apvName').textContent=file.name||'Обмірний план';el('apvMeta').textContent=state.type==='pdf'?'PDF · перегляд':'Зображення · масштаб і переміщення';if(state.type==='pdf'){state.scale=1;state.x=0;state.y=0;state.rot=0;apply()}}
+function bind(){var input=el('apvInput'),stage=el('apvStage');function pick(){input.value='';input.click()}el('apvPick').onclick=pick;el('apvPickTop').onclick=pick;el('apvChange').onclick=pick;input.onchange=function(){load(input.files&&input.files[0])};el('apvClose').onclick=close;el('apvRemove').onclick=function(){if(confirm('Прибрати завантажений план?'))clearMedia()};el('apvPlus').onclick=function(){state.scale=Math.min(8,state.scale*1.18);apply()};el('apvMinus').onclick=function(){state.scale=Math.max(.08,state.scale/1.18);apply()};el('apvFit').onclick=fit;el('apvRotate').onclick=function(){state.rot=(state.rot+90)%360;fit()};
  stage.addEventListener('pointerdown',function(e){if(state.type!=='image')return;stage.setPointerCapture(e.pointerId);state.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(state.pointers.size===2){var a=[...state.pointers.values()];state.pinch={dist:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),scale:state.scale}}});
  stage.addEventListener('pointermove',function(e){if(state.type!=='image'||!state.pointers.has(e.pointerId))return;var old=state.pointers.get(e.pointerId);state.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(state.pointers.size===1){state.x+=e.clientX-old.x;state.y+=e.clientY-old.y;apply()}else if(state.pointers.size===2){var a=[...state.pointers.values()],dist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);if(state.pinch&&state.pinch.dist)state.scale=Math.max(.08,Math.min(8,state.pinch.scale*dist/state.pinch.dist));apply()}});
  function up(e){state.pointers.delete(e.pointerId);if(state.pointers.size<2)state.pinch=null}stage.addEventListener('pointerup',up);stage.addEventListener('pointercancel',up);
@@ -2488,102 +2488,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   document.addEventListener('DOMContentLoaded',hidePlanTile,{once:true});
   setTimeout(hidePlanTile,800);
   setTimeout(hidePlanTile,2000);
-})();
-</script>
-
-
-<script id="A-CEIL-auto-room-detector-v8">
-(function(){
-'use strict';
-let file=null,type=null,url=null,rooms=[],srcCanvas=null;
-
-function addStyle(){
- if(document.getElementById('ard8style'))return;
- let st=document.createElement('style');st.id='ard8style';st.textContent=`
-#ard8{position:fixed;inset:0;z-index:33000;background:#eef3f8;display:none;flex-direction:column;color:#12213b;font-family:inherit}#ard8.open{display:flex}
-.a8head{display:flex;gap:9px;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 11px 9px;background:#fff;border-bottom:1px solid #dfe6ef}.a8head b{flex:1;font-size:17px}.a8head button{border:0;border-radius:11px;padding:9px 11px;font-weight:800;background:#f0f4f8;color:#26364f}
-#ard8stage{position:relative;flex:1;overflow:hidden;background:#dfe6ed}#ard8img{position:absolute;max-width:none;user-select:none;-webkit-user-drag:none}
-#ard8svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:auto}.a8poly{fill:rgba(35,111,229,.18);stroke:#1769e8;stroke-width:2.5}.a8poly.off{fill:rgba(120,130,145,.08);stroke:#9aa5b4}.a8label{font-size:15px;font-weight:800;fill:#0c4eae;paint-order:stroke;stroke:white;stroke-width:4px}
-.a8bar{background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #dfe6ef}.a8row{display:flex;gap:8px;align-items:center}.a8btn{border:0;border-radius:12px;padding:12px 13px;font-weight:800;background:#edf2f7;color:#25354d}.a8btn.primary{background:#246fe5;color:#fff;flex:1}.a8status{font-size:12px;color:#66758b;line-height:1.4;margin-top:8px}.a8list{max-height:118px;overflow:auto;margin-top:7px}.a8item{display:flex;align-items:center;gap:7px;border-top:1px solid #edf0f4;padding:6px 1px;font-size:12px}.a8item b{flex:1}.a8item button{border:0;border-radius:8px;padding:6px 8px;background:#eef3f8;font-weight:700;color:#41526a}
-`;
- document.head.appendChild(st);
-}
-function ui(){
- addStyle();let d=document.getElementById('ard8');if(d)return d;
- d=document.createElement('div');d.id='ard8';d.innerHTML=`<div class="a8head"><button id="a8back">← Назад</button><b>Автопошук приміщень</b><button id="a8fit">Вмістити</button></div>
- <div id="ard8stage"><img id="ard8img" draggable="false"><svg id="ard8svg"></svg></div>
- <div class="a8bar"><div class="a8row"><button class="a8btn primary" id="a8find">Знайти приміщення</button><button class="a8btn" id="a8retry">Інший поріг</button></div><div class="a8status" id="a8status">Натисни «Знайти приміщення». Програма сама шукатиме внутрішні замкнені області між стінами.</div><div class="a8list" id="a8list"></div></div>`;
- document.body.appendChild(d);
- document.getElementById('a8back').onclick=()=>d.classList.remove('open');
- document.getElementById('a8fit').onclick=fit;
- document.getElementById('a8find').onclick=()=>detect(205);
- document.getElementById('a8retry').onclick=()=>detect(225);
- return d;
-}
-function fit(){
- let st=document.getElementById('ard8stage'),im=document.getElementById('ard8img'),r=st.getBoundingClientRect();
- let sc=Math.min(r.width/im.naturalWidth,r.height/im.naturalHeight),ox=(r.width-im.naturalWidth*sc)/2,oy=(r.height-im.naturalHeight*sc)/2;
- im.dataset.sc=sc;im.dataset.ox=ox;im.dataset.oy=oy;Object.assign(im.style,{width:im.naturalWidth*sc+'px',height:im.naturalHeight*sc+'px',left:ox+'px',top:oy+'px'});draw();
-}
-function screen(p){let im=document.getElementById('ard8img');return{x:+im.dataset.ox+p.x*(+im.dataset.sc),y:+im.dataset.oy+p.y*(+im.dataset.sc)}}
-function simplify(poly,eps){
- if(poly.length<4)return poly;
- function pd(p,a,b){let dx=b.x-a.x,dy=b.y-a.y;if(!dx&&!dy)return Math.hypot(p.x-a.x,p.y-a.y);let t=((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy);t=Math.max(0,Math.min(1,t));return Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy))}
- function rdp(a){if(a.length<3)return a;let m=0,ix=0;for(let i=1;i<a.length-1;i++){let d=pd(a[i],a[0],a[a.length-1]);if(d>m){m=d;ix=i}}if(m>eps){let l=rdp(a.slice(0,ix+1)),r=rdp(a.slice(ix));return l.slice(0,-1).concat(r)}return[a[0],a[a.length-1]]}
- return rdp(poly.concat([poly[0]])).slice(0,-1);
-}
-function detect(thr){
- let st=document.getElementById('a8status');st.textContent='Аналізую стіни та замкнені області…';rooms=[];
- setTimeout(()=>{
-  let c=srcCanvas,w=c.width,h=c.height,ctx=c.getContext('2d',{willReadFrequently:true}),im=ctx.getImageData(0,0,w,h),d=im.data;
-  // Work on reduced mask for speed.
-  let max=1000,sc=Math.min(1,max/Math.max(w,h)),W=Math.max(1,Math.round(w*sc)),H=Math.max(1,Math.round(h*sc));
-  let tc=document.createElement('canvas');tc.width=W;tc.height=H;let x=tc.getContext('2d',{willReadFrequently:true});x.drawImage(c,0,0,W,H);
-  let id=x.getImageData(0,0,W,H),p=id.data,wall=new Uint8Array(W*H);
-  for(let i=0,j=0;i<p.length;i+=4,j++){let g=.299*p[i]+.587*p[i+1]+.114*p[i+2];wall[j]=g<thr?1:0}
-  // Dilate black drawing to close door gaps/thin discontinuities.
-  let rad=Math.max(2,Math.round(Math.min(W,H)*.006)),dil=new Uint8Array(W*H);
-  for(let y=0;y<H;y++)for(let xx=0;xx<W;xx++)if(wall[y*W+xx])for(let yy=Math.max(0,y-rad);yy<=Math.min(H-1,y+rad);yy++)for(let xxx=Math.max(0,xx-rad);xxx<=Math.min(W-1,xx+rad);xxx++)dil[yy*W+xxx]=1;
-  // Flood white components; ignore border-connected outside and tiny/huge regions.
-  let seen=new Uint8Array(W*H), comps=[],qX=new Int32Array(W*H),qY=new Int32Array(W*H);
-  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
-  for(let sy=0;sy<H;sy++)for(let sx=0;sx<W;sx++){let si=sy*W+sx;if(dil[si]||seen[si])continue;
-    let head=0,tail=0;qX[tail]=sx;qY[tail++]=sy;seen[si]=1;let pts=[],border=false,minx=sx,maxx=sx,miny=sy,maxy=sy;
-    while(head<tail){let xx=qX[head],y=qY[head++];pts.push({x:xx,y});if(xx===0||y===0||xx===W-1||y===H-1)border=true;minx=Math.min(minx,xx);maxx=Math.max(maxx,xx);miny=Math.min(miny,y);maxy=Math.max(maxy,y);
-      for(let k=0;k<4;k++){let nx=xx+dirs[k][0],ny=y+dirs[k][1];if(nx<0||ny<0||nx>=W||ny>=H)continue;let ni=ny*W+nx;if(!dil[ni]&&!seen[ni]){seen[ni]=1;qX[tail]=nx;qY[tail++]=ny}}
-    }
-    let area=pts.length,frac=area/(W*H);if(!border&&frac>.002&&frac<.22&&(maxx-minx)>18&&(maxy-miny)>18)comps.push({pts,area,minx,maxx,miny,maxy});
-  }
-  // Boundary extraction + angular ordering around centroid; sufficient for test overlay.
-  comps.sort((a,b)=>b.area-a.area);comps=comps.slice(0,20);
-  rooms=comps.map((o,idx)=>{
-    let set=new Set(o.pts.map(p=>p.y*W+p.x)),bd=[];
-    for(let p of o.pts){if(!set.has(p.y*W+p.x+1)||!set.has(p.y*W+p.x-1)||!set.has((p.y+1)*W+p.x)||!set.has((p.y-1)*W+p.x))bd.push(p)}
-    let cx=bd.reduce((s,p)=>s+p.x,0)/bd.length,cy=bd.reduce((s,p)=>s+p.y,0)/bd.length;
-    bd.sort((a,b)=>Math.atan2(a.y-cy,a.x-cx)-Math.atan2(b.y-cy,b.x-cx));
-    let step=Math.max(1,Math.floor(bd.length/180)),sample=bd.filter((_,i)=>i%step===0),poly=simplify(sample,Math.max(2,Math.min(W,H)*.006));
-    poly=poly.map(p=>({x:p.x/sc,y:p.y/sc}));return{id:idx+1,poly,active:true,cx:cx/sc,cy:cy/sc,area:o.area/(sc*sc)}
-  });
-  st.textContent=rooms.length?'Знайдено кандидатів: '+rooms.length+'. Сині області — те, що алгоритм вважає приміщеннями. Натисни на область або «×» у списку, щоб відкинути зайве.':'Замкнених приміщень не знайдено. Спробуй «Інший поріг».';
-  draw();list();
- },40);
-}
-function draw(){
- let svg=document.getElementById('ard8svg');if(!svg)return;svg.innerHTML='';
- rooms.forEach(r=>{let q=r.poly.map(screen),pts=q.map(p=>p.x+','+p.y).join(' '),c=screen({x:r.cx,y:r.cy});
-   svg.innerHTML+=`<polygon data-id="${r.id}" class="a8poly ${r.active?'':'off'}" points="${pts}"></polygon><text class="a8label" x="${c.x}" y="${c.y}">${r.id}</text>`;
- });
- svg.querySelectorAll('polygon').forEach(p=>p.onclick=()=>{let r=rooms.find(x=>x.id==p.dataset.id);r.active=!r.active;draw();list()});
-}
-function list(){
- let b=document.getElementById('a8list');b.innerHTML=rooms.map(r=>`<div class="a8item"><span>${r.active?'✓':'—'}</span><b>Кандидат ${r.id}</b><span>${r.poly.length} вершин</span><button data-id="${r.id}">${r.active?'Відкинути':'Повернути'}</button></div>`).join('');
- b.querySelectorAll('button').forEach(x=>x.onclick=()=>{let r=rooms.find(q=>q.id==x.dataset.id);r.active=!r.active;draw();list()});
-}
-window.ACEILPlanRoomsOpen=function(f,t){
- file=f;type=t;if(!file||type!=='image'){alert('Автопошук v8 поки працює з JPG/PNG.');return}
- let d=ui();d.classList.add('open');rooms=[];list();document.getElementById('a8status').textContent='Натисни «Знайти приміщення». Програма сама шукатиме внутрішні замкнені області між стінами.';
- let im=document.getElementById('ard8img');if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(file);im.onload=function(){srcCanvas=document.createElement('canvas');srcCanvas.width=im.naturalWidth;srcCanvas.height=im.naturalHeight;srcCanvas.getContext('2d').drawImage(im,0,0);fit()};im.src=url;
-};
 })();
 </script>
 
