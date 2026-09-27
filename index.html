@@ -2492,115 +2492,84 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 
 
-<script id="A-CEIL-plan-rooms-crop-ocr-v6">
+<script id="A-CEIL-plan-digitizer-v7">
 (function(){
 'use strict';
-var rows=[], currentFile=null, currentType=null, cropCanvas=null;
+let file=null,type=null,imgURL=null,scaleCmPerPx=null,calPts=[],roomPts=[],mode=null,roomName='',knownArea='';
 
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function addStyle(){
- if(document.getElementById('apr6Style'))return;
- var st=document.createElement('style');st.id='apr6Style';st.textContent=`
-#apr6Sheet{position:fixed;inset:0;z-index:31000;background:rgba(17,27,45,.3);display:none;align-items:flex-end;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-#apr6Sheet.open{display:flex}.apr6-card{width:100%;max-height:82vh;background:#fff;border-radius:24px 24px 0 0;padding:16px 14px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -14px 45px rgba(18,30,50,.18);overflow:auto;color:#14213a}
-.apr6-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}.apr6-head h3{margin:0;flex:1;font-size:20px}.apr6-x{border:0;background:#f1f4f8;width:40px;height:40px;border-radius:12px;font-size:22px}
-.apr6-note{font-size:12px;line-height:1.4;color:#748196;background:#f7f9fc;border-radius:12px;padding:10px;margin-bottom:10px}
-.apr6-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.apr6-btn{border:0;border-radius:13px;padding:12px 14px;font-weight:800;font-size:14px;background:#edf2f7;color:#26364f}.apr6-btn.primary{background:#246fe5;color:#fff;flex:1}.apr6-btn.add{background:#eaf8f1;color:#168455}
-.apr6-status{font-size:12px;color:#66758b;margin:8px 2px}.apr6-preview{display:none;background:#eef2f6;border-radius:14px;padding:8px;margin:8px 0}.apr6-preview canvas{display:block;max-width:100%;max-height:150px;margin:auto;background:#fff}
-.apr6-row{display:grid;grid-template-columns:30px 1fr 84px 32px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid #edf0f4}.apr6-row input{width:100%;box-sizing:border-box;border:1px solid #dfe5ed;border-radius:9px;padding:8px 7px;font:inherit;font-size:13px}.apr6-num{text-align:center;font-weight:800;color:#66758b}.apr6-del{border:0;background:#fff0f0;color:#c63d3d;width:32px;height:32px;border-radius:9px;font-size:17px}.apr6-empty{text-align:center;color:#8995a7;padding:18px 8px}.apr6-summary{display:flex;justify-content:space-between;padding:11px 2px 2px;font-weight:800}.apr6-warn{color:#a96900;font-size:11px;line-height:1.35;margin-top:9px}
-#apr6Crop{position:fixed;inset:0;z-index:32000;background:#111923;display:none;flex-direction:column;color:#fff;touch-action:none}#apr6Crop.open{display:flex}
-.apr6-crophead{display:flex;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;gap:10px;background:#111923}.apr6-crophead b{flex:1;font-size:17px}.apr6-crophead button{border:0;background:#263447;color:#fff;border-radius:11px;padding:10px 12px;font-weight:800}
-#apr6CropStage{position:relative;flex:1;overflow:hidden;background:#202a35}#apr6CropImg{position:absolute;max-width:none;user-select:none;-webkit-user-drag:none}
-#apr6Sel{position:absolute;border:2px solid #2d7cff;background:rgba(45,124,255,.12);box-shadow:0 0 0 9999px rgba(0,0,0,.38);display:none;pointer-events:none}
-.apr6-crophint{text-align:center;padding:10px 14px calc(10px + env(safe-area-inset-bottom));font-size:13px;background:#111923;color:#d9e2ee}
+function style(){
+ if(document.getElementById('dig7style'))return;
+ let x=document.createElement('style');x.id='dig7style';x.textContent=`
+#dig7{position:fixed;inset:0;z-index:33000;background:#eef3f8;display:none;flex-direction:column;color:#12213b;font-family:inherit}#dig7.open{display:flex}
+.d7head{display:flex;gap:10px;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;background:#fff;border-bottom:1px solid #dfe6ef}.d7head b{flex:1;font-size:18px}.d7head button{border:0;border-radius:12px;padding:10px 13px;font-weight:800;background:#f0f4f8;color:#26364f}
+#d7stage{position:relative;flex:1;overflow:hidden;background:#dfe6ed;touch-action:none}#d7img{position:absolute;max-width:none;user-select:none;-webkit-user-drag:none}
+#d7svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}.d7pt{fill:#1769e8;stroke:white;stroke-width:2}.d7line{stroke:#1769e8;stroke-width:3;fill:none}.d7cal{stroke:#e53935;stroke-width:3;stroke-dasharray:8 5}
+.d7bar{background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #dfe6ef}.d7row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}.d7btn{border:0;border-radius:12px;padding:11px 12px;font-weight:800;background:#eaf1fb;color:#1757b8}.d7btn.primary{background:#246fe5;color:#fff}.d7btn.red{background:#fff0f0;color:#c53d3d}.d7info{font-size:13px;color:#617087;line-height:1.45}.d7result{font-size:14px;font-weight:800;color:#183251;margin-top:5px}.d7modal{position:fixed;inset:0;z-index:34000;background:rgba(10,20,35,.35);display:none;align-items:center;justify-content:center;padding:18px}.d7modal.open{display:flex}.d7box{background:#fff;width:min(420px,100%);border-radius:20px;padding:18px}.d7box h3{margin:0 0 12px}.d7box input{width:100%;box-sizing:border-box;border:1px solid #dce3ec;border-radius:12px;padding:12px;font:inherit;margin-bottom:10px}.d7box button{width:100%;border:0;border-radius:12px;padding:12px;background:#246fe5;color:#fff;font-weight:800}
 `;
- document.head.appendChild(st);
+ document.head.appendChild(x);
 }
-function shell(){
- addStyle(); var d=document.getElementById('apr6Sheet'); if(d)return d;
- d=document.createElement('div');d.id='apr6Sheet';d.innerHTML=`<div class="apr6-card">
- <div class="apr6-head"><h3>Приміщення з плану</h3><button class="apr6-x" id="apr6Close">×</button></div>
- <div class="apr6-note">Спочатку виділи пальцем тільки таблицю «Експлікація приміщень». Ми збільшимо та очистимо її, а OCR читатиме вже не весь кресленик.</div>
- <div class="apr6-actions"><button class="apr6-btn primary" id="apr6Select">Виділити експлікацію</button><button class="apr6-btn" id="apr6Recognize" disabled>Розпізнати виділене</button><button class="apr6-btn add" id="apr6Add">+ Додати</button></div>
- <div class="apr6-status" id="apr6Status">Область ще не вибрана</div><div class="apr6-preview" id="apr6Preview"></div>
- <div id="apr6Rows"></div><div class="apr6-summary"><span>Знайдено: <b id="apr6Count">0</b></span><span>Площа: <b id="apr6Area">0.00 м²</b></span></div>
- <div class="apr6-warn">Периметр поки не визначаємо. Спочатку добиваємося стабільного читання № / назви / площі.</div></div>`;
+function ui(){
+ style();let d=document.getElementById('dig7');if(d)return d;
+ d=document.createElement('div');d.id='dig7';d.innerHTML=`<div class="d7head"><button id="d7close">← Назад</button><b>Оцифрування плану</b><button id="d7fit">Вмістити</button></div>
+ <div id="d7stage"><img id="d7img" draggable="false"><svg id="d7svg"></svg></div>
+ <div class="d7bar"><div class="d7row"><button class="d7btn primary" id="d7cal">1. Калібрувати</button><button class="d7btn" id="d7room">2. Обвести кімнату</button><button class="d7btn red" id="d7undo">↶ Точка</button><button class="d7btn red" id="d7clear">Очистити</button></div>
+ <div class="d7info" id="d7info">Спочатку натисни «Калібрувати», постав 2 точки на відомому розмірі креслення і введи реальну довжину.</div><div class="d7result" id="d7result"></div></div>`;
  document.body.appendChild(d);
- d.onclick=e=>{if(e.target===d)d.classList.remove('open')};
- document.getElementById('apr6Close').onclick=()=>d.classList.remove('open');
- document.getElementById('apr6Add').onclick=()=>{rows.push({name:'',area:''});render();};
- document.getElementById('apr6Select').onclick=openCrop;
- document.getElementById('apr6Recognize').onclick=recognizeCrop;
+ let m=document.createElement('div');m.className='d7modal';m.id='d7modal';m.innerHTML=`<div class="d7box"><h3 id="d7mt">Введи довжину</h3><input id="d7in1" inputmode="decimal"><input id="d7in2" style="display:none"><button id="d7ok">Готово</button></div>`;document.body.appendChild(m);
+ document.getElementById('d7close').onclick=()=>d.classList.remove('open');
+ document.getElementById('d7cal').onclick=()=>{mode='cal';calPts=[];msg('Постав 2 точки на кінцях одного відомого розміру.');draw();};
+ document.getElementById('d7room').onclick=()=>{if(!scaleCmPerPx){msg('Спочатку відкалібруй масштаб.');return} askRoom();};
+ document.getElementById('d7undo').onclick=()=>{if(mode==='room')roomPts.pop();else if(mode==='cal')calPts.pop();draw();calc();};
+ document.getElementById('d7clear').onclick=()=>{roomPts=[];draw();calc();};
  return d;
 }
-function render(){
- var box=document.getElementById('apr6Rows'); if(!box)return;
- box.innerHTML=rows.length?rows.map((r,i)=>`<div class="apr6-row"><div class="apr6-num">${i+1}</div><input data-i="${i}" data-k="name" value="${esc(r.name)}" placeholder="Назва"><input data-i="${i}" data-k="area" inputmode="decimal" value="${esc(r.area)}" placeholder="м²"><button class="apr6-del" data-del="${i}">×</button></div>`).join(''):'<div class="apr6-empty">Приміщень поки немає</div>';
- box.querySelectorAll('input').forEach(x=>x.oninput=function(){rows[+this.dataset.i][this.dataset.k]=this.value;summary();});
- box.querySelectorAll('[data-del]').forEach(x=>x.onclick=function(){rows.splice(+this.dataset.del,1);render();});
- summary();
+function msg(t){document.getElementById('d7info').textContent=t}
+function modal(title,p1,p2,cb){
+ let m=document.getElementById('d7modal'),a=document.getElementById('d7in1'),b=document.getElementById('d7in2');
+ document.getElementById('d7mt').textContent=title;a.placeholder=p1;a.value='';b.style.display=p2?'block':'none';b.placeholder=p2||'';b.value='';m.classList.add('open');
+ document.getElementById('d7ok').onclick=()=>{let v1=a.value,v2=b.value;m.classList.remove('open');cb(v1,v2)};
 }
-function summary(){document.getElementById('apr6Count').textContent=rows.length;var a=rows.reduce((q,r)=>q+(parseFloat(String(r.area).replace(',','.'))||0),0);document.getElementById('apr6Area').textContent=a.toFixed(2)+' м²';}
-function cropShell(){
- var c=document.getElementById('apr6Crop');if(c)return c;
- c=document.createElement('div');c.id='apr6Crop';c.innerHTML=`<div class="apr6-crophead"><button id="apr6CropCancel">Скасувати</button><b>Виділи таблицю</b><button id="apr6CropDone" disabled>Готово</button></div><div id="apr6CropStage"><img id="apr6CropImg" draggable="false"><div id="apr6Sel"></div></div><div class="apr6-crophint">Проведи пальцем від одного кута таблиці до протилежного. Захопи всю таблицю, але якомога менше креслення навколо.</div>`;
- document.body.appendChild(c); document.getElementById('apr6CropCancel').onclick=()=>c.classList.remove('open');
- return c;
+function askCal(px){modal('Відомий розмір','Довжина, см',null,v=>{let cm=parseFloat(v.replace(',','.'));if(cm>0){scaleCmPerPx=cm/px;mode=null;msg('Масштаб задано: '+cm+' см. Тепер обведи кімнату по внутрішніх кутах.');calc()}else msg('Некоректна довжина.');});}
+function askRoom(){modal('Кімната','Назва кімнати','Відома площа, м² (необов’язково)',(n,a)=>{roomName=n.trim()||'Кімната';knownArea=parseFloat(a.replace(',','.'))||0;roomPts=[];mode='room';msg('Торкайся внутрішніх кутів «'+roomName+'» по порядку. Мінімум 3 точки. Контур замикається автоматично.');draw();calc();});}
+function fit(){
+ let st=document.getElementById('d7stage'),im=document.getElementById('d7img'),r=st.getBoundingClientRect(),sc=Math.min(r.width/im.naturalWidth,r.height/im.naturalHeight);
+ im.dataset.sc=sc;im.dataset.ox=(r.width-im.naturalWidth*sc)/2;im.dataset.oy=(r.height-im.naturalHeight*sc)/2;
+ Object.assign(im.style,{width:im.naturalWidth*sc+'px',height:im.naturalHeight*sc+'px',left:im.dataset.ox+'px',top:im.dataset.oy+'px'});draw();
 }
-function openCrop(){
- var st=document.getElementById('apr6Status');
- if(!currentFile){st.textContent='Спочатку завантаж план.';return}
- if(currentType!=='image'){st.textContent='У v6 виділення працює з JPG/PNG. PDF — наступним кроком.';return}
- var c=cropShell(),img=document.getElementById('apr6CropImg'),stage=document.getElementById('apr6CropStage'),sel=document.getElementById('apr6Sel'),done=document.getElementById('apr6CropDone');
- var url=URL.createObjectURL(currentFile),start=null,rect=null,scale=1,ox=0,oy=0;
- c.classList.add('open'); sel.style.display='none';done.disabled=true;
- img.onload=function(){
-   var r=stage.getBoundingClientRect(); scale=Math.min(r.width/img.naturalWidth,r.height/img.naturalHeight);
-   var w=img.naturalWidth*scale,h=img.naturalHeight*scale;ox=(r.width-w)/2;oy=(r.height-h)/2;
-   img.style.left=ox+'px';img.style.top=oy+'px';img.style.width=w+'px';img.style.height=h+'px';
+function imagePoint(e){
+ let st=document.getElementById('d7stage'),im=document.getElementById('d7img'),r=st.getBoundingClientRect(),sc=+im.dataset.sc,ox=+im.dataset.ox,oy=+im.dataset.oy;
+ let x=(e.clientX-r.left-ox)/sc,y=(e.clientY-r.top-oy)/sc;
+ if(x<0||y<0||x>im.naturalWidth||y>im.naturalHeight)return null;return{x,y};
+}
+function screen(p){let im=document.getElementById('d7img');return{x:(+im.dataset.ox)+p.x*(+im.dataset.sc),y:(+im.dataset.oy)+p.y*(+im.dataset.sc)}}
+function draw(){
+ let svg=document.getElementById('d7svg'),pts=mode==='cal'?calPts:roomPts;svg.innerHTML='';
+ if(pts.length>1){let q=pts.map(screen),path='M '+q.map(p=>p.x+' '+p.y).join(' L ');if(mode==='room'&&pts.length>2)path+=' Z';svg.innerHTML+=`<path class="${mode==='cal'?'d7cal':'d7line'}" d="${path}"/>`;}
+ pts.forEach(p=>{let q=screen(p);svg.innerHTML+=`<circle class="d7pt" cx="${q.x}" cy="${q.y}" r="6"/>`;});
+}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function calc(){
+ let o=document.getElementById('d7result');if(!scaleCmPerPx){o.textContent='';return}
+ if(roomPts.length<3){o.textContent=roomPts.length?'Точок контуру: '+roomPts.length:'';return}
+ let per=0,area=0;
+ for(let i=0;i<roomPts.length;i++){let a=roomPts[i],b=roomPts[(i+1)%roomPts.length];per+=dist(a,b);area+=a.x*b.y-b.x*a.y}
+ per=per*scaleCmPerPx/100;area=Math.abs(area)/2*Math.pow(scaleCmPerPx/100,2);
+ let txt=(roomName||'Кімната')+' · площа '+area.toFixed(2)+' м² · периметр '+per.toFixed(2)+' м';
+ if(knownArea){let d=(area-knownArea)/knownArea*100;txt+=' · контроль '+knownArea.toFixed(2)+' м² ('+(d>=0?'+':'')+d.toFixed(1)+'%)';}
+ o.textContent=txt;
+}
+window.ACEILPlanRoomsOpen=function(f,t){
+ file=f;type=t;if(!file||type!=='image'){alert('Оцифрування v7 поки працює з JPG/PNG.');return}
+ let d=ui();d.classList.add('open');scaleCmPerPx=null;calPts=[];roomPts=[];mode=null;roomName='';knownArea='';
+ let im=document.getElementById('d7img');if(imgURL)URL.revokeObjectURL(imgURL);imgURL=URL.createObjectURL(file);im.onload=fit;im.src=imgURL;
+ document.getElementById('d7fit').onclick=fit;
+ document.getElementById('d7stage').onclick=e=>{
+   if(!mode)return;let p=imagePoint(e);if(!p)return;
+   if(mode==='cal'){calPts.push(p);if(calPts.length===2){draw();let px=dist(calPts[0],calPts[1]);askCal(px)}else draw();}
+   else {roomPts.push(p);draw();calc();}
  };
- img.src=url;
- function point(e){var r=stage.getBoundingClientRect();return{x:Math.max(ox,Math.min(e.clientX-r.left,ox+img.naturalWidth*scale)),y:Math.max(oy,Math.min(e.clientY-r.top,oy+img.naturalHeight*scale))}}
- stage.onpointerdown=function(e){e.preventDefault();stage.setPointerCapture(e.pointerId);start=point(e);rect=null;sel.style.display='block';sel.style.left=start.x+'px';sel.style.top=start.y+'px';sel.style.width='0';sel.style.height='0';done.disabled=true};
- stage.onpointermove=function(e){if(!start)return;e.preventDefault();var p=point(e),x=Math.min(start.x,p.x),y=Math.min(start.y,p.y),w=Math.abs(p.x-start.x),h=Math.abs(p.y-start.y);rect={x,y,w,h};Object.assign(sel.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px'});done.disabled=w<25||h<25};
- stage.onpointerup=function(){start=null};
- done.onclick=function(){
-   if(!rect)return;
-   var sx=Math.round((rect.x-ox)/scale),sy=Math.round((rect.y-oy)/scale),sw=Math.round(rect.w/scale),sh=Math.round(rect.h/scale);
-   var src=document.createElement('canvas');src.width=img.naturalWidth;src.height=img.naturalHeight;src.getContext('2d').drawImage(img,0,0);
-   var factor=Math.min(4,Math.max(2,1800/Math.max(sw,1))),cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(sw*factor));cv.height=Math.max(1,Math.round(sh*factor));
-   var ctx=cv.getContext('2d',{willReadFrequently:true});ctx.imageSmoothingEnabled=true;ctx.drawImage(src,sx,sy,sw,sh,0,0,cv.width,cv.height);
-   var im=ctx.getImageData(0,0,cv.width,cv.height),d=im.data;
-   for(var i=0;i<d.length;i+=4){var g=.299*d[i]+.587*d[i+1]+.114*d[i+2];var v=g>190?255:(g<120?0:Math.round((g-120)/70*255));d[i]=d[i+1]=d[i+2]=v;}
-   ctx.putImageData(im,0,0);cropCanvas=cv;
-   var prev=document.getElementById('apr6Preview');prev.innerHTML='';prev.appendChild(cv);prev.style.display='block';
-   document.getElementById('apr6Recognize').disabled=false;document.getElementById('apr6Status').textContent='Область готова. Перевір прев’ю та натисни «Розпізнати виділене».';
-   c.classList.remove('open');URL.revokeObjectURL(url);
- };
-}
-function loadTesseract(){return new Promise((resolve,reject)=>{if(window.Tesseract)return resolve(window.Tesseract);var sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';sc.onload=()=>resolve(window.Tesseract);sc.onerror=()=>reject(new Error('OCR load failed'));document.head.appendChild(sc);});}
-function parse(text){
- var out=[],seen=new Set(),lines=String(text||'').split(/\n+/).map(x=>x.replace(/[|]/g,' ').replace(/\s+/g,' ').trim()).filter(Boolean);
- lines.forEach(line=>{
-   var m=line.match(/^\s*(\d{1,2})[\s.)-]+(.{2,45}?)\s+(\d{1,3}\s*[.,]\s*\d{1,2})\s*$/u);
-   if(!m)return;var n=+m[1],name=m[2].trim(),area=m[3].replace(/\s/g,'').replace('.',',');
-   if(n<1||n>99||!name||seen.has(n))return;seen.add(n);out.push({n,name,area});
- });
- out.sort((a,b)=>a.n-b.n);return out;
-}
-async function recognizeCrop(){
- var st=document.getElementById('apr6Status');if(!cropCanvas){st.textContent='Спочатку виділи таблицю.';return}
- try{
-   st.textContent='Завантажую OCR…';var T=await loadTesseract();
-   st.textContent='Читаю тільки виділену таблицю…';
-   var res=await T.recognize(cropCanvas,'ukr+eng',{logger:m=>{if(m.status==='recognizing text')st.textContent='Розпізнавання: '+Math.round((m.progress||0)*100)+'%';}});
-   var got=parse(res.data.text||'');rows=got;render();
-   st.textContent=got.length?'Знайдено: '+got.length+'. Перевір назви та площі.':'Не прочитано. Спробуй виділити таблицю щільніше або додай рядки вручну.';
- }catch(e){console.error(e);st.textContent='OCR не запустився. План не втрачено — можна повторити виділення.';}
-}
-window.ACEILPlanRoomsOpen=function(file,type){
- currentFile=file;currentType=type;cropCanvas=null;
- var d=shell();d.classList.add('open');document.getElementById('apr6Preview').style.display='none';document.getElementById('apr6Recognize').disabled=true;document.getElementById('apr6Status').textContent='Область ще не вибрана';render();
+ msg('1. Калібруй масштаб по будь-якому чітко відомому розміру креслення.');
+ document.getElementById('d7result').textContent='';
 };
 })();
 </script>
