@@ -2408,13 +2408,18 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
 
   function openPlanViewer(){
-    var hidden=document.getElementById('A-CEIL-plan-viewer-tile');
-    if(hidden){ hidden.click(); return; }
-    if(typeof window.ACEIL_openPlanViewer==='function'){ window.ACEIL_openPlanViewer(); return; }
-    // Fallback: click any hidden plan control created by v2.
-    var c=document.querySelector('[data-aceil-plan-viewer],[data-tool="plan-viewer"]');
-    if(c){ c.click(); return; }
-    alert('Переглядач плану не ініціалізувався.');
+    if(typeof window.ACEILOpenPlanViewer==='function'){
+      window.ACEILOpenPlanViewer();
+      return;
+    }
+    // One retry in case DOM boot is still finishing.
+    setTimeout(function(){
+      if(typeof window.ACEILOpenPlanViewer==='function'){
+        window.ACEILOpenPlanViewer();
+      } else {
+        console.error('[A·CEIL] Plan Viewer API is unavailable');
+      }
+    },120);
   }
 
   function showMenu(tile){
@@ -2469,6 +2474,20 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       if(wire()||tries>40) clearInterval(timer);
     },250);
   }
+})();
+</script>
+
+
+<script id="A-CEIL-hide-standalone-plan-tile-v4">
+(function(){
+  function hidePlanTile(){
+    var b=document.getElementById('aceilPlanTile');
+    if(b){ b.style.display='none'; b.setAttribute('aria-hidden','true'); }
+  }
+  hidePlanTile();
+  document.addEventListener('DOMContentLoaded',hidePlanTile,{once:true});
+  setTimeout(hidePlanTile,800);
+  setTimeout(hidePlanTile,2000);
 })();
 </script>
 
