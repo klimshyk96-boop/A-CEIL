@@ -31,3 +31,12 @@ Production-oriented CLEAN baseline for A·CEIL, finalized after the RC1 regressi
 ## Important maintenance rule
 
 Do not bulk-concatenate the remaining historical scripts. Browser testing showed that their independent `<script>` boundaries currently provide execution timing and fault isolation. Consolidate a legacy script only when its behavior has been moved into a canonical subsystem and verified in-browser.
+
+
+## Deep cleanup — 2026-09-27
+
+- Removed the two physical JS files that were not loaded or referenced by the application.
+- Removed obsolete RC10/RC11 historical cleanup notes.
+- Removed 174 generated/development HTML comments from `index.html`; script order and inline script bodies are unchanged.
+- Preserved all 153 active local JS script boundaries. A·CEIL still relies on ordered wrappers, initialization side effects, observers, DOM handlers, and state bridges, so “overridden name” is not treated as dead code.
+- `058-inline.js` and `076-inline.js` remain intentionally: both still participate in the live lighting wrapper/initialization chain.
