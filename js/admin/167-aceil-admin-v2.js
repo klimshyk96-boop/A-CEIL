@@ -86,7 +86,12 @@ function projectScope(uid,r){
     (scope==='selected'?'<button type="button" class="aceil-project-picker-btn" onclick="A_CEIL_Admin.toggleProjects(\''+esc(uid)+'\',this)">Вибрати проєкти</button><div id="aceilProjects_'+esc(uid)+'" class="aceil-project-list" style="display:none"></div>':'')+
     '</div>';
 }
-var adminRows=[],activityByUser={};
+var adminRows=[],activityByUser={},workspaceByUser={};
+function workspaceBox(uid,r){
+  var ready=!!r.workspace_initialized,copied=!!r.workspace_copied;
+  if(ready)return '<div class="aceil-workspace-box ready"><div><b>Особистий кабінет готовий</b><small>'+(copied?'Незалежна копія твоєї номенклатури та елементів стін.':'Порожній особистий кабінет.')+'</small></div><span>✓ Ізольовано</span></div>';
+  return '<div class="aceil-workspace-box"><div><b>Початкові дані користувача</b><small>Після створення всі його зміни лишатимуться тільки в нього.</small></div><div class="aceil-workspace-actions"><button type="button" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',false,this)">Порожній</button><button type="button" class="copy" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',true,this)">Копія моїх даних</button></div></div>';
+}
 function initials(r){var x=String((r&&r.name)||r.email||'?').trim();return (x[0]||'?').toUpperCase()}
 function durationText(sec){sec=Math.max(0,Number(sec)||0);var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);if(h)return h+' год '+m+' хв';if(m)return m+' хв';return sec?'< 1 хв':'—'}
 function dateTimeText(v){if(!v)return 'Ще не заходив';var d=new Date(v);if(isNaN(d.getTime()))return 'Ще не заходив';try{return new Intl.DateTimeFormat('uk-UA',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(d)}catch(e){return d.toLocaleString()}}
@@ -116,10 +121,9 @@ function render(rows){
   content(rows.map(function(r,i){
       var uid=String(r.user_id||r.id||""), active=r.is_active!==false, approval=String(r.approval_status||'').toLowerCase(), pending=approval==='pending', rejected=approval==='rejected';
       var badge=active?'<span class="aceil-admin-badge">Активний</span>':pending?'<span class="aceil-admin-badge pending">Очікує</span>':rejected?'<span class="aceil-admin-badge off">Відхилено</span>':'<span class="aceil-admin-badge off">Заблоковано</span>';
-      var quick='<div class="aceil-quick-rights"><span class="aceil-quick-pill '+(r.nomenclature_access?'on':'')+'">Номенклатура</span><span class="aceil-quick-pill '+(r.projects_access?'on':'')+'">Проєкти</span><span class="aceil-quick-pill edit '+(r.projects_edit?'on':'')+'">Редагування</span></div>';
-      return '<div class="aceil-admin-user '+(i===0?'expanded':'')+'" data-uid="'+esc(uid)+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||''))+'"><div class="aceil-admin-user-top" onclick="A_CEIL_Admin.toggleCard(this)"><div class="aceil-user-avatar">'+esc(initials(r))+'</div><div class="aceil-user-ident"><div class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+'</div><div class="aceil-admin-mail">'+esc(r.email||"")+'</div></div>'+badge+'<span class="aceil-user-chevron">⌄</span></div>'+quick+'<div class="aceil-admin-controls">'+(pending?'<div class="aceil-approval-box"><div><b>Нова реєстрація</b><small>Користувач ще не має доступу до A·CEIL</small></div><div class="aceil-approval-actions"><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this)" type="button" class="approve">✓ Схвалити</button><button onclick="A_CEIL_Admin.reject(\''+esc(uid)+'\',this)" type="button" class="reject">× Відхилити</button></div></div>':'')+
-        toggle(uid,"nomenclature_access","Моя номенклатура","Використовувати номенклатуру owner",!!r.nomenclature_access,false)+
-        toggle(uid,"projects_access","Мої проєкти","Доступ до проєктів owner",!!r.projects_access,false)+
+      var quick='<div class="aceil-quick-rights"><span class="aceil-quick-pill '+(r.workspace_initialized?'on':'')+'">Власний кабінет</span><span class="aceil-quick-pill '+(r.workspace_copied?'on':'')+'">'+(r.workspace_copied?'Копія надана':'Без копії')+'</span><span class="aceil-quick-pill edit '+(r.projects_access?'on':'')+'">Спільні проєкти</span></div>';
+      return '<div class="aceil-admin-user '+(i===0?'expanded':'')+'" data-uid="'+esc(uid)+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||''))+'"><div class="aceil-admin-user-top" onclick="A_CEIL_Admin.toggleCard(this)"><div class="aceil-user-avatar">'+esc(initials(r))+'</div><div class="aceil-user-ident"><div class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+'</div><div class="aceil-admin-mail">'+esc(r.email||"")+'</div></div>'+badge+'<span class="aceil-user-chevron">⌄</span></div>'+quick+'<div class="aceil-admin-controls">'+(pending?'<div class="aceil-approval-box"><div><b>Нова реєстрація</b><small>Одразу обери, з яких даних почне користувач.</small></div><div class="aceil-approval-actions"><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,false)" type="button" class="approve empty">✓ Порожній</button><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,true)" type="button" class="approve">✓ Дати копію</button><button onclick="A_CEIL_Admin.reject(\''+esc(uid)+'\',this)" type="button" class="reject">× Відхилити</button></div></div>':workspaceBox(uid,r))+
+        toggle(uid,"projects_access","Доступ до моїх проєктів","Окремий спільний доступ до проєктів головного власника",!!r.projects_access,false)+
         (r.projects_access?projectScope(uid,r):'')+
         toggle(uid,"projects_edit","Редагування проєктів","Може змінювати доступні проєкти",!!r.projects_edit,!r.projects_access)+
         tempAccess(uid,r)+
@@ -163,8 +167,11 @@ async function load(){
   if(!hasCards)content('<div class="aceil-admin-note">Завантажуємо користувачів…</div>');
   try{
     var c=sb();if(!c)throw new Error("Supabase client недоступний.");
-    var r=await c.rpc("admin_list_users");if(r.error)throw r.error;
-    render(r.data);
+    var results=await Promise.all([c.rpc("admin_list_users"),c.rpc("admin_list_workspace_status")]);
+    var r=results[0],wr=results[1];if(r.error)throw r.error;if(wr.error)throw wr.error;
+    workspaceByUser={};(Array.isArray(wr.data)?wr.data:[]).forEach(function(x){workspaceByUser[String(x.user_id||'')]=x});
+    var rows=(Array.isArray(r.data)?r.data:[]).map(function(x){return Object.assign({},x,workspaceByUser[String(x.user_id||x.id||'')]||{})});
+    render(rows);
     await loadActivityData();
     if(view)restoreAdminViewState(view);
   }
@@ -177,10 +184,15 @@ async function load(){
 }
 async function setApproval(uid,status,button){
   if(button)button.disabled=true;
-  try{var c=sb();if(!c)throw new Error("Supabase client недоступний.");var r=await c.rpc("admin_set_registration_status",{p_user_id:uid,p_status:status});if(r.error)throw r.error;toast(status==='approved'?"✓ Реєстрацію схвалено":"✓ Реєстрацію відхилено");await load()}
-  catch(e){if(button)button.disabled=false;toast("Не вдалося змінити статус: "+String(e&&e.message?e.message:e))}
+  try{var c=sb();if(!c)throw new Error("Supabase client недоступний.");var r=await c.rpc("admin_set_registration_status",{p_user_id:uid,p_status:status});if(r.error)throw r.error;toast(status==='approved'?"✓ Реєстрацію схвалено":"✓ Реєстрацію відхилено");if(status!=='approved')await load();return true}
+  catch(e){if(button)button.disabled=false;toast("Не вдалося змінити статус: "+String(e&&e.message?e.message:e));return false}
 }
-function approve(uid,b){return setApproval(uid,'approved',b)}
+async function initializeWorkspace(uid,copy,button){
+  if(button)button.disabled=true;
+  try{var c=sb();if(!c)throw new Error("Supabase client недоступний.");var r=await c.rpc('admin_initialize_user_workspace',{p_user_id:uid,p_copy_template:!!copy,p_overwrite:false});if(r.error)throw r.error;toast(copy?'✓ Незалежну копію створено':'✓ Порожній кабінет створено');await load();return true}
+  catch(e){if(button)button.disabled=false;toast('Не вдалося створити кабінет: '+String(e&&e.message?e.message:e));return false}
+}
+async function approve(uid,b,copy){var ok=await setApproval(uid,'approved',b);if(ok)return initializeWorkspace(uid,!!copy,b);return false}
 function reject(uid,b){if(!confirm('Відхилити реєстрацію цього користувача?'))return;return setApproval(uid,'rejected',b)}
 
 async function deleteUser(uid,label,button){
@@ -266,7 +278,7 @@ function showTab(name,btn){
 function open(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.add("open");m.setAttribute("aria-hidden","false");load()}
 function close(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 
-window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,approve:approve,reject:reject,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab};
+window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab};
 
 function boot(){
   ensureMenuItem();
@@ -275,4 +287,3 @@ function boot(){
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 document.addEventListener("visibilitychange",function(){var m=document.getElementById("aceilAdminModal");if(document.visibilityState==="visible"&&currentUser()&&m&&m.classList.contains("open"))setTimeout(function(){refreshOwner(currentUser())},250)});
 })();
-
