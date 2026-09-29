@@ -26,7 +26,8 @@
 <script id="A·CEIL-utils-v1" src="js/projects/011-aceil-utils-v1.js"></script>
 <script src="js/core/debug-log.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<link rel="stylesheet" href="assets/app.css?v=clean-test2-20260902-2" id="A-CEIL-clean-test2-css-bundle">
+<link rel="stylesheet" href="assets/app.css?v=20260929-multitenant1" id="A-CEIL-clean-test2-css-bundle">
+<script id="A-CEIL-user-storage-v1" src="js/core/006-user-storage-v1.js?v=20260929-1"></script>
 
 <script id="A·CEIL-i18n-core" src="js/projects/013-aceil-i18n-core.js"></script>
 
@@ -249,7 +250,7 @@ body.aceil-all-split-v14 .canvas-container{
 
 <script id="A·CEIL-project-schema-migrations" src="js/nomenclature/094-aceil-project-schema-migrations.js"></script>
 
-<script id="A·CEIL-project-repository" src="js/projects/project-repository.js?v=rc13"></script>
+<script id="A·CEIL-project-repository" src="js/projects/project-repository.js?v=20260929-multitenant1"></script>
 
 <script id="A·CEIL-geometry-core-v1" src="js/projects/098-aceil-geometry-core-v1.js"></script>
 
@@ -673,7 +674,7 @@ body.aceil-all-split-v14 .canvas-container{
 
 <script id="rm-sketch-only-v359" src="js/reports/158-sketch-only-v359.js"></script>
 
-<script id="A-CEIL-access-clean-v2" src="js/admin/159-aceil-access-clean-v2.js?v=20260904-light-types51"></script>
+<script id="A-CEIL-access-clean-v2" src="js/admin/159-aceil-access-clean-v2.js?v=20260929-multitenant1"></script>
 <script id="A-CEIL-user-activity" src="js/admin/user-activity.js?v=rc13"></script>
 
 <script id="A-CEIL-cloud-html-report-v2" src="js/reports/160-aceil-cloud-html-report-v2.js"></script>
@@ -693,7 +694,7 @@ body.aceil-all-split-v14 .canvas-container{
 <script id="aceil-wall-placement-restore-v1" src="js/canvas/169-aceil-wall-placement-restore-v1.js?v=20260911-2"></script>
 <script id="aceil-wall-menu-simplify-v1" src="js/canvas/185-aceil-wall-menu-simplify-v1.js?v=20260912-2"></script>
 <script id="aceil-autocount-menu-v1" src="js/nomenclature/170-aceil-autocount-menu-v1.js?v=20260911-8"></script>
-<script id="aceil-offline-nomenclature-v1" src="js/nomenclature/171-aceil-offline-nomenclature-v1.js?v=20260902-1"></script>
+<script id="aceil-offline-nomenclature-v1" src="js/nomenclature/171-aceil-offline-nomenclature-v1.js?v=20260929-multitenant1"></script>
 <script id="aceil-plan-report-pwa-v1" src="js/reports/172-aceil-plan-report-pwa-v1.js?v=20260917-final1"></script>
 <script id="aceil-wall-elements-persistence-v2" src="js/projects/173-aceil-wall-elements-persistence-v2.js?v=20260923-resurrection-fix"></script>
 <script id="aceil-overall-dims-and-light-colors-fix-v1" src="js/canvas/174-aceil-overall-dims-and-light-colors-fix-v1.js?v=20260923-double-spot-1"></script>
@@ -716,7 +717,7 @@ body.aceil-all-split-v14 .canvas-container{
       sessionStorage.setItem(updateKey,"1");
       location.reload();
     });
-    navigator.serviceWorker.register("/sw.js?v=20260925-v27",{scope:"/"}).then(function(reg){
+    navigator.serviceWorker.register("/sw.js?v=20260929-multitenant-v1",{scope:"/"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
@@ -746,7 +747,7 @@ body.aceil-all-split-v14 .canvas-container{
   </div>
 </div>
 
-<script id="A-CEIL-admin-v2" src="js/admin/167-aceil-admin-v2.js?v=rc13"></script>
+<script id="A-CEIL-admin-v2" src="js/admin/167-aceil-admin-v2.js?v=20260929-multitenant1"></script>
 <script id="A-CEIL-estimate-variants-ui-v1" src="js/reports/184-aceil-estimate-variants-ui-v1.js?v=20260923-clean-final"></script>
 <script id="A-CEIL-projects-menu-clean-v1" src="js/projects/186-aceil-projects-menu-clean-v1.js?v=20260912-1"></script>
 <script id="A-CEIL-ceiling-cornices-v1" src="js/canvas/187-aceil-ceiling-cornices-v1.js?v=20260915-2"></script><script id="A-CEIL-canvas-hidpi-v1" src="js/canvas/220-aceil-canvas-hidpi-v1.js?v=20260916-1"></script>
