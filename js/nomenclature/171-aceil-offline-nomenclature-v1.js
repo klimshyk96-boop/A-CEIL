@@ -96,5 +96,13 @@
   else [1000,2500,5000,10000].forEach(function(ms){setTimeout(capture,ms)});
   window.addEventListener("online",function(){window.__A_CEIL_OFFLINE_ACTIVE=false;[1200,3500].forEach(function(ms){setTimeout(capture,ms)})});
   window.addEventListener("offline",function(){window.__A_CEIL_OFFLINE_ACTIVE=true;restore()});
+  window.addEventListener("aceil:user-storage-changed",function(){
+    window.__A_CEIL_NOMEN_OFFLINE_READY=false;
+    setRuntime("elemItems",[]);setRuntime("elemGroups",[]);setRuntime("lightTypes",[]);
+    window.__A·CEILNomenCatalogV339={items:[],groups:[]};
+    try{if(typeof renderElemList==="function")renderElemList()}catch(_){}
+    if(offline())restore();
+    else setTimeout(function(){try{if(typeof window.forceLoadNomenclature==="function")window.forceLoadNomenclature("user-switch")}catch(_){}},80);
+  });
   window.A_CEIL_OfflineNomenclature={capture:capture,restore:restore,hasCache:function(){return !!read()}};
 })();
