@@ -69,23 +69,46 @@ function installDesktopCanvasZoom(){
   if(!host||!canvas||gid("aceilDesktopCanvasZoom"))return;
   var steps=[75,100,125,150],saved=Number(localStorage.getItem("aceil_desktop_canvas_zoom")||100);
   if(steps.indexOf(saved)<0)saved=100;
+  var isUltrawide=window.matchMedia("(min-width:2400px) and (min-aspect-ratio:2/1)").matches;
+  var fitOn=isUltrawide&&localStorage.getItem("aceil_desktop_canvas_fit")!=="0";
   var zoom=saved,control=document.createElement("div");
   control.id="aceilDesktopCanvasZoom";
-  control.innerHTML='<button type="button" data-dir="-1" aria-label="Зменшити масштаб">−</button><span id="aceilDesktopZoomValue">100%</span><button type="button" data-dir="1" aria-label="Збільшити масштаб">+</button>';
+  control.innerHTML='<button type="button" data-dir="-1" aria-label="Зменшити масштаб">−</button><span id="aceilDesktopZoomValue">100%</span><button type="button" data-dir="1" aria-label="Збільшити масштаб">+</button>'+
+    (isUltrawide?'<button type="button" class="adcz-fit" data-fit="1" aria-label="Підігнати під висоту екрана">На всю висоту</button>':"");
   function apply(){
     var base=Number(canvas.getAttribute("width"))||750;
-    canvas.style.setProperty("width",Math.round(base*zoom/100)+"px","important");
-    canvas.style.setProperty("max-width","none","important");
-    canvas.style.setProperty("height","auto","important");
+    if(fitOn){
+      var availH=host.clientHeight-96;
+      if(availH<200)availH=window.innerHeight-260; // container not laid out yet on first call
+      canvas.style.setProperty("height",Math.round(availH)+"px","important");
+      canvas.style.setProperty("width","auto","important");
+      canvas.style.setProperty("max-width","none","important");
+    }else{
+      canvas.style.setProperty("width",Math.round(base*zoom/100)+"px","important");
+      canvas.style.setProperty("max-width","none","important");
+      canvas.style.setProperty("height","auto","important");
+    }
     var value=gid("aceilDesktopZoomValue");if(value)value.textContent=zoom+"%";
+    var fitBtn=control.querySelector(".adcz-fit");if(fitBtn)fitBtn.classList.toggle("on",fitOn);
     try{localStorage.setItem("aceil_desktop_canvas_zoom",String(zoom))}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   control.addEventListener("click",function(e){
+    var fitBtn=e.target.closest&&e.target.closest("button[data-fit]");
+    if(fitBtn){
+      fitOn=!fitOn;
+      try{localStorage.setItem("aceil_desktop_canvas_fit",fitOn?"1":"0")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      apply();return;
+    }
     var btn=e.target.closest&&e.target.closest("button[data-dir]");if(!btn)return;
+    if(fitOn){fitOn=false;try{localStorage.setItem("aceil_desktop_canvas_fit","0")}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
     var i=steps.indexOf(zoom),next=Math.max(0,Math.min(steps.length-1,i+Number(btn.getAttribute("data-dir"))));
     zoom=steps[next];apply();
   });
+  if(isUltrawide){
+    window.addEventListener("resize",function(){if(fitOn)apply()});
+  }
   host.appendChild(control);apply();
+  if(fitOn){requestAnimationFrame(apply);setTimeout(apply,300)}
 }
 
 /* Той самий принцип іконки-за-назвою, що й isFilmItem()/category() у проєкті —
