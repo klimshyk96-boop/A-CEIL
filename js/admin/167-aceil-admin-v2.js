@@ -24,9 +24,28 @@ function ensureMenuItem(){
   if(danger){popup.insertBefore(sep,danger);popup.insertBefore(btn,danger)}else{popup.appendChild(sep);popup.appendChild(btn)}
   return btn;
 }
+function ensureTopAdminButton(){
+  var dock=document.getElementById("A_CEIL_OwnerAdminDock");
+  if(dock)return dock;
+  var cockpit=document.getElementById("rpCockpit");
+  if(!cockpit||!cockpit.parentNode)return null;
+  dock=document.createElement("div");
+  dock.id="A_CEIL_OwnerAdminDock";
+  dock.className="aceil-owner-admin-dock";
+  dock.innerHTML='<button type="button" id="A_CEIL_OwnerAdminButton" class="aceil-owner-admin-button" aria-label="Відкрити адміністрування"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.2.38.55.72 1 .9.34.15.72.22 1.1.2h.1v4h-.1a1.7 1.7 0 0 0-1.1.4 1.7 1.7 0 0 0-1 1z"></path></svg><span>Адміністрування</span></button>';
+  var button=dock.querySelector("button");
+  button.onclick=function(){window.A_CEIL_Admin.open()};
+  cockpit.parentNode.insertBefore(dock,cockpit);
+  return dock;
+}
+function removeTopAdminButton(){
+  var dock=document.getElementById("A_CEIL_OwnerAdminDock");
+  if(dock&&dock.parentNode)dock.parentNode.removeChild(dock);
+}
 function visible(v){
   var b=ensureMenuItem(),sep=document.getElementById("A_CEIL_AdminMenuSeparator");
   if(b)b.style.display=v?"":"none"; if(sep)sep.style.display=v?"":"none";
+  if(v)ensureTopAdminButton();else removeTopAdminButton();
 }
 async function refreshOwner(authUser){
   visible(false); profile=null;
