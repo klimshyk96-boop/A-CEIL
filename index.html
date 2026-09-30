@@ -26,7 +26,7 @@
 <script id="A·CEIL-utils-v1" src="js/projects/011-aceil-utils-v1.js"></script>
 <script src="js/core/debug-log.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<link rel="stylesheet" href="assets/app.css?v=20260930-access-controls1" id="A-CEIL-clean-test2-css-bundle">
+<link rel="stylesheet" href="assets/app.css?v=20260930-owner-admin1" id="A-CEIL-clean-test2-css-bundle">
 <script id="A-CEIL-user-storage-v1" src="js/core/006-user-storage-v1.js?v=20260929-1"></script>
 
 <script id="A·CEIL-i18n-core" src="js/projects/013-aceil-i18n-core.js"></script>
@@ -717,7 +717,7 @@ body.aceil-all-split-v14 .canvas-container{
       sessionStorage.setItem(updateKey,"1");
       location.reload();
     });
-    navigator.serviceWorker.register("/sw.js?v=20260930-access-controls-v1",{scope:"/"}).then(function(reg){
+      navigator.serviceWorker.register("/sw.js?v=20260930-owner-admin-v1",{scope:"/"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
@@ -747,7 +747,7 @@ body.aceil-all-split-v14 .canvas-container{
   </div>
 </div>
 
-<script id="A-CEIL-admin-v2" src="js/admin/167-aceil-admin-v2.js?v=20260930-access-controls1"></script>
+<script id="A-CEIL-admin-v2" src="js/admin/167-aceil-admin-v2.js?v=20260930-owner-admin1"></script>
 <script id="A-CEIL-estimate-variants-ui-v1" src="js/reports/184-aceil-estimate-variants-ui-v1.js?v=20260923-clean-final"></script>
 <script id="A-CEIL-projects-menu-clean-v1" src="js/projects/186-aceil-projects-menu-clean-v1.js?v=20260912-1"></script>
 <script id="A-CEIL-ceiling-cornices-v1" src="js/canvas/187-aceil-ceiling-cornices-v1.js?v=20260915-2"></script><script id="A-CEIL-canvas-hidpi-v1" src="js/canvas/220-aceil-canvas-hidpi-v1.js?v=20260916-1"></script>
