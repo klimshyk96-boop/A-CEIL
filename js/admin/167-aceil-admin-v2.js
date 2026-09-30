@@ -9,22 +9,13 @@ function esc(v){return String(v==null?"":v).replace(/[&<>\"']/g,function(c){retu
 function toast(t){try{if(typeof showToast==="function")showToast(t,3500)}catch(e){}}
 function content(v){var e=document.getElementById("aceilAdminContent");if(e)e.innerHTML=v}
 
-function ensureMenuItem(){
+function removeLegacyMenuItem(){
   var btn=document.getElementById("A_CEIL_AdminMenuAction");
-  if(btn)return btn;
-  var popup=document.getElementById("A·CEILRoomMenuPopup");
-  if(!popup)return null;
-  var sep=document.createElement("div");
-  sep.id="A_CEIL_AdminMenuSeparator"; sep.className="rm-room-menu-separator"; sep.style.display="none";
-  btn=document.createElement("button");
-  btn.type="button"; btn.id="A_CEIL_AdminMenuAction"; btn.className="rm-room-menu-action"; btn.style.display="none";
-  btn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.2.38.55.72 1 .9.34.15.72.22 1.1.2h.1v4h-.1a1.7 1.7 0 0 0-1.1.4 1.7 1.7 0 0 0-1 1z"></path></svg><span><b>Адміністрування</b><small>Користувачі та права доступу</small></span>';
-  btn.onclick=function(){window.A_CEIL_Admin.open()};
-  var danger=popup.querySelector(".rm-room-menu-action.danger");
-  if(danger){popup.insertBefore(sep,danger);popup.insertBefore(btn,danger)}else{popup.appendChild(sep);popup.appendChild(btn)}
-  return btn;
+  var sep=document.getElementById("A_CEIL_AdminMenuSeparator");
+  if(btn&&btn.parentNode)btn.parentNode.removeChild(btn);
+  if(sep&&sep.parentNode)sep.parentNode.removeChild(sep);
 }
-function ensureTopAdminButton(){
+function legacyTopAdminButton(){
   var dock=document.getElementById("A_CEIL_OwnerAdminDock");
   if(dock)return dock;
   var cockpit=document.getElementById("rpCockpit");
@@ -32,8 +23,12 @@ function ensureTopAdminButton(){
   dock=document.createElement("div");
   dock.id="A_CEIL_OwnerAdminDock";
   dock.className="aceil-owner-admin-dock";
+  dock.style.cssText="width:100%;max-width:1200px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;";
   dock.innerHTML='<button type="button" id="A_CEIL_OwnerAdminButton" class="aceil-owner-admin-button" aria-label="Відкрити адміністрування"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.2.38.55.72 1 .9.34.15.72.22 1.1.2h.1v4h-.1a1.7 1.7 0 0 0-1.1.4 1.7 1.7 0 0 0-1 1z"></path></svg><span>Адміністрування</span></button>';
   var button=dock.querySelector("button");
+  button.style.cssText="width:auto;min-width:0;min-height:40px;height:40px;padding:0 15px;border:1px solid rgba(99,102,241,.20);border-radius:15px;background:rgba(255,255,255,.88);color:#334155;box-shadow:0 8px 22px rgba(15,23,42,.08);display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:900;line-height:1;";
+  var icon=button.querySelector("svg");
+  icon.style.cssText="display:block;width:18px;height:18px;min-width:18px;fill:none;stroke:#4f46e5;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;";
   button.onclick=function(){window.A_CEIL_Admin.open()};
   cockpit.parentNode.insertBefore(dock,cockpit);
   return dock;
@@ -41,11 +36,45 @@ function ensureTopAdminButton(){
 function removeTopAdminButton(){
   var dock=document.getElementById("A_CEIL_OwnerAdminDock");
   if(dock&&dock.parentNode)dock.parentNode.removeChild(dock);
+  var button=document.getElementById("A_CEIL_OwnerAdminButton");
+  if(button&&button.parentNode)button.parentNode.removeChild(button);
+}
+function ensureHeaderActions(){
+  var top=document.querySelector("#rpCockpit .rpc-top");
+  if(!top)return null;
+  var actions=document.getElementById("A_CEIL_HeaderActions");
+  if(!actions){actions=document.createElement("div");actions.id="A_CEIL_HeaderActions";actions.className="aceil-head-actions"}
+  var right=top.querySelector(".rpc-head-right")||document.getElementById("rpcStatus");
+  if(actions.parentNode!==top||actions.nextSibling!==right)top.insertBefore(actions,right||null);
+  if(!document.getElementById("A_CEIL_HeaderLogout")){
+    var logout=document.createElement("button");
+    logout.type="button";logout.id="A_CEIL_HeaderLogout";logout.className="aceil-head-action aceil-head-logout";
+    logout.title="Вийти з акаунта";logout.setAttribute("aria-label","Вийти з акаунта");
+    logout.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M10 12h10m-4-4 4 4-4 4"/></svg>';
+    logout.onclick=function(){if(typeof window.rpcLogout==="function")window.rpcLogout();else if(typeof window.signOut==="function")window.signOut()};
+    actions.appendChild(logout);
+  }
+  var old=top.querySelector(".rpc-tools .rpc-logout");
+  if(old)old.remove();
+  return actions;
+}
+function ensureCockpitAdminButton(){
+  var actions=ensureHeaderActions();
+  if(!actions)return null;
+  var button=document.getElementById("A_CEIL_OwnerAdminButton");
+  if(button)return button;
+  button=document.createElement("button");
+  button.type="button";button.id="A_CEIL_OwnerAdminButton";button.className="aceil-head-action aceil-head-admin";
+  button.title="Адміністрування";button.setAttribute("aria-label","Адміністрування");
+  button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 13.5v-3l-2-.5-.6-1.4 1-1.8-2.1-2.1-1.8 1-1.4-.6L11.5 3h-3L8 5.1l-1.4.6-1.8-1-2.1 2.1 1 1.8-.6 1.4-2 .5v3l2 .5.6 1.4-1 1.8 2.1 2.1 1.8-1 1.4.6.5 2.1h3l.5-2.1 1.4-.6 1.8 1 2.1-2.1-1-1.8.6-1.4z"/></svg>';
+  button.onclick=function(){window.A_CEIL_Admin.open()};
+  actions.insertBefore(button,actions.firstChild);
+  return button;
 }
 function visible(v){
-  var b=ensureMenuItem(),sep=document.getElementById("A_CEIL_AdminMenuSeparator");
-  if(b)b.style.display=v?"":"none"; if(sep)sep.style.display=v?"":"none";
-  if(v)ensureTopAdminButton();else removeTopAdminButton();
+  removeLegacyMenuItem();
+  ensureHeaderActions();
+  if(v)ensureCockpitAdminButton();else removeTopAdminButton();
 }
 async function refreshOwner(authUser){
   visible(false); profile=null;
@@ -329,7 +358,7 @@ function close(){var m=document.getElementById("aceilAdminModal");if(!m)return;m
 window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab};
 
 function boot(){
-  ensureMenuItem();
+  removeLegacyMenuItem();
   try{if(currentUser())refreshOwner(currentUser())}catch(e){}
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
