@@ -58,6 +58,7 @@ function accessIcon(key){
     nomenclature_access:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',
     projects_access:'<path d="M3 7h6l2 2h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2"/>',
     projects_edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    report_publish:'<path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>',
     is_active:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'
   }; return '<span class="aceil-access-icon '+key+'"><svg viewBox="0 0 24 24">'+(p[key]||'')+'</svg></span>';
 }
@@ -89,8 +90,12 @@ function projectScope(uid,r){
 var adminRows=[],activityByUser={},workspaceByUser={};
 function workspaceBox(uid,r){
   var ready=!!r.workspace_initialized,copied=!!r.workspace_copied;
-  if(ready)return '<div class="aceil-workspace-box ready"><div><b>Особистий кабінет готовий</b><small>'+(copied?'Незалежна копія твоєї номенклатури та елементів стін.':'Порожній особистий кабінет.')+'</small></div><span>✓ Ізольовано</span></div>';
-  return '<div class="aceil-workspace-box"><div><b>Початкові дані користувача</b><small>Після створення всі його зміни лишатимуться тільки в нього.</small></div><div class="aceil-workspace-actions"><button type="button" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',false,this)">Порожній</button><button type="button" class="copy" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',true,this)">Копія моїх даних</button></div></div>';
+  if(ready)return '<div class="aceil-workspace-box ready"><div><b>Особистий кабінет готовий</b><small>'+(copied?'Незалежна копія твоєї номенклатури.':'Власний ізольований кабінет.')+'</small></div><span>✓ Ізольовано</span><div class="aceil-workspace-actions change"><button type="button" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',false,this,true)">Очистити кабінет</button><button type="button" class="copy" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',true,this,true)">Замінити моєю копією</button></div></div>';
+  return '<div class="aceil-workspace-box"><div><b>Початкові дані користувача</b><small>Після створення всі його зміни лишатимуться тільки в нього.</small></div><div class="aceil-workspace-actions"><button type="button" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',false,this,false)">Порожній</button><button type="button" class="copy" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',true,this,false)">Копія моїх даних</button></div></div>';
+}
+function wallCatalogBox(uid,r){
+  if(!r.workspace_initialized)return '';
+  return '<div class="aceil-wall-copy-box"><div><b>Заготовки та меню елементів стін</b><small>Незалежна копія: подальші зміни користувача не впливають на твої дані.</small></div><div class="aceil-workspace-actions"><button type="button" onclick="A_CEIL_Admin.copyWallCatalog(\''+esc(uid)+'\',\'merge\',this)">Додати відсутні</button><button type="button" class="copy" onclick="A_CEIL_Admin.copyWallCatalog(\''+esc(uid)+'\',\'replace\',this)">Замінити повністю</button></div></div>';
 }
 function initials(r){var x=String((r&&r.name)||r.email||'?').trim();return (x[0]||'?').toUpperCase()}
 function durationText(sec){sec=Math.max(0,Number(sec)||0);var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);if(h)return h+' год '+m+' хв';if(m)return m+' хв';return sec?'< 1 хв':'—'}
@@ -123,9 +128,11 @@ function render(rows){
       var badge=active?'<span class="aceil-admin-badge">Активний</span>':pending?'<span class="aceil-admin-badge pending">Очікує</span>':rejected?'<span class="aceil-admin-badge off">Відхилено</span>':'<span class="aceil-admin-badge off">Заблоковано</span>';
       var quick='<div class="aceil-quick-rights"><span class="aceil-quick-pill '+(r.workspace_initialized?'on':'')+'">Власний кабінет</span><span class="aceil-quick-pill '+(r.workspace_copied?'on':'')+'">'+(r.workspace_copied?'Копія надана':'Без копії')+'</span><span class="aceil-quick-pill edit '+(r.projects_access?'on':'')+'">Спільні проєкти</span></div>';
       return '<div class="aceil-admin-user '+(i===0?'expanded':'')+'" data-uid="'+esc(uid)+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||''))+'"><div class="aceil-admin-user-top" onclick="A_CEIL_Admin.toggleCard(this)"><div class="aceil-user-avatar">'+esc(initials(r))+'</div><div class="aceil-user-ident"><div class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+'</div><div class="aceil-admin-mail">'+esc(r.email||"")+'</div></div>'+badge+'<span class="aceil-user-chevron">⌄</span></div>'+quick+'<div class="aceil-admin-controls">'+(pending?'<div class="aceil-approval-box"><div><b>Нова реєстрація</b><small>Одразу обери, з яких даних почне користувач.</small></div><div class="aceil-approval-actions"><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,false)" type="button" class="approve empty">✓ Порожній</button><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,true)" type="button" class="approve">✓ Дати копію</button><button onclick="A_CEIL_Admin.reject(\''+esc(uid)+'\',this)" type="button" class="reject">× Відхилити</button></div></div>':workspaceBox(uid,r))+
+        (!pending?wallCatalogBox(uid,r):'')+
         toggle(uid,"projects_access","Доступ до моїх проєктів","Окремий спільний доступ до проєктів головного власника",!!r.projects_access,false)+
         (r.projects_access?projectScope(uid,r):'')+
         toggle(uid,"projects_edit","Редагування проєктів","Може змінювати доступні проєкти",!!r.projects_edit,!r.projects_access)+
+        toggle(uid,"report_publish","Створення хмарних звітів","Може створювати й відкликати посилання без права редагувати проєкт",!!r.report_publish,!r.projects_access)+
         tempAccess(uid,r)+
         toggle(uid,"is_active","Активний користувач","Повне блокування доступу до A·CEIL",active,false)+
         '<details class="aceil-danger-zone"><summary><span>Небезпечні дії</span><small>Видалення</small></summary><div class="aceil-delete-user-box"><div><b>Видалити користувача назавжди</b><small>Обліковий запис буде видалено без можливості відновлення.</small></div><button type="button" class="aceil-delete-user-btn" onclick="A_CEIL_Admin.deleteUser(\''+esc(uid)+'\',\''+esc(r.email||r.name||'Користувач')+'\',this)"><svg class="aceil-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg><span>Видалити назавжди</span></button></div></details>'+
@@ -187,10 +194,17 @@ async function setApproval(uid,status,button){
   try{var c=sb();if(!c)throw new Error("Supabase client недоступний.");var r=await c.rpc("admin_set_registration_status",{p_user_id:uid,p_status:status});if(r.error)throw r.error;toast(status==='approved'?"✓ Реєстрацію схвалено":"✓ Реєстрацію відхилено");if(status!=='approved')await load();return true}
   catch(e){if(button)button.disabled=false;toast("Не вдалося змінити статус: "+String(e&&e.message?e.message:e));return false}
 }
-async function initializeWorkspace(uid,copy,button){
+async function initializeWorkspace(uid,copy,button,overwrite){
+  overwrite=!!overwrite;
+  if(overwrite){
+    var warning=copy
+      ?'Повністю замінити номенклатуру та налаштування цього користувача твоєю копією?\n\nЙого проєкти не видаляються. Цю заміну не можна скасувати.'
+      :'Очистити номенклатуру, типи світла та заготовки стін цього користувача?\n\nЙого проєкти не видаляються. Цю дію не можна скасувати.';
+    if(!confirm(warning))return false;
+  }
   if(button)button.disabled=true;
-  try{var c=sb();if(!c)throw new Error("Supabase client недоступний.");var r=await c.rpc('admin_initialize_user_workspace',{p_user_id:uid,p_copy_template:!!copy,p_overwrite:false});if(r.error)throw r.error;toast(copy?'✓ Незалежну копію створено':'✓ Порожній кабінет створено');await load();return true}
-  catch(e){if(button)button.disabled=false;toast('Не вдалося створити кабінет: '+String(e&&e.message?e.message:e));return false}
+  try{var c=sb();if(!c)throw new Error("Supabase client недоступний.");var rpcName=overwrite?'admin_reinitialize_user_workspace':'admin_initialize_user_workspace';var rpcArgs=overwrite?{p_user_id:uid,p_copy_template:!!copy}:{p_user_id:uid,p_copy_template:!!copy,p_overwrite:false};var r=await c.rpc(rpcName,rpcArgs);if(r.error)throw r.error;toast(copy?'✓ Незалежну копію створено':'✓ Кабінет очищено');await load();return true}
+  catch(e){if(button)button.disabled=false;toast('Не вдалося змінити кабінет: '+String(e&&e.message?e.message:e));return false}
 }
 async function approve(uid,b,copy){var ok=await setApproval(uid,'approved',b);if(ok)return initializeWorkspace(uid,!!copy,b);return false}
 function reject(uid,b){if(!confirm('Відхилити реєстрацію цього користувача?'))return;return setApproval(uid,'rejected',b)}
@@ -218,7 +232,9 @@ async function setAccess(uid,key,val,input){
   if(input)input.disabled=true;
   try{
     var c=sb();if(!c)throw new Error("Supabase client недоступний.");
-    var r=await c.rpc("admin_set_user_access",{p_user_id:uid,p_field:key,p_value:!!val});
+    var rpcName=key==='report_publish'?'admin_set_report_publish':'admin_set_user_access';
+    var rpcArgs=key==='report_publish'?{p_user_id:uid,p_value:!!val}:{p_user_id:uid,p_field:key,p_value:!!val};
+    var r=await c.rpc(rpcName,rpcArgs);
     if(r.error)throw r.error;
     if(r.data!==true)throw new Error("RPC не підтвердила зміну доступу.");
     if(key==='projects_access'&&val===true){
@@ -239,6 +255,19 @@ async function setAccess(uid,key,val,input){
     window.__diagSilent&&window.__diagSilent(e);
     toast("Не вдалося змінити доступ: "+String(e&&e.message?e.message:e))
   }
+}
+async function copyWallCatalog(uid,mode,button){
+  mode=mode==='replace'?'replace':'merge';
+  if(mode==='replace'&&!confirm('Повністю замінити заготовки та меню елементів стін цього користувача твоєю копією?\n\nІнші дані та проєкти не зміняться.'))return false;
+  if(button)button.disabled=true;
+  try{
+    var c=sb();if(!c)throw new Error("Supabase client недоступний.");
+    var r=await c.rpc('admin_copy_wall_catalog',{p_user_id:uid,p_mode:mode});
+    if(r.error)throw r.error;
+    var count=r.data&&Number(r.data.count);
+    toast(mode==='replace'?'✓ Заготовки повністю замінено':'✓ Відсутні заготовки додано'+(isFinite(count)?' · '+count:''));
+    await load();return true;
+  }catch(e){if(button)button.disabled=false;toast('Не вдалося скопіювати заготовки: '+String(e&&e.message?e.message:e));return false}
 }
 async function setScope(uid,scope,button){
   if(button)button.disabled=true;
@@ -278,7 +307,7 @@ function showTab(name,btn){
 function open(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.add("open");m.setAttribute("aria-hidden","false");load()}
 function close(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 
-window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab};
+window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab};
 
 function boot(){
   ensureMenuItem();
