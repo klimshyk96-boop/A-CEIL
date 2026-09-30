@@ -54,7 +54,7 @@ function ensureHeaderActions(){
     logout.onclick=function(){if(typeof window.rpcLogout==="function")window.rpcLogout();else if(typeof window.signOut==="function")window.signOut()};
     actions.appendChild(logout);
   }
-  var old=top.querySelector(".rpc-tools .rpc-logout");
+  var old=document.querySelector("#rpCockpit .rpc-tools .rpc-logout");
   if(old)old.remove();
   return actions;
 }
@@ -123,9 +123,9 @@ function expiryInfo(r){
 }
 function tempAccess(uid,r){
   var x=expiryInfo(r);
-  return '<div class="aceil-temp-access"><div class="aceil-temp-head"><div><div class="aceil-temp-title">Тимчасовий доступ</div><div class="aceil-temp-status '+(x.active?'active':'')+'">'+esc(x.text)+'</div></div></div><div class="aceil-temp-buttons">'+
+  return '<details class="aceil-admin-fold" data-admin-section="expiry"><summary><span>Тимчасовий доступ</span><small>'+esc(x.text)+'</small></summary><div class="aceil-temp-access"><div class="aceil-temp-buttons">'+
     [1,3,8,24].map(function(h){return '<button type="button" class="aceil-temp-btn" onclick="A_CEIL_Admin.setExpiry(\''+esc(uid)+'\','+h+',this)">'+h+' год</button>'}).join('')+
-    '</div>'+(x.active?'<button type="button" class="aceil-temp-cancel" onclick="A_CEIL_Admin.clearExpiry(\''+esc(uid)+'\',this)">Скасувати тимчасовий доступ</button>':'')+'</div>';
+    '</div>'+(x.active?'<button type="button" class="aceil-temp-cancel" onclick="A_CEIL_Admin.clearExpiry(\''+esc(uid)+'\',this)">Скасувати тимчасовий доступ</button>':'')+'</div></details>';
 }
 function projectScope(uid,r){
   var scope=(r.projects_scope==='all'?'all':'selected');
@@ -138,12 +138,12 @@ function projectScope(uid,r){
 var adminRows=[],activityByUser={},workspaceByUser={};
 function workspaceBox(uid,r){
   var ready=!!r.workspace_initialized,copied=!!r.workspace_copied;
-  if(ready)return '<div class="aceil-workspace-box ready"><div><b>Особистий кабінет готовий</b><small>'+(copied?'Незалежна копія твоєї номенклатури.':'Власний ізольований кабінет.')+'</small></div><span>✓ Ізольовано</span><div class="aceil-workspace-actions change"><button type="button" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',false,this,true)">Очистити кабінет</button><button type="button" class="copy" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',true,this,true)">Замінити моєю копією</button></div></div>';
+  if(ready)return '<details class="aceil-admin-fold" data-admin-section="workspace"><summary><span>Особисті дані</span><small class="ready">✓ Ізольовано</small></summary><div class="aceil-workspace-box ready"><div><small>'+(copied?'Незалежна копія твоєї номенклатури.':'Власний ізольований кабінет.')+'</small></div><div class="aceil-workspace-actions change"><button type="button" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',false,this,true)">Очистити</button><button type="button" class="copy" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',true,this,true)">Замінити копією</button></div></div></details>';
   return '<div class="aceil-workspace-box"><div><b>Початкові дані користувача</b><small>Після створення всі його зміни лишатимуться тільки в нього.</small></div><div class="aceil-workspace-actions"><button type="button" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',false,this,false)">Порожній</button><button type="button" class="copy" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',true,this,false)">Копія моїх даних</button></div></div>';
 }
 function wallCatalogBox(uid,r){
   if(!r.workspace_initialized)return '';
-  return '<div class="aceil-wall-copy-box"><div><b>Заготовки та меню елементів стін</b><small>Незалежна копія: подальші зміни користувача не впливають на твої дані.</small></div><div class="aceil-workspace-actions"><button type="button" onclick="A_CEIL_Admin.copyWallCatalog(\''+esc(uid)+'\',\'merge\',this)">Додати відсутні</button><button type="button" class="copy" onclick="A_CEIL_Admin.copyWallCatalog(\''+esc(uid)+'\',\'replace\',this)">Замінити повністю</button></div></div>';
+  return '<details class="aceil-admin-fold" data-admin-section="walls"><summary><span>Заготовки та елементи стін</span><small>Копіювання</small></summary><div class="aceil-wall-copy-box"><div><small>Зміни користувача залишаються тільки в його кабінеті.</small></div><div class="aceil-workspace-actions"><button type="button" onclick="A_CEIL_Admin.copyWallCatalog(\''+esc(uid)+'\',\'merge\',this)">Додати відсутні</button><button type="button" class="copy" onclick="A_CEIL_Admin.copyWallCatalog(\''+esc(uid)+'\',\'replace\',this)">Замінити всі</button></div></div></details>';
 }
 function initials(r){var x=String((r&&r.name)||r.email||'?').trim();return (x[0]||'?').toUpperCase()}
 function durationText(sec){sec=Math.max(0,Number(sec)||0);var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);if(h)return h+' год '+m+' хв';if(m)return m+' хв';return sec?'< 1 хв':'—'}
@@ -164,18 +164,19 @@ async function loadActivityData(){
 function renderSummary(rows){
   var box=document.getElementById('aceilAdminSummary');if(!box)return;
   var total=rows.length,active=rows.filter(function(r){return r.is_active!==false}).length,blocked=total-active;
-  box.innerHTML='<div class="aceil-admin-dashboard"><div class="aceil-stat"><i><svg class="aceil-svg" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></i><b>'+total+'</b><span>Користувачів</span><small>Всього</small></div><div class="aceil-stat good"><i><svg class="aceil-svg" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></i><b>'+active+'</b><span>Активних</span><small>'+(total?Math.round(active*100/total):0)+'%</small></div><div class="aceil-stat bad"><i><svg class="aceil-svg" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></i><b>'+blocked+'</b><span>Заблоковано</span><small>'+(total?Math.round(blocked*100/total):0)+'%</small></div></div>';
+  box.innerHTML='<div class="aceil-admin-dashboard"><div class="aceil-stat"><b>'+total+'</b><span>Користувачів</span></div><div class="aceil-stat good"><b>'+active+'</b><span>Активних</span></div><div class="aceil-stat bad"><b>'+blocked+'</b><span>Заблоковано</span></div></div>';
 }
 function render(rows){
   rows=(Array.isArray(rows)?rows:[]).filter(function(r){
   return String(r.app_role||'').toLowerCase()!=='owner';
 });adminRows=rows.slice();renderSummary(rows);
   if(!rows.length){content('<div class="aceil-admin-empty">Користувачів не знайдено.</div>');return}
-  content(rows.map(function(r,i){
+  content(rows.map(function(r){
       var uid=String(r.user_id||r.id||""), active=r.is_active!==false, approval=String(r.approval_status||'').toLowerCase(), pending=approval==='pending', rejected=approval==='rejected';
       var badge=active?'<span class="aceil-admin-badge">Активний</span>':pending?'<span class="aceil-admin-badge pending">Очікує</span>':rejected?'<span class="aceil-admin-badge off">Відхилено</span>':'<span class="aceil-admin-badge off">Заблоковано</span>';
       var quick='<div class="aceil-quick-rights"><span class="aceil-quick-pill '+(r.workspace_initialized?'on':'')+'">Власний кабінет</span><span class="aceil-quick-pill '+(r.workspace_copied?'on':'')+'">'+(r.workspace_copied?'Копія надана':'Без копії')+'</span><span class="aceil-quick-pill edit '+(r.projects_access?'on':'')+'">Спільні проєкти</span></div>';
-      return '<div class="aceil-admin-user '+(i===0?'expanded':'')+'" data-uid="'+esc(uid)+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||''))+'"><div class="aceil-admin-user-top" onclick="A_CEIL_Admin.toggleCard(this)"><div class="aceil-user-avatar">'+esc(initials(r))+'</div><div class="aceil-user-ident"><div class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+'</div><div class="aceil-admin-mail">'+esc(r.email||"")+'</div></div>'+badge+'<span class="aceil-user-chevron">⌄</span></div>'+quick+'<div class="aceil-admin-controls">'+(pending?'<div class="aceil-approval-box"><div><b>Нова реєстрація</b><small>Одразу обери, з яких даних почне користувач.</small></div><div class="aceil-approval-actions"><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,false)" type="button" class="approve empty">✓ Порожній</button><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,true)" type="button" class="approve">✓ Дати копію</button><button onclick="A_CEIL_Admin.reject(\''+esc(uid)+'\',this)" type="button" class="reject">× Відхилити</button></div></div>':workspaceBox(uid,r))+
+      var mail=r.name&&r.name!==r.email?'<span class="aceil-admin-mail">'+esc(r.email||'')+'</span>':'';
+      return '<div class="aceil-admin-user" data-uid="'+esc(uid)+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||''))+'"><button type="button" class="aceil-admin-user-top" aria-expanded="false" onclick="A_CEIL_Admin.toggleCard(this)"><span class="aceil-user-avatar">'+esc(initials(r))+'</span><span class="aceil-user-ident"><span class="aceil-admin-name">'+esc(r.name||r.email||"Користувач")+'</span>'+mail+'</span>'+badge+'<span class="aceil-user-chevron">⌄</span></button>'+quick+'<div class="aceil-admin-controls">'+(pending?'<div class="aceil-approval-box"><div><b>Нова реєстрація</b><small>Обери початкові дані користувача.</small></div><div class="aceil-approval-actions"><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,false)" type="button" class="approve empty">✓ Порожній</button><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,true)" type="button" class="approve">✓ Дати копію</button><button onclick="A_CEIL_Admin.reject(\''+esc(uid)+'\',this)" type="button" class="reject">× Відхилити</button></div></div>':workspaceBox(uid,r))+
         (!pending?wallCatalogBox(uid,r):'')+
         toggle(uid,"projects_access","Доступ до моїх проєктів","Окремий спільний доступ до проєктів головного власника",!!r.projects_access,false)+
         (r.projects_access?projectScope(uid,r):'')+
@@ -187,7 +188,7 @@ function render(rows){
       '</div></div>';
     }).join(""));
 }
-function toggleCard(head){var card=head&&head.closest('.aceil-admin-user');if(card)card.classList.toggle('expanded')}
+function toggleCard(head){var card=head&&head.closest('.aceil-admin-user');if(card)head.setAttribute('aria-expanded',String(card.classList.toggle('expanded')))}
 function filterUsers(q){q=String(q||'').trim().toLowerCase();document.querySelectorAll('#aceilAdminContent .aceil-admin-user').forEach(function(card){card.style.display=!q||String(card.getAttribute('data-search')||'').toLowerCase().includes(q)?'':'none'})}
 function adminViewState(){
   var body=document.querySelector('#aceilAdminModal .aceil-admin-body');
@@ -195,7 +196,8 @@ function adminViewState(){
     document.querySelectorAll('#aceilAdminContent .aceil-admin-user.expanded'),
     function(card){return card.getAttribute('data-uid')||''}
   ).filter(Boolean);
-  return {scrollTop:body?body.scrollTop:0,expanded:expanded};
+  var folds=Array.prototype.map.call(document.querySelectorAll('#aceilAdminContent details[open]'),function(fold){return {uid:fold.closest('.aceil-admin-user').getAttribute('data-uid'),section:fold.getAttribute('data-admin-section')||'danger'}});
+  return {scrollTop:body?body.scrollTop:0,expanded:expanded,folds:folds};
 }
 function restoreAdminViewState(state){
   if(!state)return;
@@ -203,7 +205,12 @@ function restoreAdminViewState(state){
   cards.forEach(function(card){card.classList.remove('expanded')});
   state.expanded.forEach(function(uid){
     var card=document.querySelector('#aceilAdminContent .aceil-admin-user[data-uid="'+CSS.escape(uid)+'"]');
-    if(card)card.classList.add('expanded');
+    if(card){card.classList.add('expanded');card.querySelector('.aceil-admin-user-top').setAttribute('aria-expanded','true')}
+  });
+  (state.folds||[]).forEach(function(item){
+    var card=document.querySelector('#aceilAdminContent .aceil-admin-user[data-uid="'+CSS.escape(item.uid)+'"]');
+    var fold=card&&card.querySelector(item.section==='danger'?'.aceil-danger-zone':'details[data-admin-section="'+CSS.escape(item.section)+'"]');
+    if(fold)fold.open=true;
   });
   var body=document.querySelector('#aceilAdminModal .aceil-admin-body');
   if(body){
