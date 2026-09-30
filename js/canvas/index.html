@@ -1,0 +1,979 @@
+<!DOCTYPE html><html lang="uk"><head>
+<style id="aceilBootOverlayStyle">
+#aceilBootOverlay{position:fixed;inset:0;z-index:2147483647;background:#0b1730;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .25s ease;}
+#aceilBootOverlay .aceil-spin{width:42px;height:42px;border-radius:50%;border:4px solid rgba(255,255,255,.22);border-top-color:#4fa2ff;animation:aceilBootSpin .8s linear infinite;}
+#aceilBootOverlay .aceil-label{color:#e8f0ff;font:700 14px -apple-system,BlinkMacSystemFont,Arial,sans-serif;letter-spacing:.02em;opacity:.9}
+@keyframes aceilBootSpin{to{transform:rotate(360deg)}}
+#aceilBootOverlay.aceil-hide{opacity:0;pointer-events:none;}
+</style>
+<base href="/">
+<script id="A·CEIL-diag-silent-capture-v1" src="js/core/000-aceil-diag-silent-capture-v1.js"></script>
+<meta charset="UTF-8">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="A·CEIL">
+<meta name="application-name" content="A·CEIL">
+<meta name="theme-color" content="#020b1f">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIiB2aWV3Qm94PSIwIDAgMTgwIDE4MCI+CjxkZWZzPgogPGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIHN0b3AtY29sb3I9IiMwNjFhM2QiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwMjBiMWYiLz48L2xpbmVhckdyYWRpZW50PgogPGxpbmVhckdyYWRpZW50IGlkPSJhIiB4MT0iMCIgeTE9IjEiIHgyPSIxIiB5Mj0iMCI+PHN0b3Agc3RvcC1jb2xvcj0iIzE5YjhmZiIvPjxzdG9wIG9mZnNldD0iLjQ4IiBzdG9wLWNvbG9yPSIjMmY3Y2ZmIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZjhmYmZmIi8+PC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjM2IiBmaWxsPSJ1cmwoI2JnKSIvPgo8cGF0aCBkPSJNMzQgMTM3IDc4IDQ0YzUtMTAgMjAtMTAgMjUgMGw0NiA5M2gtMjVMOTEgNjhsLTMyIDY5SDM0WiIgZmlsbD0idXJsKCNhKSIvPgo8cGF0aCBkPSJNNjEgMTIwIDk1IDkzYzctNiAxNy0zIDIxIDVsNCA5LTQ2IDMwSDU0WiIgZmlsbD0iIzI0ODdmZiIvPgo8L3N2Zz4=">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIiB2aWV3Qm94PSIwIDAgMTgwIDE4MCI+CjxkZWZzPgogPGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIHN0b3AtY29sb3I9IiMwNjFhM2QiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwMjBiMWYiLz48L2xpbmVhckdyYWRpZW50PgogPGxpbmVhckdyYWRpZW50IGlkPSJhIiB4MT0iMCIgeTE9IjEiIHgyPSIxIiB5Mj0iMCI+PHN0b3Agc3RvcC1jb2xvcj0iIzE5YjhmZiIvPjxzdG9wIG9mZnNldD0iLjQ4IiBzdG9wLWNvbG9yPSIjMmY3Y2ZmIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZjhmYmZmIi8+PC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjM2IiBmaWxsPSJ1cmwoI2JnKSIvPgo8cGF0aCBkPSJNMzQgMTM3IDc4IDQ0YzUtMTAgMjAtMTAgMjUgMGw0NiA5M2gtMjVMOTEgNjhsLTMyIDY5SDM0WiIgZmlsbD0idXJsKCNhKSIvPgo8cGF0aCBkPSJNNjEgMTIwIDk1IDkzYzctNiAxNy0zIDIxIDVsNCA5LTQ2IDMwSDU0WiIgZmlsbD0iIzI0ODdmZiIvPgo8L3N2Zz4=" type="image/svg+xml">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="color-scheme" content="light"><meta name="mobile-web-app-capable" content="yes"><link rel="manifest" href="data:application/json,%7B%22name%22%3A%22A%C2%B7CEIL%22%2C%22short_name%22%3A%22A%C2%B7CEIL%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23020b1f%22%2C%22theme_color%22%3A%22%23020b1f%22%2C%22orientation%22%3A%22portrait%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIiB2aWV3Qm94PSIwIDAgMTgwIDE4MCI%2BCjxkZWZzPgogPGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIHN0b3AtY29sb3I9IiMwNjFhM2QiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwMjBiMWYiLz48L2xpbmVhckdyYWRpZW50PgogPGxpbmVhckdyYWRpZW50IGlkPSJhIiB4MT0iMCIgeTE9IjEiIHgyPSIxIiB5Mj0iMCI%2BPHN0b3Agc3RvcC1jb2xvcj0iIzE5YjhmZiIvPjxzdG9wIG9mZnNldD0iLjQ4IiBzdG9wLWNvbG9yPSIjMmY3Y2ZmIi8%2BPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZjhmYmZmIi8%2BPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjM2IiBmaWxsPSJ1cmwoI2JnKSIvPgo8cGF0aCBkPSJNMzQgMTM3IDc4IDQ0YzUtMTAgMjAtMTAgMjUgMGw0NiA5M2gtMjVMOTEgNjhsLTMyIDY5SDM0WiIgZmlsbD0idXJsKCNhKSIvPgo8cGF0aCBkPSJNNjEgMTIwIDk1IDkzYzctNiAxNy0zIDIxIDVsNCA5LTQ2IDMwSDU0WiIgZmlsbD0iIzI0ODdmZiIvPgo8L3N2Zz4%3D%22%2C%22sizes%22%3A%22180x180%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D"><title>A·CEIL — PRO MEASURE & DESIGN</title>
+
+<script src="js/auth/002-inline.js"></script>
+
+<script id="A·CEIL-integrity-rules-v1" src="js/reports/008-aceil-integrity-rules-v1.js"></script>
+
+<script id="A·CEIL-utils-v1" src="js/projects/011-aceil-utils-v1.js"></script>
+<script src="js/core/debug-log.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="assets/app.css?v=20260930-cockpit-dims3" id="A-CEIL-clean-test2-css-bundle">
+<link rel="stylesheet" href="assets/admin-compact.css?v=20260930-admin-compact1">
+<script id="A-CEIL-user-storage-v1" src="js/core/006-user-storage-v1.js?v=20260929-1"></script>
+
+<script id="A·CEIL-i18n-core" src="js/projects/013-aceil-i18n-core.js"></script>
+
+<script id="A·CEIL-lang-uk-inline" src="js/i18n/014-aceil-lang-uk-inline.js"></script>
+
+<script id="A·CEIL-lang-en-inline" src="js/reports/015-aceil-lang-en-inline.js"></script>
+
+<script id="A·CEIL-lang-pl-inline" src="js/auth/016-aceil-lang-pl-inline.js"></script>
+
+<link rel="stylesheet" href="assets/ui2.css?v=20260924-v18"><link rel="stylesheet" href="assets/aceil-color-desktop-v1.css?v=20260912-1">
+<style id="aceil-all-split-v14-css">
+/* REAL split screen: this panel is not a modal and does not cover/dim the canvas. */
+.aceil-all-panel-v14{display:none}
+body.aceil-all-split-v14{overflow:hidden!important}
+body.aceil-all-split-v14 .aceil-all-panel-v14{
+  display:flex!important;position:fixed;z-index:12000;left:0;right:0;bottom:0;
+  height:52dvh;background:#fff;border-radius:20px 20px 0 0;
+  box-shadow:0 -8px 30px rgba(15,23,42,.12);
+  padding:12px 12px calc(10px + env(safe-area-inset-bottom));
+  flex-direction:column;box-sizing:border-box
+}
+/* The app gets a real upper viewport. No dark overlay and no blur. */
+body.aceil-all-split-v14 .app,
+body.aceil-all-split-v14 #app,
+body.aceil-all-split-v14 .main-content,
+body.aceil-all-split-v14 main{
+  max-height:48dvh!important;overflow:hidden!important
+}
+.aceil-all-head-v14{display:grid;grid-template-columns:1fr auto 38px;gap:9px;align-items:center}
+.aceil-all-head-v14 strong{display:block;font-size:19px;color:#0f172a}
+.aceil-all-head-v14 small{display:block;margin-top:2px;font-size:11px;color:#64748b;font-weight:700}
+.aceil-all-head-v14>span{padding:6px 9px;border-radius:999px;background:#eff6ff;color:#2563eb;font-size:12px;font-weight:900}
+.aceil-all-close-v14{width:38px;height:38px;padding:0;border:0;border-radius:11px;background:#f1f5f9;color:#475569;font-size:24px;box-shadow:none}
+.aceil-all-list-v14{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;margin-top:8px}
+.aceil-all-table-v14{display:flex;flex-direction:column;gap:5px;padding:1px}
+.aceil-all-row-v14{display:grid;grid-template-columns:46px minmax(0,1fr) 36px 20px;gap:5px;align-items:center;padding:4px 6px;border:1px solid #e2e8f0;border-radius:10px;background:#fff}
+.aceil-all-row-v14.is-active{border-color:#ef4444;background:#fff7f7}
+.aceil-all-name-v14{padding:7px 2px;border:0;background:transparent;box-shadow:none;color:#172554;font-size:14px;font-weight:900}
+.aceil-all-row-v14.is-active .aceil-all-name-v14{color:#dc2626}
+.aceil-all-input-v14{display:flex;align-items:center;border:1.5px solid #cbd5e1;border-radius:9px;background:#fff;overflow:hidden}
+.aceil-all-row-v14.is-active .aceil-all-input-v14{border-color:#ef4444}
+.aceil-all-input-v14 input{min-width:0;width:100%;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;padding:7px 4px 7px 9px!important;font-size:17px!important;font-weight:850!important}
+.aceil-all-input-v14 span{padding-right:8px;color:#94a3b8;font-size:11px;font-weight:850}
+.aceil-all-arc-v14{height:34px;padding:0;border:0;border-radius:9px;background:#f1f5f9;color:#475569;font-size:18px;box-shadow:none}
+.aceil-all-arc-v14.is-arc{background:#ede9fe;color:#7c3aed}
+.aceil-all-ok-v14{color:#16a34a;font-weight:900;text-align:center}
+.aceil-all-nav-v14{display:grid;grid-template-columns:44px 1fr 44px;gap:7px;align-items:center;margin-top:7px}
+.aceil-all-nav-v14 div{text-align:center;color:#64748b;font-size:10.5px;font-weight:800}
+.aceil-all-nav-v14 button{height:37px;border:0;border-radius:10px;background:#eff6ff;color:#2563eb;font-size:25px;font-weight:900;padding:0;box-shadow:none}
+.aceil-all-nav-v14 button:disabled{opacity:.3}
+.aceil-all-actions-v14{display:grid;grid-template-columns:.8fr 1.2fr;gap:8px;margin-top:7px}
+.aceil-all-actions-v14 button{height:43px;border:0;border-radius:12px;background:#f1f5f9;color:#334155;font-size:14px;font-weight:900}
+.aceil-all-actions-v14 .primary{background:linear-gradient(135deg,#2563eb,#5b5ff5);color:#fff}
+/* Keep the drawing readable in the upper half. Scale the drawing card, but don't blur it. */
+body.aceil-all-split-v14 .canvas-wrap,
+body.aceil-all-split-v14 #canvasWrap,
+body.aceil-all-split-v14 .canvas-container{
+  transform:scale(.56)!important;transform-origin:top center!important;
+  transition:transform .16s ease!important
+}
+@supports not (height:1dvh){
+  body.aceil-all-split-v14 .aceil-all-panel-v14{height:52vh}
+  body.aceil-all-split-v14 .app,body.aceil-all-split-v14 #app,body.aceil-all-split-v14 .main-content,body.aceil-all-split-v14 main{max-height:48vh!important}
+}
+</style>
+</head><body><div id="aceilBootOverlay"><div class="aceil-spin"></div><div class="aceil-label">A·CEIL PRO завантажується…</div></div><script>
+(function(){
+  "use strict";
+  function hideBootOverlay(){
+    var el=document.getElementById("aceilBootOverlay");
+    if(!el||el.__aceilHidden)return;
+    el.__aceilHidden=true;
+    try{
+      if(typeof requestDraw==="function")requestDraw();
+      else if(typeof draw==="function")draw();
+    }catch(_){}
+    el.classList.add("aceil-hide");
+    setTimeout(function(){el&&el.parentNode&&el.parentNode.removeChild(el)},300);
+  }
+  window.__aceilHideBootOverlay=hideBootOverlay;
+  if(document.readyState==="complete")setTimeout(hideBootOverlay,50);
+  else window.addEventListener("load",function(){setTimeout(hideBootOverlay,50)});
+  setTimeout(hideBootOverlay,4000);
+})();
+</script><script id="A-CEIL-diag-plus-v2" src="js/projects/018-aceil-diag-plus-v2.js"></script><svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" id="A·CEIL-icons-v1"><symbol id="rmi-figure" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2.5"/><circle class="rm-ico-node" cx="5" cy="5" r="2"/><circle class="rm-ico-node" cx="19" cy="5" r="2"/><circle class="rm-ico-node" cx="19" cy="19" r="2"/><circle class="rm-ico-node" cx="5" cy="19" r="2"/></symbol><symbol id="rmi-rect" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2.5"/><circle class="rm-ico-node" cx="4" cy="6" r="1.6"/><circle class="rm-ico-node" cx="20" cy="18" r="1.6"/></symbol><symbol id="rmi-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle class="rm-ico-node" cx="12" cy="5" r="1.7"/></symbol><symbol id="rmi-diagonal" viewBox="0 0 24 24"><path d="M5 5l14 14"/><path d="M19 5L5 19"/></symbol><symbol id="rmi-measure" viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M7 9l-3 3 3 3"/><path d="M17 9l3 3-3 3"/><path d="M6 5v14"/><path d="M18 5v14"/></symbol><symbol id="rmi-light" viewBox="0 0 24 24"><circle cx="12" cy="10" r="6"/><circle cx="12" cy="10" r="2.2"/><path d="M12 16v4"/><path d="M9 20h6"/></symbol><symbol id="rmi-report" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M9 17h7"/><path d="M9 14h3"/><path d="M9 10h3v3H9z"/></symbol><symbol id="rmi-elements" viewBox="0 0 24 24"><path d="M6 5v14"/><path d="M6 5h10v4"/><path d="M10 9h8v10"/><path d="M6 19h12"/></symbol><symbol id="rmi-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5"/><path d="M14 11v5"/></symbol><symbol id="rmi-film" viewBox="0 0 24 24"><rect x="4" y="4" width="14" height="6" rx="2"/><path d="M9 10v3"/><rect x="6" y="13" width="6" height="7" rx="1.5"/></symbol><symbol id="rmi-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L5 16l3 3 4.3-4.3a4 4 0 0 1 5.4-5.4L21 6l-3-3-3.3 3.3z"/></symbol><symbol id="rmi-insert" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="18" rx="2"/><path d="M9 8.5h6M9 15.5h6"/></symbol><symbol id="rmi-folder" viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6Z"/></symbol><symbol id="rmi-pencil" viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3Z"/><path d="M14 6l4 4"/></symbol><symbol id="rmi-save" viewBox="0 0 24 24"><path d="M5 4h11l4 4v12H5z"/><path d="M8 4v5h7V4"/><path d="M8 14h8v6H8z"/></symbol><symbol id="rmi-logout" viewBox="0 0 24 24"><path d="M13 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6"/><path d="M10 12h10"/><path d="M17 8l4 4-4 4"/></symbol><symbol id="rmi-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol></svg><div id="authScreen"><div class="rm-blueprint" aria-hidden="true"><svg class="rm-bp-plan" viewBox="0 0 340 340"><path d="M20 300 L20 60 L170 60 L170 20 L280 20 L280 140 L230 140"/><path d="M20 180 L120 180 L120 300"/><path d="M20 240 L90 240"/><path d="M170 60 L170 140 L230 140 L230 20"/><path d="M45 300 A25 25 0 0 0 20 275" stroke-dasharray="3 3"/><circle cx="55" cy="90" r="3"/><circle cx="150" cy="90" r="3"/></svg><svg class="rm-bp-rect" viewBox="0 0 210 230"><rect x="15" y="15" width="180" height="200"/><path d="M15 95 L195 95"/><path d="M105 15 L105 95"/></svg><svg class="rm-bp-dashed" viewBox="0 0 300 220"><ellipse cx="150" cy="110" rx="140" ry="95"/></svg></div><div class="rm-auth-shell"><button type="button" class="rm-auth-lang" id="rmAuthLangBtn" aria-label="Вибір мови">UA</button><div class="rm-lang-sheet" id="rmLangSheet" hidden><button type="button" data-lang="uk">🇺🇦 Українська</button><button type="button" data-lang="en">🇬🇧 English</button><button type="button" data-lang="pl">🇵🇱 Polski</button></div><div class="rm-auth-brand"><div class="rm-auth-logo" aria-hidden="true"><svg class="aceil-a-mark" viewBox="0 0 200 180" role="img"><defs><linearGradient id="aceilLeftGrad" x1="0" y1="1" x2="0.3" y2="0"><stop offset="0" stop-color="#0d6dff"/><stop offset=".55" stop-color="#4fa2ff"/><stop offset="1" stop-color="#f3f8ff"/></linearGradient><linearGradient id="aceilRightGrad" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#cfe0f5"/><stop offset=".6" stop-color="#f2f6fc"/><stop offset="1" stop-color="#ffffff"/></linearGradient><filter id="aceilGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g filter="url(#aceilGlow)"><path d="M100 10 16 166 h42 L100 78 Z" fill="url(#aceilLeftGrad)"/><path d="M100 10 184 166 h-42 L100 78 Z" fill="url(#aceilRightGrad)"/><path d="M56 148 108 92c8-8 21-4 26 6l6 12-60 38 H56Z" fill="#1f6cf5"/></g></svg></div><div class="rm-auth-wordmark"><span class="wm-a">A</span><span class="wm-dot">·</span><span class="wm-rest">CEIL</span></div><div class="rm-auth-underline"></div><div class="rm-auth-tagline" data-auth-i18n="tagline">Стеля починається з точного плану</div></div><div class="rm-auth-panel"><div class="rm-auth-heading" id="authSubtitle">Вхід у кабінет</div><div class="rm-auth-caption" data-auth-i18n="caption">Увійдіть, щоб синхронізувати проєкти між пристроями</div><div class="auth-error" id="authError"></div><div class="auth-field rm-dark-field" id="authNameField" style="display:none"><label data-auth-i18n="name">Імʼя</label><div class="rm-auth-input-wrap"><span>👤</span><input id="authName" placeholder="Ваше імʼя" data-auth-placeholder="namePlaceholder"></div></div><div class="auth-field rm-dark-field"><label>Email</label><div class="rm-auth-input-wrap"><span class="rm-auth-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h15A1.5 1.5 0 0 1 21 6.5v11A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/><path d="m4 6.5 8 6.2 8-6.2"/></svg></span><input type="email" id="authEmail" placeholder="your@email.com" autocomplete="email" autocapitalize="off" autocorrect="off" inputmode="email"></div></div><div class="auth-field rm-dark-field"><label data-auth-i18n="password">Пароль</label><div class="rm-auth-input-wrap"><span class="rm-auth-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg></span><input type="password" id="authPassword" placeholder="••••••••" onkeydown='"Enter"===event.key&&doAuth()'><button type="button" class="rm-pwd-eye" id="rmPwdEye" aria-label="Показати пароль" onclick="(function(){var i=document.getElementById('authPassword'),b=document.getElementById('rmPwdEye');var show=i.type==='password';i.type=show?'text':'password';b.classList.toggle('is-open',show);})()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path class="eye-outline" d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="M3 3l18 18" stroke-linecap="round"/></svg></button></div></div><label class="auth-remember rm-dark-remember" id="rememberRow"><input type="checkbox" id="rememberMe" checked="checked"><span data-auth-i18n="remember">Запамʼятати мене</span></label><div class="rm-auth-or"><span></span><b>або</b><span></span></div><button type="button" class="rm-google-login" id="googleAuthBtn" onclick="signInWithGoogle()" aria-label="Продовжити з Google"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.41z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.36l-3.24-2.54c-.9.6-2.05.96-3.38.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.62A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.39 13.93A6 6 0 0 1 6.08 12c0-.67.11-1.32.31-1.93V7.45H3.04A10 10 0 0 0 2 12c0 1.61.38 3.14 1.04 4.55l3.35-2.62z"/><path fill="#EA4335" d="M12 5.94c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.63 9.63 0 0 0 12 2a10 10 0 0 0-8.96 5.45l3.35 2.62C7.18 7.7 9.39 5.94 12 5.94z"/></svg><span>Продовжити з Google</span></button><button class="auth-btn rm-classic-login" id="authBtn" onclick="doAuth()">Увійти</button><div class="auth-toggle rm-dark-toggle"><span id="authToggleText">Немає акаунта?</span><a onclick="toggleAuthMode()"> Реєстрація</a></div></div></div></div><div id="syncBadge"><span class="spin">⟳</span><span id="syncText">Синхронізація...</span></div><div id="lightActiveBadge" class="light-active-badge">💡 Режим світла</div><header class="app-header compact-header"><div class="header-main"><div class="app-header-icon compact-logo" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div><div class="header-content"><h2>Конструктор натяжних стель</h2><div class="header-actions-row"><div id="userPill" class="compact-user-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span id="userPillName">...</span></div><button class="header-icon-btn projects-btn" onclick="openProjectsModal()" title="Збережені проєкти" aria-label="Проєкти"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button><button class="header-icon-btn save-btn" onclick="openSaveProjectModal()" title="Зберегти в проєкти" aria-label="Зберегти"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button><button class="header-icon-btn logout-btn" onclick="signOut()" title="Вийти з акаунта" aria-label="Вийти"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button></div><div id="userPillCloud" class="compact-cloud-row"><span id="cloudStatus">☁️ підключення...</span></div></div></div></header><section id="rpCockpit"><div class="rpc-card"><div class="rpc-top"><div class="rpc-brand"><div class="rpc-logo rpc-logo-aceil" aria-hidden="true"><svg viewBox="0 0 120 100"><path d="M13 88 49 12c4-8 16-8 20 0l38 76H87L60 32 34 88H13Z" fill="#fff"/><path d="M35 74 63 52c6-5 14-2 17 4l3 7-37 25H29Z" fill="#dbeafe"/></svg></div><div class="rpc-name" id="rpcProjectName"> Новий обʼєкт <span class="rpc-name-edit-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span></div></div><div class="rpc-status" id="rpcStatus"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.8" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> готово </div></div><div class="rpc-metrics"><div class="rpc-metric"><div class="rpc-metric-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg></div><small>Площа</small><b id="rpcArea">—</b></div><div class="rpc-metric"><div class="rpc-metric-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2.2" stroke-linecap="round"><rect x="2" y="3" width="20" height="4" rx="1"/><rect x="2" y="17" width="20" height="4" rx="1"/><line x1="2" y1="7" x2="2" y2="17"/><line x1="22" y1="7" x2="22" y2="17"/></svg></div><small>Периметр</small><b id="rpcPer">—</b></div><div class="rpc-metric"><div class="rpc-metric-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg></div><small>Кути</small><b id="rpcLights">0</b></div><div class="rpc-metric"><div class="rpc-metric-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2.2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><small>Кімната</small><b id="rpcRoomName">1</b></div><div class="rpc-metric rpc-metric-sum"><div class="rpc-metric-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><small>До сплати</small><b id="rpcTotal">—</b></div></div><div class="rpc-tools"><button type="button" onclick="openProjectsModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Проєкти </button></div><div style="display:none"><div class="rpc-project"><div><div class="rpc-meta" id="rpcProjectMeta"></div></div><div class="rpc-room-pill"><small></small><b></b></div></div></div></div><div class="rpc-rooms" id="rpcRooms"></div></section><div id="main-area"><div class="top-row"><div class="canvas-container"><canvas id="cv" width="750" height="750"></canvas><div id="A·CEILRoomMenu" class="rm-room-menu">
+<button type="button" id="A·CEILRoomMenuToggle" class="rm-room-menu-toggle" onclick="toggleA·CEILRoomMenu(event)" aria-label="Додаткові дії кімнати" aria-expanded="false"><span></span><span></span><span></span></button>
+<div id="A·CEILRoomMenuPopup" class="rm-room-menu-popup" hidden>
+<button type="button" class="rm-room-menu-action" onclick="A·CEILShowWholeRoom()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/></svg><span><b>Показати всю кімнату</b><small>Центрувати креслення</small></span></button>
+<button type="button" id="A·CEILCanvasModeAction" class="rm-room-menu-action" onclick="A·CEILToggleCanvasMode()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/><path d="M8 8l-5-5M16 8l5-5M8 16l-5 5M16 16l5 5"/></svg><span><b id="A·CEILCanvasModeTitle">Розгорнути канвас</b><small id="A·CEILCanvasModeHint">Сховати нижні інструменти</small></span></button>
+<button type="button" id="A·CEILCleanViewAction" class="rm-room-menu-action" onclick="A·CEILToggleCleanCanvasView()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg><span><b id="A·CEILCleanViewTitle">Чистий контур</b><small id="A·CEILCleanViewHint">Лише контур кімнати</small></span></button>
+<div class="rm-room-menu-separator"></div>
+<button type="button" class="rm-room-menu-action danger" onclick="A·CEILDeleteCurrentRoom(this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg><span><b>Видалити кімнату</b><small>Поточну кімнату</small></span></button>
+</div></div></div><div class="panel-column"><div class="table-scroll" style="display:none"><div id="tbl"><table><tr><td style="color:#8e8e93;padding:10px;text-align:center;font-size:11px">Натискайте на екран, щоб ставити кути (прямі та скоси)</td></tr></table></div></div><div id="diagList" style="display:none">немає</div><div class="info-box" style="background:#fff"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px"><div class="stat-card stat-area"><div class="stat-label"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> ПЛОЩА</div><div class="stat-value"><span id="area">0.00</span><span class="stat-unit"> м²</span></div></div><div class="stat-card stat-per"><div class="stat-label"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M3 12h18M3 18h18"/></svg> ПЕРИМЕТР</div><div class="stat-value"><span id="per">0.00</span><span class="stat-unit"> м</span></div></div><div class="stat-card stat-in"><div class="stat-label"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg> ВНУТР. КУТИ</div><div class="stat-value"><span id="inCorners">0</span></div></div><div class="stat-card stat-out"><div class="stat-label"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg> ЗОВН. КУТИ</div><div class="stat-value"><span id="outCorners">0</span></div></div></div></div></div></div><div id="A·CEILToolPanel" class="A·CEIL-tool-panel" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:4px"><div style="position:relative"><button class="tile-btn tile-blue" onclick="toggleShapeMenu()" style="width:100%;height:100%"><div class="tile-icon"><svg class="rm-ico" aria-hidden="true"><use href="#rmi-figure"></use></svg></div><div class="tile-btn-label">Фігура</div><div class="tile-sub">Прямокутник / коло</div></button><div id="shapeMenu" class="elem-menu quick-menu" style="bottom:calc(100% + 8px);top:auto;left:0;right:auto;width:260px"><button type="button" class="quick-menu-card" onclick="closeShapeMenu(),openRectModal()"><span class="quick-menu-icon"><svg class="rm-ico" aria-hidden="true"><use href="#rmi-rect"></use></svg></span><span class="quick-menu-text"><b>Прямокутник</b><small>швидка кімната</small></span></button><button type="button" class="quick-menu-card" onclick="closeShapeMenu(),openCircleModal()"><span class="quick-menu-icon"><svg class="rm-ico" aria-hidden="true"><use href="#rmi-circle"></use></svg></span><span class="quick-menu-text"><b>Коло</b><small>круглий елемент</small></span></button></div></div><div style="position:relative"><button class="tile-btn tile-purple" id="diagBtn" onclick="toggleDiag()" style="width:100%;height:100%"><div class="tile-icon"><svg class="rm-ico" aria-hidden="true"><use href="#rmi-diagonal"></use></svg></div><div class="tile-btn-label">Діагоналі</div><div class="tile-sub">Ручний ввід</div></button></div><button class="tile-btn tile-green" onclick="openSideInputModal()"><div class="tile-icon"><svg class="rm-ico" aria-hidden="true"><use href="#rmi-measure"></use></svg></div><div class="tile-btn-label">Розміри</div><div class="tile-sub">AB, BC…</div></button><div style="position:relative"><button class="tile-btn" onclick="openRmLightStart()" style="width:100%;height:100%;background:linear-gradient(145deg,#fff7d6,#fffbea)"><div class="tile-icon" style="background:rgba(245,158,11,.13);color:#f59e0b"><svg class="rm-ico" aria-hidden="true"><use href="#rmi-light"></use></svg></div><div class="tile-btn-label" style="color:#1e293b">Елементи стелі <span id="lightBadge" style="display:none;background:#ca8a04;color:#fff;border-radius:99px;font-size:10px;font-weight:800;padding:1px 6px;margin-left:2px;vertical-align:middle">0</span></div><div class="tile-sub" style="color:#64748b">Світло, камера, датчики…</div></button><div id="lightMenu" class="elem-menu quick-menu" style="bottom:calc(100% + 8px);top:auto;left:0;right:auto;width:280px"></div></div><button class="tile-btn tile-green" onclick="openReportSettings()"><div class="tile-icon"><svg class="rm-ico" aria-hidden="true"><use href="#rmi-report"></use></svg></div><div class="tile-btn-label">Звіт</div><div class="tile-sub">Картинка</div></button><button class="tile-btn" id="elemTileBtn" onclick="openElementsModal()" style="background:linear-gradient(145deg,#fff4ed,#fff8f5)"><div class="tile-icon" style="background:rgba(37,99,235,.1);color:#2563eb"><svg class="rm-ico" aria-hidden="true"><use href="#rmi-elements"></use></svg></div><div class="tile-btn-label" style="color:#1e293b">Номенклатура <span id="elemBadge" style="display:none;background:#ea580c;color:#fff;border-radius:99px;font-size:10px;font-weight:800;padding:1px 6px;margin-left:2px;vertical-align:middle">0</span></div><div class="tile-sub" style="color:#64748b">Профілі, вставки…</div></button><button class="tile-btn tile-red" onclick="resetAll()" style="grid-column:span 3"><div style="display:flex;align-items:center;justify-content:center;gap:10px"><div class="tile-icon" style="margin-bottom:0;flex-shrink:0"><svg class="rm-ico" aria-hidden="true"><use href="#rmi-trash"></use></svg></div><div><div class="tile-btn-label">Очистити</div><div class="tile-sub">Новий проєкт</div></div></div></button></div></div><div class="modal-overlay" id="rectModal"><div class="modal"><h3>▭ Прямокутник</h3><label>Ширина (см)</label><input type="number" inputmode="decimal" id="rectW" placeholder="напр. 350"><label>Висота / Довжина (см)</label><input type="number" inputmode="decimal" id="rectH" placeholder="напр. 450"><div style="display:flex;gap:8px;margin:10px 0"><button type="button" onclick="focusPrevSide()">◀ Попередній</button><button type="button" onclick="focusNextSide()">Наступний ▶</button></div><div class="modal-btns"><button class="btn-cancel" onclick='closeModal("rectModal")'>Скасувати</button><button onclick="applyRect()">✓ Побудувати</button></div></div></div><div class="modal-overlay" id="circleModal"><div class="modal"><h3>⬤ Коло</h3><label>Діаметр (см)</label><input type="number" inputmode="decimal" id="circleDiam" placeholder="напр. 300"><div class="modal-btns"><button class="btn-cancel" onclick='closeModal("circleModal")'>Скасувати</button><button onclick="applyCircle()">✓ Побудувати</button></div></div></div><div class="modal-overlay" id="lightSettingsModal"><div class="modal" style="width:min(94vw,380px)"><h3>💡 Налаштування світла</h3><div style="font-size:12px;color:#64748b;font-weight:700;margin:-6px 0 14px">Змініть назви та значки. Значок може бути символом або emoji.</div><div id="lightSettingsRows"></div><label style="margin-top:14px">Сітка для розстановки</label><div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px"><button type="button" class="light-grid-chip" id="grid25Btn" onclick="setLightGridCm(25)">25 см</button><button type="button" class="light-grid-chip" id="grid50Btn" onclick="setLightGridCm(50)">50 см</button><button type="button" class="light-grid-chip" id="grid100Btn" onclick="setLightGridCm(100)">100 см</button></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button type="button" class="light-grid-chip" id="gridOnBtn" onclick="toggleLightGrid()">Сітка</button><button type="button" class="light-grid-chip" id="snapOnBtn" onclick="toggleLightSnap()">Привʼязка</button><button type="button" class="light-grid-chip" id="autoQtyOnBtn" onclick="toggleLightAutoQty()">Авто-кількість</button></div><div class="light-hint-small">Авто-кількість вимкнена за замовчуванням. Якщо увімкнути — кількість позначок світла автоматично оновлює номенклатуру.</div><div class="modal-btns"><button class="btn-cancel" onclick='closeModal("lightSettingsModal")'>Скасувати</button><button onclick="saveLightSettings()">✓ Зберегти</button></div></div></div><div class="modal-overlay" id="smartLightModal"><div class="modal"><h3>💡 Smart Lighting</h3><div class="rm-smart-note" id="smartLightInfo">Швидке розміщення світла без AI. Працює локально.</div><div class="rm-smart-row"><label><div class="rm-smart-field-title">Кількість</div><input class="rm-smart-input" id="smartLightQty" type="number" min="1" max="60" value="8"></label><label><div class="rm-smart-field-title">Відступ від стін</div><input class="rm-smart-input" id="smartLightMargin" type="number" min="0" max="200" value="60"></label></div><div class="rm-smart-row"><label><div class="rm-smart-field-title">Схема</div><select class="rm-smart-select" id="smartLightMode"><option value="grid">Рівномірна сітка</option><option value="centerline">По центральній осі</option><option value="perimeter">По периметру з відступом</option></select></label><label><div class="rm-smart-field-title">Тип</div><select class="rm-smart-select" id="smartLightType"></select></label></div><label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;font-weight:850;color:#334155;text-transform:none;letter-spacing:0"><input id="smartLightReplace" type="checkbox" checked="checked" style="width:18px;height:18px;accent-color:#2563eb"> замінити поточні світильники</label><div class="rm-smart-actions"><button type="button" class="rm-smart-secondary" onclick="rmSmartRecommendQty()">Рекомендовано</button><button type="button" class="rm-smart-secondary" onclick='rmSmartAlignLights("x")'>Вирівняти X</button><button type="button" class="rm-smart-secondary" onclick='rmSmartAlignLights("y")'>Вирівняти Y</button><button type="button" class="rm-smart-secondary" onclick="rmSmartCenterSelectedLight()">Центр</button><button type="button" class="rm-smart-danger" onclick="rmSmartClearLights()">Очистити світло</button><button type="button" class="rm-smart-primary" onclick="rmSmartApplyLights()">Застосувати</button></div><div class="modal-btns"><button class="btn-cancel" onclick='closeModal("smartLightModal")'>Закрити</button></div></div></div><div class="modal-overlay" id="lightEditModal"><div class="modal" style="width:min(94vw,380px)"><h3>💡 Позначка світла</h3><label>Що це?</label><select id="lightEditType" style="width:100%;padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:15px;font-weight:700;color:#1e293b;background:#fff"></select><label>Від якої точки рахувати?</label><select id="lightEditBase" onchange="refreshLightEditCoordsFromBase()" style="width:100%;padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:15px;font-weight:700;color:#1e293b;background:#fff;margin-bottom:10px"></select><label>Координати / прив’язка від точки</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><div style="font-size:11px;font-weight:800;color:#64748b;margin-bottom:4px">X, см</div><input id="lightEditX" type="number" inputmode="decimal" placeholder="40" style="width:100%;padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:15px;font-weight:700;color:#1e293b"></div><div><div style="font-size:11px;font-weight:800;color:#64748b;margin-bottom:4px">Y, см</div><input id="lightEditY" type="number" inputmode="decimal" placeholder="56" style="width:100%;padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:15px;font-weight:700;color:#1e293b"></div></div><div class="light-hint-small">Оберіть базову точку A/B/C… X рахується вздовж наступної сторони, Y — всередину кімнати. Наприклад: від C — 50×72 см.</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="light-grid-chip" onclick="placeSelectedLightCenter()">По центру зони</button><button type="button" class="light-grid-chip" onclick="deleteLightFromEditor()">🗑 Видалити</button></div><div class="modal-btns"><button class="btn-cancel" onclick='closeModal("lightEditModal")'>Скасувати</button><button onclick="saveLightEdit()">✓ Застосувати</button></div></div></div><div class="modal-overlay" id="wallEditModal"><div class="modal" style="width:min(94vw,390px)"><h3>📍 Розташування елемента</h3><div id="wallEditSide" style="font-size:13px;color:#64748b;font-weight:800;margin:-4px 0 12px">Сторона —</div><label>Заготовка</label><div style="display:grid;grid-template-columns:1fr 48px;gap:8px;align-items:center"><select id="wallPresetSelect" onchange="applyWallPreset()" style="width:100%;padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:15px;font-weight:800;color:#1e293b;background:#fff"></select><button type="button" onclick="addWallPresetFromInput()" title="Додати заготовку" style="height:46px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#6366f1);font-size:22px;line-height:1;padding:0">+</button></div><label>Назва на макеті</label><input id="wallEditType" placeholder="Ніша карниза" style="width:100%;padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:15px;font-weight:700;color:#1e293b;background:#fff"><label>Колір на макеті</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input id="wallEditColor" type="color" value="#f97316" style="width:54px;height:42px;border:1.5px solid #e2e8f0;border-radius:12px;padding:3px;background:#fff"><button type="button" class="light-grid-chip" onclick='setWallColor("#f97316")' style="border-color:#fdba74">Помаранчевий</button><button type="button" class="light-grid-chip" onclick='setWallColor("#2563eb")' style="border-color:#93c5fd">Синій</button><button type="button" class="light-grid-chip" onclick='setWallColor("#16a34a")' style="border-color:#86efac">Зелений</button></div><label>Довжина елемента, см</label><input id="wallEditLen" type="number" inputmode="decimal" oninput="if($(&quot;wallEditAnchor&quot;)&&$(&quot;wallEditAnchor&quot;).value===&quot;center&quot;) wallPlaceCenter()" placeholder="250" style="width:100%;padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:15px;font-weight:700;color:#1e293b;text-align:center"><label>Розташування</label><select id="wallEditAnchor" onchange="updateWallAnchorUI()" style="width:100%;padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:15px;font-weight:800;color:#1e293b;background:#fff"><option value="start">Від початку сторони</option><option value="center">По центру сторони</option><option value="end">Від кінця сторони</option></select><label id="wallOffsetLabel">Відступ, см</label><input id="wallEditOffset" type="number" inputmode="decimal" placeholder="50" style="width:100%;padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:15px;font-weight:700;color:#1e293b;text-align:center"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="light-grid-chip" onclick='setWallAnchor("start")'>Від A</button><button type="button" class="light-grid-chip" onclick='setWallAnchor("center")'>По центру</button><button type="button" class="light-grid-chip" onclick='setWallAnchor("end")'>Від B</button><button type="button" class="light-grid-chip" onclick="deleteWallMarkFromEditor()">🗑 Видалити</button></div><div class="light-hint-small">Тап по стороні після замикання контуру. Можна задати довжину, колір і прив’язку: від початку, по центру або від кінця сторони.</div><div class="modal-btns"><button class="btn-cancel" onclick='closeModal("wallEditModal")'>Скасувати</button><button onclick="saveWallEdit()">✓ Застосувати</button></div></div></div>
+
+<script src="js/nomenclature/019-inline.js?v=20260930-external-dims3"></script>
+
+<script src="js/reports/020-inline.js"></script>
+
+<script id="A·CEIL-v370-optional-install-works" src="js/nomenclature/021-aceil-v370-optional-install-works.js"></script>
+
+<div class="modal-overlay" id="sideInputModal"><div class="modal" style="width:360px;max-height:80vh;overflow:auto"><h3>📋 Ввести розміри сторін</h3><div id="sideInputsContainer"></div><button type="button" class="aceil-open-all-dims-v11" onclick='closeModal("sideInputModal");openAllSideInputsModalV11()'>📋 Ввести всі розміри</button><div class="modal-btns"><button class="btn-cancel" onclick='closeModal("sideInputModal")'>Скасувати</button><button onclick="applySideInputs()">Побудувати</button></div></div></div>
+</div><div class="modal-overlay" id="diagModal"><div class="modal" style="width:360px;max-height:80vh;overflow:auto"><h3>📐 Контрольні діагоналі</h3><div id="diagSelector"></div><div class="modal-btns"><button class="btn-cancel" onclick='closeModal("diagModal")'>Закрити</button></div></div></div><div class="modal-overlay" id="diagEditModal"><div class="modal"><h3>✏️ Введіть діагональ</h3><input type="hidden" id="diagEditKey"><label id="diagEditLabel">Діагональ (см)</label><input type="number" inputmode="decimal" id="diagEditInput" placeholder="напр. 450" style="width:100%;padding:10px;border:1px solid #dbe4f0;border-radius:10px;font-size:18px;font-weight:700;text-align:center;margin-top:8px" onkeydown='"Enter"===event.key&&applyDiagEdit()'><div class="modal-btns" style="margin-top:14px"><button class="btn-cancel" onclick='_pendingDiagPair=null;closeModal("diagEditModal")'>Скасувати</button><button onclick="applyDiagEdit()">✓ Зберегти</button></div></div></div>
+
+<div class="modal-overlay" id="saveProjectModal"><div class="modal"><h3>💾 Зберегти проєкт</h3><label>Назва / Клієнт</label><input id="projName" placeholder="напр. Іванченко, вітальня" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-top:4px"><label>Адреса</label><input id="projAddr" placeholder="напр. вул. Шевченка 12, кв.5" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-top:4px"><label>Телефон клієнта</label><input type="tel" id="projPhone" placeholder="напр. +380 67 123 45 67" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-top:4px"><label>Коментар</label><textarea id="projComment" placeholder="напр. матова біла, є труба в кутку B, монтаж 15.07" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-top:4px;min-height:72px;resize:vertical;font-family:-apple-system,sans-serif;line-height:1.45"></textarea><div class="modal-btns" style="margin-top:18px"><button class="btn-cancel" onclick='closeModal("saveProjectModal")'>Скасувати</button><button onclick="saveProject()">✓ Зберегти</button></div></div></div><div class="modal-overlay" id="projectsModal"><div class="modal" style="width:min(96vw,480px);max-height:85vh;display:flex;flex-direction:column;padding:0;overflow:hidden"><div style="padding:20px 20px 14px;border-bottom:1px solid #f1f5f9"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h3 style="margin:0;font-size:1.1rem;font-weight:800">📁 Проєкти</h3><div style="display:flex;gap:8px;align-items:center"><button onclick="openNewObjectModal()" style="background:linear-gradient(135deg,#2563eb,#6366f1);color:#fff;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(37,99,235,.3)">+ Об'єкт</button><button onclick='closeModal("projectsModal")' style="background:0 0;box-shadow:none;color:#94a3b8;font-size:22px;padding:4px;line-height:1">×</button></div></div><input id="projSearch" oninput="renderProjects()" placeholder="🔍 Пошук за назвою або адресою..." style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px"></div><div id="projectsList" style="overflow-y:auto;flex:1;padding:12px"></div></div></div><div id="newObjectModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);overflow-y:auto"><div style="background:#fff;border-radius:24px 24px 0 0;position:absolute;bottom:0;left:0;right:0;padding:20px 20px 40px;max-height:90vh;overflow-y:auto"><div style="width:36px;height:4px;background:#e2e8f0;border-radius:2px;margin:0 auto 18px"></div><div style="font-weight:800;font-size:18px;color:#1e293b;margin-bottom:16px">🏠 Новий об'єкт</div><label style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.06em">КЛІЄНТ / НАЗВА</label><input id="newObjName" placeholder="напр. Іваненко, квартира" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:15px;margin:6px 0 12px;outline:0"><label style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.06em">АДРЕСА</label><input id="newObjAddr" placeholder="вул. Шевченка 12, кв.5" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:15px;margin:6px 0 12px;outline:0"><label style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.06em">ТЕЛЕФОН</label><input id="newObjPhone" placeholder="+380 67 123 45 67" type="tel" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:15px;margin:6px 0 12px;outline:0"><label style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.06em">КОМЕНТАР</label><textarea id="newObjComment" placeholder="Коментар" rows="2" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:15px;margin:6px 0 18px;outline:0;resize:none;font-family:inherit"></textarea><button onclick="createObject()" style="width:100%;padding:15px;border-radius:14px;font-size:16px;font-weight:800;background:linear-gradient(135deg,#2563eb,#6366f1);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.3);margin-bottom:10px">✓ Створити об'єкт</button><button onclick="closeNewObjectModal()" style="width:100%;padding:13px;border-radius:14px;font-size:15px;font-weight:700;background:#f1f5f9;color:#475569">Скасувати</button></div></div><div id="objectRoomsModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);overflow-y:auto"><div style="background:#f8fafc;border-radius:24px 24px 0 0;position:absolute;bottom:0;left:0;right:0;padding:0;max-height:93vh;overflow-y:auto"><div style="background:#fff;border-radius:24px 24px 0 0;padding:20px 20px 14px;border-bottom:1px solid #f1f5f9;position:sticky;top:0;z-index:1"><div style="width:36px;height:4px;background:#e2e8f0;border-radius:2px;margin:0 auto 14px"></div><div style="display:flex;align-items:flex-start;justify-content:space-between"><div><div id="objRoomsTitle" style="font-weight:800;font-size:17px;color:#1e293b"></div><div id="objRoomsAddr" style="font-size:12px;color:#64748b;margin-top:2px"></div></div><button onclick="closeObjectRooms()" style="background:0 0;box-shadow:none;color:#94a3b8;font-size:24px;padding:0;line-height:1;flex-shrink:0">×</button></div><div id="objRoomsTotals" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"></div></div><div id="objRoomsList" style="padding:12px"></div><div style="padding:12px;padding-bottom:32px;display:flex;gap:10px"><button onclick="addRoomToObject()" style="flex:1;padding:14px;border-radius:14px;font-size:15px;font-weight:800;background:linear-gradient(135deg,#2563eb,#6366f1);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.3)">+ Додати кімнату</button><button onclick="openObjectReport()" style="flex:1;padding:14px;border-radius:14px;font-size:15px;font-weight:800;background:linear-gradient(135deg,#0f766e,#0d9488);color:#fff">📄 Звіт</button></div></div></div><div id="newRoomModal" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(15,23,42,.55);backdrop-filter:blur(4px)"><div style="background:#fff;border-radius:24px 24px 0 0;position:absolute;bottom:0;left:0;right:0;padding:20px 20px 40px"><div style="width:36px;height:4px;background:#e2e8f0;border-radius:2px;margin:0 auto 18px"></div><div style="font-weight:800;font-size:18px;color:#1e293b;margin-bottom:16px">🚪 Нова кімната</div><label style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.06em">НАЗВА КІМНАТИ</label><input id="newRoomName" placeholder="напр. Вітальня, Спальня, Кухня..." style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:15px;margin:6px 0 8px;outline:0"><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px"><button onclick='document.getElementById("newRoomName").value=this.textContent,this.parentNode.querySelectorAll("button").forEach(b=>b.style.background="#f1f5f9"),this.style.background="#dbeafe"' style="padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;background:#f1f5f9;color:#475569">🛋 Вітальня</button><button onclick='document.getElementById("newRoomName").value=this.textContent,this.parentNode.querySelectorAll("button").forEach(b=>b.style.background="#f1f5f9"),this.style.background="#dbeafe"' style="padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;background:#f1f5f9;color:#475569">🛏 Спальня</button><button onclick='document.getElementById("newRoomName").value=this.textContent,this.parentNode.querySelectorAll("button").forEach(b=>b.style.background="#f1f5f9"),this.style.background="#dbeafe"' style="padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;background:#f1f5f9;color:#475569">🍳 Кухня</button><button onclick='document.getElementById("newRoomName").value=this.textContent,this.parentNode.querySelectorAll("button").forEach(b=>b.style.background="#f1f5f9"),this.style.background="#dbeafe"' style="padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;background:#f1f5f9;color:#475569">🚿 Ванна</button><button onclick='document.getElementById("newRoomName").value=this.textContent,this.parentNode.querySelectorAll("button").forEach(b=>b.style.background="#f1f5f9"),this.style.background="#dbeafe"' style="padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;background:#f1f5f9;color:#475569">🚽 Туалет</button><button onclick='document.getElementById("newRoomName").value=this.textContent,this.parentNode.querySelectorAll("button").forEach(b=>b.style.background="#f1f5f9"),this.style.background="#dbeafe"' style="padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;background:#f1f5f9;color:#475569">🏢 Коридор</button><button onclick='document.getElementById("newRoomName").value=this.textContent,this.parentNode.querySelectorAll("button").forEach(b=>b.style.background="#f1f5f9"),this.style.background="#dbeafe"' style="padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;background:#f1f5f9;color:#475569">🍽 Їдальня</button></div><button onclick="confirmNewRoom()" style="width:100%;padding:15px;border-radius:14px;font-size:16px;font-weight:800;background:linear-gradient(135deg,#2563eb,#6366f1);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.3);margin-bottom:10px">✓ Додати і малювати</button><button onclick="closeNewRoomModal()" style="width:100%;padding:13px;border-radius:14px;font-size:15px;font-weight:700;background:#f1f5f9;color:#475569">Скасувати</button></div></div>
+
+<script src="js/projects/023-inline.js"></script>
+<div id="pwaBar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:999;background:#fff;border-top:1px solid #e2e8f0;padding:14px 16px;box-shadow:0 -4px 20px rgba(0,0,0,.1);display:none;align-items:center;gap:12px"><div style="flex:1"><div style="font-weight:700;font-size:14px;color:#1e293b">Додати на екран</div><div style="font-size:12px;color:#64748b">Відкривати як додаток, без браузера</div></div><button id="pwaInstallBtn" style="background:linear-gradient(135deg,#2563eb,#6366f1);color:#fff;border:none;border-radius:12px;padding:10px 18px;font-weight:700;font-size:14px;box-shadow:0 4px 12px rgba(37,99,235,.3);cursor:pointer">Встановити</button><button onclick='document.getElementById("pwaBar").style.display="none"' style="background:0 0;border:none;color:#94a3b8;font-size:22px;padding:4px;cursor:pointer;box-shadow:none">×</button></div>
+
+<div class="modal-overlay" id="elementsModal"><div class="modal" style="width:min(100vw,520px);max-height:90vh;display:flex;flex-direction:column;padding:0;overflow:hidden"><div style="padding:14px 10px 10px;border-bottom:1px solid #f1f5f9;flex-shrink:0"><div style="display:flex;align-items:center;justify-content:space-between"><h3 style="margin:0;font-size:1.02rem;font-weight:800;color:#1e293b">Номенклатура</h3><div style="display:flex;gap:6px;align-items:center;position:relative"><button type="button" onclick="toggleElemMenu()" title="Меню" style="background:#f1f5f9;box-shadow:none;color:#64748b;font-size:14px;padding:8px 10px;border-radius:10px;line-height:1">⚙️</button><button onclick='closeModal("elementsModal")' style="background:0 0;box-shadow:none;color:#94a3b8;font-size:22px;padding:2px 6px;line-height:1">×</button><div id="elemMenu" class="elem-menu"><button type="button" onclick="closeElemMenu(),fillAllMeterItemsFromPerimeter()">↔ <span>Заповнити всі елементи у метрах з периметра</span></button><button type="button" onclick="closeElemMenu(),forceSyncNomenclature(true)">☁️ <span>Зберегти номенклатуру в хмару</span></button><button type="button" onclick="closeElemMenu(),forceLoadNomenclature()">⬇️ <span>Завантажити номенклатуру з хмари</span></button><button type="button" onclick="closeElemMenu(),openAddGroupFromMenu()">➕ <span>Додати групу</span></button><button type="button" onclick="closeElemMenu(),exportProjectsJSON()">⬇️ <span>Експорт проєктів у JSON</span></button><button type="button" onclick="closeElemMenu(),pickProjectsJSON()">⬆️ <span>Імпорт проєктів з JSON</span></button><button type="button" onclick="closeElemMenu(),toggleElemManageMode()">🔧 <span id="elemManageMenuLabel">Режим керування</span></button></div></div></div></div><div id="addGroupPanel" style="display:none;padding:10px 16px 0;flex-shrink:0"><div class="em-add-row"><input class="em-add-name" id="newGroupName" placeholder="Назва групи…" onkeydown='"Enter"===event.key&&addGroup()'><button class="em-add-btn" onclick="addGroup()">Додати</button></div></div><div id="elemList" style="flex:1;overflow-y:auto;padding:8px 2px"></div><div id="elemBottomBar" style="flex-shrink:0;width:100%;box-sizing:border-box;background:#fff;border-top:1px solid #e2e8f0;padding:10px 10px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px"><div id="elemTotalBar"><span id="elemTotalLabel">До сплати</span><span id="elemTotalValue">₴0.00</span></div><div style="display:flex;gap:8px"><button type="button" style="flex:1;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;box-shadow:none" onclick="clearElemQuantities()">Очистити</button><button type="button" style="flex:1;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;box-shadow:none" onclick="autoFillNomenclature()">Перерахувати</button></div><button type="button" style="width:100%;background:linear-gradient(135deg,#2563eb,#6366f1);color:#fff" onclick='closeModal("elementsModal")'>Готово</button></div></div></div><div class="modal-overlay" id="emojiModal"><div class="modal" style="width:min(96vw,340px);padding:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><h3 style="margin:0;font-size:1rem;font-weight:800">Вибір іконки</h3><button onclick='closeModal("emojiModal")' style="background:0 0;box-shadow:none;color:#94a3b8;font-size:22px;padding:2px 6px;line-height:1">×</button></div><div class="emoji-grid" id="emojiGrid"></div></div></div><div class="modal-overlay" id="quickSourceModal"><div class="modal" style="width:min(94vw,340px);padding:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><h3 style="margin:0;font-size:1rem;font-weight:800">🤖 Джерело автозаповнення</h3><button onclick='closeModal("quickSourceModal")' style="background:0 0;box-shadow:none;color:#94a3b8;font-size:22px;padding:2px 6px;line-height:1">×</button></div><div id="quickSourceItemName" style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:10px"></div><div id="quickSourceList" style="display:flex;flex-direction:column;gap:6px"></div></div></div><div class="modal-overlay" id="editElemModal"><div class="modal" style="width:min(96vw,360px);padding:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h3 style="margin:0;font-size:1rem;font-weight:800">✏️ Редагувати елемент</h3><button onclick='closeModal("editElemModal")' style="background:0 0;box-shadow:none;color:#94a3b8;font-size:22px;padding:2px 6px;line-height:1">×</button></div><input id="editElemName" placeholder="Назва елемента" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:10px;background:#fff"><label style="font-size:12px;color:#64748b;font-weight:700;display:block;margin-bottom:4px">Група</label><select id="editElemGroup" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:14px;background:#fff"></select><label style="font-size:12px;color:#64748b;font-weight:700;display:block;margin-bottom:4px">Джерело автозаповнення (🤖)</label><select id="editElemSource" onchange="updateSourceExtraFieldsVisibility()" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:10px;background:#fff"><option value="">— не задано (пошук по назві) —</option><option value="spot_light">💡 Світильники (кількість)</option><option value="chandelier">✶ Люстри (кількість)</option><option value="ventilation">🌀 Витяжка/вентиляція (кількість)</option><option value="floating_profile">〰️ Парящий профіль (сума довжин)</option><option value="profile_beam">▭ Профіль-брус (сума довжин)</option><option value="hidden_curtain">▤ Карниз (сума довжин)</option><option value="main_profile">➖ Основний профіль (периметр мінус профілі, що віднімаються)</option><option value="white_insert">⬜ Вставка (периметр мінус профілі, що віднімаються)</option><option value="corners">📐 Кути (кількість)</option><option value="floating_corners">〰️📐 Кути парящого (кількість)</option><option value="cornice_corners">▤📐 Кути карнизу (кількість)</option><option value="cornice_break">▤✂️ Обрив карнизу (кількість)</option><option value="linear_length">💡➖ Світлова лінія (загальна довжина, м)</option><option value="linear_corner">💡📐 Кут світлової лінії (кількість)</option><option value="linear_break">💡✂️ Обрив світлової лінії (кількість)</option><option value="shadow_profile">◧ Тіньовий профіль (сума довжин)</option><option value="shadow_corners">◧📐 Кути тіньового профілю (кількість)</option><option value="full_perimeter">⬜ Повний периметр / чистий монтаж (без віднімань)</option><option value="total_area">▦ Вся площа кімнати (м²)</option><option value="curve_length">〜 Довжина криволінійних ділянок (сума довжин дуг, м)</option></select><div id="editElemVariantRow" style="display:none"><label style="font-size:12px;color:#64748b;font-weight:700;display:block;margin-bottom:6px">Варіант</label><div class="rwe-pcolor-row" id="editElemVariantButtons" style="margin:0 0 12px"><button type="button" class="rwe-pcolor-btn" data-variant="" onclick='setEditElemVariant("")'>○ Без фільтра</button><button type="button" class="rwe-pcolor-btn" data-variant="white" onclick='setEditElemVariant("white")'>⚪ Білий</button><button type="button" class="rwe-pcolor-btn" data-variant="black" onclick='setEditElemVariant("black")'>⚫ Чорний</button></div></div><label style="font-size:12px;color:#64748b;font-weight:700;display:block;margin-bottom:4px">Ширина полотна (для плівки), м</label><input type="number" id="editElemFilmWidth" step="0.1" min="0" placeholder="напр. 3.2" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:4px;background:#fff"><div class="hint" style="margin:0 0 10px">Якщо задано — AutoFill підбирає ширину полотна, порівнюючи з мінімально необхідною шириною для кімнати.</div><label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#334155;font-weight:600;margin-bottom:12px"><input type="checkbox" id="editElemFilmSelected" style="width:18px;height:18px"> Обраний матеріал цієї ширини</label><div class="hint" style="margin:-8px 0 10px">Якщо на одній ширині кілька позицій (різні матеріали, напр. M303/C303/L303) — позначте прапорцем ту, яку AutoFill має обрати. Без позначки при кількох варіантах AutoFill нічого не обере і попередить.</div><div id="editElemInsertSelectedRow" style="display:none"><label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#334155;font-weight:600;margin-bottom:12px"><input type="checkbox" id="editElemInsertSelected" style="width:18px;height:18px"> Обрана вставка</label><div class="hint" style="margin:-8px 0 10px">За замовчуванням AutoFill обирає білу вставку. Позначте чорну, коли потрібна саме вона.</div></div><label style="font-size:12px;color:#64748b;font-weight:700;display:block;margin-bottom:6px">Введення кількості</label><div class="input-mode-toggle" style="display:flex;gap:8px;margin-bottom:14px"><button type="button" id="modeBtnManual" class="mode-btn" onclick='setEditElemInputMode("manual")'>🔢 Ручний ввід</button><button type="button" id="modeBtnPlus" class="mode-btn" onclick='setEditElemInputMode("plus")'>➕ Кнопка +1</button></div><div style="display:flex;gap:8px;margin-bottom:14px"><button type="button" onclick="moveElemDir(_editingElemId,-1)" style="flex:1;background:#f1f5f9;box-shadow:none;color:#475569">↑ Вгору</button><button type="button" onclick="moveElemDir(_editingElemId,1)" style="flex:1;background:#f1f5f9;box-shadow:none;color:#475569">↓ Вниз</button></div><button type="button" style="width:100%" onclick="saveElemEdit()">✓ Зберегти</button><button type="button" id="deleteElemBtn" style="width:100%;margin-top:8px;background:#fee2e2;box-shadow:none;color:#dc2626" onclick="deleteElemFromEdit()">🗑 Видалити елемент</button></div></div><div class="modal-overlay" id="editGroupModal"><div class="modal" style="width:min(96vw,360px);padding:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h3 style="margin:0;font-size:1rem;font-weight:800">✏️ Редагувати групу</h3><button onclick='closeModal("editGroupModal")' style="background:0 0;box-shadow:none;color:#94a3b8;font-size:22px;padding:2px 6px;line-height:1">×</button></div><input id="editGroupName" placeholder="Назва групи" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:14px;background:#fff"><div style="display:flex;gap:8px;margin-bottom:14px"><button type="button" onclick="moveGroupDir(_editingGroupId,-1)" style="flex:1;background:#f1f5f9;box-shadow:none;color:#475569">↑ Вгору</button><button type="button" onclick="moveGroupDir(_editingGroupId,1)" style="flex:1;background:#f1f5f9;box-shadow:none;color:#475569">↓ Вниз</button></div><button type="button" style="width:100%" onclick="saveGroupEdit()">✓ Зберегти</button><button type="button" id="deleteGroupBtn" style="width:100%;margin-top:8px;background:#fee2e2;box-shadow:none;color:#dc2626" onclick="deleteGroupFromEdit()">🗑 Видалити групу</button></div></div>
+
+<script src="js/nomenclature/025-inline.js?v=20260911-1"></script>
+
+<script src="js/nomenclature/028-inline.js"></script>
+<div id="reportSettingsModal" class="rspro-modal" style="display:none"></div>
+
+<script src="js/reports/029-inline.js?v=20260923-clean-final"></script>
+<div id="editProjectModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);overflow-y:auto"><div style="background:#fff;border-radius:24px 24px 0 0;position:absolute;bottom:0;left:0;right:0;padding:20px 20px 40px;max-height:90vh;overflow-y:auto"><div style="width:36px;height:4px;background:#e2e8f0;border-radius:2px;margin:0 auto 18px"></div><div style="font-weight:800;font-size:18px;color:#1e293b;margin-bottom:16px">✏️ Редагування проєкту</div><input id="editProjId" type="hidden"><label style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.06em">НАЗВА</label><input id="editProjName" placeholder="Назва проєкту" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:15px;margin:6px 0 12px;outline:0"><label style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.06em">АДРЕСА</label><input id="editProjAddr" placeholder="Адреса об'єкту" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:15px;margin:6px 0 12px;outline:0"><label style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.06em">ТЕЛЕФОН</label><input id="editProjPhone" placeholder="Телефон клієнта" type="tel" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:15px;margin:6px 0 12px;outline:0"><label style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.06em">КОМЕНТАР</label><textarea id="editProjComment" placeholder="Коментар" rows="3" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:15px;margin:6px 0 18px;outline:0;resize:none;font-family:inherit"></textarea><button onclick="saveEditProject()" style="width:100%;padding:15px;border-radius:14px;font-size:16px;font-weight:800;background:linear-gradient(135deg,#2563eb,#6366f1);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.3);margin-bottom:10px">💾 Зберегти зміни</button><button onclick="closeEditProject()" style="width:100%;padding:13px;border-radius:14px;font-size:15px;font-weight:700;background:#f1f5f9;color:#475569">Скасувати</button></div></div>
+
+<script src="js/projects/030-inline.js"></script>
+
+<script src="js/projects/031-inline.js"></script>
+
+<script src="js/projects/032-inline.js"></script>
+
+<script src="js/admin/033-inline.js?v=20260902-offline4"></script>
+
+<script src="js/core/034-inline.js"></script>
+
+<script src="js/reports/035-inline.js"></script>
+
+<script src="js/reports/037-inline.js?v=20260926-v371-stable"></script>
+
+<script src="js/nomenclature/038-inline.js"></script>
+
+<script src="js/nomenclature/039-inline.js"></script>
+
+<script src="js/nomenclature/040-inline.js"></script>
+
+<script src="js/reports/041-inline.js"></script>
+
+<script src="js/nomenclature/042-inline.js"></script>
+
+<script src="js/reports/044-inline.js"></script>
+
+<script src="js/canvas/045-inline.js"></script>
+
+<script src="js/canvas/046-inline.js"></script>
+
+<script src="js/canvas/047-inline.js"></script>
+
+<script src="js/canvas/050-inline.js"></script>
+
+<script src="js/nomenclature/051-inline.js"></script>
+
+<script src="js/canvas/052-inline.js?v=20260930-wall-revision1"></script>
+
+<script src="js/reports/053-inline.js"></script>
+
+<script src="js/rooms/054-inline.js"></script>
+
+<script src="js/canvas/058-inline.js"></script>
+
+<script src="js/projects/059-inline.js"></script>
+
+<script src="js/canvas/060-inline.js"></script>
+
+<script src="js/reports/061-inline.js"></script>
+
+<script src="js/nomenclature/062-inline.js"></script>
+
+<script src="js/nomenclature/063-inline.js"></script>
+
+<script src="js/reports/065-inline.js"></script>
+
+<script src="js/canvas/066-inline.js"></script>
+
+<script src="js/canvas/068-inline.js"></script>
+
+<script src="js/canvas/069-inline.js"></script>
+
+<script src="js/nomenclature/072-inline.js"></script>
+
+<script src="js/canvas/073-inline.js"></script>
+<div class="modal-overlay rm-lf-sheet" id="lightFlowModal"><div class="modal"><div class="rm-lf-head"><div><div class="rm-lf-title">Точкові світильники</div><div class="rm-lf-sub">Один, ряд або сітка</div></div><button type="button" class="rm-lf-close" onclick="rmLfClose()">×</button></div><div class="rm-lf-tabs" id="rmLfTabs"><button type="button" onclick='rmLfSetMode("one")'>● Один</button><button type="button" onclick='rmLfSetMode("row")'>➖ Ряд</button><button type="button" onclick='rmLfSetMode("grid")'>⬛ Сітка</button></div><div id="rmLfOne" class="rm-lf-card"><div class="rm-lf-label" style="margin-top:0">Куди поставити</div><div class="rm-lf-choice" id="rmLfOnePlace"><button type="button" onclick='rmLfSetOnePlace("room")'>✅ По центру кімнати</button><button type="button" onclick='rmLfSetOnePlace("zone")'>☑️ По центру зони</button><button type="button" onclick='rmLfSetOnePlace("manual")'>📍 За розмірами / вручну</button></div></div><div id="rmLfRow" class="rm-lf-card rm-lf-hidden"><div class="rm-lf-label" style="margin-top:0">Кількість у ряд</div><div class="rm-lf-counts" id="rmLfRowQty"><button type="button" onclick="rmLfSetQty(3)">3</button><button type="button" onclick="rmLfSetQty(5)">5</button><button type="button" onclick="rmLfSetQty(7)">7</button><button type="button" onclick="rmLfSetQty(9)">9</button></div><div class="rm-lf-label">Орієнтація</div><div class="rm-lf-orient" id="rmLfOrient"><button type="button" onclick='rmLfSetOrient("auto")'>Авто</button><button type="button" onclick='rmLfSetOrient("h")'>↔ По ширині</button><button type="button" onclick='rmLfSetOrient("v")'>↕ По довжині</button></div></div><div id="rmLfGrid" class="rm-lf-card rm-lf-hidden"><div class="rm-lf-label" style="margin-top:0">Еталонний відступ першого світильника, см</div><div class="rm-lf-inputs"><input id="rmLfGridX" type="number" value="80" min="0" step="1" oninput="rmLfRender()" placeholder="X, см"><input id="rmLfGridY" type="number" value="80" min="0" step="1" oninput="rmLfRender()" placeholder="Y, см"></div><div class="rm-lf-label">Кількість у сітці</div><div class="rm-lf-counts" id="rmLfGridQty"><button type="button" onclick="rmLfSetQty(4)">4</button><button type="button" onclick="rmLfSetQty(6)">6</button><button type="button" onclick="rmLfSetQty(8)">8</button><button type="button" onclick="rmLfSetQty(10)">10</button><button type="button" onclick="rmLfSetQty(12)">12</button></div></div><div class="rm-lf-card"><div class="rm-lf-label" style="margin-top:0">Попередній перегляд</div><div class="rm-lf-preview" id="rmLfPreview"></div><div class="rm-lf-note" id="rmLfNote">Один світильник стане по центру кімнати.</div></div><div class="rm-lf-actions"><button type="button" class="rm-lf-secondary" onclick="rmLfManualSpot()">Поставити вручну</button><button type="button" class="rm-lf-primary" onclick="rmLfApply()">Створити</button></div></div></div>
+
+<script src="js/rooms/074-inline.js"></script>
+<div class="modal-overlay" id="rmLightStartModal"><div class="modal"></div></div>
+
+<div class="modal-overlay" id="rmChandelierFlowModal"><div class="modal"><div class="rm-ch-head"><div><div class="rm-ch-title">Люстра</div><div class="rm-ch-sub">Одна центральна або додаткова за точними розмірами</div></div><button type="button" class="rm-ch-close" onclick="rmChClose()">×</button></div><div class="rm-ch-actions"><button type="button" class="rm-ch-btn primary" onclick="rmChAuto()"><span class="rm-ch-icon">✶</span><span><b>Автоматично</b><small>по кімнаті, маленькі вирізи ігноруються</small></span></button><button type="button" class="rm-ch-btn" onclick="rmChManual()"><span class="rm-ch-icon">📏</span><span><b>За розмірами</b><small>для другої люстри, бра, підвісів над ліжком</small></span></button></div><div class="rm-ch-note">Якщо кімната має маленький виступ або виріз, A·CEIL ставить люстру по основній частині. Великі складні форми можна уточнити розмірами.</div></div></div>
+
+<script src="js/rooms/076-inline.js"></script>
+
+<script src="js/canvas/080-inline.js"></script> 
+
+<script src="js/rooms/081-inline.js"></script> 
+
+<script src="js/canvas/082-inline.js?v=20260923-double-spot-1"></script> 
+
+<script src="js/canvas/083-inline.js"></script>  
+
+<script id="rspro-clean-script" src="js/reports/084-rspro-clean-script.js?v=20260925-v23-report-fit"></script> 
+
+<script src="js/rooms/085-inline.js"></script> 
+
+<script src="js/reports/086-inline.js"></script>  
+
+<script id="A·CEIL-multiroom-simple-flow" src="js/reports/087-aceil-multiroom-simple-flow.js"></script> 
+
+<script id="A·CEIL-multiroom-save-controller-v1" src="js/projects/088-aceil-multiroom-save-controller-v1.js"></script>  
+
+<script id="A·CEIL-report-light-grouped-restored" src="js/reports/089-aceil-report-light-grouped-restored.js"></script>  
+
+<script id="A·CEIL-geolocation-v1" src="js/projects/090-aceil-geolocation-v1.js"></script> 
+
+<script id="A·CEIL-pdf-cloud-report-v1" src="js/reports/091-aceil-pdf-cloud-report-v1.js?v=20260923-clean-phase3"></script> 
+
+<script id="A·CEIL-public-report-page-v1" src="js/reports/092-aceil-public-report-page-v1.js?v=20260917-final1"></script>  
+
+<script src="js/canvas/093-inline.js"></script> 
+
+<script id="A·CEIL-project-schema-migrations" src="js/nomenclature/094-aceil-project-schema-migrations.js"></script>
+
+<script id="A·CEIL-project-repository" src="js/projects/project-repository.js?v=20260929-multitenant1"></script>
+
+<script id="A·CEIL-geometry-core-v1" src="js/projects/098-aceil-geometry-core-v1.js"></script>
+
+<script id="A·CEIL-room-engine-foundation" src="js/projects/103-aceil-room-engine-foundation.js"></script>
+
+<script id="A·CEIL-multiroom-report-sandbox-fix-v30" src="js/reports/104-aceil-multiroom-report-sandbox-fix-v30.js"></script>
+
+<script id="A·CEIL-multiroom-lifecycle-v31" src="js/rooms/multiroom-lifecycle.js?v=20260914-1"></script>
+<script id="aceil-room-rename-short-callouts-v1" src="js/rooms/222-aceil-room-rename-short-callouts-v1.js?v=20260924-v7-native-wall-list"></script>
+
+<script id="A·CEIL-elem-menu-viewport-fix-script" src="js/canvas/109-aceil-elem-menu-viewport-fix-script.js"></script>
+
+<script id="A·CEIL-linear-element-v1" src="js/rooms/110-aceil-linear-element-v1.js?v=20260925-v21-light-auto"></script>
+
+<script id="A·CEIL-json-io-v1" src="js/nomenclature/111-aceil-json-io-v1.js"></script>
+
+<script id="A·CEIL-linear-element-persist-report-fix-v5" src="js/reports/112-aceil-linear-element-persist-report-fix-v5.js"></script>
+
+<script id="A·CEIL-collapsible-tools-v3" src="js/canvas/113-aceil-collapsible-tools-v3.js"></script>
+
+<script id="A·CEIL-room-menu-v2" src="js/rooms/114-aceil-room-menu-v2.js?v=20260912-1"></script>
+
+<script id="A·CEIL-history-v1" src="js/projects/115-aceil-history-v1.js"></script>
+
+<script id="A·CEIL-free-light-pro-v1" src="js/rooms/116-aceil-free-light-pro-v1.js"></script>
+
+<script id="A·CEIL-lang-switchers" src="js/reports/117-aceil-lang-switchers.js"></script>
+
+<script id="A·CEIL-nomen-raise-v1" src="js/nomenclature/118-aceil-nomen-raise-v1.js"></script>
+
+<script id="A·CEIL-room-nomenclature-isolation-fix-v1" src="js/nomenclature/119-aceil-room-nomenclature-isolation-fix-v1.js"></script>
+
+<div class="modal-overlay" id="rmCurveModal">
+  <div class="modal">
+    <h3>〰️ Форма стіни</h3>
+
+    <label>Стіна</label>
+    <select id="rmCurveSide"></select>
+
+    <div class="rm-curve-mode">
+      <button type="button" id="rmCurveModeChord" onclick="rmCurveSetMode('chord')">Пряма + крива</button>
+      <button type="button" id="rmCurveModeSagitta" onclick="rmCurveSetMode('sagitta')">Стріла + крива</button>
+    </div>
+
+    <div id="rmCurveChordFields" class="rm-curve-grid">
+      <label><small>По прямій, см</small><input id="rmCurveChord" type="number" inputmode="decimal" min="0" step="0.1" placeholder="напр. 260"></label>
+      <label><small>По кривій, см</small><input id="rmCurveArc" type="number" inputmode="decimal" min="0" step="0.1" placeholder="напр. 285"></label>
+    </div>
+
+    <div id="rmCurveSagittaFields" class="rm-curve-grid" style="display:none">
+      <label><small>Стріла вигину, см</small><input id="rmCurveSagitta" type="number" inputmode="decimal" min="0" step="0.1" placeholder="напр. 42"></label>
+      <label><small>По кривій, см</small><input id="rmCurveArc2" type="number" inputmode="decimal" min="0" step="0.1" placeholder="напр. 285"></label>
+    </div>
+
+    <div class="rm-curve-grid" style="margin-top:10px">
+      <label><small>Вигин</small>
+        <select id="rmCurveDirection">
+          <option value="out">Назовні</option>
+          <option value="in">Всередину</option>
+        </select>
+      </label>
+      <label><small>Тип</small>
+        <select id="rmCurveKind">
+          <option value="arc">Кругова дуга</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="rmCurveHelp" class="rm-curve-note">
+      Якщо пряму між краями неможливо проміряти через дверний проріз або виступ —
+      виберіть «Стріла + крива». Стрілу можна зняти від лазерної лінії або натягнутого шнура між крайніми точками.
+    </div>
+
+    <div id="rmCurveResult" class="rm-curve-result"></div>
+
+    <div class="modal-btns" style="grid-template-columns:.85fr 1fr 1.25fr">
+      <button type="button" class="rm-curve-danger" onclick="rmCurveDelete()">Прибрати</button>
+      <button type="button" class="btn-cancel" onclick="closeModal('rmCurveModal')">Скасувати</button>
+      <button type="button" onclick="rmCurveApply()">✓ Застосувати</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="rmWallShapeModal">
+ <div class="modal rm-wizard-modal">
+  <div class="rm-wizard-head">
+   <div><h3>〰️ Складна стіна</h3><div id="rmWizardStepText">Крок 1 з 3</div></div>
+   <button type="button" class="rm-wizard-close" onclick="closeModal('rmWallShapeModal')">×</button>
+  </div>
+  <div class="rm-wizard-progress"><i id="rmWizardProgress"></i></div>
+
+  <section class="rm-wizard-step" data-step="1">
+   <h4>1. Вибери стіну</h4>
+   <div class="rm-complex-grid">
+    <label><small>Стіна</small><select id="rmComplexSide"></select></label>
+    <label><small>Від якої точки міряєш</small><select id="rmComplexAnchor"></select></label>
+   </div>
+   <div class="rm-wizard-note">Опорна точка — це кут, від якого ти міряєш діагональ до кожної точки вигину.</div>
+  </section>
+
+  <section class="rm-wizard-step" data-step="2" hidden>
+   <h4>2. Введи точки повороту</h4>
+   <div class="rm-wizard-columns"><span>Точка</span><span>Від попередньої</span><span>Від опорної</span></div>
+   <div id="rmComplexRows"></div>
+   <button type="button" class="rm-complex-add" onclick="rmComplexAddRow()">＋ Додати наступну точку</button>
+   <div class="rm-wizard-note">Вводь так, як міряєш на об’єкті. Наприклад: від попередньої точки — 42 см, від опорної — 153 см.</div>
+  </section>
+
+  <section class="rm-wizard-step" data-step="3" hidden>
+   <h4>3. Перевір результат</h4>
+   <div id="rmComplexResult" class="rm-complex-result"></div>
+   <div class="rm-wizard-note">Якщо написано «Все добре» — натискай «Застосувати». Якщо ні — повернись і виправ підсвічену точку.</div>
+  </section>
+
+  <div class="rm-wizard-actions">
+   <button type="button" id="rmWizardBack" class="btn-cancel" onclick="rmWizardBack()" hidden>Назад</button>
+   <button type="button" id="rmWizardNext" onclick="rmWizardNext()">Далі</button>
+   <button type="button" id="rmWizardApply" onclick="rmComplexApply()" hidden>✓ Застосувати</button>
+  </div>
+  <button type="button" class="rm-wizard-remove" onclick="rmComplexDelete()">Прибрати складну стіну</button>
+  <button type="button" class="rm-wizard-arc" onclick="rmShapeOpenArc()">Потрібна одна проста дуга</button>
+ </div>
+</div>
+
+<script id="A·CEIL-state-manager-v1" src="js/nomenclature/121-aceil-state-manager-v1.js"></script>
+
+<script id="A·CEIL-v222-critical-load-guard" src="js/projects/122-aceil-v222-critical-load-guard.js"></script>
+
+<script id="A·CEIL-debug-panel-v1" src="js/core/debug-panel.js?v=20260831-2"></script>
+
+<script id="A·CEIL-touch-duplicate-point-fix-v2" src="js/reports/124-aceil-touch-duplicate-point-fix-v2.js"></script>
+
+<script id="A·CEIL-v230-canvas-build-state-fix" src="js/projects/125-aceil-v230-canvas-build-state-fix.js"></script>
+
+<div class="modal-overlay" id="rmSimpleCurveModal">
+ <div class="modal">
+  <div class="rmsc-head"><div><div class="rmsc-title" id="rmscTitle">Дуга стіни AB</div><div class="rmsc-sub" id="rmscChord">Пряма: 0 см</div></div><button type="button" class="rmsc-x" onclick="rmSimpleCurveClose()">×</button></div>
+  <div class="rmsc-card">
+   <label class="rmsc-label" for="rmscSagitta">Наскільки стіна відходить від прямої?</label>
+   <input class="rmsc-input" id="rmscSagitta" type="number" min="0.1" step="0.1" inputmode="decimal" placeholder="наприклад 25">
+   <div class="rmsc-help">Виміряйте найбільшу відстань від прямої між кутами до фактичної стіни.</div>
+  </div>
+  <div class="rmsc-card"><span class="rmsc-label">Куди вигнута стіна?</span><div class="rmsc-dir"><button id="rmscOut" type="button" onclick="rmSimpleCurveDirection('out')">Назовні</button><button id="rmscIn" type="button" onclick="rmSimpleCurveDirection('in')">Всередину</button></div><div class="rmsc-preview" id="rmscPreview"></div></div>
+  <div class="rmsc-actions"><button type="button" class="rmsc-delete" onclick="rmSimpleCurveStraight()">Зробити прямою</button><button type="button" class="rmsc-save" onclick="rmSimpleCurveApply()">✓ Застосувати дугу</button></div>
+ </div>
+</div>
+
+<script id="A·CEIL-v234-light-orientation-fix" src="js/rooms/126-aceil-v234-light-orientation-fix.js"></script>
+
+<div id="rmHybridOnlyOverlay" aria-hidden="true">
+  <canvas id="rmHybridOnlyCanvas"></canvas>
+  <div class="rm-hybrid-only-top"><div class="rm-hybrid-only-msg" id="rmHybridHint">Проведи пальцем від одного кінця стіни до другого</div><button type="button" class="rm-hybrid-only-cancel" onclick="A·CEILHybridCurve.cancel()">Скасувати</button></div>
+  <div class="rm-hybrid-only-bottom"><span id="rmHybridBottomText">Ескіз задає форму, точність — проміри</span><button type="button" id="rmHybridApplyBtn" class="rm-hybrid-apply" onclick="A·CEILHybridCurve.apply()">✓ Застосувати</button></div>
+</div>
+<div class="modal-overlay" id="rmHybridPointModal"><div class="modal">
+  <div class="rm-hp-head"><h3 id="rmHpTitle">Точка P1</h3><div style="display:flex;gap:6px;flex-shrink:0"><button type="button" class="rm-hp-x" style="background:#fee2e2;color:#be123c;font-size:17px" onclick="A·CEILHybridCurve.deleteCurrentPoint()" title="Видалити цю точку">🗑</button><button type="button" class="rm-hp-x" onclick="A·CEILHybridCurve.closePoint()">×</button></div></div>
+  <div class="rm-hp-anchor"><div class="rm-hp-anchor-title">Опорний кут для всіх точок</div><div class="rm-hp-anchor-buttons"><button type="button" id="rmHpAnchorPrev" class="rm-hp-anchor-btn" onclick="A·CEILHybridCurve.setAnchor('prev')">Кут A</button><button type="button" id="rmHpAnchorNext" class="rm-hp-anchor-btn" onclick="A·CEILHybridCurve.setAnchor('next')">Кут D</button></div></div>
+  <label class="rm-hp-label" for="rmHpAlong" id="rmHpSegLabel">Від попередньої точки, см</label><input id="rmHpAlong" class="rm-hp-input" type="number" inputmode="decimal" step="0.1" min="0"><div class="rm-hp-help" id="rmHpSegHelp">Для першої точки — від початку кривої; далі — від попередньої точки.</div>
+  <label class="rm-hp-label" for="rmHpOffset" id="rmHpDiagLabel">Від опорного кута, см</label><input id="rmHpOffset" class="rm-hp-input" type="number" inputmode="decimal" step="0.1" min="0"><div class="rm-hp-help">Другий фактичний промір рулеткою від обраного кута.</div>
+  <div class="rm-hp-actions"><button type="button" class="rm-hp-prev" onclick="A·CEILHybridCurve.closePoint()">Відмінити</button><button type="button" class="rm-hp-save" onclick="A·CEILHybridCurve.savePoint()">Зберегти точку</button><button type="button" class="rm-hp-done" onclick="A·CEILHybridCurve.saveAndApply()">✓ Зберегти і готово</button></div>
+</div></div>
+
+<script id="A·CEIL-measure-confidence-v252" src="js/canvas/127-aceil-measure-confidence-v252.js"></script>
+
+<script src="js/reports/128-inline.js"></script>
+
+<script id="A·CEIL-curve-rebuild-v83" src="js/nomenclature/129-aceil-curve-rebuild-v83.js"></script>
+
+<div id="rmWallTapMenuV84" aria-hidden="true">
+  <div class="rmwt-card">
+    <div class="rmwt-handle"></div>
+    <div class="rmwt-title" id="rmWallTapTitleV84">Стіна</div>
+    <div class="rmwt-sub" id="rmWallTapSubV84">Оберіть дію</div>
+    <button type="button" class="rmwt-action" onclick="rmWallTapAddElementV84()">
+      <span class="rmwt-icon">＋</span>
+      <span><b>Додати елемент</b><small>Карниз, профіль, ніша або інший елемент</small></span>
+    </button>
+    <button type="button" class="rmwt-action curve" onclick="rmWallTapCurveV84()">
+      <span class="rmwt-icon">〜</span>
+      <span><b id="rmWallTapCurveLabelV84">Криволінійна ділянка</b><small>Задати початок, кінець і точки вигину</small></span>
+    </button>
+    <button type="button" class="rmwt-cancel" onclick="rmWallTapCloseV84()">Скасувати</button>
+  </div>
+</div>
+
+<script id="A·CEIL-wall-tap-menu-v84" src="js/reports/130-aceil-wall-tap-menu-v84.js"></script>
+
+<script id="A·CEIL-wall-actions-v89" src="js/canvas/131-aceil-wall-actions-v89.js"></script>
+
+<div id="rmCurveMeasureModalV301" aria-hidden="true">
+  <div class="cm-card">
+    <div class="cm-head">
+      <div>
+        <div class="cm-title">Криволінійна ділянка</div>
+        <div class="cm-sub" id="cmWallLabelV301">Стіна</div>
+      </div>
+      <button type="button" class="cm-x" onclick="rmCurveMeasureCloseV301()">×</button>
+    </div>
+
+    <div class="cm-body">
+      <div class="cm-note">
+        Спочатку задай початок кривої від кута. Потім додавай точки по кривій:
+        довжина від попередньої точки + діагональ від вибраного кута.
+      </div>
+
+      <div class="cm-grid">
+        <label>
+          <span>Початок кривої від кута</span>
+          <select id="cmStartCornerV301"></select>
+        </label>
+        <label>
+          <span>Відстань до початку кривої, см</span>
+          <input id="cmStartOffsetV301" type="number" inputmode="decimal" step="0.1">
+        </label>
+      </div>
+
+      <div id="cmPointsV301"></div>
+
+      <div class="cm-preview" id="cmPreviewV301">—</div>
+    </div>
+
+    <div class="cm-footer cm-footer-v303">
+      <button type="button" class="cm-add cm-add-footer-v303" onclick="rmCurveMeasureAddPointV301()">＋ Додати точку</button>
+      <button type="button" class="cm-cancel" onclick="rmCurveMeasureCloseV301()">Скасувати</button>
+      <button type="button" class="cm-save" onclick="rmCurveMeasureSaveV301()">Застосувати</button>
+      <button type="button" class="cm-remove" id="cmRemoveV301" onclick="rmCurveMeasureRemoveV301()">Видалити криволінійну ділянку</button>
+    </div>
+  </div>
+</div>
+
+<script id="A·CEIL-curve-measure-points-v301" src="js/canvas/132-aceil-curve-measure-points-v301.js"></script>
+
+<script id="A·CEIL-curve-circle-geometry-v302" src="js/projects/133-aceil-curve-circle-geometry-v302.js"></script>
+
+<script id="A·CEIL-curve-hit-test-v304" src="js/canvas/134-aceil-curve-hit-test-v304.js"></script>
+
+<script id="A·CEIL-curve-fixed-ends-v305" src="js/projects/135-aceil-curve-fixed-ends-v305.js"></script>
+
+<script id="A·CEIL-light-rhombus-live-v307" src="js/canvas/136-aceil-light-rhombus-live-v307.js"></script>
+
+<script id="A·CEIL-light-rotation-live-v309" src="js/canvas/137-aceil-light-rotation-live-v309.js"></script>
+
+<div id="rmLinearLightingModalV317" aria-hidden="true">
+  <div class="rml-card">
+    <div class="rml-head">
+      <div class="rml-title">Лінійне освітлення</div>
+      <button type="button" class="rml-close" id="rmLinearLightingCloseV317">×</button>
+    </div>
+    <div class="rml-grid">
+      <button type="button" class="rml-btn" id="rmLinearLightingReadyV317">
+        <span class="rml-ic">◇</span>
+        <b>Готові фігури</b>
+        <small>Пряма, Г, П, квадрат, ромб</small>
+      </button>
+      <button type="button" class="rml-btn" id="rmLinearLightingFreeV317">
+        <span class="rml-ic">╱</span>
+        <b>Довільна форма</b>
+        <small>Побудова по точках з точними прив’язками</small>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script id="A·CEIL-linear-lighting-menu-v317" src="js/canvas/138-aceil-linear-lighting-menu-v317.js"></script>
+
+<div id="rmNewCeilingElementV318" aria-hidden="true">
+  <div class="rm-nce-card">
+    <div class="rm-nce-title">Новий елемент</div>
+    <div class="rm-nce-sub">Датчик, колонка, камера, вентиляція або будь-яка своя точка на стелі.</div>
+    <label>Назва</label>
+    <input id="rmNceNameV318" placeholder="Наприклад: Датчик руху">
+    <label>Позначка на плані</label>
+    <input id="rmNceIconV318" value="◉" maxlength="3">
+    <div class="rm-nce-presets">
+      <button type="button" onclick="rmNceIconV318('◉')">◉</button>
+      <button type="button" onclick="rmNceIconV318('◌')">◌</button>
+      <button type="button" onclick="rmNceIconV318('◆')">◆</button>
+      <button type="button" onclick="rmNceIconV318('◎')">◎</button>
+      <button type="button" onclick="rmNceIconV318('◍')">◍</button>
+      <button type="button" onclick="rmNceIconV318('✦')">✦</button>
+      <button type="button" onclick="rmNceIconV318('▣')">▣</button>
+      <button type="button" onclick="rmNceIconV318('●')">●</button>
+    </div>
+    <div class="rm-nce-actions">
+      <button type="button" onclick="rmCloseNewCeilingElementV318()" style="background:#f1f5f9;color:#475569">Скасувати</button>
+      <button type="button" class="rm-nce-save" onclick="rmSaveNewCeilingElementV318()">Створити і розмістити</button>
+    </div>
+  </div>
+</div>
+
+<script id="rm-ceiling-elements-v318" src="js/canvas/139-ceiling-elements-v318.js?v=20260923-catalog-safe-v5"></script>
+
+<section id="aceilAllDimsPanelV14" class="aceil-all-panel-v14" hidden>
+  <div class="aceil-all-head-v14">
+    <div>
+      <strong>📋 Усі розміри</strong>
+      <small>Активна стіна підсвічується червоним</small>
+    </div>
+    <span id="aceilAllCounterV14">1/1</span>
+    <button type="button" class="aceil-all-close-v14" onclick="closeAllSideInputsV14(false)">×</button>
+  </div>
+  <div id="allSideInputsContainerV14" class="aceil-all-list-v14"></div>
+  <div class="aceil-all-nav-v14">
+    <button type="button" id="aceilAllPrevV14">‹</button>
+    <div>Return / › — наступна стіна</div>
+    <button type="button" id="aceilAllNextV14">›</button>
+  </div>
+  <div class="aceil-all-actions-v14">
+    <button type="button" onclick="closeAllSideInputsV14(true)">Назад</button>
+    <button type="button" class="primary" onclick="applyAllSideInputsV14()">✓ Побудувати</button>
+  </div>
+</section>
+
+<script id="aceil-ceiling-catalog-safety-v1" defer src="js/canvas/176-ceiling-elements-catalog-safety-v1.js?v=20260924-restore"></script>
+<script id="aceil-ceiling-catalog-manager-v2" defer src="js/canvas/177-ceiling-elements-catalog-manager-v2.js?v=20260923-1"></script>
+
+<script id="rm-universal-autocount-v319" src="js/nomenclature/140-universal-autocount-v319.js?v=20260912-6"></script>
+
+<div id="rmNomNewItemV320" aria-hidden="true">
+  <div class="rmni-card">
+    <div class="rmni-head">
+      <div>
+        <div class="rmni-title">Новий товар</div>
+        <div class="rmni-sub">Створення позиції номенклатури</div>
+      </div>
+      <button type="button" class="rmni-x" onclick="rmCloseNomNewItemV320()">×</button>
+    </div>
+
+    <label>Назва товару</label>
+    <input id="rmNiNameV320" placeholder="Наприклад: Монтаж камери">
+
+    <div class="rmni-row">
+      <div>
+        <label>Одиниця</label>
+        <select id="rmNiUnitV320">
+          <option value="шт">шт</option>
+          <option value="м">м</option>
+          <option value="м.п.">м.п.</option>
+          <option value="м²">м²</option>
+        </select>
+      </div>
+      <div>
+        <label>Ціна за одиницю</label>
+        <input id="rmNiPriceV320" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
+      </div>
+    </div>
+
+    <label>Джерело автопідрахунку</label>
+    <select id="rmNiSourceV320">
+      <option value="">Автоматично по назві / вручну</option>
+    </select>
+    <div class="rmni-hint">
+      Наприклад: для «Монтаж камери» можна вибрати «Камера (кількість)».
+      Якщо нічого не вибрати, однакова назва «Камера» зв’яжеться автоматично.
+    </div>
+
+    <div class="rmni-actions">
+      <button type="button" onclick="rmCloseNomNewItemV320()" style="background:#f1f5f9;color:#475569">Скасувати</button>
+      <button type="button" class="rmni-save" onclick="rmSaveNomNewItemV320()">Створити</button>
+    </div>
+  </div>
+</div>
+
+<script id="rm-nom-new-item-v320" src="js/nomenclature/141-nom-new-item-v320.js"></script>
+
+<script id="rm-v325-wall-qty-vent-final" src="js/canvas/142-v325-wall-qty-vent-final.js"></script>
+
+<script id="rm-report-ceiling-elements-v326" src="js/reports/143-report-ceiling-elements-v326.js"></script>
+
+<script id="rm-custom-ceiling-coords-v327" src="js/rooms/144-custom-ceiling-coords-v327.js?v=20260902-1"></script>
+
+<script id="rm-cloud-first-v330" src="js/nomenclature/145-cloud-first-v330.js?v=20260903-5"></script>
+
+<script id="A·CEIL-report-discount-advance-v1" src="js/reports/146-aceil-report-discount-advance-v1.js?v=20260925-v28-no-duplicate"></script>
+
+<script id="A·CEIL-nomenclature-color-fix-v1" src="js/nomenclature/148-aceil-nomenclature-color-fix-v1.js"></script>
+
+<script id="A·CEIL-room-calc-isolation-v331" src="js/nomenclature/149-aceil-room-calc-isolation-v331.js?v=20260922-insert-v8"></script>
+<script id="A·CEIL-wall-color-autosource-v333" src="js/nomenclature/150-aceil-wall-color-autosource-v333.js"></script>
+
+<script id="A·CEIL-storage-audit-v340" src="js/projects/151-aceil-storage-audit-v340.js"></script>
+
+<div class="modal-overlay" id="rmSmartAlign347">
+ <div class="modal">
+   <div class="rm-sa-title">✦ Вирівняти по ескізу</div>
+   <div class="rm-sa-sub">Ви приблизно ставите світильники пальцем. A·CEIL вирівнює точки вже під час постановки: розпізнає ряди, робить рівний крок і підтягує відстані до стін до точних розмірів. Дизайн задаєте ви — точність робить A·CEIL.</div>
+   <div class="rm-sa-qty"><div><b>Скільки світильників?</b><small>Більше нічого налаштовувати не потрібно</small></div><input id="rmSaQty347" type="number" min="2" max="24" value="5" inputmode="numeric"></div>
+   <div class="rm-sa-actions"><button type="button" class="rm-sa-cancel" onclick="rmSa347Close()">Скасувати</button><button type="button" class="rm-sa-start" onclick="rmSa347Start()">Поставити точки</button></div>
+ </div>
+</div>
+
+<div id="rmSaHud347">
+ <div class="rm-sa-hud-card">
+   <div class="rm-sa-hud-main"><b>Приблизно вкажіть розташування</b><small>Ставте приблизно — точки вирівнюються одразу</small></div>
+   <div class="rm-sa-progress" id="rmSaProgress347">0 / 5</div>
+   <button type="button" class="rm-sa-hud-cancel" onclick="rmSa347Cancel()">×</button>
+ </div>
+</div>
+<div id="rmSaPreview347"></div>
+
+<div class="modal-overlay" id="rmSaConfirm347">
+ <div class="modal">
+   <div class="rm-sa-title">✓ A·CEIL вирівняв схему</div>
+   <div class="rm-sa-sub">Зелені точки — точне положення. Після збереження це звичайні світильники: їх можна рухати та редагувати.</div>
+   <div class="rm-sa-result" id="rmSaResult347"></div>
+   <div class="rm-sa-confirm-actions"><button type="button" class="rm-sa-retry" onclick="rmSa347Retry()">↻ Ще раз</button><button type="button" class="rm-sa-keep" onclick="rmSa347Apply()">✓ Залишити</button></div>
+ </div>
+</div>
+
+<script id="A·CEIL-smart-align-v347" src="js/projects/152-aceil-smart-align-v347.js?v=20260923-double-spot-2"></script>
+
+<script id="rm-wall-preset-order-v350" src="js/canvas/153-wall-preset-order-v350.js"></script>
+
+<script id="A·CEIL-light-menu-v351" src="js/canvas/154-aceil-light-menu-v351.js"></script>
+
+<script id="A·CEIL-light-clean-v353" src="js/rooms/155-aceil-light-clean-v353.js?v=20260923-double-spot-2"></script>
+
+<script id="rm-light-ref-v356" src="js/rooms/156-light-ref-v356.js?v=20260908-1"></script>
+
+<script id="rm-clean-modes-v357" src="js/canvas/157-clean-modes-v357.js"></script>
+
+<script id="rm-sketch-only-v359" src="js/reports/158-sketch-only-v359.js"></script>
+
+<script id="A-CEIL-access-clean-v2" src="js/admin/159-aceil-access-clean-v2.js?v=20260929-multitenant1"></script>
+<script id="A-CEIL-user-activity" src="js/admin/user-activity.js?v=rc13"></script>
+
+<script id="A-CEIL-cloud-html-report-v2" src="js/reports/160-aceil-cloud-html-report-v2.js"></script>
+
+<script id="A-CEIL-save-memory-roomprice-fix-v1" src="js/projects/161-aceil-save-memory-roomprice-fix-v1.js"></script>
+
+<script id="A-CEIL-manager-report-v2" src="js/reports/162-aceil-manager-report-v2.js?v=20260917-final1"></script>
+
+<script id="A-CEIL-price-stability-v2" src="js/nomenclature/163-aceil-price-stability-v2.js"></script>
+
+<script id="A-CEIL-elements-open-readonly-v1" src="js/nomenclature/164-aceil-elements-open-readonly-v1.js"></script>
+
+<link rel="stylesheet" href="assets/aceil-wall-menu-simplify-v1.css?v=20260912-2"><link rel="stylesheet" href="assets/aceil-desktop-polish-v1.css?v=20260918-1"><link rel="stylesheet" href="assets/aceil-desktop-reference-v2.css?v=8"><link rel="stylesheet" href="assets/aceil-ultrawide-21x9-v1.css?v=20260928-1">
+<script id="aceil-color-catalog-v2" src="js/nomenclature/165-aceil-color-catalog-v2.js?v=20260911-4"></script>
+<script id="aceil-color-picker-v3" src="js/nomenclature/167-aceil-color-picker-v3.js?v=20260914-1"></script>
+<script id="aceil-desktop-sidebar-v1" src="js/nomenclature/168-aceil-desktop-sidebar-v1.js?v=20260905-pc7"></script>
+<script id="aceil-wall-placement-restore-v1" src="js/canvas/169-aceil-wall-placement-restore-v1.js?v=20260911-2"></script>
+<script id="aceil-wall-menu-simplify-v1" src="js/canvas/185-aceil-wall-menu-simplify-v1.js?v=20260912-2"></script>
+<script id="aceil-autocount-menu-v1" src="js/nomenclature/170-aceil-autocount-menu-v1.js?v=20260911-8"></script>
+<script id="aceil-offline-nomenclature-v1" src="js/nomenclature/171-aceil-offline-nomenclature-v1.js?v=20260929-multitenant1"></script>
+<script id="aceil-plan-report-pwa-v1" src="js/reports/172-aceil-plan-report-pwa-v1.js?v=20260917-final1"></script>
+<script id="aceil-wall-elements-persistence-v2" src="js/projects/173-aceil-wall-elements-persistence-v2.js?v=20260923-resurrection-fix"></script>
+<script id="aceil-overall-dims-and-light-colors-fix-v1" src="js/canvas/174-aceil-overall-dims-and-light-colors-fix-v1.js?v=20260923-double-spot-1"></script>
+<script id="aceil-side-input-stepper-v1" src="js/canvas/175-aceil-side-input-stepper-v1.js?v=20260924-v18"></script>
+<script id="aceil-insert-choice-guard-v1" src="js/nomenclature/177-aceil-insert-choice-guard-v1.js?v=20260922-insert-v8"></script>
+<script id="aceil-google-oauth-canonical-v1" src="js/admin/178-aceil-google-oauth-canonical-v1.js?v=20260909-1"></script>
+<script id="aceil-offline-shell-v1">
+(function(){
+  "use strict";
+  if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
+  window.addEventListener("load",function(){
+    var updateKey="aceil-pwa-update-20260917-final2";
+    navigator.serviceWorker.addEventListener("message",function(event){
+      if(!event.data||event.data.type!=="A_CEIL_UPDATE_READY"||sessionStorage.getItem(updateKey))return;
+      sessionStorage.setItem(updateKey,"1");
+      location.reload();
+    });
+    navigator.serviceWorker.addEventListener("controllerchange",function(){
+      if(sessionStorage.getItem(updateKey))return;
+      sessionStorage.setItem(updateKey,"1");
+      location.reload();
+    });
+      navigator.serviceWorker.register("/sw.js?v=20260930-admin-compact-v1",{scope:"/"}).then(function(reg){
+      reg.update().catch(function(){});
+    }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
+  },{once:true});
+})();
+</script>
+
+<script id="A-CEIL-wall-elements-parallel-lanes-20260828" src="js/canvas/wall-elements-parallel.js"></script>
+
+<div id="aceilAdminModal" class="aceil-admin-overlay" aria-hidden="true">
+  <div class="aceil-admin-sheet">
+    <div class="aceil-admin-head">
+      <div><div class="aceil-admin-title"><svg class="aceil-title-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.2.38.55.72 1 .9.34.15.72.22 1.1.2h.1v4h-.1a1.7 1.7 0 0 0-1.1.4 1.7 1.7 0 0 0-1 1z"/></svg>Адміністрування</div><div class="aceil-admin-sub">Користувачі та права доступу A·CEIL</div></div>
+      <button type="button" class="aceil-admin-x" aria-label="Закрити адміністрування" onclick="A_CEIL_Admin.close()">×</button>
+    </div>
+    <div class="aceil-admin-body">
+      <div class="aceil-admin-tabs">
+        <button type="button" class="active" data-tab="users" onclick="A_CEIL_Admin.showTab('users',this)"><svg class="aceil-svg" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> <span>Користувачі</span></button>
+        <button type="button" data-tab="activity" onclick="A_CEIL_Admin.showTab('activity',this)"><svg class="aceil-svg" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg> <span>Активність</span></button>
+      </div>
+      <div id="aceilUsersPane">
+        <div id="aceilAdminSummary"></div>
+        <div class="aceil-admin-actionbar"><div class="aceil-admin-section-title">Керування доступом</div><button type="button" class="aceil-admin-refresh2" onclick="A_CEIL_Admin.load()">↻ Оновити</button></div>
+        <div id="aceilAdminContent"><div class="aceil-admin-note">Завантаження…</div></div>
+      </div>
+      <div id="aceilActivityPane" class="aceil-tab-pane" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<script id="A-CEIL-admin-v2" src="js/admin/167-aceil-admin-v2.js?v=20260930-admin-compact1"></script>
+<script src="js/canvas/188-wall-dimensions-panel.js?v=20260930-cockpit-dims3"></script>
+<script id="A-CEIL-estimate-variants-ui-v1" src="js/reports/184-aceil-estimate-variants-ui-v1.js?v=20260923-clean-final"></script>
+<script id="A-CEIL-projects-menu-clean-v1" src="js/projects/186-aceil-projects-menu-clean-v1.js?v=20260912-1"></script>
+<script id="A-CEIL-ceiling-cornices-v1" src="js/canvas/187-aceil-ceiling-cornices-v1.js?v=20260915-2"></script><script id="A-CEIL-canvas-hidpi-v1" src="js/canvas/220-aceil-canvas-hidpi-v1.js?v=20260916-1"></script>
+<script id="A-CEIL-password-reset-v2" src="js/auth/200-aceil-password-reset-v2.js?v=20260917-1"></script>
+<script id="A-CEIL-report-links-v2" src="js/reports/201-aceil-report-links-v2.js?v=20260923-clean-phase3"></script>
+<script id="A-CEIL-project-crm-v2" src="js/projects/210-aceil-project-crm-v2.js?v=20260917-report-badge"></script>
+<script id="A-CEIL-film-group-state-fix-v1" src="js/nomenclature/212-aceil-film-group-state-fix-v1.js?v=20260917-2"></script>
+
+<script id="A-CEIL-final-health">
+(function(){
+  window.A_CEIL_CleanHealth=function(){
+    var q=function(id){return !!document.getElementById(id)};
+    var checks={
+      version:"CLEAN-FINAL-20260828",
+      domReady:document.readyState,
+      supabaseGlobal:typeof window.supabase!=="undefined",
+      supabaseClient:typeof window._sb!=="undefined" && !!window._sb,
+      authScreen:q("authScreen"),
+      authButton:q("authBtn"),
+      googleButton:q("googleAuthBtn"),
+      projectsApi:typeof window.getProjects==="function",
+      saveApi:typeof window.saveState==="function",
+      reportApi:typeof window.openReport==="function" || typeof window.generateReport==="function",
+      adminApi:!!window.A_CEIL_Admin,
+      projectRepository:!!(window.ProjectRepository||(window.A·CEIL&&window.A·CEIL.ProjectRepository)),
+      roomDelete:typeof window.deleteActiveRoom==="function" || typeof window.deleteRoom==="function",
+      wallMarks:typeof window.drawWallMarks==="function" || typeof drawWallMarks==="function",
+      measureConfidence:!!window.A·CEILMeasureConfidence,
+      debugPanel:!!(window.A·CEIL&&window.A·CEIL.DebugPanel),
+      accessLayer:!!(window.A·CEIL&&window.A·CEIL.Access) || typeof window.A_CEIL_HydrateAfterPasswordLogin==="function"
+    };
+    checks.ok=Object.keys(checks).filter(function(k){return typeof checks[k]==="boolean"}).every(function(k){return checks[k]});
+    try{console.table(checks)}catch(e){}
+    return checks;
+  };
+  window.__A_CEIL_FINAL__="20260828";
+})();
+</script>
+
+<style id="A-CEIL-final-guard">
+/* FINAL guard: keep measurement-confidence logic callable but hide its floating button. */
+#rmMeasureConfidenceBtn,.measure-confidence-fab,.mc-fab{display:none!important}
+</style>
+
+<script id="A-CEIL-final-runtime-guard">
+(function(){
+  'use strict';
+  var TEST_HOST_RE=/\.vercel\.app$/i;
+  function addBadge(){ /* UI2 RC3: visible test badge removed */ }
+  function hideLegacyFloaters(){
+    var candidates=[
+      '[id*=confidence][style*=fixed]','[class*=confidence][style*=fixed]',
+      '#rmMeasureConfidenceBtn'
+    ];
+    candidates.forEach(function(sel){
+      document.querySelectorAll(sel).forEach(function(el){
+        var t=(el.textContent||'').trim();
+        if(el.id==='rmMeasureConfidenceBtn'||/перевірка заміру/i.test(t))el.style.setProperty('display','none','important');
+      });
+    });
+  }
+  function cloudRetry(){
+    if(!TEST_HOST_RE.test(location.hostname))return;
+    try{
+      if(!window._sbUser||!window._sb)return;
+      var ps=(typeof window.getProjects==='function'?window.getProjects():[]);
+      var needsProjects=!Array.isArray(ps)||ps.length===0;
+      var needsNom=!window._nomenCloudLoaded;
+      if((needsProjects||needsNom)&&typeof window.loadProjectsFromCloud==='function'){
+        Promise.resolve(window.loadProjectsFromCloud()).catch(function(){});
+      }
+    }catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){addBadge();hideLegacyFloaters();},{once:true});
+  else {addBadge();hideLegacyFloaters();}
+  setTimeout(hideLegacyFloaters,800);
+  setTimeout(cloudRetry,1800);
+  setTimeout(cloudRetry,6000);
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible'){setTimeout(addBadge,0);setTimeout(hideLegacyFloaters,100);setTimeout(cloudRetry,600);}
+  });
+})();
+</script>
+
+<script id="A-CEIL-plan-viewer-v2-inline">
+(function(){
+'use strict';
+if(window.ACEILPlanViewerV1)return;
+window.ACEILPlanViewerV1=true;
+var state={url:null,type:null,scale:1,x:0,y:0,rot:0,pointers:new Map(),pinch:null};
+function el(id){return document.getElementById(id)}
+function svg(name){var m={upload:'<path d="M12 16V4m0 0-4 4m4-4 4 4M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>',close:'<path d="M6 6l12 12M18 6 6 18"/>',plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',fit:'<path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/>',rotate:'<path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7"/>',trash:'<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/>',plan:'<path d="M4 4h16v16H4zM4 10h10M10 4v6M14 10v10"/>'};return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+m[name]+'</svg>'}
+function inject(){if(el('aceilPlanViewer'))return;
+ var st=document.createElement('style');st.id='aceilPlanViewerStyle';st.textContent=`
+#aceilPlanViewer{position:fixed;inset:0;z-index:30000;background:#f6f8fb;color:#172033;display:none;font-family:inherit;overscroll-behavior:none}
+#aceilPlanViewer.is-open{display:flex;flex-direction:column}.apv-head{height:58px;padding:env(safe-area-inset-top) 12px 0;box-sizing:content-box;background:#fff;border-bottom:1px solid #e7ebf1;display:flex;align-items:center;gap:10px;flex:0 0 auto}.apv-title{min-width:0;flex:1}.apv-title b{font-size:16px;display:block}.apv-title small{font-size:11px;color:#7b8798}.apv-ib{width:40px;height:40px;border:0;border-radius:12px;background:#f1f4f8;color:#344054;display:grid;place-items:center}.apv-ib svg{width:20px;height:20px}.apv-main{position:relative;flex:1;min-height:0;overflow:hidden;background:#e9edf3}.apv-stage{position:absolute;inset:0;overflow:hidden;touch-action:none;user-select:none}.apv-media{position:absolute;left:50%;top:50%;transform-origin:center center;max-width:none;max-height:none;box-shadow:0 12px 40px rgba(20,30,50,.18);background:#fff}.apv-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:28px}.apv-empty-card{max-width:390px;width:100%;background:#fff;border:1px solid #e1e6ee;border-radius:22px;padding:26px 20px;text-align:center;box-shadow:0 14px 40px rgba(31,41,55,.08)}.apv-empty-ico{width:66px;height:66px;margin:0 auto 15px;border-radius:20px;background:#eef5ff;color:#2873e8;display:grid;place-items:center}.apv-empty-ico svg{width:34px;height:34px}.apv-empty h3{margin:0 0 7px;font-size:19px}.apv-empty p{margin:0 0 18px;color:#738094;font-size:13px;line-height:1.45}.apv-primary{border:0;border-radius:14px;padding:13px 18px;background:#246fe5;color:#fff;font-weight:800;font-size:14px;display:inline-flex;align-items:center;gap:8px}.apv-primary svg{width:18px;height:18px}.apv-tools{position:absolute;right:12px;bottom:14px;display:flex;gap:7px;background:rgba(255,255,255,.94);padding:6px;border-radius:15px;box-shadow:0 8px 24px rgba(25,35,55,.14);backdrop-filter:blur(12px)}.apv-tools button{width:39px;height:39px;border:0;border-radius:10px;background:transparent;color:#344054;display:grid;place-items:center}.apv-tools button:active{background:#edf2f7}.apv-tools svg{width:19px;height:19px}.apv-foot{padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid #e7ebf1;display:flex;gap:8px;align-items:center}.apv-file{flex:1;min-width:0}.apv-file b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.apv-file small{color:#8490a1;font-size:10px}.apv-foot button{border:0;border-radius:12px;padding:10px 12px;font-weight:750;background:#f1f4f8;color:#344054}.apv-foot .danger{color:#c73a3a;background:#fff0f0}.apv-pdf{width:min(92vw,1000px);height:min(82vh,1200px);border:0}.apv-hint{position:absolute;left:12px;top:12px;background:rgba(20,29,43,.74);color:#fff;padding:7px 10px;border-radius:10px;font-size:11px;pointer-events:none;backdrop-filter:blur(8px)}
+@media(min-width:760px){.apv-head{padding-left:20px;padding-right:20px}.apv-tools{right:20px;bottom:20px}.apv-foot{padding-left:20px;padding-right:20px}.apv-empty-card{padding:34px}}
+`;
+ document.head.appendChild(st);
+ var d=document.createElement('div');d.id='aceilPlanViewer';d.innerHTML=`<div class="apv-head"><button class="apv-ib" id="apvClose" aria-label="Закрити">${svg('close')}</button><div class="apv-title"><b>Прорахунок з плану</b><small>Перегляд обмірного плану</small></div><button class="apv-ib" id="apvPickTop" aria-label="Завантажити план">${svg('upload')}</button></div><div class="apv-main"><div class="apv-stage" id="apvStage"></div><div class="apv-empty" id="apvEmpty"><div class="apv-empty-card"><div class="apv-empty-ico">${svg('plan')}</div><h3>Додайте обмірний план</h3><p>Фото, скріншот або PDF. План відкриється окремо від канваса — його можна збільшувати, рухати та повертати.</p><button class="apv-primary" id="apvPick">${svg('upload')} Вибрати план</button></div></div><div class="apv-hint" id="apvHint" style="display:none">Два пальці — масштаб · один — переміщення</div><div class="apv-tools" id="apvTools" style="display:none"><button id="apvMinus" aria-label="Зменшити">${svg('minus')}</button><button id="apvPlus" aria-label="Збільшити">${svg('plus')}</button><button id="apvFit" aria-label="Вмістити">${svg('fit')}</button><button id="apvRotate" aria-label="Повернути">${svg('rotate')}</button></div></div><div class="apv-foot" id="apvFoot" style="display:none"><div class="apv-file"><b id="apvName">План</b><small id="apvMeta">Готовий до перегляду</small></div><button id="apvChange">Замінити</button><button class="danger" id="apvRemove">Видалити</button></div><input id="apvInput" type="file" accept="image/*,application/pdf,.pdf" hidden>`;
+ document.body.appendChild(d);
+ bind();
+}
+function media(){return el('apvMedia')}
+function apply(){var m=media();if(!m)return;m.style.transform='translate(calc(-50% + '+state.x+'px),calc(-50% + '+state.y+'px)) scale('+state.scale+') rotate('+state.rot+'deg)'}
+function resetView(){state.scale=1;state.x=0;state.y=0;state.rot=0;requestAnimationFrame(function(){fit()})}
+function fit(){var m=media(),s=el('apvStage');if(!m||!s)return;if(state.type==='pdf'){state.scale=1;state.x=0;state.y=0;state.rot=0;apply();return}var w=m.naturalWidth||m.clientWidth,h=m.naturalHeight||m.clientHeight;if(!w||!h)return;var r=s.getBoundingClientRect(),sw=(r.width-28)/w,sh=(r.height-28)/h;state.scale=Math.min(sw,sh,1.2);state.x=0;state.y=0;apply()}
+function clearMedia(){var m=media();if(m)m.remove();if(state.url){URL.revokeObjectURL(state.url);state.url=null}state.type=null;el('apvEmpty').style.display='flex';el('apvTools').style.display='none';el('apvFoot').style.display='none';el('apvHint').style.display='none'}
+function load(file){if(!file)return;clearMedia();state.url=URL.createObjectURL(file);state.type=file.type==='application/pdf'||/\.pdf$/i.test(file.name)?'pdf':'image';var m;if(state.type==='pdf'){m=document.createElement('iframe');m.src=state.url;m.className='apv-media apv-pdf';m.title='Обмірний план PDF'}else{m=document.createElement('img');m.src=state.url;m.className='apv-media';m.alt='Обмірний план';m.draggable=false;m.onload=resetView}m.id='apvMedia';el('apvStage').appendChild(m);el('apvEmpty').style.display='none';el('apvTools').style.display=state.type==='image'?'flex':'none';el('apvHint').style.display=state.type==='image'?'block':'none';el('apvFoot').style.display='flex';el('apvName').textContent=file.name||'Обмірний план';el('apvMeta').textContent=state.type==='pdf'?'PDF · перегляд':'Зображення · масштаб і переміщення';if(state.type==='pdf'){state.scale=1;state.x=0;state.y=0;state.rot=0;apply()}}
+function bind(){var input=el('apvInput'),stage=el('apvStage');function pick(){input.value='';input.click()}el('apvPick').onclick=pick;el('apvPickTop').onclick=pick;el('apvChange').onclick=pick;input.onchange=function(){load(input.files&&input.files[0])};el('apvClose').onclick=close;el('apvRemove').onclick=function(){if(confirm('Прибрати завантажений план?'))clearMedia()};el('apvPlus').onclick=function(){state.scale=Math.min(8,state.scale*1.18);apply()};el('apvMinus').onclick=function(){state.scale=Math.max(.08,state.scale/1.18);apply()};el('apvFit').onclick=fit;el('apvRotate').onclick=function(){state.rot=(state.rot+90)%360;fit()};
+ stage.addEventListener('pointerdown',function(e){if(state.type!=='image')return;stage.setPointerCapture(e.pointerId);state.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(state.pointers.size===2){var a=[...state.pointers.values()];state.pinch={dist:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),scale:state.scale}}});
+ stage.addEventListener('pointermove',function(e){if(state.type!=='image'||!state.pointers.has(e.pointerId))return;var old=state.pointers.get(e.pointerId);state.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(state.pointers.size===1){state.x+=e.clientX-old.x;state.y+=e.clientY-old.y;apply()}else if(state.pointers.size===2){var a=[...state.pointers.values()],dist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);if(state.pinch&&state.pinch.dist)state.scale=Math.max(.08,Math.min(8,state.pinch.scale*dist/state.pinch.dist));apply()}});
+ function up(e){state.pointers.delete(e.pointerId);if(state.pointers.size<2)state.pinch=null}stage.addEventListener('pointerup',up);stage.addEventListener('pointercancel',up);
+ stage.addEventListener('wheel',function(e){if(state.type!=='image')return;e.preventDefault();state.scale=Math.max(.08,Math.min(8,state.scale*(e.deltaY<0?1.1:.9)));apply()},{passive:false});
+}
+function open(){inject();el('aceilPlanViewer').classList.add('is-open');document.documentElement.style.overflow='hidden';document.body.style.overflow='hidden'}
+function close(){var v=el('aceilPlanViewer');if(v)v.classList.remove('is-open');document.documentElement.style.overflow='';document.body.style.overflow=''}
+window.ACEILOpenPlanViewer=open;window.ACEILClosePlanViewer=close;
+function addTile(){var panel=el('A·CEILToolPanel');if(!panel||el('aceilPlanTile'))return;var btn=document.createElement('button');btn.className='tile-btn';btn.id='aceilPlanTile';btn.onclick=open;btn.style.background='linear-gradient(145deg,#eef6ff,#f7fbff)';btn.innerHTML='<div class="tile-icon" style="background:rgba(37,99,235,.10);color:#2563eb">'+svg('plan')+'</div><div class="tile-btn-label" style="color:#1e293b">План</div><div class="tile-sub" style="color:#64748b">Фото / PDF</div>';
+ var report=[...panel.querySelectorAll('button')].find(function(b){return /Звіт/.test(b.textContent||'')});if(report)panel.insertBefore(btn,report);else panel.appendChild(btn)}
+function boot(){inject();addTile();setTimeout(addTile,700);setTimeout(addTile,1800)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+
+</script>
+
+<script id="A-CEIL-plan-import-in-figure-v3">
+(function(){
+  'use strict';
+
+  function esc(s){ return String(s||'').replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);}); }
+
+  function findFigureTile(){
+    var panel=document.getElementById('A-CEILToolPanel')||document;
+    var els=panel.querySelectorAll('button,[role="button"],.tool-card,.tool-tile,.card,[onclick]');
+    for(var i=0;i<els.length;i++){
+      var t=(els[i].innerText||els[i].textContent||'').trim().toLowerCase();
+      if(t.indexOf('фігура')!==-1 || t.indexOf('figure')!==-1) return els[i];
+    }
+    return null;
+  }
+
+  function openPlanViewer(){
+    if(typeof window.ACEILOpenPlanViewer==='function'){
+      window.ACEILOpenPlanViewer();
+      return;
+    }
+    // One retry in case DOM boot is still finishing.
+    setTimeout(function(){
+      if(typeof window.ACEILOpenPlanViewer==='function'){
+        window.ACEILOpenPlanViewer();
+      } else {
+        console.error('[A·CEIL] Plan Viewer API is unavailable');
+      }
+    },120);
+  }
+
+  function showMenu(tile){
+    var old=document.getElementById('A-CEIL-figure-source-menu');
+    if(old) old.remove();
+
+    var overlay=document.createElement('div');
+    overlay.id='A-CEIL-figure-source-menu';
+    overlay.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(13,24,45,.28);display:flex;align-items:flex-end;justify-content:center;padding:16px;box-sizing:border-box;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);';
+
+    var sheet=document.createElement('div');
+    sheet.style.cssText='width:min(560px,100%);background:#fff;border-radius:24px;padding:18px;box-shadow:0 18px 60px rgba(0,0,0,.22);font-family:inherit;color:#10213e;';
+    sheet.innerHTML=
+      '<div style="font-weight:800;font-size:20px;margin:2px 4px 14px">Створити приміщення</div>'+
+      '<button data-choice="manual" style="width:100%;border:1px solid #e1e8f2;background:#fff;border-radius:16px;padding:16px;text-align:left;font:inherit;font-weight:750;font-size:17px;color:#10213e;margin-bottom:10px">▭ Прямокутник / коло<div style="font-size:13px;font-weight:500;color:#8290a6;margin-top:3px">Намалювати вручну як зараз</div></button>'+
+      '<button data-choice="plan" style="width:100%;border:1px solid #dbe7ff;background:#f6f9ff;border-radius:16px;padding:16px;text-align:left;font:inherit;font-weight:800;font-size:17px;color:#1457d9;margin-bottom:10px">⌗ Імпорт плану<div style="font-size:13px;font-weight:500;color:#7183a0;margin-top:3px">Фото / креслення / PDF</div></button>'+
+      '<button data-choice="cancel" style="width:100%;border:0;background:#f2f5f9;border-radius:16px;padding:14px;font:inherit;font-weight:750;color:#53647d">Скасувати</button>';
+    overlay.appendChild(sheet);
+    document.body.appendChild(overlay);
+
+    sheet.querySelector('[data-choice="manual"]').onclick=function(){
+      overlay.remove();
+      // Execute original Figure behavior once.
+      tile.__aceilBypass=true;
+      tile.click();
+      setTimeout(function(){tile.__aceilBypass=false;},0);
+    };
+    sheet.querySelector('[data-choice="plan"]').onclick=function(){
+      overlay.remove();
+      openPlanViewer();
+    };
+    sheet.querySelector('[data-choice="cancel"]').onclick=function(){overlay.remove();};
+    overlay.addEventListener('click',function(e){if(e.target===overlay) overlay.remove();});
+  }
+
+  function wire(){
+    var tile=findFigureTile();
+    if(!tile || tile.__aceilFigureImportWired) return false;
+    tile.__aceilFigureImportWired=true;
+    tile.addEventListener('click',function(e){
+      if(tile.__aceilBypass) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      showMenu(tile);
+    },true);
+    return true;
+  }
+
+  if(!wire()){
+    var tries=0, timer=setInterval(function(){
+      tries++;
+      if(wire()||tries>40) clearInterval(timer);
+    },250);
+  }
+})();
+</script>
+
+<script id="A-CEIL-hide-standalone-plan-tile-v4">
+(function(){
+  function hidePlanTile(){
+    var b=document.getElementById('aceilPlanTile');
+    if(b){ b.style.display='none'; b.setAttribute('aria-hidden','true'); }
+  }
+  hidePlanTile();
+  document.addEventListener('DOMContentLoaded',hidePlanTile,{once:true});
+  setTimeout(hidePlanTile,800);
+  setTimeout(hidePlanTile,2000);
+})();
+</script>
+
+</body>
+</html>
