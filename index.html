@@ -38,6 +38,7 @@
 <script id="A·CEIL-lang-pl-inline" src="js/auth/016-aceil-lang-pl-inline.js"></script>
 
 <link rel="stylesheet" href="assets/ui2.css?v=20260924-v18"><link rel="stylesheet" href="assets/aceil-color-desktop-v1.css?v=20260912-1">
+<link rel="stylesheet" href="assets/admin-compact.css?v=20260930-admin-compact-v2" id="A-CEIL-admin-compact-css">
 <style id="aceil-all-split-v14-css">
 /* REAL split screen: this panel is not a modal and does not cover/dim the canvas. */
 .aceil-all-panel-v14{display:none}
@@ -706,7 +707,7 @@ body.aceil-all-split-v14 .canvas-container{
   "use strict";
   if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
   window.addEventListener("load",function(){
-    var updateKey="aceil-pwa-update-20260917-final2";
+    var updateKey="aceil-pwa-update-20260930-admin-compact-v2";
     navigator.serviceWorker.addEventListener("message",function(event){
       if(!event.data||event.data.type!=="A_CEIL_UPDATE_READY"||sessionStorage.getItem(updateKey))return;
       sessionStorage.setItem(updateKey,"1");
@@ -717,7 +718,7 @@ body.aceil-all-split-v14 .canvas-container{
       sessionStorage.setItem(updateKey,"1");
       location.reload();
     });
-      navigator.serviceWorker.register("/sw.js?v=20260930-cockpit-dims-v3",{scope:"/"}).then(function(reg){
+      navigator.serviceWorker.register("/sw.js?v=20260930-admin-compact-v2",{scope:"/"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
@@ -729,7 +730,7 @@ body.aceil-all-split-v14 .canvas-container{
 <div id="aceilAdminModal" class="aceil-admin-overlay" aria-hidden="true">
   <div class="aceil-admin-sheet">
     <div class="aceil-admin-head">
-      <div><div class="aceil-admin-title"><svg class="aceil-title-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.2.38.55.72 1 .9.34.15.72.22 1.1.2h.1v4h-.1a1.7 1.7 0 0 0-1.1.4 1.7 1.7 0 0 0-1 1z"/></svg>Адміністрування</div><div class="aceil-admin-sub">Користувачі та права доступу A·CEIL</div></div>
+      <div><div class="aceil-admin-title"><svg class="aceil-title-icon" viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-5"/></svg>Адміністрування</div><div class="aceil-admin-sub">Користувачі та права доступу A·CEIL</div></div>
       <button type="button" class="aceil-admin-x" onclick="A_CEIL_Admin.close()">×</button>
     </div>
     <div class="aceil-admin-body">
@@ -747,7 +748,7 @@ body.aceil-all-split-v14 .canvas-container{
   </div>
 </div>
 
-<script id="A-CEIL-admin-v2" src="js/admin/167-aceil-admin-v2.js?v=20260930-cockpit-dims3"></script>
+<script id="A-CEIL-admin-v2" src="js/admin/167-aceil-admin-v2.js?v=20260930-admin-compact-v2"></script>
 <script src="js/canvas/188-wall-dimensions-panel.js?v=20260930-cockpit-dims3"></script>
 <script id="A-CEIL-estimate-variants-ui-v1" src="js/reports/184-aceil-estimate-variants-ui-v1.js?v=20260923-clean-final"></script>
 <script id="A-CEIL-projects-menu-clean-v1" src="js/projects/186-aceil-projects-menu-clean-v1.js?v=20260912-1"></script>
