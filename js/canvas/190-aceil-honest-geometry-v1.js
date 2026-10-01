@@ -221,7 +221,7 @@
       var area=polygonArea(realPts),areaEl2=document.getElementById("area");
       if(areaEl2)areaEl2.textContent=(area/1e4).toFixed(2);
       var stats=angleStats(source,pts),tolerance=Math.max(2,Math.max(beforeClosure.enteredCm,beforeClosure.impliedCm)*.012);
-      var changed=beforeClosure.diffCm>tolerance||stats.maxChange>3;
+      var changed=!solved.exactOrthogonal&&(beforeClosure.diffCm>tolerance||stats.maxChange>3);
       var result={
         invalid:solved.maxErrorCm>1.5,
         closureBefore:beforeClosure,
@@ -256,7 +256,7 @@
   }
 
   window.A_CEIL_HonestGeometry={
-    version:"1.1",
+    version:"1.2",
     solve:solveClosedPolygon,
     solveExactOrthogonal:solveExactOrthogonal,
     closure:legacyClosure,
