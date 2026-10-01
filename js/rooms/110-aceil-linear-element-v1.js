@@ -528,6 +528,7 @@
   };
   function applyLinearNomenclature(){
     try{
+      if(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==='function'&&!window.A_CEIL_AutoCount.isEnabled())return 0;
       if(typeof elemItems==='undefined'||!Array.isArray(elemItems))return 0;
       var sum=window.linearElementsSummary(),updated=0;
       elemItems.forEach(function(it){
