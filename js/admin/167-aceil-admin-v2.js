@@ -24,7 +24,7 @@ function legacyTopAdminButton(){
   dock.id="A_CEIL_OwnerAdminDock";
   dock.className="aceil-owner-admin-dock";
   dock.style.cssText="width:100%;max-width:1200px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;";
-  dock.innerHTML='<button type="button" id="A_CEIL_OwnerAdminButton" class="aceil-owner-admin-button" aria-label="Відкрити адміністрування"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z"></path><path d="m9 12 2 2 4-5"></path></svg><span>Адміністрування</span></button>';
+  dock.innerHTML='<button type="button" id="A_CEIL_OwnerAdminButton" class="aceil-owner-admin-button" aria-label="Відкрити адміністрування"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 19 6v5.1c0 4.4-2.7 7.7-7 9.7-4.3-2-7-5.3-7-9.7V6l7-2.8Z"></path><circle cx="12" cy="10" r="2.1"></circle><path d="M8.8 16.1c.8-1.7 1.9-2.5 3.2-2.5s2.4.8 3.2 2.5"></path></svg><span>Адміністрування</span></button>';
   var button=dock.querySelector("button");
   button.style.cssText="width:auto;min-width:0;min-height:40px;height:40px;padding:0 15px;border:1px solid rgba(99,102,241,.20);border-radius:15px;background:rgba(255,255,255,.88);color:#334155;box-shadow:0 8px 22px rgba(15,23,42,.08);display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:900;line-height:1;";
   var icon=button.querySelector("svg");
@@ -66,7 +66,7 @@ function ensureCockpitAdminButton(){
   button=document.createElement("button");
   button.type="button";button.id="A_CEIL_OwnerAdminButton";button.className="aceil-head-action aceil-head-admin";
   button.title="Адміністрування";button.setAttribute("aria-label","Адміністрування");
-  button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-5"/></svg>';
+  button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 19 6v5.1c0 4.4-2.7 7.7-7 9.7-4.3-2-7-5.3-7-9.7V6l7-2.8Z"/><circle cx="12" cy="10" r="2.1"/><path d="M8.8 16.1c.8-1.7 1.9-2.5 3.2-2.5s2.4.8 3.2 2.5"/></svg>';
   button.onclick=function(){window.A_CEIL_Admin.open()};
   actions.insertBefore(button,actions.firstChild);
   return button;
