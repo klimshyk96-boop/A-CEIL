@@ -62,6 +62,7 @@
     films.forEach(function(it){it.filmSelected=it===chosen;});
   }
   function forceFilmQuantity(){
+    if(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==="function"&&!window.A_CEIL_AutoCount.isEnabled())return;
     repairFilmSelection();var films=runtimeElemItems().filter(function(it){return it&&Number(it.filmWidth)>0;}),needed=0,area=0;if(!films.length)return;
     try{needed=Number(typeof getRequiredFilmWidthMeters==="function"?getRequiredFilmWidthMeters():window.getRequiredFilmWidthMeters&&window.getRequiredFilmWidthMeters())||0;}catch(e){}
     try{area=Number(typeof getProjectAreaMeters==="function"?getProjectAreaMeters():window.getProjectAreaMeters&&window.getProjectAreaMeters())||0;}catch(e){}
@@ -74,6 +75,7 @@
   function wrapFilmAutoFill(){
     var previous=window.autoFillNomenclature;if(typeof previous!=="function"||previous.__ceilingFilmFix)return;
     var wrapped=function(){
+      if(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==="function"&&!window.A_CEIL_AutoCount.isEnabled())return;
       repairFilmSelection();var oldWindowToast=window.showToast,oldLexicalToast=null;
       var filteredToast=function(message){if(/Кілька рулонів однакової ширини/i.test(String(message||"")))return;return typeof oldWindowToast==="function"?oldWindowToast.apply(this,arguments):undefined;};
       window.showToast=filteredToast;try{oldLexicalToast=showToast;showToast=filteredToast;}catch(e){}
