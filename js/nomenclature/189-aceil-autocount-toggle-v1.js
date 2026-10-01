@@ -70,13 +70,11 @@
   }
   function installToggle(){
     installStyles();
-    var modal=gid("elementsModal");if(!modal)return false;
+    var modal=gid("elementsModal"),host=gid("elemManageAutoCountMount");if(!modal||!host)return false;
     if(gid("aceilAutoCountMaster")){syncUI();return true}
-    var card=modal.firstElementChild,header=card&&card.firstElementChild;
-    if(!header)return false;
     var row=document.createElement("div");row.id="aceilAutoCountMaster";
     row.innerHTML='<span id="aceilAutoCountMasterCopy"><b>Автопрорахунок</b><span id="aceilAutoCountMasterStatus">Увімкнено</span></span><label class="aceil-autocount-switch" title="Увімкнути або вимкнути автоматичний прорахунок"><input id="aceilAutoCountMasterToggle" type="checkbox" aria-label="Автопрорахунок"><span class="aceil-autocount-slider"></span></label>';
-    header.appendChild(row);
+    host.appendChild(row);
     gid("aceilAutoCountMasterToggle").addEventListener("change",function(){setEnabled(this.checked)});
     if(typeof MutationObserver==="function"){
       new MutationObserver(function(){if(modal.classList.contains("open"))syncUI()}).observe(modal,{attributes:true,attributeFilter:["class"]});
