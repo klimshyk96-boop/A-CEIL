@@ -79,6 +79,31 @@
     (extra||[]).forEach(function(c){max=Math.max(max,Math.abs(distance(points[c.a],points[c.b])-c.length))});
     return max;
   }
+  function wrapAngle(value){
+    while(value<=-Math.PI)value+=Math.PI*2;
+    while(value>Math.PI)value-=Math.PI*2;
+    return value;
+  }
+  function solveExactOrthogonal(source,target,extra){
+    var n=source.length,quarter=Math.PI/2,base=Math.atan2(source[1].y-source[0].y,source[1].x-source[0].x),angles=[];
+    for(var i=0;i<n;i++){
+      var a=source[i],b=source[(i+1)%n],raw=Math.atan2(b.y-a.y,b.x-a.x),turn=Math.round(wrapAngle(raw-base)/quarter),snapped=base+turn*quarter;
+      if(Math.abs(wrapAngle(raw-snapped))>8*Math.PI/180)return null;
+      angles.push(snapped);
+    }
+    var endX=0,endY=0;
+    for(var j=0;j<n;j++){endX+=target[j]*Math.cos(angles[j]);endY+=target[j]*Math.sin(angles[j])}
+    /* This is deliberately strict: snapping is allowed only when the entered
+       lengths already form a genuinely closed right-angled contour. */
+    if(Math.hypot(endX,endY)>.05)return null;
+    var result=[{x:0,y:0}];
+    for(var p=0;p<n-1;p++)result.push({
+      x:result[p].x+target[p]*Math.cos(angles[p]),
+      y:result[p].y+target[p]*Math.sin(angles[p])
+    });
+    if(extra&&extra.length&&maxConstraintError(result,target,extra)>.25)return null;
+    return{points:result,maxErrorCm:maxConstraintError(result,target,extra),exactOrthogonal:true};
+  }
   function solveClosedPolygon(source,target,extra){
     var n=source.length,angles=[];
     for(var i=0;i<n;i++){
@@ -190,7 +215,7 @@
         var areaEl=document.getElementById("area");if(areaEl)areaEl.textContent="—";
         finishUi();return;
       }
-      var solved=solveClosedPolygon(source,target,extra);
+      var solved=solveExactOrthogonal(source,target,extra)||solveClosedPolygon(source,target,extra);
       realPts=copyPoints(solved.points);
       pts=fitForCanvas(realPts);
       var area=polygonArea(realPts),areaEl2=document.getElementById("area");
@@ -231,8 +256,9 @@
   }
 
   window.A_CEIL_HonestGeometry={
-    version:"1.0",
+    version:"1.1",
     solve:solveClosedPolygon,
+    solveExactOrthogonal:solveExactOrthogonal,
     closure:legacyClosure,
     rebuild:honestRebuild,
     sync:syncWarning,
