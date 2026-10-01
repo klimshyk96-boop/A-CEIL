@@ -204,7 +204,9 @@
   }
   function honestRebuild(){
     try{
-      if(!closed||circleMode||!Array.isArray(pts)||pts.length<3)return;
+      if(!closed||circleMode||!Array.isArray(pts)||pts.length<3){
+        window.A_CEIL_HonestGeometry.lastResult=null;setWarning(null);return;
+      }
       var n=pts.length,source=copyPoints(pts),target=[];
       for(var i=0;i<n;i++){var value=Number(lengths[i]);if(!(value>0))return}
       for(var j=0;j<n;j++)target.push(Number(lengths[j]));
@@ -245,10 +247,15 @@
     }
   }
   function syncWarning(){
+    try{
+      if(!closed||circleMode||!Array.isArray(pts)||pts.length<3){
+        window.A_CEIL_HonestGeometry.lastResult=null;setWarning(null);return;
+      }
+    }catch(_){window.A_CEIL_HonestGeometry.lastResult=null;setWarning(null);return}
     var current=window.A_CEIL_HonestGeometry.lastResult;
     if(current&&current.warning){setWarning(current);return}
     try{
-      if(!closed||circleMode||!Array.isArray(pts)||pts.length<4){setWarning(null);return}
+      if(pts.length<4){setWarning(null);return}
       var hasManual=false;Object.keys(diagonalOverrides||{}).forEach(function(key){if(Number(diagonalOverrides[key])>0)hasManual=true});
       var crooked=false;for(var i=0;i<pts.length;i++){var a=interiorAngle(pts,i);if(Number.isFinite(a)&&Math.abs(a-90)>3){crooked=true;break}}
       setWarning(crooked&&!hasManual?{warning:"⚠️ Косі стіни не підтверджені діагоналлю — площа орієнтовна"}:null);
@@ -256,7 +263,7 @@
   }
 
   window.A_CEIL_HonestGeometry={
-    version:"1.2",
+    version:"1.3",
     solve:solveClosedPolygon,
     solveExactOrthogonal:solveExactOrthogonal,
     closure:legacyClosure,
