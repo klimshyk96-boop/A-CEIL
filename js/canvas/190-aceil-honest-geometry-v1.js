@@ -261,14 +261,19 @@
       setWarning(crooked&&!hasManual?{warning:"⚠️ Косі стіни не підтверджені діагоналлю — площа орієнтовна"}:null);
     }catch(_){}
   }
+  function clearWarningState(){
+    window.A_CEIL_HonestGeometry.lastResult=null;
+    setWarning(null);
+  }
 
   window.A_CEIL_HonestGeometry={
-    version:"1.3",
+    version:"1.4",
     solve:solveClosedPolygon,
     solveExactOrthogonal:solveExactOrthogonal,
     closure:legacyClosure,
     rebuild:honestRebuild,
     sync:syncWarning,
+    clear:clearWarningState,
     lastResult:null
   };
   try{rebuild=honestRebuild}catch(_){}
