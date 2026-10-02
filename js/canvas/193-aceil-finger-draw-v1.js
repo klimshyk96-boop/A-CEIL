@@ -123,6 +123,9 @@
     var base=byId("cv"),host=base&&base.parentElement;if(!base||!host)return;
     if(getComputedStyle(host).position==="static")host.style.position="relative";
     if(typeof closeShapeMenu==="function")closeShapeMenu();
+    var popup=byId('A·CEILRoomMenuPopup');if(popup)popup.hidden=true;
+    document.documentElement.classList.remove('aceil-room-menu-open');
+    var toggle=byId('A·CEILRoomMenuToggle');if(toggle)toggle.setAttribute('aria-expanded','false');
     active=true;document.body.classList.add("aceil-finger-draw-active");
 
     overlay=document.createElementNS("http://www.w3.org/2000/svg","svg");
@@ -152,10 +155,11 @@
   }
 
   function installMenuButton(){
-    var menu=byId("shapeMenu");if(!menu||byId("aceilFingerDrawButton"))return;
-    var button=document.createElement("button");button.type="button";button.id="aceilFingerDrawButton";button.className="quick-menu-card";
+    var menu=byId("A·CEILRoomMenuPopup");if(!menu||byId("aceilFingerDrawButton"))return;
+    var button=document.createElement("button");button.type="button";button.id="aceilFingerDrawButton";button.className="rm-room-menu-action";
     button.innerHTML='<span class="quick-menu-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18c3-5 4-11 7-11 2 0 1 5 2 5 1 0 1-8 3-8 2 0 0 8 2 8 1 0 1-4 2-4 2 0 1 8-2 11-2 3-9 2-14-1z"/></svg></span><span class="quick-menu-text"><b>Малювати пальцем</b><small>одним безперервним рухом</small></span>';
-    button.addEventListener("click",enable);menu.appendChild(button);
+    button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20V4h9l9 9v7Z"/></svg><span><b>Малювати пальцем</b><small>Прямі стіни та скоси 45°</small></span>';
+    button.addEventListener("click",enable);menu.insertBefore(button,menu.firstChild);
   }
 
   window.ACEILFingerDraw={enable:enable,disable:disable,createStroke:createStroke,advance:advance};
