@@ -3,73 +3,31 @@
   "use strict";
 
   var active=false, drawing=false, pointerId=null, raw=[], overlay=null, path=null, hint=null;
+  var live=null;
+  function direction(x,y){var a=Math.round(Math.atan2(y,x)/(Math.PI/4))*Math.PI/4;return{x:Math.cos(a),y:Math.sin(a)};}
+  function createStroke(p){return{corners:[p],tip:p,dir:null,closed:false};}
+  function advance(s,p){
+    if(s.closed)return;
+    var a=s.corners[s.corners.length-1],dx=p.x-a.x,dy=p.y-a.y;
+    if(!s.dir){if(Math.hypot(dx,dy)<10)return;s.dir=direction(dx,dy);}
+    var along=dx*s.dir.x+dy*s.dir.y,side=-dx*s.dir.y+dy*s.dir.x;
+    if(Math.abs(side)>12&&distance(a,s.tip)>=20){
+      var next=direction(p.x-s.tip.x,p.y-s.tip.y);
+      if(next.x*s.dir.x+next.y*s.dir.y<.93){
+        s.corners.push(s.tip);a=s.tip;s.dir=next;
+        along=(p.x-a.x)*next.x+(p.y-a.y)*next.y;
+      }
+    }
+    s.tip={x:a.x+s.dir.x*Math.max(0,along),y:a.y+s.dir.y*Math.max(0,along)};
+    if(s.corners.length>=3&&distance(a,s.corners[0])>28&&distance(p,s.corners[0])<=14){
+      var f=s.corners[0],cross=(f.x-a.x)*s.dir.y-(f.y-a.y)*s.dir.x;
+      if(Math.abs(cross)<.5){s.tip=f;s.closed=true;}
+    }
+  }
 
   function byId(id){return document.getElementById(id);}
   function distance(a,b){return Math.hypot(b.x-a.x,b.y-a.y);}
 
-  function pointToSegmentDistance(p,a,b){
-    var dx=b.x-a.x,dy=b.y-a.y,den=dx*dx+dy*dy||1;
-    var t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/den));
-    return Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy));
-  }
-
-  function rdp(list,epsilon){
-    if(list.length<=2)return list.slice();
-    var max=0,index=0,last=list.length-1;
-    for(var i=1;i<last;i++){
-      var d=pointToSegmentDistance(list[i],list[0],list[last]);
-      if(d>max){max=d;index=i;}
-    }
-    if(max<=epsilon)return[list[0],list[last]];
-    var left=rdp(list.slice(0,index+1),epsilon),right=rdp(list.slice(index),epsilon);
-    return left.slice(0,-1).concat(right);
-  }
-
-  function simplifyStroke(list){
-    if(!Array.isArray(list)||list.length<3)return[];
-    var filtered=[list[0]];
-    for(var i=1;i<list.length;i++)if(distance(filtered[filtered.length-1],list[i])>=5)filtered.push(list[i]);
-    if(filtered.length<3)return[];
-
-    var xs=filtered.map(function(p){return p.x;}),ys=filtered.map(function(p){return p.y;});
-    var diag=Math.hypot(Math.max.apply(null,xs)-Math.min.apply(null,xs),Math.max.apply(null,ys)-Math.min.apply(null,ys));
-    var closeLimit=Math.max(28,diag*.09);
-    if(distance(filtered[0],filtered[filtered.length-1])<=closeLimit){
-      filtered[filtered.length-1]={x:filtered[0].x,y:filtered[0].y};
-    }else{
-      filtered.push({x:filtered[0].x,y:filtered[0].y});
-    }
-
-    var simple=rdp(filtered,Math.max(8,diag*.018));
-    if(simple.length>1&&distance(simple[0],simple[simple.length-1])<1)simple.pop();
-
-    /* Remove tiny closing edges and almost-collinear duplicate corners. */
-    var changed=true;
-    while(changed&&simple.length>3){
-      changed=false;
-      for(var j=0;j<simple.length;j++){
-        var prev=simple[(j-1+simple.length)%simple.length],cur=simple[j],next=simple[(j+1)%simple.length];
-        var a=distance(prev,cur),b=distance(cur,next);
-        var turn=Math.abs(Math.atan2((cur.x-prev.x)*(next.y-cur.y)-(cur.y-prev.y)*(next.x-cur.x),(cur.x-prev.x)*(next.x-cur.x)+(cur.y-prev.y)*(next.y-cur.y)));
-        if(a<12||b<12||turn<.13){simple.splice(j,1);changed=true;break;}
-      }
-    }
-    while(simple.length>24){
-      var remove=0,best=Infinity;
-      for(var k=0;k<simple.length;k++){
-        var score=pointToSegmentDistance(simple[k],simple[(k-1+simple.length)%simple.length],simple[(k+1)%simple.length]);
-        if(score<best){best=score;remove=k;}
-      }
-      simple.splice(remove,1);
-    }
-    return simple.length>=3?simple:[];
-  }
-
-  function clientPoint(e){
-    if(typeof getCanvasPoint==="function")return getCanvasPoint(e.clientX,e.clientY);
-    var base=byId("cv"),r=base.getBoundingClientRect();
-    return{x:(e.clientX-r.left)*(base.width/r.width),y:(e.clientY-r.top)*(base.height/r.height)};
-  }
 
   function svgPoint(e){
     var r=overlay.getBoundingClientRect();
@@ -78,7 +36,7 @@
 
   function redrawPreview(){
     if(!path)return;
-    path.setAttribute("points",raw.map(function(item){return item.s.x+","+item.s.y;}).join(" "));
+    path.setAttribute("points",(live?live.corners.concat([live.tip]):[]).map(function(p){return p.x+","+p.y;}).join(" "));
   }
 
   function stopEvent(e){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();}
@@ -88,40 +46,42 @@
     stopEvent(e);drawing=false;
     try{overlay.releasePointerCapture(pointerId);}catch(_e){}
     pointerId=null;
-    var shape=simplifyStroke(raw.map(function(item){return item.c;}));
-    if(shape.length<3){
+    advance(live,svgPoint(e));
+    var shape=live.corners.slice(),isClosed=live.closed;
+    if(!isClosed&&distance(shape[shape.length-1],live.tip)>=10)shape.push(live.tip);
+    if(shape.length<2){
       raw=[];redrawPreview();
       if(typeof showToast==="function")showToast("Намалюйте замкнений контур одним рухом");
       return;
     }
     try{
-      pts=shape.map(function(p){return{x:Math.round(p.x),y:Math.round(p.y)};});
+      var r=overlay.getBoundingClientRect();
+      pts=shape.map(function(p){return{x:(p.x*750/r.width-viewOffsetX)/viewScale,y:(p.y*750/r.height-viewOffsetY)/viewScale};});
       lengths=[];realPts=[];circleMode=false;closed=false;
-      closeShape();
+      if(isClosed)closeShape();else{updateCornerCount();requestDraw();updateChecks();}
       if(typeof saveState==="function")saveState();
-      if(typeof showToast==="function")showToast("Контур створено — введіть точні розміри стін");
+      if(typeof showToast==="function")showToast(isClosed?"Контур замкнено — введіть розміри":"Відкритий контур можна продовжити натисканнями");
     }finally{disable();}
   }
 
   function cancelStroke(e){
     if(!active||!drawing||e.pointerId!==pointerId)return;
-    stopEvent(e);drawing=false;pointerId=null;raw=[];redrawPreview();
+    stopEvent(e);drawing=false;pointerId=null;raw=[];live=null;redrawPreview();
     if(typeof showToast==="function")showToast("Малювання перервано — спробуйте ще раз");
   }
 
   function onDown(e){
     if(!active||drawing||e.button>0)return;
-    stopEvent(e);drawing=true;pointerId=e.pointerId;raw=[{c:clientPoint(e),s:svgPoint(e)}];
+    stopEvent(e);drawing=true;pointerId=e.pointerId;live=createStroke(svgPoint(e));
     overlay.setPointerCapture(e.pointerId);redrawPreview();
   }
   function onMove(e){
     if(!active||!drawing||e.pointerId!==pointerId)return;
-    stopEvent(e);var s=svgPoint(e),last=raw[raw.length-1];
-    if(!last||distance(last.s,s)>=2){raw.push({c:clientPoint(e),s:s});redrawPreview();}
+    stopEvent(e);advance(live,svgPoint(e));redrawPreview();
   }
 
   function disable(){
-    active=false;drawing=false;pointerId=null;raw=[];
+    active=false;drawing=false;pointerId=null;raw=[];live=null;
     if(overlay){overlay.remove();overlay=null;path=null;}
     if(hint){hint.remove();hint=null;}
     document.body.classList.remove("aceil-finger-draw-active");
@@ -141,15 +101,16 @@
     overlay=document.createElementNS("http://www.w3.org/2000/svg","svg");
     overlay.id="aceilFingerDrawOverlay";
     overlay.setAttribute("aria-label","Поле безперервного малювання");
-    overlay.setAttribute("viewBox","0 0 "+Math.max(1,base.clientWidth)+" "+Math.max(1,base.clientHeight));
     overlay.style.cssText="position:absolute;inset:0;width:100%;height:100%;z-index:55;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;";
+    overlay.style.left=base.offsetLeft+'px';overlay.style.top=base.offsetTop+'px';
+    overlay.style.width=base.clientWidth+'px';overlay.style.height=base.clientHeight+'px';
     path=document.createElementNS("http://www.w3.org/2000/svg","polyline");
-    path.setAttribute("fill","none");path.setAttribute("stroke","#2563eb");path.setAttribute("stroke-width","4");
+    path.setAttribute("fill","none");path.setAttribute("stroke","#172033");path.setAttribute("stroke-width","2");
     path.setAttribute("stroke-linecap","round");path.setAttribute("stroke-linejoin","round");
     overlay.appendChild(path);host.appendChild(overlay);
 
     hint=document.createElement("div");hint.id="aceilFingerDrawHint";
-    hint.innerHTML='<span><b>Ведіть пальцем одним рухом</b><small>Після відривання контур замкнеться</small></span><button type="button" aria-label="Скасувати">×</button>';
+    hint.innerHTML='<span><b>Рівні стіни під пальцем</b><small>Для замикання поверніться до початку</small></span><button type="button" aria-label="Скасувати">×</button>';
     hint.style.cssText="position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:12000;width:min(92vw,430px);box-sizing:border-box;background:rgba(15,23,42,.94);color:#fff;border-radius:16px;padding:10px 10px 10px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 10px 28px rgba(15,23,42,.28);font-family:system-ui,-apple-system,sans-serif";
     hint.querySelector("span").style.cssText="min-width:0;flex:1";
     hint.querySelector("b").style.cssText="display:block;font-size:13px;line-height:1.25";
@@ -170,7 +131,8 @@
     button.addEventListener("click",enable);menu.appendChild(button);
   }
 
-  window.ACEILFingerDraw={enable:enable,disable:disable,simplify:simplifyStroke};
+  window.ACEILFingerDraw={enable:enable,disable:disable,createStroke:createStroke,advance:advance};
+  window.addEventListener('resize',disable);
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",installMenuButton,{once:true});else installMenuButton();
   setTimeout(installMenuButton,500);
 })();
