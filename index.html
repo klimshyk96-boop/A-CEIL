@@ -711,7 +711,7 @@ body.aceil-all-split-v14 .canvas-container{
   "use strict";
   if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
   window.addEventListener("load",function(){
-    var updateKey="aceil-pwa-update-20261002-finger-draw-v3";
+    var updateKey="aceil-pwa-update-20261002-finger-draw-v4";
     navigator.serviceWorker.addEventListener("message",function(event){
       if(!event.data||event.data.type!=="A_CEIL_UPDATE_READY"||sessionStorage.getItem(updateKey))return;
       sessionStorage.setItem(updateKey,"1");
@@ -722,7 +722,7 @@ body.aceil-all-split-v14 .canvas-container{
       sessionStorage.setItem(updateKey,"1");
       location.reload();
     });
-      navigator.serviceWorker.register("/sw.js?v=20261002-finger-draw-v3",{scope:"/"}).then(function(reg){
+      navigator.serviceWorker.register("/sw.js?v=20261002-finger-draw-v4",{scope:"/"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
@@ -839,7 +839,7 @@ body.aceil-all-split-v14 .canvas-container{
 </script>
 
 <script id="aceil-evening-fixes-v1" src="js/canvas/192-aceil-evening-fixes-v1.js?v=20261001-evening1"></script>
-<script id="aceil-finger-draw-v1" src="js/canvas/193-aceil-finger-draw-v1.js?v=20261002-finger3"></script>
+<script id="aceil-finger-draw-v1" src="js/canvas/193-aceil-finger-draw-v1.js?v=20261002-finger4"></script>
 <script id="A-CEIL-plan-viewer-v2-inline">
 (function(){
 'use strict';
