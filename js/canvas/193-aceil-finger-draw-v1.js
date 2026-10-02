@@ -4,6 +4,24 @@
 
   var active=false, drawing=false, pointerId=null, raw=[], overlay=null, path=null, hint=null;
   var live=null;
+  var storageKey='aceil-canvas-input-mode',mode='points',sourcePoints=null;
+  try{if(localStorage.getItem(storageKey)==='finger')mode='finger';}catch(e){}
+  function setMode(value){
+    mode=value==='finger'?'finger':'points';
+    try{localStorage.setItem(storageKey,mode);}catch(e){}
+    disable();syncMode();
+  }
+  function syncMode(){
+    ['points','finger'].forEach(function(value){
+      var b=byId('aceil-input-'+value);if(!b)return;
+      b.setAttribute('aria-pressed',String(mode===value));
+      b.style.background=mode===value?'#2563eb':'#f1f5f9';
+      b.style.color=mode===value?'#fff':'#334155';
+    });
+    if(typeof pts==='undefined')return;
+    if(active&&(mode!=='finger'||closed||circleMode||pts!==sourcePoints))disable();
+    if(mode==='finger'&&!active&&!closed&&!circleMode)enable();
+  }
   function direction(x,y){
     if(Math.abs(y)<=Math.abs(x)*.577)return{x:Math.sign(x),y:0};
     if(Math.abs(x)<=Math.abs(y)*.577)return{x:0,y:Math.sign(y)};
@@ -87,8 +105,8 @@
       lengths=[];realPts=[];circleMode=false;closed=false;
       if(isClosed)closeShape();else{updateCornerCount();requestDraw();updateChecks();}
       if(typeof saveState==="function")saveState();
-      if(typeof showToast==="function")showToast(isClosed?"Контур замкнено — введіть розміри":"Відкритий контур можна продовжити натисканнями");
-    }finally{disable();}
+      if(typeof showToast==="function")showToast(isClosed?"Контур замкнено — введіть розміри":"Продовжуйте пальцем від останньої точки");
+    }finally{disable();setTimeout(syncMode,0);}
   }
 
   function cancelStroke(e){
@@ -99,7 +117,15 @@
 
   function onDown(e){
     if(!active||drawing||e.button>0)return;
-    stopEvent(e);drawing=true;pointerId=e.pointerId;live=createStroke(svgPoint(e));
+    stopEvent(e);
+    var p=svgPoint(e),r=overlay.getBoundingClientRect();
+    var existing=pts.map(function(q){return{x:(q.x*viewScale+viewOffsetX)*r.width/750,y:(q.y*viewScale+viewOffsetY)*r.height/750};});
+    if(existing.length){
+      var end=existing[existing.length-1];
+      if(distance(p,end)>40){showToast('Почніть від останньої точки контуру');return;}
+      live=createStroke(end);live.corners=existing;
+    }else live=createStroke(p);
+    drawing=true;pointerId=e.pointerId;
     overlay.setPointerCapture(e.pointerId);redrawPreview();
   }
   function onMove(e){
@@ -116,16 +142,10 @@
 
   function enable(){
     if(active)return;
-    if(typeof pts!=="undefined"&&((Array.isArray(pts)&&pts.length)||closed||circleMode)){
-      if(typeof showToast==="function")showToast('Спочатку очистіть полотно кнопкою "Очистити"');
-      return;
-    }
+    if(typeof pts==='undefined'||closed||circleMode)return;
+    sourcePoints=pts;
     var base=byId("cv"),host=base&&base.parentElement;if(!base||!host)return;
     if(getComputedStyle(host).position==="static")host.style.position="relative";
-    if(typeof closeShapeMenu==="function")closeShapeMenu();
-    var popup=byId('A·CEILRoomMenuPopup');if(popup)popup.hidden=true;
-    document.documentElement.classList.remove('aceil-room-menu-open');
-    var toggle=byId('A·CEILRoomMenuToggle');if(toggle)toggle.setAttribute('aria-expanded','false');
     active=true;document.body.classList.add("aceil-finger-draw-active");
 
     overlay=document.createElementNS("http://www.w3.org/2000/svg","svg");
@@ -146,7 +166,8 @@
     hint.querySelector("b").style.cssText="display:block;font-size:13px;line-height:1.25";
     hint.querySelector("small").style.cssText="display:block;margin-top:2px;color:#cbd5e1;font-size:11px";
     hint.querySelector("button").style.cssText="width:36px;height:36px;min-width:36px;border:0;border-radius:11px;background:#334155;color:#fff;font-size:24px;line-height:1;padding:0;box-shadow:none";
-    hint.querySelector("button").onclick=disable;document.body.appendChild(hint);
+    hint.querySelector("button").setAttribute('aria-label','Перейти до малювання точками');
+    hint.querySelector("button").onclick=function(){setMode('points');};document.body.appendChild(hint);
 
     overlay.addEventListener("pointerdown",onDown,{passive:false});
     overlay.addEventListener("pointermove",onMove,{passive:false});
@@ -155,15 +176,21 @@
   }
 
   function installMenuButton(){
-    var menu=byId("A·CEILRoomMenuPopup");if(!menu||byId("aceilFingerDrawButton"))return;
-    var button=document.createElement("button");button.type="button";button.id="aceilFingerDrawButton";button.className="rm-room-menu-action";
-    button.innerHTML='<span class="quick-menu-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18c3-5 4-11 7-11 2 0 1 5 2 5 1 0 1-8 3-8 2 0 0 8 2 8 1 0 1-4 2-4 2 0 1 8-2 11-2 3-9 2-14-1z"/></svg></span><span class="quick-menu-text"><b>Малювати пальцем</b><small>одним безперервним рухом</small></span>';
-    button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20V4h9l9 9v7Z"/></svg><span><b>Малювати пальцем</b><small>Прямі стіни та скоси 45°</small></span>';
-    button.addEventListener("click",enable);menu.insertBefore(button,menu.firstChild);
+    var menu=byId('A·CEILRoomMenuPopup');if(!menu||byId('aceil-input-switch'))return;
+    var box=document.createElement('div');box.id='aceil-input-switch';box.setAttribute('role','group');box.setAttribute('aria-label','Спосіб малювання');
+    box.style.cssText='grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding:8px;';
+    var title=document.createElement('span');title.textContent='Спосіб малювання';title.style.cssText='flex-basis:100%;font:600 12px system-ui;color:#475569';box.appendChild(title);
+    ['points','finger'].forEach(function(value){
+      var b=document.createElement('button');b.type='button';b.id='aceil-input-'+value;b.textContent=value==='points'?'Точками':'Пальцем';
+      b.style.cssText='flex:1;min-width:0;min-height:44px;border:0;border-radius:10px;padding:8px;font:600 13px system-ui;box-shadow:none;';
+      b.onclick=function(){setMode(value);};box.appendChild(b);
+    });
+    menu.insertBefore(box,menu.firstChild);syncMode();
   }
 
-  window.ACEILFingerDraw={enable:enable,disable:disable,createStroke:createStroke,advance:advance};
-  window.addEventListener('resize',disable);
+  window.ACEILFingerDraw={enable:function(){setMode('finger');},disable:function(){setMode('points');},setMode:setMode,getMode:function(){return mode;},createStroke:createStroke,advance:advance};
+  window.addEventListener('resize',function(){disable();setTimeout(syncMode,100);});
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",installMenuButton,{once:true});else installMenuButton();
   setTimeout(installMenuButton,500);
+  setInterval(syncMode,250);
 })();
