@@ -155,7 +155,7 @@
     overlay.style.left=base.offsetLeft+'px';overlay.style.top=base.offsetTop+'px';
     overlay.style.width=base.clientWidth+'px';overlay.style.height=base.clientHeight+'px';
     path=document.createElementNS("http://www.w3.org/2000/svg","polyline");
-    path.setAttribute("fill","none");path.setAttribute("stroke","#172033");path.setAttribute("stroke-width","2");
+    path.setAttribute("fill","rgba(59,130,246,.22)");path.setAttribute("stroke","#172033");path.setAttribute("stroke-width","2");
     path.setAttribute("stroke-linecap","round");path.setAttribute("stroke-linejoin","round");
     overlay.appendChild(path);host.appendChild(overlay);
 
