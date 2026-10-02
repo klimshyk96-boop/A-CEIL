@@ -1,7 +1,7 @@
 /* A·CEIL offline shell v9 — 2026-10-02 */
 "use strict";
 
-const SHELL_CACHE="aceil-shell-20261002-finger-draw-v2";
+const SHELL_CACHE="aceil-shell-20261002-finger-draw-v3";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 
 function isStaticAsset(request){
