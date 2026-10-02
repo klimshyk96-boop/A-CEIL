@@ -521,7 +521,7 @@ const e=document.getElementById("rs_dimensions");return!0===(e?e.checked:r.dimen
 /* v9 complex room: compact wall-size table with geometry-aware placement. */
 (!_reportMode&&!window.ACEILExternalWallDimensions&&!_hideCanvasServiceLabels()&&closed&&pts.length>5&&(()=>{
   const rr=cv.getBoundingClientRect(),u=rr&&rr.width?cv.width/rr.width:1,sc=viewScale||1,ox=viewOffsetX||0,oy=viewOffsetY||0;
-  const W=108*u,row=16*u,pad=7*u,title=19*u,H=pad+title+pts.length*row+pad,margin=7*u;
+  const row=16*u,pad=7*u,title=19*u,margin=7*u;let W=108*u,H=pad+title+pts.length*row+pad;
   const sp=pts.map(p=>({x:p.x*sc+ox,y:p.y*sc+oy}));
   const pointInPoly=(x,y)=>{let c=false;for(let i=0,j=sp.length-1;i<sp.length;j=i++){const a=sp[i],b=sp[j];if(((a.y>y)!=(b.y>y))&&(x<(b.x-a.x)*(y-a.y)/(b.y-a.y||1e-9)+a.x))c=!c}return c};
   const segDist=(px,py,a,b)=>{const vx=b.x-a.x,vy=b.y-a.y,wx=px-a.x,wy=py-a.y,q=vx*vx+vy*vy;if(q<1e-9)return Math.hypot(px-a.x,py-a.y);const z=Math.max(0,Math.min(1,(wx*vx+wy*vy)/q));return Math.hypot(px-a.x-z*vx,py-a.y-z*vy)};
@@ -543,20 +543,44 @@ const e=document.getElementById("rs_dimensions");return!0===(e?e.checked:r.dimen
     for(let i=0;i<sp.length;i++){const d=segDist(cx,cy,sp[i],sp[(i+1)%sp.length]);if(d<55*u)score+=(55*u-d)*2}
     return score;
   };
-  let minX=Math.min(...sp.map(p=>p.x)),maxX=Math.max(...sp.map(p=>p.x)),minY=Math.min(...sp.map(p=>p.y)),maxY=Math.max(...sp.map(p=>p.y));
-  let candidates=[];
-  /* Edge candidates. */
-  [margin,cv.width-W-margin].forEach(x=>{
-    [margin,56*u,Math.max(margin,(cv.height-H)/2),Math.max(margin,cv.height-H-margin)].forEach(y=>candidates.push([x,y]));
-  });
-  /* Search the whole canvas on a coarse grid: this finds L/U-shaped empty pockets. */
-  const stepX=Math.max(28*u,W*.32),stepY=Math.max(24*u,row*2);
-  for(let y=margin;y<=cv.height-H-margin;y+=stepY)for(let x=margin;x<=cv.width-W-margin;x+=stepX)candidates.push([x,y]);
-  /* Explicit concavity-adjacent candidates. */
-  sp.forEach(p=>[[-W-12*u,-H/2],[12*u,-H/2],[-W/2,-H-12*u],[-W/2,12*u]].forEach(d=>candidates.push([p.x+d[0],p.y+d[1]])));
-  let best=[cv.width-W-margin,margin],bestScore=Infinity;
-  candidates.forEach(c=>{const x=Math.max(margin,Math.min(cv.width-W-margin,c[0])),y=Math.max(margin,Math.min(cv.height-H-margin,c[1])),q=rectPenalty(x,y);if(q<bestScore){bestScore=q;best=[x,y]}});
-  const x=best[0],y=best[1];
+  const solve=()=>{
+    let candidates=[];
+    [margin,cv.width-W-margin].forEach(x=>{
+      [margin,56*u,Math.max(margin,(cv.height-H)/2),Math.max(margin,cv.height-H-margin)].forEach(y=>candidates.push([x,y]));
+    });
+    const stepX=Math.max(28*u,W*.32),stepY=Math.max(24*u,row*2);
+    for(let y=margin;y<=cv.height-H-margin;y+=stepY)for(let x=margin;x<=cv.width-W-margin;x+=stepX)candidates.push([x,y]);
+    sp.forEach(p=>[[-W-12*u,-H/2],[12*u,-H/2],[-W/2,-H-12*u],[-W/2,12*u]].forEach(d=>candidates.push([p.x+d[0],p.y+d[1]])));
+    let best=[cv.width-W-margin,margin],bestScore=Infinity;
+    candidates.forEach(c=>{const x=Math.max(margin,Math.min(cv.width-W-margin,c[0])),y=Math.max(margin,Math.min(cv.height-H-margin,c[1])),q=rectPenalty(x,y);if(q<bestScore){bestScore=q;best=[x,y]}});
+    return{x:best[0],y:best[1]};
+  };
+  /* True when the box would cover a vertex, a wall or the room interior. */
+  const hitsGeometry=(x,y)=>{
+    if([[.12,.12],[.5,.12],[.88,.12],[.12,.5],[.5,.5],[.88,.5],[.12,.88],[.5,.88],[.88,.88]].some(q=>pointInPoly(x+W*q[0],y+H*q[1])))return true;
+    if(sp.some(p=>p.x>x-10*u&&p.x<x+W+10*u&&p.y>y-10*u&&p.y<y+H+10*u))return true;
+    for(let i=0;i<sp.length;i++){const a=sp[i],b=sp[(i+1)%sp.length];for(let k=0;k<=12;k++){const q=k/12,px=a.x+(b.x-a.x)*q,py=a.y+(b.y-a.y)*q;if(px>x-6*u&&px<x+W+6*u&&py>y-6*u&&py<y+H+6*u)return true}}
+    return false;
+  };
+  let spot=solve();
+  const covers=hitsGeometry(spot.x,spot.y);
+  window.__aceilWLHit=null;
+  /* Table would cover the plan: show a small collapsed chip until the user opens it. */
+  const collapsed=covers&&!window.__aceilWLOpen;
+  if(collapsed){W=104*u;H=28*u;spot=solve();}
+  const x=spot.x,y=spot.y;
+  if(collapsed){
+    ctx.save();ctx.setTransform(1,0,0,1,0,0);
+    ctx.shadowColor="rgba(15,23,42,.12)",ctx.shadowBlur=8*u,ctx.shadowOffsetY=2*u;
+    ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,W,H,14*u):ctx.rect(x,y,W,H);
+    ctx.fillStyle="rgba(255,255,255,.97)",ctx.fill();ctx.shadowColor="transparent";ctx.shadowBlur=0;
+    ctx.strokeStyle="rgba(37,99,235,.35)",ctx.lineWidth=1*u,ctx.stroke();
+    ctx.fillStyle="#2563eb",ctx.font=`800 ${11*u}px -apple-system,Arial`,ctx.textAlign="center",ctx.textBaseline="middle";
+    ctx.fillText("\u25BE Розміри · "+pts.length,x+W/2,y+H/2+.5*u);
+    ctx.restore();
+    window.__aceilWLHit={x:x,y:y,w:W,h:H};
+    return true;
+  }
   ctx.save();ctx.setTransform(1,0,0,1,0,0);
   ctx.shadowColor="rgba(15,23,42,.09)",ctx.shadowBlur=8*u,ctx.shadowOffsetY=2*u;
   ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,W,H,9*u):ctx.rect(x,y,W,H);
@@ -570,6 +594,7 @@ const e=document.getElementById("rs_dimensions");return!0===(e?e.checked:r.dimen
     ctx.fillStyle="#172554",ctx.font=`800 ${10*u}px -apple-system,Arial`,ctx.textAlign="left",ctx.fillText(nm,x+pad,yy);
     ctx.fillStyle="#334155",ctx.font=`650 ${10*u}px -apple-system,Arial`,ctx.textAlign="right",ctx.fillText(val,x+W-pad,yy);
   }
+  if(covers){ctx.fillStyle="#2563eb",ctx.font=`800 ${11*u}px -apple-system,Arial`,ctx.textAlign="right",ctx.textBaseline="middle",ctx.fillText("\u25B4",x+W-pad,y+pad+title/2);window.__aceilWLHit={x:x,y:y,w:W,h:pad+title}}
   ctx.restore();return true;
 })()),
 ctx.restore()}function getCanvasPoint(clientX,clientY){const r=cv.getBoundingClientRect(),scaleX=cv.width/r.width,scaleY=cv.height/r.height;return{x:((clientX-r.left)*scaleX-viewOffsetX)/viewScale,y:((clientY-r.top)*scaleY-viewOffsetY)/viewScale}}
@@ -959,3 +984,25 @@ if(!closed&&!circleMode&&viewScale<=1){
     _wallTouchTapPending=null;
     _wallTouchTapMoved=!1;
   }if(left<2&&(pinchStartDist=0),0===left&&(isPanning=!1),_lightDragIndex>=0){if(_lightDragging&&lightMode){const m=lightMarks[_lightDragIndex];m&&moveLightMark(_lightDragIndex,m.x,m.y,!0),syncLightMarksToElems(),saveState(),_lightSuppressClick=!0}else{const m=lightMarks[_lightDragIndex];m&&handleLightTap(+m.x||0,+m.y||0)}return _lightDragIndex=-1,void(_lightDragging=!1)}},{passive:!1}),document.querySelectorAll(".modal-overlay").forEach(overlay=>{overlay.addEventListener("click",e=>{e.target===overlay&&overlay.classList.remove("open")})})
+
+/* Wall-size table: tap on the collapsed chip / table title toggles it (only active when the table covers the plan). */
+(function(){
+  try{
+    if(window.__aceilWLBound||typeof cv==="undefined"||!cv)return;
+    window.__aceilWLBound=true;
+    var swallow=false;
+    function hit(cx,cy){
+      var h=window.__aceilWLHit,r=cv.getBoundingClientRect();
+      if(!h||!r.width||!r.height)return false;
+      var k=cv.width/r.width,px=(cx-r.left)*k,py=(cy-r.top)*(cv.height/r.height),pad=6*k;
+      return px>=h.x-pad&&px<=h.x+h.w+pad&&py>=h.y-pad&&py<=h.y+h.h+pad;
+    }
+    function toggle(){window.__aceilWLOpen=!window.__aceilWLOpen;try{(typeof requestDraw==="function"?requestDraw:draw)()}catch(_){}}
+    function stop(e){e.stopImmediatePropagation();if(e.cancelable)e.preventDefault()}
+    var host=cv.parentElement||document;
+    host.addEventListener("touchstart",function(e){var t=e.touches&&e.touches[0];if(e.touches.length===1&&t&&hit(t.clientX,t.clientY)){swallow=true;stop(e);toggle()}},{capture:true,passive:false});
+    ["touchmove","touchend","touchcancel"].forEach(function(n){host.addEventListener(n,function(e){if(swallow){stop(e);if(n!=="touchmove")swallow=false}},{capture:true,passive:false})});
+    host.addEventListener("mousedown",function(e){if(hit(e.clientX,e.clientY)){swallow=true;stop(e);toggle()}},true);
+    ["mouseup","click"].forEach(function(n){host.addEventListener(n,function(e){if(swallow){stop(e);if(n==="click")swallow=false}},true)});
+  }catch(_){}
+})();
