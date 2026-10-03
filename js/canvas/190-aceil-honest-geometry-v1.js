@@ -236,7 +236,7 @@
         result.warning="❌ Розміри суперечать контрольним вимірам. Максимальна похибка "+solved.maxErrorCm.toFixed(1)+" см";
       }else if(changed){
         result.warning="⚠️ Контур не замикався: різниця "+Math.round(beforeClosure.diffCm)+" см. Фігуру деформовано — перевірте розміри";
-      }else if(n>3&&extra.length===0&&!stats.sourceMostlyRight){
+      }else if(n>3&&extra.length===0&&!solved.exactOrthogonal&&!stats.sourceMostlyRight){
         result.warning="⚠️ Косі стіни не підтверджені діагоналлю — площа орієнтовна";
       }
       window.A_CEIL_HonestGeometry.lastResult=result;
