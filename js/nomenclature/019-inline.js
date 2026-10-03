@@ -994,7 +994,7 @@ if(!closed&&!circleMode&&viewScale<=1){
   }if(left<2&&(pinchStartDist=0),0===left&&(isPanning=!1),_lightDragIndex>=0){if(_lightDragging&&lightMode){const m=lightMarks[_lightDragIndex];m&&moveLightMark(_lightDragIndex,m.x,m.y,!0),syncLightMarksToElems(),saveState(),_lightSuppressClick=!0}else{const m=lightMarks[_lightDragIndex];m&&handleLightTap(+m.x||0,+m.y||0)}return _lightDragIndex=-1,void(_lightDragging=!1)}},{passive:!1}),document.querySelectorAll(".modal-overlay").forEach(overlay=>{overlay.addEventListener("click",e=>{e.target===overlay&&overlay.classList.remove("open")})})
 
 /* Wall-size table: tap on the collapsed chip / table title toggles it (only active when the table covers the plan). */
-(function(){
+;(function(){
   try{
     if(window.__aceilWLBound||typeof cv==="undefined"||!cv)return;
     window.__aceilWLBound=true;
