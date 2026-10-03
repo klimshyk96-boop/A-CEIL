@@ -575,13 +575,17 @@ function clientToCanvas(e){
   var c=cv(),r=c.getBoundingClientRect(),sc=(typeof viewScale!=="undefined"&&isFinite(viewScale)&&viewScale>0)?viewScale:1;
   var ox=(typeof viewOffsetX!=="undefined"&&isFinite(viewOffsetX))?viewOffsetX:0;
   var oy=(typeof viewOffsetY!=="undefined"&&isFinite(viewOffsetY))?viewOffsetY:0;
-  return{x:((e.clientX-r.left)*(c.width/r.width)-ox)/sc,y:((e.clientY-r.top)*(c.height/r.height)-oy)/sc};
+  var lw=(window.ACEILCanvas&&typeof ACEILCanvas.width==="function")?ACEILCanvas.width(c):c.width;
+  var lh=(window.ACEILCanvas&&typeof ACEILCanvas.height==="function")?ACEILCanvas.height(c):c.height;
+  return{x:((e.clientX-r.left)*(lw/r.width)-ox)/sc,y:((e.clientY-r.top)*(lh/r.height)-oy)/sc};
 }
 function canvasToClient(p){
   var c=cv(),r=c.getBoundingClientRect(),sc=(typeof viewScale!=="undefined"&&isFinite(viewScale)&&viewScale>0)?viewScale:1;
   var ox=(typeof viewOffsetX!=="undefined"&&isFinite(viewOffsetX))?viewOffsetX:0;
   var oy=(typeof viewOffsetY!=="undefined"&&isFinite(viewOffsetY))?viewOffsetY:0;
-  return{x:r.left+(p.x*sc+ox)*(r.width/c.width),y:r.top+(p.y*sc+oy)*(r.height/c.height)};
+  var lw=(window.ACEILCanvas&&typeof ACEILCanvas.width==="function")?ACEILCanvas.width(c):c.width;
+  var lh=(window.ACEILCanvas&&typeof ACEILCanvas.height==="function")?ACEILCanvas.height(c):c.height;
+  return{x:r.left+(p.x*sc+ox)*(r.width/lw),y:r.top+(p.y*sc+oy)*(r.height/lh)};
 }
 function clearPreview(){var h=gid("rmSaPreview347");if(h)h.innerHTML=""}
 function dot(p,cls){
@@ -642,8 +646,10 @@ window.rmSa347Open=function(){
   gid("rmSmartAlign347").classList.add("open");
 };
 window.rmSa347Close=function(){gid("rmSmartAlign347").classList.remove("open")};
-window.rmSa347Start=function(){
-  S.qty=clamp(parseInt(gid("rmSaQty347").value,10)||5,2,24);S.taps=[];S.previewAligned=[];S.aligned=[];S.groups=[];
+window.rmSa347Start=function(requestedQty){
+  var qtyInput=gid("rmSaQty347"),qty=parseInt(requestedQty,10);
+  if(!isFinite(qty))qty=parseInt(qtyInput&&qtyInput.value,10);
+  S.qty=clamp(qty||5,2,24);if(qtyInput)qtyInput.value=String(S.qty);S.taps=[];S.previewAligned=[];S.aligned=[];S.groups=[];
   rmSa347Close();clearPreview();gid("rmSaPreview347").classList.add("show");gid("rmSaHud347").classList.add("show");gid("rmSaProgress347").textContent="0 / "+S.qty;S.active=true;window.__A·CEILSmartAlignCapture347=true;
   try{lightMode=null}catch(_){window.lightMode=null}
   try{showToast("Поставте "+S.qty+" точок приблизно там, де хочете світильники")}catch(_){}
