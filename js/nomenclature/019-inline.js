@@ -576,7 +576,9 @@ const e=document.getElementById("rs_dimensions");return!0===(e?e.checked:r.dimen
     for(const xx of xs){for(const yy of ys){if(!hitsGeometry(xx,yy)){spot={x:xx,y:yy};break}}if(spot)break}
     if(!spot)spot={x:xs[0],y:mid};
   }
-  const x=spot.x,y=spot.y;
+  const x=spot.x;let y=spot.y;
+  /* Opened table must not hide its own title under the "+ Кімната" button in the top-left corner. */
+  if(covers&&!collapsed)y=Math.min(Math.max(y,50*u),Math.max(margin,cv.height-H-margin));
   if(collapsed){
     ctx.save();ctx.setTransform(1,0,0,1,0,0);
     ctx.shadowColor="rgba(15,23,42,.12)",ctx.shadowBlur=8*u,ctx.shadowOffsetY=2*u;
@@ -602,7 +604,7 @@ const e=document.getElementById("rs_dimensions");return!0===(e?e.checked:r.dimen
     ctx.fillStyle="#172554",ctx.font=`800 ${10*u}px -apple-system,Arial`,ctx.textAlign="left",ctx.fillText(nm,x+pad,yy);
     ctx.fillStyle="#334155",ctx.font=`650 ${10*u}px -apple-system,Arial`,ctx.textAlign="right",ctx.fillText(val,x+W-pad,yy);
   }
-  if(covers){ctx.fillStyle="#2563eb",ctx.font=`800 ${11*u}px -apple-system,Arial`,ctx.textAlign="right",ctx.textBaseline="middle",ctx.fillText("\u25B4",x+W-pad,y+pad+title/2);window.__aceilWLHit={x:x,y:y,w:W,h:pad+title}}
+  if(covers){ctx.fillStyle="#2563eb",ctx.font=`800 ${11*u}px -apple-system,Arial`,ctx.textAlign="right",ctx.textBaseline="middle",ctx.fillText("\u25B4",x+W-pad,y+pad+title/2);window.__aceilWLHit={x:x,y:y,w:W,h:pad+title+6*u}}
   ctx.restore();return true;
 })()),
 ctx.restore()}function getCanvasPoint(clientX,clientY){const r=cv.getBoundingClientRect(),scaleX=cv.width/r.width,scaleY=cv.height/r.height;return{x:((clientX-r.left)*scaleX-viewOffsetX)/viewScale,y:((clientY-r.top)*scaleY-viewOffsetY)/viewScale}}
