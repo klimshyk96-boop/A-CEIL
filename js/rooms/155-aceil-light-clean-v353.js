@@ -21,7 +21,12 @@ function syncOld(){
 function roomBox(){
  var cv=g("cv")||{width:800,height:600},list=[];
  try{list=typeof pts!=="undefined"&&Array.isArray(pts)?pts:[]}catch(_){list=Array.isArray(window.pts)?window.pts:[]}
- if(!list.length)return{left:0,top:0,right:Number(ACEILCanvas.width(cv))||800,bottom:Number(ACEILCanvas.height(cv))||600,poly:[]};
+ if(!list.length){
+   var cw=window.ACEILCanvas&&typeof ACEILCanvas.width==="function"?Number(ACEILCanvas.width(cv)):Number(cv.width),ch=window.ACEILCanvas&&typeof ACEILCanvas.height==="function"?Number(ACEILCanvas.height(cv)):Number(cv.height);
+   cw=cw||800;ch=ch||600;
+   try{if(typeof circleMode!=="undefined"&&circleMode&&Number(circleDiamCm)>0){var rr=.42*Math.min(cw,ch),cx=cw/2,cy=ch/2;return{left:cx-rr,top:cy-rr,right:cx+rr,bottom:cy+rr,poly:[],circle:{x:cx,y:cy,r:rr}}}}catch(_){}
+   return{left:0,top:0,right:cw,bottom:ch,poly:[]};
+ }
  var xs=list.map(function(p){return Number(p.x)||0}),ys=list.map(function(p){return Number(p.y)||0});
  return{left:Math.min.apply(null,xs),top:Math.min.apply(null,ys),right:Math.max.apply(null,xs),bottom:Math.max.apply(null,ys),poly:list};
 }
@@ -39,6 +44,10 @@ function insidePoly(point,poly){
    if(cross)inside=!inside;
  }
  return inside;
+}
+function insideRoom(point,box){
+ if(box.circle)return Math.hypot(point.x-box.circle.x,point.y-box.circle.y)<=box.circle.r+.001;
+ return insidePoly(point,box.poly);
 }
 function placementType(){return window.__aceilLightPlacementType==="double_spot"?"double_spot":"spot"}
 function placementOrientation(){return window.__aceilDoubleSpotOrientation==="vertical"?"vertical":"horizontal"}
@@ -62,6 +71,32 @@ function replaceSpots(points){
  try{if(typeof requestDraw==="function")requestDraw();else if(typeof draw==="function")draw()}catch(_){}
  return true;
 }
+function addOne(point){
+ var list=null;
+ try{list=typeof lightMarks!=="undefined"&&Array.isArray(lightMarks)?lightMarks:null}catch(_){}
+ if(!list)list=Array.isArray(window.lightMarks)?window.lightMarks:null;
+ if(!list)return false;
+ var mark={id:"light_one_"+Date.now(),type:placementType(),x:Math.round(point.x),y:Math.round(point.y)};
+ if(mark.type==="double_spot")mark.orientation=placementOrientation();
+ try{if(typeof _nearestLightBaseIndex==="function")mark.baseIndex=_nearestLightBaseIndex(mark.x,mark.y)}catch(_){}
+ try{if(typeof _updateLightCoords==="function")_updateLightCoords(mark)}catch(_){}
+ list.push(mark);
+ try{selectedLightId=mark.id}catch(_){window.selectedLightId=mark.id}
+ try{if(typeof updateLightBadge==="function")updateLightBadge()}catch(_){}
+ try{if(typeof syncLightMarksToElems==="function")syncLightMarksToElems()}catch(_){}
+ try{if(typeof saveState==="function")saveState()}catch(_){}
+ try{if(typeof requestDraw==="function")requestDraw();else if(typeof draw==="function")draw()}catch(_){}
+ return true;
+}
+function centerPoint(box){
+ var p={x:(box.left+box.right)/2,y:(box.top+box.bottom)/2};
+ if(insideRoom(p,box))return p;
+ var poly=box.poly||[],area=0,cx=0,cy=0;
+ for(var i=0;i<poly.length;i++){var a=poly[i],b=poly[(i+1)%poly.length],cross=a.x*b.y-b.x*a.y;area+=cross;cx+=(a.x+b.x)*cross;cy+=(a.y+b.y)*cross}
+ if(Math.abs(area)>1e-7){p={x:cx/(3*area),y:cy/(3*area)};if(insideRoom(p,box))return p}
+ for(var n=0;n<=20;n++)for(var m=0;m<=20;m++){p={x:box.left+(box.right-box.left)*m/20,y:box.top+(box.bottom-box.top)*n/20};if(insideRoom(p,box))return p}
+ return{x:(box.left+box.right)/2,y:(box.top+box.bottom)/2};
+}
 function buildByOffset(edgeCm,isAutomatic){
  var box=roomBox(),k=pxPerCm(),edge=Math.max(0,Number(edgeCm)||0)*k,points=[];
  var left=box.left+edge,right=box.right-edge,top=box.top+edge,bottom=box.bottom-edge;
@@ -80,7 +115,7 @@ function buildByOffset(edgeCm,isAutomatic){
      y:rows===1?(top+bottom)/2:top+r*(bottom-top)/(rows-1)
    });
  }
- var outside=points.some(function(p){return p.x<box.left||p.x>box.right||p.y<box.top||p.y>box.bottom||!insidePoly(p,box.poly)});
+ var outside=points.some(function(p){return p.x<box.left||p.x>box.right||p.y<box.top||p.y>box.bottom||!insideRoom(p,box)});
  if(outside){try{showToast("Частина світильників виходить за контур — змініть відступ")}catch(_){};return}
  if(replaceSpots(points)){
    try{call("rmLfClose")}catch(_){}
@@ -140,10 +175,14 @@ function action(){
  }
  if(S.method==="manual"){
    if(S.mode!=="one")return buildByOffset(D.edge,false);
-   try{call("rmLfClose")}catch(_){};try{call("setLightMode",placementType())}catch(_){};return call("rmLfManualSpot")
+   try{call("rmLfClose")}catch(_){};return call("setLightMode",placementType())
  }
  if(S.method==="room"&&(S.mode==="grid"||S.mode==="row"))return buildByOffset(50,true);
- if(placementType()==="double_spot")try{call("setLightMode","double_spot")}catch(_){}
+ if(S.mode==="one"&&S.method==="room"){
+   var box=roomBox(),p=centerPoint(box);
+   if(addOne(p)){try{call("rmLfClose")}catch(_){};try{showToast("Світильник поставлено по центру кімнати")}catch(_){} }
+   return;
+ }
  return call("rmLfApply");
 }
 document.addEventListener("click",function(e){
@@ -163,6 +202,12 @@ document.addEventListener("input",function(e){
 var oldOpen=window.openLightFlowModal;
 if(typeof oldOpen==="function"&&!oldOpen.__v353){
  var op=function(){var r=oldOpen.apply(this,arguments);setTimeout(ensure,0);return r};op.__v353=true;window.openLightFlowModal=op;try{openLightFlowModal=op}catch(_){}
+}
+/* Normal spot flow must clear a previously selected double-spot type. */
+var oldSpotFlow=window.rmStartSpotFlow;
+if(typeof oldSpotFlow==="function"&&!oldSpotFlow.__v353type){
+ var spotFlow=function(){window.__aceilLightPlacementType="spot";window.__aceilDoubleSpotOrientation="horizontal";return oldSpotFlow.apply(this,arguments)};
+ spotFlow.__v353type=true;window.rmStartSpotFlow=spotFlow;try{rmStartSpotFlow=spotFlow}catch(_){}
 }
 var m=g("lightFlowModal");
 if(m)try{new MutationObserver(function(){if(m.classList.contains("open"))setTimeout(ensure,0)}).observe(m,{attributes:true,attributeFilter:["class"]})}catch(_){}
