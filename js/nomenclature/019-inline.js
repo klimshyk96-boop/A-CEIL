@@ -297,6 +297,16 @@ function buildAutoControlDiagonals(){
   /* Одна успішно підтверджена контрольна діагональ завершує перевірку.
      Наступну пропонуємо лише якщо підтверджена має розбіжність понад допуск. */
   if(_autoDiagHasSuccessfulConfirmation()) return [];
+  /* Усі кути прямі й сторони замикають контур: діагональ нічого нового не покаже, тому її не пропонуємо. */
+  try{
+    var _allRight=pts.length>=4;
+    for(var _k=0;_k<pts.length&&_allRight;_k++){
+      var _a=pts[(_k-1+pts.length)%pts.length],_b=pts[_k],_c=pts[(_k+1)%pts.length];
+      var _ux=_a.x-_b.x,_uy=_a.y-_b.y,_vx=_c.x-_b.x,_vy=_c.y-_b.y,_l=Math.hypot(_ux,_uy)*Math.hypot(_vx,_vy);
+      if(!(_l>0)||Math.abs((_ux*_vx+_uy*_vy)/_l)>0.035)_allRight=false;
+    }
+    if(_allRight)return [];
+  }catch(_e0){}
 
   var n=pts.length;
   var inners=[],outers=[],slantVertices={};
@@ -566,26 +576,31 @@ const e=document.getElementById("rs_dimensions");return!0===(e?e.checked:r.dimen
   const covers=hitsGeometry(spot.x,spot.y);
   window.__aceilWLHit=null;
   /* Table would cover the plan: show a small collapsed chip until the user opens it. */
+  /* A different shape (other number of points) starts with the list closed again. */
+  if(window.__aceilWLN!==pts.length){window.__aceilWLN=pts.length;window.__aceilWLOpen=false}
   const collapsed=covers&&!window.__aceilWLOpen;
   if(collapsed){
-    /* Chip sits at the left edge right under the "+ Кімната" button; moves down along the edge only if the plan is there. */
+    /* Chip is a blue pill in the same row as the "+ Кімната" button (to its right); if the plan reaches there it slides down the left edge. */
     W=104*u;H=28*u;
     const top=50*u,stepY=H+10*u,ys=[],xs=[margin+4*u,cv.width-W-margin-4*u];
     for(let yy=top;yy+H<=cv.height-margin;yy+=stepY)ys.push(yy);
-    spot=null;
-    for(const xx of xs){for(const yy of ys){if(!hitsGeometry(xx,yy)){spot={x:xx,y:yy};break}}if(spot)break}
-    if(!spot)spot={x:xs[0],y:top};
+    spot={x:100*u,y:4*u};
+    if(hitsGeometry(spot.x,spot.y)){
+      spot=null;
+      for(const xx of xs){for(const yy of ys){if(!hitsGeometry(xx,yy)){spot={x:xx,y:yy};break}}if(spot)break}
+      if(!spot)spot={x:100*u,y:4*u};
+    }
   }
   const x=spot.x;let y=spot.y;
   /* Opened table must not hide its own title under the "+ Кімната" button in the top-left corner. */
   if(covers&&!collapsed)y=Math.min(Math.max(y,50*u),Math.max(margin,cv.height-H-margin));
   if(collapsed){
     ctx.save();ctx.setTransform(1,0,0,1,0,0);
-    ctx.shadowColor="rgba(15,23,42,.12)",ctx.shadowBlur=8*u,ctx.shadowOffsetY=2*u;
+    ctx.shadowColor="rgba(59,99,232,.35)",ctx.shadowBlur=10*u,ctx.shadowOffsetY=3*u;
     ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,W,H,14*u):ctx.rect(x,y,W,H);
-    ctx.fillStyle="rgba(255,255,255,.97)",ctx.fill();ctx.shadowColor="transparent";ctx.shadowBlur=0;
-    ctx.strokeStyle="rgba(37,99,235,.35)",ctx.lineWidth=1*u,ctx.stroke();
-    ctx.fillStyle="#2563eb",ctx.font=`800 ${11*u}px -apple-system,Arial`,ctx.textAlign="center",ctx.textBaseline="middle";
+    const _g=ctx.createLinearGradient(x,y,x+W,y+H);_g.addColorStop(0,"#3b63e8"),_g.addColorStop(1,"#5b5fe6");
+    ctx.fillStyle=_g,ctx.fill();ctx.shadowColor="transparent";ctx.shadowBlur=0;
+    ctx.fillStyle="#ffffff",ctx.font=`800 ${11*u}px -apple-system,Arial`,ctx.textAlign="center",ctx.textBaseline="middle";
     ctx.fillText("\u25BE Розміри · "+pts.length,x+W/2,y+H/2+.5*u);
     ctx.restore();
     window.__aceilWLHit={x:x,y:y,w:W,h:H};
@@ -604,7 +619,7 @@ const e=document.getElementById("rs_dimensions");return!0===(e?e.checked:r.dimen
     ctx.fillStyle="#172554",ctx.font=`800 ${10*u}px -apple-system,Arial`,ctx.textAlign="left",ctx.fillText(nm,x+pad,yy);
     ctx.fillStyle="#334155",ctx.font=`650 ${10*u}px -apple-system,Arial`,ctx.textAlign="right",ctx.fillText(val,x+W-pad,yy);
   }
-  if(covers){ctx.fillStyle="#2563eb",ctx.font=`800 ${11*u}px -apple-system,Arial`,ctx.textAlign="right",ctx.textBaseline="middle",ctx.fillText("\u25B4",x+W-pad,y+pad+title/2);window.__aceilWLHit={x:x,y:y,w:W,h:pad+title+6*u}}
+  if(covers){ctx.fillStyle="#2563eb",ctx.font=`800 ${11*u}px -apple-system,Arial`,ctx.textAlign="right",ctx.textBaseline="middle",ctx.fillText("\u25B4",x+W-pad,y+pad+title/2);window.__aceilWLHit={x:x,y:y,w:W,h:H}}
   ctx.restore();return true;
 })()),
 ctx.restore()}function getCanvasPoint(clientX,clientY){const r=cv.getBoundingClientRect(),scaleX=cv.width/r.width,scaleY=cv.height/r.height;return{x:((clientX-r.left)*scaleX-viewOffsetX)/viewScale,y:((clientY-r.top)*scaleY-viewOffsetY)/viewScale}}
