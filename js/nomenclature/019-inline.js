@@ -568,13 +568,13 @@ const e=document.getElementById("rs_dimensions");return!0===(e?e.checked:r.dimen
   /* Table would cover the plan: show a small collapsed chip until the user opens it. */
   const collapsed=covers&&!window.__aceilWLOpen;
   if(collapsed){
-    /* Chip sits at the left edge, vertically centred (away from the top buttons); moves along the edge only if the plan is there. */
+    /* Chip sits at the left edge right under the "+ Кімната" button; moves down along the edge only if the plan is there. */
     W=104*u;H=28*u;
-    const mid=(cv.height-H)/2,stepY=H+10*u,ys=[],xs=[margin+4*u,cv.width-W-margin-4*u];
-    for(let k=0;k<=8;k++)[k,-k].forEach(d=>{const yy=mid+d*stepY;if(yy>=margin&&yy+H<=cv.height-margin&&ys.indexOf(yy)<0)ys.push(yy)});
+    const top=50*u,stepY=H+10*u,ys=[],xs=[margin+4*u,cv.width-W-margin-4*u];
+    for(let yy=top;yy+H<=cv.height-margin;yy+=stepY)ys.push(yy);
     spot=null;
     for(const xx of xs){for(const yy of ys){if(!hitsGeometry(xx,yy)){spot={x:xx,y:yy};break}}if(spot)break}
-    if(!spot)spot={x:xs[0],y:mid};
+    if(!spot)spot={x:xs[0],y:top};
   }
   const x=spot.x;let y=spot.y;
   /* Opened table must not hide its own title under the "+ Кімната" button in the top-left corner. */
