@@ -62,7 +62,7 @@ window.findWallSideHitTouchV304=function(clientX,clientY){
   try{
     var p=getCanvasPoint(clientX,clientY);
     var r=cv.getBoundingClientRect();
-    var canvasPerCss=((cv.width/(r.width||cv.width||1))+(cv.height/(r.height||cv.height||1)))/2;
+    var canvasPerCss=((ACEILCanvas.width(cv)/(r.width||ACEILCanvas.width(cv)||1))+(ACEILCanvas.height(cv)/(r.height||ACEILCanvas.height(cv)||1)))/2;
     var threshold=(48*canvasPerCss)/(viewScale||1);
 
     var bestSide=-1,bestDist=Infinity;

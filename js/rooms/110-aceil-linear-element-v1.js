@@ -110,7 +110,7 @@
         if(c&&isFinite(c.x)&&isFinite(c.y))return {x:c.x,y:c.y};
       }
       if(list.length)return polygonCentroidPx(list);
-      if(typeof cv!=='undefined'&&cv)return {x:cv.width/2,y:cv.height/2};
+      if(typeof cv!=='undefined'&&cv)return {x:ACEILCanvas.width(cv)/2,y:ACEILCanvas.height(cv)/2};
     }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     return {x:0,y:0};
   }
@@ -270,7 +270,7 @@
       }
 
       if(!centerPx&&typeof cv!=='undefined'&&cv){
-        centerPx={x:cv.width/2,y:cv.height/2};
+        centerPx={x:ACEILCanvas.width(cv)/2,y:ACEILCanvas.height(cv)/2};
       }
 
       if(centerPx&&typeof canvasToLightCoords==='function'){
@@ -410,13 +410,7 @@
     c.restore();
   }
   window._drawLinearElements=drawLinearElements;
-  var _prevDraw=window.draw;
-  window.draw=function(){
-    var r; try{ if(typeof _prevDraw==='function') r=_prevDraw.apply(this,arguments); }
-    finally{ try{ drawLinearElements(); }catch(_){window.__diagSilent&&window.__diagSilent(_)} }
-    return r;
-  };
-  try{draw=window.draw;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  ACEILCanvas.afterDraw('linear-elements', drawLinearElements);
 
   /* ── Тап по фігурі: відкрити налаштування ── */
   function pointSegmentDistance(p,a,b){
@@ -440,7 +434,7 @@
       canvas.addEventListener('pointerdown',function(ev){down={x:ev.clientX,y:ev.clientY};},true);
       canvas.addEventListener('pointerup',function(ev){
         if(!down||Math.hypot(ev.clientX-down.x,ev.clientY-down.y)>8){down=null;return;} down=null;
-        var r=canvas.getBoundingClientRect(), sx=canvas.width/r.width, sy=canvas.height/r.height;
+        var r=canvas.getBoundingClientRect(), sx=ACEILCanvas.width(canvas)/r.width, sy=ACEILCanvas.height(canvas)/r.height;
         var hit=hitLinearElement((ev.clientX-r.left)*sx,(ev.clientY-r.top)*sy);
         if(hit){ev.preventDefault();ev.stopPropagation();openEditor(hit.id);}
       },true);
@@ -528,6 +522,7 @@
   };
   function applyLinearNomenclature(){
     try{
+      if(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==='function'&&!window.A_CEIL_AutoCount.isEnabled())return 0;
       if(typeof elemItems==='undefined'||!Array.isArray(elemItems))return 0;
       var sum=window.linearElementsSummary(),updated=0;
       elemItems.forEach(function(it){
@@ -1182,4 +1177,20 @@
   try{renderLightMenu=window.renderLightMenu;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   try{ addMenuItem(); }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 
+  // Live lighting edits belong to the same module as find/curId/repaintOnly.
+  document.addEventListener('input', function (event) {
+    var input = event.target;
+    if (!input || (input.id !== 'leRhombusSide' && input.id !== 'leRotationDeg')) return;
+    var item = find(curId);
+    if (!item || item.elementType !== 'lightLine') return;
+    var value = Number(String(input.value).replace(',', '.'));
+    if (!Number.isFinite(value)) return;
+    if (input.id === 'leRhombusSide') {
+      if (item.lightShapeMode !== 'rhombus') return;
+      item.rhombusSide = Math.max(1, value);
+      computeTotals(item);
+    } else item.rotation = value;
+    syncPoints(item);
+    repaintOnly();
+  });
 })();

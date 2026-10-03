@@ -56,6 +56,7 @@
   if(typeof previous!=="function"||previous.__insertChoiceGuardV1)return;
 
   var wrapped=function(){
+    if(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==="function"&&!window.A_CEIL_AutoCount.isEnabled())return;
     var before=candidates();
     var preferred=preferredBeforeAutofill(before);
     var preferredId=preferred&&preferred.id;

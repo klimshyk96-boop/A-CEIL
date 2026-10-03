@@ -62,6 +62,7 @@
     films.forEach(function(it){it.filmSelected=it===chosen;});
   }
   function forceFilmQuantity(){
+    if(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==="function"&&!window.A_CEIL_AutoCount.isEnabled())return;
     repairFilmSelection();var films=runtimeElemItems().filter(function(it){return it&&Number(it.filmWidth)>0;}),needed=0,area=0;if(!films.length)return;
     try{needed=Number(typeof getRequiredFilmWidthMeters==="function"?getRequiredFilmWidthMeters():window.getRequiredFilmWidthMeters&&window.getRequiredFilmWidthMeters())||0;}catch(e){}
     try{area=Number(typeof getProjectAreaMeters==="function"?getProjectAreaMeters():window.getProjectAreaMeters&&window.getProjectAreaMeters())||0;}catch(e){}
@@ -74,6 +75,7 @@
   function wrapFilmAutoFill(){
     var previous=window.autoFillNomenclature;if(typeof previous!=="function"||previous.__ceilingFilmFix)return;
     var wrapped=function(){
+      if(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==="function"&&!window.A_CEIL_AutoCount.isEnabled())return;
       repairFilmSelection();var oldWindowToast=window.showToast,oldLexicalToast=null;
       var filteredToast=function(message){if(/Кілька рулонів однакової ширини/i.test(String(message||"")))return;return typeof oldWindowToast==="function"?oldWindowToast.apply(this,arguments):undefined;};
       window.showToast=filteredToast;try{oldLexicalToast=showToast;showToast=filteredToast;}catch(e){}
@@ -264,7 +266,7 @@
   window.cancelCeilingCornicePlacement=function(){pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");toast("Розміщення скасовано");};
 
   function distanceToSegment(p,a,b){var vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y,c1=wx*vx+wy*vy;if(c1<=0)return Math.hypot(p.x-a.x,p.y-a.y);var c2=vx*vx+vy*vy;if(c2<=c1)return Math.hypot(p.x-b.x,p.y-b.y);var t=c1/c2;return Math.hypot(p.x-(a.x+t*vx),p.y-(a.y+t*vy));}
-  function eventWorld(ev,canvas){var src=ev&&ev.touches&&ev.touches[0]||ev&&ev.changedTouches&&ev.changedTouches[0]||ev,r=canvas.getBoundingClientRect(),rawX=(((src&&src.clientX)||0)-r.left)*(canvas.width/r.width),rawY=(((src&&src.clientY)||0)-r.top)*(canvas.height/r.height),zoom=1,ox=0,oy=0;try{zoom=typeof viewScale!=="undefined"&&viewScale>0?viewScale:1;ox=typeof viewOffsetX!=="undefined"?viewOffsetX:0;oy=typeof viewOffsetY!=="undefined"?viewOffsetY:0;}catch(e){}var inCanvas=rawX>=0&&rawY>=0&&rawX<=canvas.width&&rawY<=canvas.height;return{x:(rawX-ox)/zoom,y:(rawY-oy)/zoom,threshold:28/zoom,inCanvas:inCanvas};}
+  function eventWorld(ev,canvas){var src=ev&&ev.touches&&ev.touches[0]||ev&&ev.changedTouches&&ev.changedTouches[0]||ev,r=canvas.getBoundingClientRect(),rawX=(((src&&src.clientX)||0)-r.left)*(ACEILCanvas.width(canvas)/r.width),rawY=(((src&&src.clientY)||0)-r.top)*(ACEILCanvas.height(canvas)/r.height),zoom=1,ox=0,oy=0;try{zoom=typeof viewScale!=="undefined"&&viewScale>0?viewScale:1;ox=typeof viewOffsetX!=="undefined"?viewOffsetX:0;oy=typeof viewOffsetY!=="undefined"?viewOffsetY:0;}catch(e){}var inCanvas=rawX>=0&&rawY>=0&&rawX<=ACEILCanvas.width(canvas)&&rawY<=ACEILCanvas.height(canvas);return{x:(rawX-ox)/zoom,y:(rawY-oy)/zoom,threshold:28/zoom,inCanvas:inCanvas};}
   function nearestWall(point){var p=points(),best=null;for(var i=0;i<p.length;i++){var a=p[i],b=p[(i+1)%p.length],vx=b.x-a.x,vy=b.y-a.y,len2=vx*vx+vy*vy;if(!len2)continue;var t=Math.max(0,Math.min(1,((point.x-a.x)*vx+(point.y-a.y)*vy)/len2)),q={x:a.x+t*vx,y:a.y+t*vy},distance=Math.hypot(point.x-q.x,point.y-q.y);if(!best||distance<best.distance)best={index:i,t:t,distance:distance};}return best;}
   function nearestCorner(point){var p=points(),best=null;p.forEach(function(c,i){var distance=Math.hypot(point.x-c.x,point.y-c.y);if(!best||distance<best.distance)best={index:i,distance:distance};});return best;}
   function placeAtCorner(point){

@@ -47,7 +47,7 @@ function showWholeRoom(){
     if(!canvas||list.length<2){if(typeof resetZoom==="function")resetZoom();return true;}
     var xs=list.map(function(p){return Number(p.x);}),ys=list.map(function(p){return Number(p.y);});
     var minX=Math.min.apply(null,xs),maxX=Math.max.apply(null,xs),minY=Math.min.apply(null,ys),maxY=Math.max.apply(null,ys);
-    var bw=Math.max(1,maxX-minX),bh=Math.max(1,maxY-minY),w=canvas.width||750,h=canvas.height||750;
+    var bw=Math.max(1,maxX-minX),bh=Math.max(1,maxY-minY),w=ACEILCanvas.width(canvas)||750,h=ACEILCanvas.height(canvas)||750;
     var pad=Math.max(70,Math.min(w,h)*.11),scale=Math.min((w-pad*2)/bw,(h-pad*2)/bh);
     if(!isFinite(scale)||scale<=0)scale=1;
     viewScale=Math.max(.5,Math.min(5,scale));

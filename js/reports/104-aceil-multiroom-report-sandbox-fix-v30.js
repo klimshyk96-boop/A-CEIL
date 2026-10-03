@@ -112,9 +112,9 @@
     window.__A·CEILReportRendering=true;
     try{
       applyRoomState(st,rs||{});
-      var scale=4;
-      cv.width=Math.max(1,Math.round(saved.canvasWidth*scale));
-      cv.height=Math.max(1,Math.round(saved.canvasHeight*scale));
+      var scale=4,logicalWidth=ACEILCanvas.width(cv),logicalHeight=ACEILCanvas.height(cv);
+      cv.width=Math.max(1,Math.round(logicalWidth*scale));
+      cv.height=Math.max(1,Math.round(logicalHeight*scale));
       if(circleMode){
         viewScale=1;viewOffsetX=0;viewOffsetY=0;
       }else{

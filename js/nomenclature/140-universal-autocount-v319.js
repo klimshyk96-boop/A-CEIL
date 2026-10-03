@@ -15,6 +15,11 @@ function esc(v){
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
   });
 }
+function autoCountEnabled(){
+  try{
+    return !window.A_CEIL_AutoCount||typeof window.A_CEIL_AutoCount.isEnabled!=="function"||window.A_CEIL_AutoCount.isEnabled();
+  }catch(_){return true}
+}
 function getLightTypes(){
   try{if(Array.isArray(window.lightTypes))return window.lightTypes.slice()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   try{var a=JSON.parse(localStorage.getItem("lightTypes_v1")||"[]");return Array.isArray(a)?a:[]}catch(_){return[]}
@@ -290,6 +295,7 @@ function exactAutoSourceForName(name){
 }
 function applyUniversal(opts){
   opts=opts||{};
+  if(!autoCountEnabled())return 0;
   var changed=0,allItems=getElemItems();
   var hasColoredUnoRows=allItems.some(function(row){
     if(!row)return false;
@@ -349,6 +355,7 @@ window.rmUniversalAutoCountV319=applyUniversal;
 var prevAuto=window.autoFillNomenclature||(typeof autoFillNomenclature==="function"?autoFillNomenclature:null);
 if(typeof prevAuto==="function"){
   window.autoFillNomenclature=function(){
+    if(!autoCountEnabled())return 0;
     var r=prevAuto.apply(this,arguments);
     applyUniversal({noSave:false});
     return r;
@@ -459,8 +466,10 @@ if(typeof prevQuick==="function"){
           var item=getElemItems().find(function(x){return x&&x.id===id});
           if(item){
             item.source=s.key;
-            var v=computeSource(s.key);
-            if(v){item.qty=v.qty;item.unit=v.unit;item.autoFilled=true;item.autoZero=!(Number(v.qty)>0)}
+            if(autoCountEnabled()){
+              var v=computeSource(s.key);
+              if(v){item.qty=v.qty;item.unit=v.unit;item.autoFilled=true;item.autoZero=!(Number(v.qty)>0)}
+            }
           }
           try{if(typeof closeModal==="function")closeModal("quickSourceModal")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
           applyUniversal();

@@ -30,6 +30,7 @@ function markMatchesDescriptors(markTypeNorm, stems){
 
 function fixColorAwareQuantities(){
   try {
+    if (window.A_CEIL_AutoCount && typeof window.A_CEIL_AutoCount.isEnabled === "function" && !window.A_CEIL_AutoCount.isEnabled()) return;
     if (typeof elemItems === "undefined" || !Array.isArray(elemItems)) return;
     if (typeof _itemColorWord !== "function") return;
     var marks = Array.isArray(window.wallMarks) ? window.wallMarks

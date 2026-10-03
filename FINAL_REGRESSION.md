@@ -1,13 +1,22 @@
-# FINAL regression checklist
+# Перевірки — 2026-10-03
 
-1. Deploy as a new Vercel project and confirm the page stays on its `*.vercel.app` host.
-2. Login with username/password first. Projects and nomenclature must hydrate without Google login.
-3. Open a normal project. Open/close Elements without edits; price/qty must remain unchanged.
-4. Open multi-room; switch A → B → A and verify isolation.
-5. On a disposable project, create a room, draw, save, reload; it must remain.
-6. Delete that disposable room, reload; it must not return.
-7. Open normal and manager reports where applicable.
-8. Background the browser for 20–30 seconds, return, and verify session/project state.
-9. Logout, reload, login again by password; cloud data must load.
-10. Check 🐞 Debug for any new meaningful error.
-11. Optional console: `A_CEIL_CleanHealth()` should report `ok: true` after full load.
+52 перевірки пройшли у Chromium 134 в ізольованому локальному середовищі.
+Supabase замінений тестовим адаптером лише у tests/browser-review.cjs; зовнішні запити заблоковані.
+Цей адаптер не підключений у застосунку.
+
+- Порівняно обчислені властивості стилів елементів з id на ширинах 390/1440/2560 px: відмінностей немає.
+- Немає відсутніх локальних ресурсів або необроблених JS-помилок.
+- Перерахунок координат із зумом/зсувом перевірений для 390px DPR1, 390px DPR3, 1440px DPR2.
+- Малювання не змінює геометрію, ціни чи кількості в тестовому стані.
+- Експорт поточної та окремої кімнати: прямокутник/коло, PNG 3000×3000,
+  відновлення геометрії, позиції камери, номенклатури та розміру канвасу.
+- Режим «пальцем» записується в localStorage.
+- A → B → A зберігає розміри; збережені кімнати переживають перезавантаження.
+- Видалення кімнати оновлює rooms і state.rooms, кімната не повертається після перезавантаження.
+- Відкриття номенклатури зберігає поточні qty/price у тестовому наборі.
+- Живе редагування сторони ромба; розгортання/згортання полотна не псує координати чи геометрію.
+- Візуально переглянуто креслення складної кімнати на мобільному Retina.
+
+Не перевірено: реальний вхід/синхронізація Supabase, Google OAuth, Safari на фізичному iPhone,
+публікація звітів у хмару, оновлення встановленої PWA на реальному пристрої.
+Результати локальних тестів не означають перевірку цих зовнішніх сценаріїв.

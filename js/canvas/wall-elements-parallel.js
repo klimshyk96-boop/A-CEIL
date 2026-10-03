@@ -74,7 +74,7 @@
     // Put labels in separate rows too: 24px, 52px, 80px... from the wall.
     var labelDist=24 + lane*28;
     var lx=g.mx-g.nx*labelDist, ly=g.my-g.ny*labelDist;
-    var cw=(c.canvas&&c.canvas.width)||9999, ch=(c.canvas&&c.canvas.height)||9999;
+    var cw=(c.canvas&&ACEILCanvas.width(c.canvas))||9999, ch=(c.canvas&&ACEILCanvas.height(c.canvas))||9999;
     var boxW=vertical?rawH:rawW, boxH=vertical?rawW:rawH;
     lx=clamp(lx,10+boxW/2,cw-10-boxW/2);
     ly=clamp(ly,10+boxH/2,ch-10-boxH/2);

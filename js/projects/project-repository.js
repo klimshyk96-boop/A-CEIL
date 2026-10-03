@@ -105,6 +105,11 @@
     : JSON.parse(JSON.stringify(value));
 
   let memoryCache = null;
+  let memoryUserId = '';
+
+  function currentStorageUser(){
+    try{return window.A_CEIL_UserStorage?String(window.A_CEIL_UserStorage.getUserId()||''):'';}catch(_){return '';}
+  }
 
   const projectKeys = project => {
     const keys = [];
@@ -202,7 +207,11 @@
     } catch(_) { return []; }
   }
   function ensureMemory(){
-    if(memoryCache===null)memoryCache=normalize(readRaw());
+    const uid=currentStorageUser();
+    if(memoryCache===null||memoryUserId!==uid){
+      memoryUserId=uid;
+      memoryCache=normalize(readRaw());
+    }
     return memoryCache;
   }
   let lastWriteMeta=null;
@@ -252,6 +261,7 @@
   }
   function replaceAll(projects){
     const normalized=normalize(projects);
+    memoryUserId=currentStorageUser();
     memoryCache=normalized;
     if(!writePersistent(normalized))reportStorageError();
     return normalized;
@@ -331,6 +341,7 @@
   /* First load: preserve what was in Safari in memory, then immediately rewrite
      only a light local cache. Supabase remains the source of truth. */
   memoryCache=normalize(readRaw());
+  memoryUserId=currentStorageUser();
   writePersistent(memoryCache);
   try{
     const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
@@ -358,6 +369,13 @@
   window.getProjects = function(){ return api.list(); };
   window.setProjects = function(projects){ return api.replaceAll(projects); };
   try { getProjects = window.getProjects; setProjects = window.setProjects; } catch(_){}
+
+  window.addEventListener('aceil:user-storage-changed',function(){
+    memoryCache=null;
+    memoryUserId='';
+    ensureMemory();
+    try{if(typeof renderProjects==='function')renderProjects();}catch(_){}
+  });
 
   /* Canonical local persistence lives with the repository.
      This matches the final runtime behavior that previously arrived much later

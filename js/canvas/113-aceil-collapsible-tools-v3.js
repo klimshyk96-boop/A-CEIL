@@ -21,16 +21,15 @@ function applyCanvasLayout(){
       try{safeBottom=Math.max(12,parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sat-bottom"))||12);}catch(e){window.__diagSilent&&window.__diagSilent(e)}
       var available=Math.max(360,Math.floor(viewportHeight()-rect.top-safeBottom));
       var cssWidth=Math.max(1,canvasHost.clientWidth||rect.width||canvas.clientWidth||1);
-      var backingWidth=canvas.width||originalCanvasWidth||750;
+      var backingWidth=originalCanvasWidth||750;
       var backingHeight=Math.max(1,Math.round(available*(backingWidth/cssWidth)));
       canvasHost.style.height=available+"px";
       canvas.style.height=available+"px";
-      if(canvas.height!==backingHeight)canvas.height=backingHeight;
+      ACEILCanvas.setSize(backingWidth,backingHeight);
     }else{
       canvasHost.style.height="";
       canvas.style.height="";
-      if(originalCanvasHeight&&canvas.height!==originalCanvasHeight)canvas.height=originalCanvasHeight;
-      if(originalCanvasWidth&&canvas.width!==originalCanvasWidth)canvas.width=originalCanvasWidth;
+      ACEILCanvas.setSize(originalCanvasWidth,originalCanvasHeight);
     }
     redraw();
     try{window.dispatchEvent(new CustomEvent("A·CEIL:tool-panel-change",{detail:{collapsed:isCollapsed()}}));}catch(e){window.__diagSilent&&window.__diagSilent(e)}
@@ -50,7 +49,7 @@ function init(){
   canvasHost=document.querySelector(".canvas-container");
   canvas=document.getElementById("cv");
   if(!mainArea||!panel||!canvasHost||!canvas)return;
-  originalCanvasWidth=canvas.width;originalCanvasHeight=canvas.height;
+  originalCanvasWidth=ACEILCanvas.width(canvas);originalCanvasHeight=ACEILCanvas.height(canvas);
   var saved=false;try{saved=localStorage.getItem(STORAGE_KEY)==="1";}catch(e){window.__diagSilent&&window.__diagSilent(e)}
   setCollapsed(saved,false);
   window.addEventListener("resize",applyCanvasLayout,{passive:true});

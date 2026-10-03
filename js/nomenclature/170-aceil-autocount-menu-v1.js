@@ -9,6 +9,9 @@
   }
   function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]})}
   function gid(id){return document.getElementById(id);}
+  function autoCountEnabled(){
+    try{return !window.A_CEIL_AutoCount||typeof window.A_CEIL_AutoCount.isEnabled!=="function"||window.A_CEIL_AutoCount.isEnabled()}catch(e){return true}
+  }
   function items(){
     try{if(typeof elemItems!=="undefined"&&Array.isArray(elemItems))return elemItems;}catch(e){window.__diagSilent&&window.__diagSilent(e)}
     return Array.isArray(window.elemItems)?window.elemItems:[];
@@ -162,6 +165,7 @@
     return {qty:qty,unit:unit};
   }
   function applyCustomRules(render){
+    if(!autoCountEnabled())return false;
     loadRules();var changed=false;
     items().forEach(function(it){
       var source=String(it&&it.source||"");if(!source.startsWith("custom:"))return;
@@ -178,6 +182,7 @@
   }
   window.A_CEIL_CustomAutoRules={list:function(){loadRules();return customRules.slice()},apply:applyCustomRules};
   function correctCorniceRules(render){
+    if(!autoCountEnabled())return false;
     var changed=false;
     items().forEach(function(it){
       var source=norm(it&&it.source);
@@ -200,6 +205,7 @@
   var previousAuto=window.autoFillNomenclature;
   if(typeof previousAuto==="function"&&!previousAuto.__pvcCorniceFixed){
     var wrappedAuto=function(){
+      if(!autoCountEnabled())return 0;
       var result=previousAuto.apply(this,arguments);
       applyCustomRules(false);
       correctCorniceRules(true);

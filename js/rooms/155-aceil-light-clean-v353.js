@@ -21,7 +21,7 @@ function syncOld(){
 function roomBox(){
  var cv=g("cv")||{width:800,height:600},list=[];
  try{list=typeof pts!=="undefined"&&Array.isArray(pts)?pts:[]}catch(_){list=Array.isArray(window.pts)?window.pts:[]}
- if(!list.length)return{left:0,top:0,right:Number(cv.width)||800,bottom:Number(cv.height)||600,poly:[]};
+ if(!list.length)return{left:0,top:0,right:Number(ACEILCanvas.width(cv))||800,bottom:Number(ACEILCanvas.height(cv))||600,poly:[]};
  var xs=list.map(function(p){return Number(p.x)||0}),ys=list.map(function(p){return Number(p.y)||0});
  return{left:Math.min.apply(null,xs),top:Math.min.apply(null,ys),right:Math.max.apply(null,xs),bottom:Math.max.apply(null,ys),poly:list};
 }

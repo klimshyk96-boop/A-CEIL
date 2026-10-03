@@ -1,42 +1,34 @@
-# A·CEIL CLEAN FINAL
+# A·CEIL — CLEAN 2026-10-03
 
-Production-oriented CLEAN baseline for A·CEIL, finalized after the RC1 regression pass on iPhone/Vercel.
+Повний пакет для Vercel. У корені публікації мають бути index.html, assets/, js/, sw.js і vercel.json.
+Підмінюйте пакет цілком: він містить перенесені та видалені файли, а не лише додаткові латки.
+Домен і налаштування Supabase збережені. Міграція бази даних не потрібна.
 
-## Runtime invariants
+## Зміни
 
-- Password auth hydrates cloud projects/nomenclature without requiring Google login.
-- Safari/WebKit resume and Supabase realtime cleanup remain protected.
-- Project repository preserves local unsynced work during cloud hydration.
-- Multi-room lifecycle keeps room IDs stable and synchronizes live `rooms` with serialized room state.
-- Deleted rooms must not reappear after reload.
-- Opening nomenclature is read-only with respect to quantities/prices.
-- Public/manager reports retain their established behavior and production report URLs.
-- Parallel wall elements remain supported.
-- Debug error capture remains available; empty WebKit `ERROR: null` noise is ignored.
-- Measure-confidence logic remains available internally while its floating status circle is hidden.
-- No application redirect from Vercel staging to production.
-- No legacy service worker is registered.
+- Єдина draw() у js/canvas/renderer.js. Додаткові шари реєструються через ACEILCanvas.
+- js/canvas/viewport.js відокремлює логічні координати від пікселів Retina; враховано збільшене полотно.
+- Звіти експортуються у 4× логічному розмірі, без повторного множення на Retina.
+- Очищення контуру та попередження геометрії перенесено у відповідальні функції.
+- Живе редагування ромба і повороту світла працює всередині модуля лінійних елементів.
+- Видалено неактивний оформлювач 035, стару HiDPI-обгортку, окремі латки 125/136/137/192,
+  вимкнений переглядач планів і непідключений js/canvas/sw.js.
+- Видалено хибне підключення відсутнього 188-wall-dimensions-panel.js: розміри вже малює
+  основний renderer. Додаткову панель не створено.
+- 9 CSS-файлів → 3. Прибрано 431 точне повторне оголошення; порядок каскаду збережено.
+- 5337 → 5096 !important у зовнішніх CSS. Решта не видалялися механічно.
+- 160 → 156 локальних JS-підключень. Порядок решти залежних модулів збережено та зафіксовано перевіркою.
+- Оновлено версії локальних скриптів і кеш офлайн-оболонки.
 
-## Structure
+## Перевірка
 
-- `js/core/` — shared runtime/diagnostics.
-- `js/admin/` — authentication/access/admin authority.
-- `js/projects/` — project repository, persistence, project-level behavior.
-- `js/rooms/` — room and multi-room lifecycle.
-- `js/canvas/` — geometry/editing/render interaction.
-- `js/nomenclature/` — elements/catalog/pricing isolation.
-- `js/reports/` — normal, manager, cloud/public reports.
-- `assets/app.css` — consolidated application styles.
+`bash scripts/check-before-deploy.sh` (Node.js + Python 3).
+Перевіряє файли JS/CSS, синтаксис зовнішніх/вбудованих JS, порядок скриптів та відсутність обгорток draw().
 
-## Important maintenance rule
+Пройдено 52 автоматизовані браузерні перевірки. Подробиці: FINAL_REGRESSION.md.
+Для повторення функціональних тестів: `npm install --no-save playwright@1.51.1`,
+`npx playwright install chromium`, `node tests/verify-aceil.cjs`, `node tests/verify-state.cjs`.
+Для порівняння CSS із попереднім пакетом передайте його папку в ACEIL_BASELINE.
 
-Do not bulk-concatenate the remaining historical scripts. Browser testing showed that their independent `<script>` boundaries currently provide execution timing and fault isolation. Consolidate a legacy script only when its behavior has been moved into a canonical subsystem and verified in-browser.
-
-
-## Deep cleanup — 2026-09-27
-
-- Removed the two physical JS files that were not loaded or referenced by the application.
-- Removed obsolete RC10/RC11 historical cleanup notes.
-- Removed 174 generated/development HTML comments from `index.html`; script order and inline script bodies are unchanged.
-- Preserved all 153 active local JS script boundaries. A·CEIL still relies on ordered wrappers, initialization side effects, observers, DOM handlers, and state bridges, so “overridden name” is not treated as dead code.
-- `058-inline.js` and `076-inline.js` remain intentionally: both still participate in the live lighting wrapper/initialization chain.
+Це консолідація канвасу та очищення пакета. Решта застосунку ще використовує глобальні функції,
+історичні обгортки й послідовне завантаження; повним переписуванням архітектури цей пакет не є.

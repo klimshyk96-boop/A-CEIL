@@ -24,7 +24,7 @@
   function roomBox(){
     var cv = document.getElementById("cv") || {width:800,height:500};
     var list = (typeof pts !== "undefined" && Array.isArray(pts)) ? pts : [];
-    if (!list.length) return {left:80, top:80, right:(cv.width||800)-80, bottom:(cv.height||500)-80};
+    if (!list.length) return {left:80, top:80, right:(ACEILCanvas.width(cv)||800)-80, bottom:(ACEILCanvas.height(cv)||500)-80};
     var xs=list.map(function(p){return Number(p.x)||0}), ys=list.map(function(p){return Number(p.y)||0});
     return {left:Math.min.apply(null,xs), top:Math.min.apply(null,ys), right:Math.max.apply(null,xs), bottom:Math.max.apply(null,ys)};
   }
