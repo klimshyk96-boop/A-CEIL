@@ -1,14 +1,7 @@
-<<<<<<< HEAD
 /* A·CEIL offline shell v10 — 2026-10-03 */
 "use strict";
 
 const SHELL_CACHE="aceil-shell-20261003-clean1";
-=======
-/* A·CEIL offline shell v9 — 2026-10-02 */
-"use strict";
-
-const SHELL_CACHE="aceil-shell-20261002-finger-draw-v5";
->>>>>>> b3abd08b30fc471295445fee51012a2a3f04e8e0
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 
 function isStaticAsset(request){
