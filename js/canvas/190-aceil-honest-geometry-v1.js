@@ -166,11 +166,7 @@
   }
   function fitForCanvas(list){
     var width=750,height=750;
-<<<<<<< HEAD
     try{if(cv){width=Number(ACEILCanvas.width(cv))||width;height=Number(ACEILCanvas.height(cv))||height}}catch(_){}
-=======
-    try{if(cv){width=Number(cv.width)||width;height=Number(cv.height)||height}}catch(_){}
->>>>>>> b3abd08b30fc471295445fee51012a2a3f04e8e0
     var xs=list.map(function(p){return p.x}),ys=list.map(function(p){return p.y});
     var minX=Math.min.apply(null,xs),maxX=Math.max.apply(null,xs),minY=Math.min.apply(null,ys),maxY=Math.max.apply(null,ys);
     var pad=Math.max(56,Math.min(85,Math.min(width,height)*.115));

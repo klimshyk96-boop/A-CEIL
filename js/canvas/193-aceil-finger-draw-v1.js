@@ -101,11 +101,7 @@
     }
     try{
       var r=overlay.getBoundingClientRect();
-<<<<<<< HEAD
       pts=shape.map(function(p){return{x:(p.x*ACEILCanvas.width(cv)/r.width-viewOffsetX)/viewScale,y:(p.y*ACEILCanvas.height(cv)/r.height-viewOffsetY)/viewScale};});
-=======
-      pts=shape.map(function(p){return{x:(p.x*750/r.width-viewOffsetX)/viewScale,y:(p.y*750/r.height-viewOffsetY)/viewScale};});
->>>>>>> b3abd08b30fc471295445fee51012a2a3f04e8e0
       lengths=[];realPts=[];circleMode=false;closed=false;
       if(isClosed)closeShape();else{updateCornerCount();requestDraw();updateChecks();}
       if(typeof saveState==="function")saveState();
@@ -123,11 +119,7 @@
     if(!active||drawing||e.button>0)return;
     stopEvent(e);
     var p=svgPoint(e),r=overlay.getBoundingClientRect();
-<<<<<<< HEAD
     var existing=pts.map(function(q){return{x:(q.x*viewScale+viewOffsetX)*r.width/ACEILCanvas.width(cv),y:(q.y*viewScale+viewOffsetY)*r.height/ACEILCanvas.height(cv)};});
-=======
-    var existing=pts.map(function(q){return{x:(q.x*viewScale+viewOffsetX)*r.width/750,y:(q.y*viewScale+viewOffsetY)*r.height/750};});
->>>>>>> b3abd08b30fc471295445fee51012a2a3f04e8e0
     if(existing.length){
       var end=existing[existing.length-1];
       if(distance(p,end)>40){showToast('Почніть від останньої точки контуру');return;}
