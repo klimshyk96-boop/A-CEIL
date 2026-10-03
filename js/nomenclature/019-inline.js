@@ -567,7 +567,15 @@ const e=document.getElementById("rs_dimensions");return!0===(e?e.checked:r.dimen
   window.__aceilWLHit=null;
   /* Table would cover the plan: show a small collapsed chip until the user opens it. */
   const collapsed=covers&&!window.__aceilWLOpen;
-  if(collapsed){W=104*u;H=28*u;spot=solve();}
+  if(collapsed){
+    /* Chip sits at the left edge, vertically centred (away from the top buttons); moves along the edge only if the plan is there. */
+    W=104*u;H=28*u;
+    const mid=(cv.height-H)/2,stepY=H+10*u,ys=[],xs=[margin+4*u,cv.width-W-margin-4*u];
+    for(let k=0;k<=8;k++)[k,-k].forEach(d=>{const yy=mid+d*stepY;if(yy>=margin&&yy+H<=cv.height-margin&&ys.indexOf(yy)<0)ys.push(yy)});
+    spot=null;
+    for(const xx of xs){for(const yy of ys){if(!hitsGeometry(xx,yy)){spot={x:xx,y:yy};break}}if(spot)break}
+    if(!spot)spot={x:xs[0],y:mid};
+  }
   const x=spot.x,y=spot.y;
   if(collapsed){
     ctx.save();ctx.setTransform(1,0,0,1,0,0);
