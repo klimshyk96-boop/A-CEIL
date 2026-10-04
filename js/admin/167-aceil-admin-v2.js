@@ -66,7 +66,7 @@ function ensureCockpitAdminButton(){
   button=document.createElement("button");
   button.type="button";button.id="A_CEIL_OwnerAdminButton";button.className="aceil-head-action aceil-head-admin";
   button.title="Адміністрування";button.setAttribute("aria-label","Адміністрування");
-  button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 19 6v5.1c0 4.4-2.7 7.7-7 9.7-4.3-2-7-5.3-7-9.7V6l7-2.8Z"/><circle cx="12" cy="10" r="2.1"/><path d="M8.8 16.1c.8-1.7 1.9-2.5 3.2-2.5s2.4.8 3.2 2.5"/></svg>';
+  button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 16h7M14 19h4M19 14v4"/></svg>';
   button.onclick=function(){window.A_CEIL_Admin.open()};
   actions.insertBefore(button,actions.firstChild);
   return button;
