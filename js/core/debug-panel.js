@@ -3,6 +3,8 @@
 'use strict';
 window.A·CEIL=window.A·CEIL||{};
 var MAX=50, KEY='A·CEIL_debug_errors_v2', logs=[], consoleGuard=false, tapCount=0, tapTimer=0;
+function issueCount(){var seen={};logs.forEach(function(x){seen[[x.type||'',x.message||'',x.source||'',x.line||0].join('|')]=1});return Object.keys(seen).length}
+function notifyCount(){var count=issueCount();try{window.dispatchEvent(new CustomEvent('aceil:debug-count',{detail:{count:count}}))}catch(e){}try{if(window.A_CEIL_Admin&&typeof window.A_CEIL_Admin.setDebugCount==='function')window.A_CEIL_Admin.setDebugCount(count)}catch(e){}}
 function now(){try{return new Date().toISOString()}catch(e){return String(Date.now())}}
 function redactText(s){return String(s||'').replace(/(access_token|refresh_token|authorization|api[_-]?key)([\"'=:\s]+)([^,}\s\"]+)/gi,'$1$2[REDACTED]').replace(/Bearer\s+[A-Za-z0-9._~-]+/gi,'Bearer [REDACTED]')}
 function safe(v){try{return redactText(typeof v==='string'?v:JSON.stringify(v,null,2))}catch(e){return redactText(String(v))}}
@@ -37,7 +39,7 @@ function isEmptyBrowserNoise(entry){
 }
 function add(entry,notify){
  if(isEmptyBrowserNoise(entry))return null;
- logs.push(entry);if(logs.length>MAX)logs.splice(0,logs.length-MAX);persist();render();if(notify!==false)toast(entry);
+ logs.push(entry);if(logs.length>MAX)logs.splice(0,logs.length-MAX);persist();render();notifyCount();if(notify!==false)toast(entry);
  try{var dl=window.A·CEIL&&window.A·CEIL.DebugLog;if(dl&&typeof dl.error==='function')dl.error('runtime.error',entry)}catch(e){window.__diagSilent&&window.__diagSilent(e)}
 }
 function formatOne(x,n){return '#'+n+' '+x.time+'\n'+x.type.toUpperCase()+': '+x.message+'\n'+(x.source?('Source: '+x.source+'\nLine: '+x.line+':'+x.column+'\n'):'')+(x.context?('\nContext:\n'+x.context+'\n'):'')+(x.stack?('\nStack:\n'+x.stack+'\n'):'')+'\nMeta:\n'+safe(x.meta)}
@@ -47,7 +49,7 @@ function formatSystem(x){return '['+String(x&&x.timestamp||'')+'] '+String(x&&x.
 function formatTech(x){var t='';try{t=new Date(x&&x.t||0).toISOString()}catch(e){t=String(x&&x.t||'')}return '['+t+'] '+safe(x&&x.m||'')+(x&&x.s?'\n'+safe(x.s):'')}
 function allText(){var out=[];out.push('=== ПОМИЛКИ ('+logs.length+') ===\n'+(logs.length?logs.slice().reverse().map(function(x,i){return formatOne(x,logs.length-i)}).join('\n\n--------------------\n\n'):'Помилок ще немає.'));var sys=systemLogs();out.push('\n\n=== СИСТЕМНІ ПОДІЇ ('+sys.length+') ===\n'+(sys.length?sys.slice().reverse().map(formatSystem).join('\n\n'):'Порожньо.'));var tech=techLogs();out.push('\n\n=== ТЕХНІЧНИЙ ЖУРНАЛ ('+tech.length+') ===\n'+(tech.length?tech.slice().reverse().map(formatTech).join('\n\n'):'Порожньо.'));return out.join('')}
 function isAuthVisible(){var a=document.getElementById('authScreen');return !!(a&&!a.classList.contains('hidden'))}
-function syncFabVisibility(){var f=document.getElementById('rmDebugFab');if(f)f.style.display=isAuthVisible()?'none':'block';if(isAuthVisible())close()}
+function syncFabVisibility(){var f=document.getElementById('rmDebugFab');if(f)f.style.display='none';if(isAuthVisible())close()}
 function bindAuthVisibility(){var a=document.getElementById('authScreen');if(!a)return;try{new MutationObserver(syncFabVisibility).observe(a,{attributes:true,attributeFilter:['class','style']})}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
 function ensureUI(){
  if(!document.body)return;
@@ -56,19 +58,20 @@ function ensureUI(){
  if(!document.getElementById('rmDebugToast')){var t=document.createElement('div');t.id='rmDebugToast';t.innerHTML='<b id="rmDebugToastTitle"></b><small id="rmDebugToastText"></small><button type="button">Деталі</button>';t.querySelector('button').onclick=open;document.body.appendChild(t)}
  render();syncFabVisibility();
 }
-function render(){var log=document.getElementById('rmDebugLog'),meta=document.getElementById('rmDebugMeta');if(log)log.textContent=allText();if(meta){var m=appMeta(),sys=systemLogs(),tech=techLogs();meta.innerHTML='<div>Версія: '+String(m.version)+'</div><div>Логи: '+logs.length+' / '+sys.length+' / '+tech.length+'</div><div>Проєкт: '+String(m.projectId||'—')+'</div><div>Кімната: '+String(m.roomId||'—')+'</div>'}}
+function renderAdmin(){var pane=document.getElementById('aceilDebugPane');if(!pane)return;var count=issueCount(),m=appMeta(),sys=systemLogs(),tech=techLogs();pane.innerHTML='<div class="aceil-debug-card"><div class="aceil-debug-head"><div class="aceil-debug-mark">🐞</div><div><b>Діагностика A·CEIL</b><span>'+(count?('Знайдено різних проблем: '+count):'Проблем не знайдено')+'</span></div><strong class="'+(count?'has-errors':'')+'">'+count+'</strong></div><div class="aceil-debug-meta"><span>JS записи: '+logs.length+'</span><span>Системні: '+sys.length+'</span><span>Технічні: '+tech.length+'</span><span>Версія: '+String(m.version)+'</span></div><div class="aceil-debug-actions"><button type="button" onclick="A·CEIL.DebugPanel.copy()">Скопіювати журнал</button><button type="button" class="secondary" onclick="A·CEIL.DebugPanel.clear()">Очистити</button></div><pre class="aceil-debug-log"></pre></div>';var pre=pane.querySelector('.aceil-debug-log');if(pre)pre.textContent=allText()}
+function render(){var log=document.getElementById('rmDebugLog'),meta=document.getElementById('rmDebugMeta');if(log)log.textContent=allText();if(meta){var m=appMeta(),sys=systemLogs(),tech=techLogs();meta.innerHTML='<div>Версія: '+String(m.version)+'</div><div>Логи: '+logs.length+' / '+sys.length+' / '+tech.length+'</div><div>Проєкт: '+String(m.projectId||'—')+'</div><div>Кімната: '+String(m.roomId||'—')+'</div>'}renderAdmin()}
 function toast(x){ensureUI();if(isAuthVisible())return;var t=document.getElementById('rmDebugToast');if(!t)return;document.getElementById('rmDebugToastTitle').textContent='JS помилка: '+x.message;document.getElementById('rmDebugToastText').textContent=(x.source?x.source.split('/').pop():'сторінка')+(x.line?' · рядок '+x.line+':'+x.column:'');t.classList.add('show');clearTimeout(t._timer);t._timer=setTimeout(function(){t.classList.remove('show')},9000)}
 function open(){ensureUI();if(isAuthVisible())return;document.getElementById('rmDebugPanel').classList.add('open');render()}
 function close(){var p=document.getElementById('rmDebugPanel');if(p)p.classList.remove('open')}
 function copy(){var text=allText();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){try{showToast('Лог скопійовано')}catch(e){alert('Лог скопійовано')}}).catch(function(){fallbackCopy(text)})}else fallbackCopy(text)}
 function fallbackCopy(text){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){window.__diagSilent&&window.__diagSilent(e)}ta.remove();try{showToast('Лог скопійовано')}catch(e){alert('Лог скопійовано')}}
-function clear(){logs=[];persist();try{var d=window.A·CEIL&&window.A·CEIL.DebugLog;if(d&&typeof d.clear==='function')d.clear()}catch(e){}try{if(typeof window.__diagSilentClear==='function')window.__diagSilentClear()}catch(e){}render()}
+function clear(){logs=[];persist();try{var d=window.A·CEIL&&window.A·CEIL.DebugLog;if(d&&typeof d.clear==='function')d.clear()}catch(e){}try{if(typeof window.__diagSilentClear==='function')window.__diagSilentClear()}catch(e){}render();notifyCount()}
 read();
 window.addEventListener('error',function(ev){add(normalize(ev),true)},true);
 window.addEventListener('unhandledrejection',function(ev){add(normalize({type:'unhandledrejection',reason:ev.reason}),true)},true);
 var oldError=console.error;
 console.error=function(){try{if(!consoleGuard){consoleGuard=true;add(normalize({type:'console.error',message:Array.prototype.map.call(arguments,safe).join(' ')}),false)}}catch(e){window.__diagSilent&&window.__diagSilent(e)}finally{consoleGuard=false}return oldError&&oldError.apply(console,arguments)};
 function bindTripleTap(){document.addEventListener('click',function(ev){var el=ev.target&&ev.target.closest&&ev.target.closest('.app-title,.logo,.brand,[data-A·CEIL-logo],h1');if(!el)return;tapCount++;clearTimeout(tapTimer);tapTimer=setTimeout(function(){tapCount=0},650);if(tapCount>=3){tapCount=0;if(!isAuthVisible())open()}},true)}
-window.A·CEIL.DebugPanel={open:open,close:close,copy:copy,clear:clear,getLogs:function(){return logs.slice()},capture:function(err){add(normalize({type:'manual',error:err}),true)}};
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){ensureUI();bindAuthVisibility();bindTripleTap();syncFabVisibility()},{once:true});else{ensureUI();bindAuthVisibility();bindTripleTap();syncFabVisibility()}
+window.A·CEIL.DebugPanel={open:open,close:close,copy:copy,clear:clear,renderAdmin:renderAdmin,getCount:issueCount,getLogs:function(){return logs.slice()},capture:function(err){add(normalize({type:'manual',error:err}),true)}};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){ensureUI();bindAuthVisibility();bindTripleTap();syncFabVisibility();notifyCount()},{once:true});else{ensureUI();bindAuthVisibility();bindTripleTap();syncFabVisibility();notifyCount()}
 })();
