@@ -1,7 +1,7 @@
-/* A·CEIL offline shell v15 — 2026-10-05 */
+/* A·CEIL offline shell v16 — 2026-10-05 */
 "use strict";
 
-const SHELL_CACHE="aceil-shell-20261005-corners1";
+const SHELL_CACHE="aceil-shell-20261005-tiles1";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 
 function isStaticAsset(request){
