@@ -66,9 +66,10 @@ function ensureCockpitAdminButton(){
   button=document.createElement("button");
   button.type="button";button.id="A_CEIL_OwnerAdminButton";button.className="aceil-head-action aceil-head-admin";
   button.title="Адміністрування";button.setAttribute("aria-label","Адміністрування");
-  button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 16h7M14 19h4M19 14v4"/></svg>';
+  button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 16h7M14 19h4M19 14v4"/></svg><span id="aceilAdminDebugBadge" class="aceil-admin-debug-badge" hidden>0</span>';
   button.onclick=function(){window.A_CEIL_Admin.open()};
   actions.insertBefore(button,actions.firstChild);
+  try{var debugPanel=window.A·CEIL&&window.A·CEIL.DebugPanel;setDebugCount(debugPanel&&typeof debugPanel.getCount==='function'?debugPanel.getCount():0)}catch(e){}
   return button;
 }
 function visible(v){
@@ -368,14 +369,16 @@ async function clearExpiry(uid,button){
 }
 function showTab(name,btn){
   document.querySelectorAll('.aceil-admin-tabs button').forEach(function(b){b.classList.toggle('active',b===btn)});
-  var up=document.getElementById('aceilUsersPane'),ap=document.getElementById('aceilActivityPane'),sp=document.getElementById('aceilSettingsPane');
-  if(up)up.style.display=name==='users'?'block':'none'; if(ap)ap.style.display=name==='activity'?'block':'none'; if(sp)sp.style.display=name==='settings'?'block':'none';
+  var up=document.getElementById('aceilUsersPane'),ap=document.getElementById('aceilActivityPane'),dp=document.getElementById('aceilDebugPane'),sp=document.getElementById('aceilSettingsPane');
+  if(up)up.style.display=name==='users'?'block':'none'; if(ap)ap.style.display=name==='activity'?'block':'none'; if(dp)dp.style.display=name==='debug'?'block':'none'; if(sp)sp.style.display=name==='settings'?'block':'none';
   if(name==='activity'&&ap)renderActivity();
+  if(name==='debug'&&window.A·CEIL&&window.A·CEIL.DebugPanel&&typeof window.A·CEIL.DebugPanel.renderAdmin==='function')window.A·CEIL.DebugPanel.renderAdmin();
 }
+function setDebugCount(value){var count=Math.max(0,Number(value)||0),label=count>99?'99+':String(count);['aceilAdminDebugBadge','aceilAdminDebugTabBadge'].forEach(function(id){var el=document.getElementById(id);if(el){el.textContent=label;el.hidden=!count}})}
 function open(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.add("open");m.setAttribute("aria-hidden","false");load()}
 function close(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 
-window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab};
+window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab,setDebugCount:setDebugCount};
 
 function boot(){
   removeLegacyMenuItem();
@@ -383,4 +386,6 @@ function boot(){
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 document.addEventListener("visibilitychange",function(){var m=document.getElementById("aceilAdminModal");if(document.visibilityState==="visible"&&currentUser()&&m&&m.classList.contains("open"))setTimeout(function(){refreshOwner(currentUser())},250)});
+window.addEventListener('aceil:debug-count',function(ev){setDebugCount(ev&&ev.detail?ev.detail.count:0)});
+setTimeout(function(){try{var p=window.A·CEIL&&window.A·CEIL.DebugPanel;setDebugCount(p&&typeof p.getCount==='function'?p.getCount():0)}catch(e){}},0);
 })();
