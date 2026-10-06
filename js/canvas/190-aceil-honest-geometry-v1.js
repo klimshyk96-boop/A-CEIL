@@ -2,6 +2,10 @@
   "use strict";
   if(window.__A_CEIL_HONEST_GEOMETRY_V1)return;
   window.__A_CEIL_HONEST_GEOMETRY_V1=true;
+  // Re-entering dimensions must not use a previous solver deformation as intent.
+  // Key by the actual output array; room loads, undo and new contours get a new basis.
+  var rebuildBases=new WeakMap();
+  function pointSignature(list){return list.map(function(p){return p.x+","+p.y}).join(";")}
 
   function finitePoint(p){return p&&Number.isFinite(Number(p.x))&&Number.isFinite(Number(p.y))}
   function distance(a,b){return Math.hypot(Number(b.x)-Number(a.x),Number(b.y)-Number(a.y))}
@@ -55,7 +59,7 @@
       if(!Array.isArray(pair)||pair.length<2)return;
       var a=Number(pair[0]),b=Number(pair[1]);
       if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>=n||b>=n||a===b)return;
-      var lo=Math.min(a,b),hi=Math.max(a,b),key=labelPoint(lo)+labelPoint(hi),value=Number(overrides[key]);
+      var lo=Math.min(a,b),hi=Math.max(a,b),key=labelPoint(lo)+labelPoint(hi),reverseKey=labelPoint(hi)+labelPoint(lo),value=Number(overrides[key]||overrides[reverseKey]);
       if(value>0)out.push({a:a,b:b,length:value,key:key});
     });
     return out;
@@ -207,8 +211,11 @@
       if(!closed||circleMode||!Array.isArray(pts)||pts.length<3){
         window.A_CEIL_HonestGeometry.lastResult=null;setWarning(null);return;
       }
-      var n=pts.length,source=copyPoints(pts),target=[];
-      for(var i=0;i<n;i++){var value=Number(lengths[i]);if(!(value>0))return}
+      var n=pts.length,previous=rebuildBases.get(pts),source=copyPoints(pts),target=[];
+      if(previous&&previous.signature===pointSignature(pts))source=copyPoints(previous.source);
+      // Diagnostics belong to the current set of dimensions, never the last build.
+      window.A_CEIL_HonestGeometry.lastResult=null;setWarning(null);
+      for(var i=0;i<n;i++){var value=Number(lengths[i]);if(!(value>0)){realPts=[];finishUi();return}}
       for(var j=0;j<n;j++)target.push(Number(lengths[j]));
       var beforeClosure=legacyClosure(source,target),feasible=polygonFeasibility(target),extra=diagonalConstraints(n);
       if(!feasible.ok){
@@ -220,6 +227,7 @@
       var solved=solveExactOrthogonal(source,target,extra)||solveClosedPolygon(source,target,extra);
       realPts=copyPoints(solved.points);
       pts=fitForCanvas(realPts);
+      rebuildBases.set(pts,{source:copyPoints(source),signature:pointSignature(pts)});
       var area=polygonArea(realPts),areaEl2=document.getElementById("area");
       if(areaEl2)areaEl2.textContent=(area/1e4).toFixed(2);
       var stats=angleStats(source,pts),tolerance=Math.max(2,Math.max(beforeClosure.enteredCm,beforeClosure.impliedCm)*.012);
@@ -262,12 +270,13 @@
     }catch(_){}
   }
   function clearWarningState(){
+    rebuildBases=new WeakMap();
     window.A_CEIL_HonestGeometry.lastResult=null;
     setWarning(null);
   }
 
   window.A_CEIL_HonestGeometry={
-    version:"1.4",
+    version:"1.5",
     solve:solveClosedPolygon,
     solveExactOrthogonal:solveExactOrthogonal,
     closure:legacyClosure,
