@@ -154,5 +154,6 @@
   "js/reports/201-aceil-report-links-v2.js",
   "js/projects/210-aceil-project-crm-v2.js",
   "js/nomenclature/212-aceil-film-group-state-fix-v1.js",
-  "js/canvas/193-aceil-finger-draw-v1.js"
+  "js/canvas/193-aceil-finger-draw-v1.js",
+  "js/canvas/223-aceil-archicad-dxf-v1.js"
 ]
