@@ -468,7 +468,7 @@ async function alphaObject(obj,rs){
     const lights=!0===rs.showLightCoords&&st&&st.lightMarks&&st.lightMarks.length?getLightCoordLines(Object.assign({},st,{lightMarks:st.lightMarks.filter(m=>window.rmIsFixtureMarkV326?window.rmIsFixtureMarkV326(m):true)})):[];
     const ceilings=!0===rs.showLightCoords&&st&&st.lightMarks&&st.lightMarks.length&&window.getCeilingElementCoordLinesV326?window.getCeilingElementCoordLinesV326(st):[];
     const exhausts=!0===rs.showLightCoords&&st&&st.lightMarks&&st.lightMarks.length&&"function"==typeof getExhaustCoordLines?getExhaustCoordLines(st):[];
-    const walls=st&&st.wallMarks&&st.wallMarks.length?getWallCoordLines(st):[];
+    const walls=!1!==rs.showWallCoords&&st&&st.wallMarks&&st.wallMarks.length?getWallCoordLines(st):[];
     const diags=!0===rs.diagonals&&st?_getReportDiagLines(st,rs.diagMode||"manual"):[];
     const cornices=reportCornices(st),corniceLines=reportCorniceLines(cornices,st&&Array.isArray(st.pts)?st.pts.length:st&&Array.isArray(st.points)?st.points.length:0);
     data.push({r,st,groups,total,dimensions,lights,ceilings,exhausts,walls,diags,cornices,corniceLines});
@@ -493,13 +493,13 @@ async function alphaObject(obj,rs){
     const rows=!1!==rs.area?[["Площа полотна",(rd.r.area||"—")+" м²"],["Периметр",(rd.r.per||"—")+" м"]]:[];
     const _od=_overallDims(rd.st,rs);_od&&rows.push(["Габаритні розміри",_od]);
     ry+=info(c,RX,ry,RW,rows,titles.info)+12;
-    ry+=lines(c,RX,ry,RW,titles.placement,rd.walls,"Елементи не задані")+12;
+    if(!1!==rs.showWallCoords)ry+=lines(c,RX,ry,RW,titles.placement,rd.walls,"Елементи не задані")+12;
     if(!0===rs.showLegend)ry+=legend(c,RX,ry,RW,rd.st&&rd.st.lightMarks||[],rd.cornices,titles.legend,rd.st&&rd.st.wallMarks||[],rd.st&&rd.st.wallTypes||[],rd.st&&rd.st.linearElements||[])+12;
     if(showTable)ry+=table(c,RX,ry,RW,rd.groups,isClient(rs),titles.table,false)+12;
 
     let ly=planY+planH+12;
     if(!1!==rs.dimensionsList)ly+=wallDimensionsList(c,LX,ly,LW,rd.dimensions,"Розміри не задані",titles.dimensions)+12;
-    ly+=lines(c,LX,ly,LW,titles.light,rd.lights,"Світло не задано")+12;
+    if(!0===rs.showLightCoords)ly+=lines(c,LX,ly,LW,titles.light,rd.lights,"Світло не задано")+12;
     if(rd.ceilings.length)ly+=lines(c,LX,ly,LW,titles.ceilings,rd.ceilings,"")+12;
     if(rd.exhausts.length)ly+=lines(c,LX,ly,LW,titles.exhausts,rd.exhausts,"")+12;
     if(rd.corniceLines.length)ly+=lines(c,LX,ly,LW,titles.cornices,rd.corniceLines,"")+12;
