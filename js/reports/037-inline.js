@@ -473,7 +473,7 @@ async function alphaObject(obj,rs){
     const cornices=reportCornices(st),corniceLines=reportCorniceLines(cornices,st&&Array.isArray(st.pts)?st.pts.length:st&&Array.isArray(st.points)?st.points.length:0);
     data.push({r,st,groups,total,dimensions,lights,ceilings,exhausts,walls,diags,cornices,corniceLines});
     const leftExtra=(dimensions.length?90+27*Math.ceil(dimensions.length/2):0)+(lights.length?70+34*lights.length:82)+(ceilings.length?60+34*ceilings.length:0)+(exhausts.length?60+34*exhausts.length:0)+(corniceLines.length?70+32*corniceLines.length:0)+(showTech&&diags.length?60+34*diags.length:0);
-    const rightExtra=150+(rs.harpoonColor?42:0)+(walls.length?70+36*walls.length:96)+150+(showPrice?90+27*Math.max(1,_modernCountRows(groups)):0);
+    const rightExtra=150+(r.ceilingColor?42:0)+(rs.harpoonColor?42:0)+(walls.length?70+36*walls.length:96)+150+(showPrice?90+27*Math.max(1,_modernCountRows(groups)):0);
     H+=72+500+Math.max(leftExtra,rightExtra)+28;
   }
   H+=showPrice?190:90;H=Math.max(H,1500);
@@ -492,6 +492,7 @@ async function alphaObject(obj,rs){
     let ry=planY;
     const rows=!1!==rs.area?[["Площа полотна",(rd.r.area||"—")+" м²"],["Периметр",(rd.r.per||"—")+" м"]]:[];
     const _od=_overallDims(rd.st,rs);_od&&rows.push(["Габаритні розміри",_od]);
+    rd.r.ceilingColor&&rows.push(["Колір стелі",rd.r.ceilingColor]);
     rs.harpoonColor&&rows.push(["Колір гарпуна","black"===rs.harpoonColor?"ЧОРНИЙ":"БІЛИЙ","black"===rs.harpoonColor?"#111827":"#ffffff"]);
     ry+=info(c,RX,ry,RW,rows,titles.info)+12;
     if(!1!==rs.showWallCoords)ry+=lines(c,RX,ry,RW,titles.placement,rd.walls,"Елементи не задані")+12;

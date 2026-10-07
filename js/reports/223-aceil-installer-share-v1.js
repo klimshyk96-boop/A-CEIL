@@ -50,10 +50,17 @@
   }
   function parseState(value){try{return typeof value==="string"?JSON.parse(value||"{}"):clone(value||{})}catch(_){return{}}}
   function hasGeometry(state){return !!(state&&((Array.isArray(state.pts)&&state.pts.length>=3)||(state.circleMode&&Number(state.circleDiamCm)>0)))}
+  function ceilingColor(state){
+    var items=state&&Array.isArray(state.elemItems)?state.elemItems:[],films=items.filter(function(item){return item&&(item.filmPickerManaged===true||item.roomScopedKind==="film-color"||Number(item.filmWidth)>0)&&(item.colorCode||item.name)}),chosen=films.find(function(item){return Number(item.qty)>0})||films.find(function(item){return item.filmSelected})||films[0];
+    if(!chosen)return"НЕ ВИБРАНО";
+    var code=String(chosen.colorCode||String(chosen.name||"").split(" ")[0]||"").toUpperCase(),texture=String(chosen.colorTexture||""),labels=window.ACEIL_TEXTURE_LABELS||{lak:"Глянець",mat:"Мат",satin:"Сатин"},seriesId=chosen.seriesId||chosen.filmSeriesId||"premium",series=(Array.isArray(window.ACEIL_FILM_SERIES)?window.ACEIL_FILM_SERIES:[]).find(function(item){return item&&item.id===seriesId}),parts=[code,labels[texture]||texture,series&&series.name||seriesId].filter(Boolean);
+    return parts.join(" · ")||"НЕ ВИБРАНО";
+  }
   function cleanObject(object,mode){
     var result=clone(object);
     result.rooms=(result.rooms||[]).map(function(room){
       var next=clone(room),state=parseState(next.state);
+      next.ceilingColor=ceilingColor(state);
       state.wallMarks=[];state.ceilingCornices=[];state.elemItems=[];state.elemGroups=[];
       if(mode==="blank"){state.lightMarks=[];state.linearElements=[]}
       next.state=JSON.stringify(state);return next;
