@@ -726,7 +726,6 @@ strings:{
 "Показувати елементи стін на кресленні (карнизи, профілі)":"Pokazuj elementy ścian na rysunku (karnisze, profile)",
 "Показувати список елементів стін у звіті":"Pokazuj listę elementów ścian w raporcie",
 "Площа і периметр":"Powierzchnia i obwód",
-"Розміри сторін":"Wymiary boków",
 "Габаритні розміри приміщення":"Wymiary gabarytowe pomieszczenia",
 "Діагоналі у звіті":"Przekątne w raporcie",
 "Кути":"Narożniki",
@@ -944,4 +943,3 @@ patterns:[
 ]
 });
 })();
-
