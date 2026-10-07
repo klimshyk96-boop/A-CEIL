@@ -345,8 +345,8 @@
       var result=previous.apply(this,arguments);
       if(!suspendPersistence){persistNow();if(result&&typeof result.then==="function")result.then(function(){persistNow();});}
       return result;
-    };wrapped.__ceilingCornices=true;window[name]=wrapped;try{eval(name+"=wrapped");}catch(e){}});
-    ["resetAll","resetAllSilent"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){window.ceilingCornices=[];return previous.apply(this,arguments);};wrapped.__ceilingCornices=true;window[name]=wrapped;try{eval(name+"=wrapped");}catch(e){}});
+    };wrapped.__ceilingCornices=true;window[name]=wrapped;});
+    ["resetAll","resetAllSilent"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){window.ceilingCornices=[];return previous.apply(this,arguments);};wrapped.__ceilingCornices=true;window[name]=wrapped;});
   }
   function wrapReportLegend(){
     var previous=window._modernOpenPreview;if(typeof previous!=="function"||previous.__ceilingCorniceLegend)return;
