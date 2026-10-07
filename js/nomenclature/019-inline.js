@@ -92,14 +92,13 @@ function openAllSideInputsModalV11(){
   document.getElementById("aceilAllNextV14").onclick=()=>active<fields.length-1?activate(active+1,true):applyAllSideInputsV14();
 
   /* Refit after the layout has actually changed. */
-  setTimeout(()=>{try{resizeCanvas();draw()}catch(e){draw()} activate(0,true)},120);
+  setTimeout(()=>{draw();activate(0,true)},120);
 }
 function closeAllSideInputsV14(reopenSingle){
   _wallSideFlash=-1;
   const panel=document.getElementById("aceilAllDimsPanelV14");
   if(panel)panel.hidden=true;
   document.body.classList.remove("aceil-all-split-v14");
-  try{resizeCanvas()}catch(e){}
   draw();
   if(reopenSingle)setTimeout(()=>openSideInputModal(),60);
 }
