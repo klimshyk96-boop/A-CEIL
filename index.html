@@ -34,9 +34,9 @@
 
 <script id="A·CEIL-lang-uk-inline" src="js/i18n/014-aceil-lang-uk-inline.js?v=20261003-clean1"></script>
 
-<script id="A·CEIL-lang-en-inline" src="js/reports/015-aceil-lang-en-inline.js?v=20261003-clean1"></script>
+<script id="A·CEIL-lang-en-inline" src="js/reports/015-aceil-lang-en-inline.js?v=20261007-report-diag1"></script>
 
-<script id="A·CEIL-lang-pl-inline" src="js/auth/016-aceil-lang-pl-inline.js?v=20261003-clean1"></script>
+<script id="A·CEIL-lang-pl-inline" src="js/auth/016-aceil-lang-pl-inline.js?v=20261007-report-diag1"></script>
 
 <link rel="stylesheet" href="assets/theme.css?v=20261003-clean1">
 <style id="aceil-all-split-v14-css">
@@ -126,7 +126,7 @@ body.aceil-all-split-v14 .canvas-container{
 <script src="js/canvas/viewport.js?v=20261003-clean1"></script>
 <script src="js/canvas/contour-state.js?v=20261003-clean1"></script>
 <script src="js/canvas/renderer.js?v=20261003-clean1"></script>
-<script src="js/nomenclature/019-inline.js?v=20261003-clean1"></script>
+<script src="js/nomenclature/019-inline.js?v=20261007-report-diag1"></script>
 
 <script src="js/reports/020-inline.js?v=20261003-clean1"></script>
 
@@ -162,7 +162,7 @@ body.aceil-all-split-v14 .canvas-container{
 
 
 
-<script src="js/reports/037-inline.js?v=20261007-ceiling-color1"></script>
+<script src="js/reports/037-inline.js?v=20261007-report-diag1"></script>
 
 <script src="js/nomenclature/038-inline.js?v=20261003-clean1"></script>
 
@@ -712,7 +712,7 @@ body.aceil-all-split-v14 .canvas-container{
   "use strict";
   if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
   window.addEventListener("load",function(){
-    var updateKey="aceil-pwa-update-20261007-ceiling-color1";
+    var updateKey="aceil-pwa-update-20261007-report-diag1";
     navigator.serviceWorker.addEventListener("message",function(event){
       if(!event.data||event.data.type!=="A_CEIL_UPDATE_READY"||sessionStorage.getItem(updateKey))return;
       sessionStorage.setItem(updateKey,"1");
@@ -723,7 +723,7 @@ body.aceil-all-split-v14 .canvas-container{
       sessionStorage.setItem(updateKey,"1");
       location.reload();
     });
-      navigator.serviceWorker.register("/sw.js?v=20261007-ceiling-color1",{scope:"/"}).then(function(reg){
+      navigator.serviceWorker.register("/sw.js?v=20261007-report-diag1",{scope:"/"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
@@ -759,7 +759,7 @@ body.aceil-all-split-v14 .canvas-container{
 
 <script id="A-CEIL-estimate-variants-ui-v1" src="js/reports/184-aceil-estimate-variants-ui-v1.js?v=20261003-clean1"></script>
 <script id="A-CEIL-projects-menu-clean-v1" src="js/projects/186-aceil-projects-menu-clean-v1.js?v=20261003-clean1"></script>
-<script id="A-CEIL-ceiling-cornices-v1" src="js/canvas/187-aceil-ceiling-cornices-v1.js?v=20261003-clean1"></script>
+<script id="A-CEIL-ceiling-cornices-v1" src="js/canvas/187-aceil-ceiling-cornices-v1.js?v=20261007-report-diag1"></script>
 <script id="A-CEIL-password-reset-v2" src="js/auth/200-aceil-password-reset-v2.js?v=20261003-clean1"></script>
 <script id="A-CEIL-report-links-v2" src="js/reports/201-aceil-report-links-v2.js?v=20261003-clean1"></script>
 <script id="A-CEIL-project-crm-v2" src="js/projects/210-aceil-project-crm-v2.js?v=20261003-clean1"></script>
@@ -845,6 +845,7 @@ body.aceil-all-split-v14 .canvas-container{
 <script id="aceil-finger-draw-v1" src="js/canvas/193-aceil-finger-draw-v1.js?v=20261003-clean1"></script>
 
 <script id="aceil-installer-share-v1" src="js/reports/223-aceil-installer-share-v1.js?v=20261007-ceiling-color1"></script>
+<script id="aceil-report-diagonals-menu-fix-v1" src="js/reports/224-aceil-report-diagonals-menu-fix-v1.js?v=20261007-report-diag1"></script>
 
 
 
