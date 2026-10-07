@@ -450,7 +450,7 @@ async function alphaSingle(rs){
   if(ceilingLines.length)ly+=lines(c,LX,ly,LW,titles.ceilings,ceilingLines,"")+12;
   if(exhaustLines.length)ly+=lines(c,LX,ly,LW,titles.exhausts,exhaustLines,"")+12;
   if(corniceLines.length)ly+=lines(c,LX,ly,LW,titles.cornices,corniceLines,"")+12;
-  if(showTech&&diagLines.length)ly+=lines(c,LX,ly,LW,titles.diags,diagLines,"")+12;
+  if(diagLines.length)ly+=lines(c,LX,ly,LW,titles.diags,diagLines,"")+12;
   y=Math.max(ly,ry)+28;
   let contentBottom=y;
   if(showPrice)contentBottom=totalBar(c,24,y,W,_modernGroupsTotal(groups),rs);
@@ -472,7 +472,7 @@ async function alphaObject(obj,rs){
     const diags=!0===rs.diagonals&&st?_getReportDiagLines(st,rs.diagMode||"manual"):[];
     const cornices=reportCornices(st),corniceLines=reportCorniceLines(cornices,st&&Array.isArray(st.pts)?st.pts.length:st&&Array.isArray(st.points)?st.points.length:0);
     data.push({r,st,groups,total,dimensions,lights,ceilings,exhausts,walls,diags,cornices,corniceLines});
-    const leftExtra=(dimensions.length?90+27*Math.ceil(dimensions.length/2):0)+(lights.length?70+34*lights.length:82)+(ceilings.length?60+34*ceilings.length:0)+(exhausts.length?60+34*exhausts.length:0)+(corniceLines.length?70+32*corniceLines.length:0)+(showTech&&diags.length?60+34*diags.length:0);
+    const leftExtra=(dimensions.length?90+27*Math.ceil(dimensions.length/2):0)+(lights.length?70+34*lights.length:82)+(ceilings.length?60+34*ceilings.length:0)+(exhausts.length?60+34*exhausts.length:0)+(corniceLines.length?70+32*corniceLines.length:0)+(diags.length?60+34*diags.length:0);
     const rightExtra=150+(r.ceilingColor?42:0)+(rs.harpoonColor?42:0)+(walls.length?70+36*walls.length:96)+150+(showPrice?90+27*Math.max(1,_modernCountRows(groups)):0);
     H+=72+500+Math.max(leftExtra,rightExtra)+28;
   }
@@ -483,7 +483,7 @@ async function alphaObject(obj,rs){
   let y=126;
   for(const rd of data){
     const showTable=(showPrice||showTech)&&!1!==rs.nomenclature;
-    const titles=reportSectionTitles({dimensions:!1!==rs.dimensionsList,showTech,ceilings:rd.ceilings.length,exhausts:rd.exhausts.length,cornices:rd.cornices.length,diags:showTech&&rd.diags.length,legend:!0===rs.showLegend,table:showTable});
+    const titles=reportSectionTitles({dimensions:!1!==rs.dimensionsList,showTech,ceilings:rd.ceilings.length,exhausts:rd.exhausts.length,cornices:rd.cornices.length,diags:rd.diags.length,legend:!0===rs.showLegend,table:showTable});
     Object.assign(titles,{plan:"1. План приміщення",info:"2. Основна інформація",dimensions:"3. Розміри стін",placement:"4. Розташування елементів",light:"5. Світло",legend:"6. Умовні позначення",table:"7. Кошторис"});
     c.fillStyle="#0f172a";c.font="bold 25px Arial";c.fillText(rd.r.name||"Кімната",24,y+30);y+=48;
     const planY=y,planH=500,LX=24,LW=646,RX=686,RW=370;
@@ -505,7 +505,7 @@ async function alphaObject(obj,rs){
     if(rd.ceilings.length)ly+=lines(c,LX,ly,LW,titles.ceilings,rd.ceilings,"")+12;
     if(rd.exhausts.length)ly+=lines(c,LX,ly,LW,titles.exhausts,rd.exhausts,"")+12;
     if(rd.corniceLines.length)ly+=lines(c,LX,ly,LW,titles.cornices,rd.corniceLines,"")+12;
-    if(showTech&&rd.diags.length)ly+=lines(c,LX,ly,LW,titles.diags,rd.diags,"")+12;
+    if(rd.diags.length)ly+=lines(c,LX,ly,LW,titles.diags,rd.diags,"")+12;
     y=Math.max(ly,ry)+28;
   }
   let contentBottom=y;

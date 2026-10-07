@@ -408,7 +408,6 @@ strings:{
 "вся сторона":"whole side",
 "Елемент займатиме всю сторону.":"The element will occupy the whole side.",
 "Довжина елемента, см":"Element length, cm",
-"Відступ від стін":"Offset from walls",
 "Орієнтація":"Orientation",
 "↔ По ширині":"↔ Across the width",
 "↕ По довжині":"↕ Along the length",
@@ -727,7 +726,6 @@ strings:{
 "Показувати елементи стін на кресленні (карнизи, профілі)":"Show wall elements on the drawing (rails, profiles)",
 "Показувати список елементів стін у звіті":"Show the wall elements list in the report",
 "Площа і периметр":"Area and perimeter",
-"Розміри сторін":"Side dimensions",
 "Габаритні розміри приміщення":"Overall room dimensions",
 "Діагоналі у звіті":"Diagonals in the report",
 "Кути":"Corners",
@@ -945,4 +943,3 @@ patterns:[
 ]
 });
 })();
-
