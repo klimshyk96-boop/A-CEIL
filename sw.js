@@ -1,7 +1,7 @@
 /* A·CEIL offline shell v18 — 2026-10-06 */
 "use strict";
 
-const SHELL_CACHE="aceil-shell-20261007-installer-share1";
+const SHELL_CACHE="aceil-shell-20261007-harpoon1";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 
 function isStaticAsset(request){
