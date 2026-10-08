@@ -68,6 +68,14 @@ function stripColorWords(name){
     .filter(function(w){return !/^біл/.test(w)&&!/^чорн/.test(w)})
     .join(" ");
 }
+function sameWallType(actual,expected){
+  var a=norm(actual),e=norm(expected);
+  if(!a||!e)return false;
+  if(a===e)return true;
+  /* A preset can contain the profile colour in its title while the wall mark
+     stores that colour separately in profileColor. */
+  return stripColorWords(a)===stripColorWords(e);
+}
 function wallColorSource(label,color){
   return "walltypecolor:"+color+":"+encodeURIComponent(label);
 }
@@ -216,7 +224,7 @@ function computeSource(source,item){
     var n=norm(label),cm=0;
     getWallMarks().forEach(function(m){
       var ml=norm(m&&m.type||m&&m.name||m&&m.title||"");
-      if(ml===n&&wallProfileColor(m)===color)cm+=Number(m&&m.lenCm)||0;
+      if(sameWallType(ml,n)&&wallProfileColor(m)===color)cm+=Number(m&&m.lenCm)||0;
     });
     return {qty:Math.round(cm)/100,unit:"м"};
   }
@@ -225,7 +233,7 @@ function computeSource(source,item){
     var n=norm(label),cm=0;
     getWallMarks().forEach(function(m){
       var ml=norm(m&&m.type||m&&m.name||m&&m.title||"");
-      if(ml===n)cm+=Number(m&&m.lenCm)||0;
+      if(sameWallType(ml,n))cm+=Number(m&&m.lenCm)||0;
     });
     return {qty:Math.round(cm)/100,unit:"м"};
   }
@@ -519,6 +527,25 @@ if(typeof oldBadge==="function"){
   window.updateLightBadge=function(){var r=oldBadge.apply(this,arguments);schedule();return r};
   try{updateLightBadge=window.updateLightBadge}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
+/* Wall elements change without updateLightBadge(). Recalculate after their
+   save/delete actions as well, otherwise a correctly selected wall source can
+   keep the previous zero quantity until another unrelated action occurs. */
+["rwe2Save","saveWallEdit","deleteWallMarkFromEditor"].forEach(function(name){
+  var old=window[name];
+  if(typeof old!=="function"||old.__v319WallAutocount)return;
+  var wrapped=function(){
+    var result=old.apply(this,arguments);
+    schedule();
+    return result;
+  };
+  wrapped.__v319WallAutocount=true;
+  window[name]=wrapped;
+  try{
+    if(name==="rwe2Save")rwe2Save=wrapped;
+    else if(name==="saveWallEdit")saveWallEdit=wrapped;
+    else if(name==="deleteWallMarkFromEditor")deleteWallMarkFromEditor=wrapped;
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+});
 /* v3.25: НЕ перемальовуємо номенклатуру на кожен draw().
    Автопідрахунок точок запускається через updateLightBadge, а ручний ввід більше не втрачає фокус. */
 setTimeout(function(){applyUniversal({noSave:true})},300);
