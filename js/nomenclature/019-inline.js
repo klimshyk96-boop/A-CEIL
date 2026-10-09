@@ -922,12 +922,20 @@ if(!closed&&!circleMode&&viewScale<=1){
       var k=ACEILCanvas.width(cv)/r.width,px=(cx-r.left)*k,py=(cy-r.top)*(ACEILCanvas.height(cv)/r.height),pad=6*k;
       return px>=h.x-pad&&px<=h.x+h.w+pad&&py>=h.y-pad&&py<=h.y+h.h+pad;
     }
+    function hitRow(cx,cy){
+      var rows=window.__aceilWLRows||[],r=cv.getBoundingClientRect();
+      if(!rows.length||!r.width||!r.height)return -1;
+      var px=(cx-r.left)*(ACEILCanvas.width(cv)/r.width),py=(cy-r.top)*(ACEILCanvas.height(cv)/r.height);
+      for(var i=0;i<rows.length;i++){var q=rows[i];if(px>=q.x&&px<=q.x+q.w&&py>=q.y&&py<=q.y+q.h)return q.i}
+      return -1;
+    }
     function toggle(){window.__aceilWLOpen=!window.__aceilWLOpen;try{(typeof requestDraw==="function"?requestDraw:draw)()}catch(_){}}
+    function openRow(i){try{if(typeof openSideInputModal==="function"){openSideInputModal();setTimeout(function(){var f=document.querySelector('#aceilDimsV18 input[data-di="'+i+'"]');if(f){try{f.focus({preventScroll:true})}catch(_){f.focus()}try{f.select()}catch(_){}}},30)}}catch(_){}}
     function stop(e){e.stopImmediatePropagation();if(e.cancelable)e.preventDefault()}
     var host=cv.parentElement||document;
-    host.addEventListener("touchstart",function(e){var t=e.touches&&e.touches[0];if(e.touches.length===1&&t&&hit(t.clientX,t.clientY)){swallow=true;stop(e);toggle()}},{capture:true,passive:false});
+    host.addEventListener("touchstart",function(e){var t=e.touches&&e.touches[0];if(e.touches.length!==1||!t)return;var row=hitRow(t.clientX,t.clientY);if(row>=0){swallow=true;stop(e);openRow(row)}else if(hit(t.clientX,t.clientY)){swallow=true;stop(e);toggle()}},{capture:true,passive:false});
     ["touchmove","touchend","touchcancel"].forEach(function(n){host.addEventListener(n,function(e){if(swallow){stop(e);if(n!=="touchmove")swallow=false}},{capture:true,passive:false})});
-    host.addEventListener("mousedown",function(e){if(hit(e.clientX,e.clientY)){swallow=true;stop(e);toggle()}},true);
+    host.addEventListener("mousedown",function(e){var row=hitRow(e.clientX,e.clientY);if(row>=0){swallow=true;stop(e);openRow(row)}else if(hit(e.clientX,e.clientY)){swallow=true;stop(e);toggle()}},true);
     ["mouseup","click"].forEach(function(n){host.addEventListener(n,function(e){if(swallow){stop(e);if(n==="click")swallow=false}},true)});
   }catch(_){}
 })();
