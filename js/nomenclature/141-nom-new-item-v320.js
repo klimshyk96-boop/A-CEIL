@@ -51,7 +51,9 @@ function sourceOptions(){
   }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   try{
     var le=(typeof linearElements!=="undefined"&&Array.isArray(linearElements))?linearElements:(window.linearElements||[]);
-    var labels={lightLine:"Світлова лінія",magneticTrack:"Магнітний трек",surfaceTrack:"Накладний трек",custom:"Інший"};
+    out.push({value:"lineartrack:fixtures",label:"◉ Трековий світильник (кількість)"});
+    out.push({value:"lineartrack:corners",label:"⌞ Кут трека (кількість)"});
+    var labels={lightLine:"Світлова лінія",magneticTrack:"Магнітний трек",surfaceTrack:"Накладний трек",recessedTrack:"Вмонтований трек",custom:"Інший"};
     var seenL={};
     le.forEach(function(e){
       var key=String(e&&e.elementType||"custom");if(seenL[key])return;seenL[key]=1;

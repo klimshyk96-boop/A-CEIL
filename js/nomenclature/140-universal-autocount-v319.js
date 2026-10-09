@@ -142,6 +142,7 @@ function linearTypeLabel(el){
     lightLine:"Світлова лінія",
     magneticTrack:"Магнітний трек",
     surfaceTrack:"Накладний трек",
+    recessedTrack:"Вмонтований трек",
     custom:"Інший"
   };
   return labels[key]||String(el&&el.label||el&&el.name||key);
@@ -151,6 +152,8 @@ function dynamicSources(){
   out.push({key:"ceilingcornice:uno",label:"Карниз UNO (за вибраним кольором)",icon:"⌜",unit:"м"});
   out.push({key:"ceilingcornicecorners:uno",label:"Кути UNO (кількість)",icon:"⌞",unit:"шт"});
   out.push({key:"ceilingcornicebreaks:uno",label:"Обриви UNO (кількість)",icon:"✂️",unit:"шт"});
+  out.push({key:"lineartrack:fixtures",label:"Трековий світильник (кількість)",icon:"◉",unit:"шт"});
+  out.push({key:"lineartrack:corners",label:"Кут трека (кількість)",icon:"⌞",unit:"шт"});
   getLightTypes().forEach(function(t){
     if(!t||!t.id||!String(t.label||"").trim())return;
     out.push({
@@ -188,6 +191,18 @@ function dynamicSources(){
 }
 function computeSource(source,item){
   source=String(source||"");
+  if(source==="lineartrack:fixtures"||source==="lineartrack:corners"){
+    var fixtureCount=0,cornerCount=0;
+    getLinear().forEach(function(el){
+      var key=String(el&&el.elementType||"");
+      if(key!=="magneticTrack"&&key!=="surfaceTrack"&&key!=="recessedTrack")return;
+      fixtureCount+=Math.max(0,Math.round(Number(el&&el.trackFixtureCount)||0));
+      var corners=Number(el&&el.cornerCount);
+      if(!isFinite(corners))corners=Math.max(0,(Array.isArray(el&&el.segments)?el.segments.length:1)-1);
+      cornerCount+=Math.max(0,Math.round(corners||0));
+    });
+    return {qty:source==="lineartrack:fixtures"?fixtureCount:cornerCount,unit:"шт"};
+  }
   if(source==="cornice_break")return {qty:wallCorniceBreakCount()+ceilingCorniceBreakCount("uno"),unit:"шт"};
   if(source.indexOf("ceilingcornicebreaks:")===0){
     var breakProfile="";try{breakProfile=decodeURIComponent(source.slice(21))}catch(_){breakProfile=source.slice(21)}
@@ -254,6 +269,8 @@ function computeSource(source,item){
 }
 function exactAutoSourceForName(name){
   var n=norm(name); if(!n)return null;
+  if(n.indexOf("трек")>=0&&n.indexOf("світиль")>=0)return {source:"lineartrack:fixtures",unit:"шт"};
+  if(n.indexOf("кут")>=0&&n.indexOf("трек")>=0)return {source:"lineartrack:corners",unit:"шт"};
   if(n==="кут uno"||n==="кути uno"||n==="кут уно"||n==="кути уно"||n.indexOf("кут до uno")>=0||n.indexOf("кут до уно")>=0){
     return {source:"ceilingcornicecorners:uno",unit:"шт"};
   }
