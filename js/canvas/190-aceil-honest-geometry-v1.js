@@ -237,8 +237,12 @@
       rebuildBases.set(pts,{source:copyPoints(source),signature:pointSignature(pts)});
       var area=polygonArea(realPts),areaEl2=document.getElementById("area");
       if(areaEl2)areaEl2.textContent=(area/1e4).toFixed(2);
-      var stats=angleStats(source,pts),tolerance=Math.max(2,Math.max(beforeClosure.enteredCm,beforeClosure.impliedCm)*.012);
-      var changed=!solved.exactOrthogonal&&(beforeClosure.diffCm>tolerance||stats.maxChange>3);
+      var stats=angleStats(source,pts),perimeter=target.reduce(function(sum,value){return sum+value},0);
+      /* A hand sketch is only a direction template. A few centimetres of
+         closure correction across the room are measuring tolerance, not a
+         contradiction in the entered side lengths. */
+      var closureTolerance=Math.max(5,perimeter*.0075);
+      var changed=!solved.exactOrthogonal&&beforeClosure.diffCm>closureTolerance;
       var result={
         invalid:solved.maxErrorCm>1.5,
         closureBefore:beforeClosure,
@@ -250,7 +254,7 @@
       if(result.invalid){
         result.warning="❌ Розміри суперечать контрольним вимірам. Максимальна похибка "+solved.maxErrorCm.toFixed(1)+" см";
       }else if(changed){
-        result.warning="⚠️ Контур не замикався: різниця "+Math.round(beforeClosure.diffCm)+" см. Фігуру деформовано — перевірте розміри";
+        result.warning="⚠️ Перевірте заміри: для замикання контуру потрібне коригування "+Math.round(beforeClosure.diffCm)+" см";
       }else if(n>3&&extra.length===0&&!solved.exactOrthogonal&&!stats.sourceMostlyRight){
         result.warning="⚠️ Косі стіни не підтверджені діагоналлю — площа орієнтовна";
       }

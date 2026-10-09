@@ -8,7 +8,7 @@
    • Власний шар #aceilDimsV18 (CSS у assets/ui2.css). Старе вікно #sideInputModal НЕ переписується —
      воно лишається для редагування кривих стін (див. openSideInputModalLegacy) і працює як раніше.
    • Шар прив'язаний до visualViewport, тому на iPhone таблиця стоїть прямо над клавіатурою.
-     Прев'ю зверху — жива копія канваса #cv (з червоною підсвіткою активної стіни),
+     Прев'ю зверху — жива копія канваса #cv (із синьою підсвіткою активної стіни),
      тож геометрія, draw(), undo/redo та інші модулі не чіпаються.
    • Розміри застосовуються лише по «Побудувати»: lengths[] → rebuild() → saveState() (той самий шлях, що й у старому вікні). */
 (function(){
@@ -94,6 +94,16 @@ function commit(){
 
 /* ---------- UI ---------- */
 function build(){
+  if(!document.getElementById("aceilDimsSelectionStyle")){
+    var style=document.createElement("style");
+    style.id="aceilDimsSelectionStyle";
+    style.textContent=
+      '#aceilDimsV18 .aceil-dims-cell.active{border-color:#2563eb!important;background:#eff6ff!important}'+
+      '#aceilDimsV18 .aceil-dims-cell.active .aceil-dims-lab{color:#1d4ed8!important}'+
+      '#aceilDimsV18 .aceil-dims-single strong{color:#1d4ed8!important}'+
+      '#aceilDimsV18 .aceil-dims-field{border-color:#2563eb!important;background:#eff6ff!important}';
+    document.head.appendChild(style);
+  }
   layer=document.createElement("div");
   layer.id="aceilDimsV18";layer.className="aceil-dims";layer.hidden=true;
   layer.setAttribute("role","dialog");layer.setAttribute("aria-label","Розміри стін");
@@ -249,7 +259,7 @@ function apply(){
 
 /* ---------- публічні точки входу ---------- */
 function wallListRowAt(clientX,clientY){
-  var c=document.getElementById("cv"),rows=window.__aceilWLRows||[];
+  var c=document.getElementById("cv"),rows=(window.__aceilShortWallHits||[]).concat(window.__aceilWLRows||[]);
   if(!c||!rows.length)return -1;
   var r=c.getBoundingClientRect();if(!r.width||!r.height)return -1;
   var px=(clientX-r.left)*(ACEILCanvas.width(c)/r.width),py=(clientY-r.top)*(ACEILCanvas.height(c)/r.height);
