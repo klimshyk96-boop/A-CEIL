@@ -128,7 +128,9 @@ function planImage(room,st){
     (Array.isArray(st.wallMarks)?st.wallMarks:[]).forEach(function(m,i){
       var si=Math.max(0,Math.min(pts.length-1,Number(m&&m.sideIndex)||0)),a=pts[si],b=pts[(si+1)%pts.length];if(!a||!b)return;
       var sideCm=Number(st.lengths&&st.lengths[si])||Math.hypot(b.x-a.x,b.y-a.y)||1;
-      var t1=Math.max(0,Math.min(1,(Number(m.offsetCm)||0)/sideCm)),t2=Math.max(t1,Math.min(1,((Number(m.offsetCm)||0)+(Number(m.lenCm)||sideCm))/sideCm));
+      var allowOverhang=/карниз/i.test(String(m.type||"")),offset=Number(m.offsetCm)||0,markLen=Number(m.lenCm)||sideCm;
+      var t1=allowOverhang?offset/sideCm:Math.max(0,Math.min(1,offset/sideCm));
+      var t2=allowOverhang?(offset+markLen)/sideCm:Math.max(t1,Math.min(1,(offset+markLen)/sideCm));
       var color=/^#[0-9a-f]{3,8}$/i.test(String(m.color||""))?m.color:["#f97316","#7c3aed","#16a34a","#dc2626"][i%4];
       svg+='<line x1="'+px(a.x+(b.x-a.x)*t1)+'" y1="'+py(a.y+(b.y-a.y)*t1)+'" x2="'+px(a.x+(b.x-a.x)*t2)+'" y2="'+py(a.y+(b.y-a.y)*t2)+'" stroke="'+color+'" stroke-width="5" stroke-linecap="round"/>';
     });

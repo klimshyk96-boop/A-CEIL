@@ -1883,7 +1883,9 @@ function drawComparisonRoomSketch(c,room,x,y,w,h){
   (Array.isArray(st.wallMarks)?st.wallMarks:[]).forEach(function(m,i){
     var si=Math.max(0,Math.min(pts.length-1,Number(m&&m.sideIndex)||0)),a=pts[si],b=pts[(si+1)%pts.length]; if(!a||!b)return;
     var side=Number(lens[si])||Math.hypot(Number(b.x)-Number(a.x),Number(b.y)-Number(a.y))||1;
-    var t1=Math.max(0,Math.min(1,(Number(m.offsetCm)||0)/side)),t2=Math.max(t1,Math.min(1,((Number(m.offsetCm)||0)+(Number(m.lenCm)||side))/side));
+    var allowOverhang=/карниз/i.test(String(m.type||'')),offset=Number(m.offsetCm)||0,markLen=Number(m.lenCm)||side;
+    var t1=allowOverhang?offset/side:Math.max(0,Math.min(1,offset/side));
+    var t2=allowOverhang?(offset+markLen)/side:Math.max(t1,Math.min(1,(offset+markLen)/side));
     c.strokeStyle=m.color||['#f97316','#7c3aed','#16a34a','#dc2626'][i%4]; c.lineWidth=6; c.lineCap='round'; c.beginPath();
     c.moveTo(px(Number(a.x)+(Number(b.x)-Number(a.x))*t1),py(Number(a.y)+(Number(b.y)-Number(a.y))*t1));
     c.lineTo(px(Number(a.x)+(Number(b.x)-Number(a.x))*t2),py(Number(a.y)+(Number(b.y)-Number(a.y))*t2)); c.stroke();
