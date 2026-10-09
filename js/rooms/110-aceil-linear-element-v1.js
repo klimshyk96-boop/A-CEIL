@@ -8,7 +8,7 @@
     {key:'surfaceTrack',   label:'Накладний трек',   icon:'▭',  width:35},
     {key:'custom',         label:'Інший',            icon:'⚙️', width:35}
   ];
-  var SHAPES={line:{label:'Пряма',segs:1,corners:0},L:{label:'Г-подібна',segs:2,corners:1},U:{label:'П-подібна',segs:3,corners:2},rectangle:{label:'Прямокутник',segs:2,corners:4}};
+  var SHAPES={line:{label:'Пряма',segs:1,corners:0},L:{label:'Г-подібна',segs:2,corners:1},U:{label:'П-подібна',segs:3,corners:2},rectangle:{label:'Прямокутник',segs:2,corners:4},free:{label:'Довільна',segs:0,corners:0}};
   var STAGE1=['line','L','U','rectangle'];
 
   function arr(){
@@ -25,6 +25,8 @@
   function typeDef(k){ for(var i=0;i<TYPES.length;i++) if(TYPES[i].key===k) return TYPES[i]; return TYPES[0]; }
   function uid(){ return 'le_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7); }
   function num(v,d){ var n=parseFloat(v); return isFinite(n)?n:d; }
+  function isFreePolyline(el){return !!(el&&el.shape==='free'&&Array.isArray(el.segmentAngles));}
+  function isRotatable(el){return !!(el&&(el.elementType==='lightLine'||isFreePolyline(el)));}
 
   /* ── Розрахунок: одна фігура, не набір відрізків ── */
   function computeTotals(el){
@@ -39,7 +41,7 @@
        lightLine fell back to segments.length-1, so a rectangle stored as
        [width,height] incorrectly produced one corner instead of four. */
     el.cornerCount=(el.elementType==='lightLine'&&el.lightShapeMode==='rhombus')?4:
-      (el.elementType==='lightLine'&&el.lightShapeMode==='free')?Math.max(0,s.length-1):
+      ((el.elementType==='lightLine'&&el.lightShapeMode==='free')||isFreePolyline(el))?Math.max(0,s.length-1):
       (SHAPES[el.shape]||SHAPES.line).corners;
     return el;
   }
@@ -74,7 +76,7 @@
         {x:0,y:0}
       ]);
     }
-    if(el.elementType==='lightLine' && el.lightShapeMode==='free' && Array.isArray(el.segmentAngles)){
+    if(((el.elementType==='lightLine' && el.lightShapeMode==='free')||isFreePolyline(el)) && Array.isArray(el.segmentAngles)){
       var raw=[{x:0,y:0}],rx=0,ry=0;
       for(var li=0;li<seg.length;li++){
         var ln=Math.max(1,num(seg[li],100));
@@ -431,11 +433,30 @@
     try{
       var canvas=typeof cv!=='undefined'&&cv?cv:document.querySelector('canvas'); if(!canvas||canvas.__leTapAttached)return;
       canvas.__leTapAttached=true; var down=null;
-      canvas.addEventListener('pointerdown',function(ev){down={x:ev.clientX,y:ev.clientY};},true);
+      function eventPoint(ev){
+        var r=canvas.getBoundingClientRect(),sx=ACEILCanvas.width(canvas)/r.width,sy=ACEILCanvas.height(canvas)/r.height;
+        return {x:(ev.clientX-r.left)*sx,y:(ev.clientY-r.top)*sy,r:r,sx:sx,sy:sy};
+      }
+      canvas.addEventListener('pointerdown',function(ev){
+        var p=eventPoint(ev),hit=hitLinearElement(p.x,p.y);
+        down={x:ev.clientX,y:ev.clientY,hit:hit,dragged:false,start:hit?{x:ensureCanvasCenter(hit).x,y:ensureCanvasCenter(hit).y}:null};
+        if(hit){try{canvas.setPointerCapture(ev.pointerId);}catch(_){window.__diagSilent&&window.__diagSilent(_)}ev.preventDefault();ev.stopPropagation();}
+      },true);
+      canvas.addEventListener('pointermove',function(ev){
+        if(!down||!down.hit)return;
+        var dx=ev.clientX-down.x,dy=ev.clientY-down.y;
+        if(!down.dragged&&Math.hypot(dx,dy)<7)return;
+        down.dragged=true;
+        var p=eventPoint(ev),scale=typeof viewScale!=='undefined'&&isFinite(viewScale)&&viewScale?viewScale:1;
+        down.hit.centerCanvasPx={x:down.start.x+dx*p.sx/scale,y:down.start.y+dy*p.sy/scale};
+        down.hit.anchor=down.hit.anchor||{};down.hit.anchor.sideIndex=-1;
+        syncLogicalCenterFromCanvas(down.hit);repaintOnly();ev.preventDefault();ev.stopPropagation();
+      },true);
       canvas.addEventListener('pointerup',function(ev){
-        if(!down||Math.hypot(ev.clientX-down.x,ev.clientY-down.y)>8){down=null;return;} down=null;
-        var r=canvas.getBoundingClientRect(), sx=ACEILCanvas.width(canvas)/r.width, sy=ACEILCanvas.height(canvas)/r.height;
-        var hit=hitLinearElement((ev.clientX-r.left)*sx,(ev.clientY-r.top)*sy);
+        if(!down)return;
+        if(down.dragged){var moved=down.hit;down=null;syncLogicalCenterFromCanvas(moved);persist();if(typeof showToast==='function')showToast('✓ Трек переміщено');ev.preventDefault();ev.stopPropagation();return;}
+        if(Math.hypot(ev.clientX-down.x,ev.clientY-down.y)>8){down=null;return;}
+        var hit=down.hit,p=eventPoint(ev);down=null;if(!hit)hit=hitLinearElement(p.x,p.y);
         if(hit){ev.preventDefault();ev.stopPropagation();openEditor(hit.id);}
       },true);
     }catch(_){window.__diagSilent&&window.__diagSilent(_)}
@@ -563,7 +584,7 @@
     d.id='leModal';
     d.style.cssText='display:none;position:fixed;inset:0;z-index:9000;background:rgba(15,23,42,.45);align-items:flex-end;justify-content:center';
     d.innerHTML='<div class="le-modal-card-v322" style="background:#fff;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:16px 16px 22px;box-shadow:0 -8px 32px rgba(0,0,0,.2);max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;box-sizing:border-box">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+      +'<div class="le-head-v322" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
       +'<div id="leTitle" style="font-weight:800;font-size:16px;color:#0f172a"></div>'
       +'<button type="button" onclick="leClose()" style="background:0 0;box-shadow:none;color:#94a3b8;font-size:22px;padding:2px 6px;line-height:1">×</button></div>'
       +'<div id="leBody"></div></div>';
@@ -629,7 +650,7 @@
     var td=typeDef(e.elementType), sh=(SHAPES[e.shape]||SHAPES.line);
     el('leTitle').textContent=td.icon+' '+td.label;
     var labels=e.shape==='line'?['Довжина']:e.shape==='L'?['Верхня горизонталь','Права вертикаль вниз']:e.shape==='U'?['Ліва сторона','Нижня горизонталь','Права сторона']:['Ширина','Висота'];
-    if(e.elementType==='lightLine'){
+    if(e.elementType==='lightLine'||isFreePolyline(e)){
       if(!Array.isArray(e.segmentAngles))e.segmentAngles=(e.segments||[]).map(function(){return 0;});
       while(e.segmentAngles.length<e.segments.length)e.segmentAngles.push(0);
     }
@@ -643,7 +664,7 @@
       if(!(num(e.rhombusSide,0)>0))e.rhombusSide=Math.max(1,num(e.segments&&e.segments[0],100));
       if(!(num(e.rhombusAngle,0)>0))e.rhombusAngle=60;
     }
-    var segmentFields=e.elementType==='lightLine'
+    var segmentFields=(e.elementType==='lightLine'||isFreePolyline(e))
       ?(e.segments||[]).map(function(v,i){
         var angle=num(e.segmentAngles&&e.segmentAngles[i],0);
         return '<div style="border:1px solid #e2e8f0;border-radius:14px;padding:10px;margin:8px 0;background:#f8fafc">'
@@ -696,10 +717,10 @@
         }
         return linearShapeIcon(kind);
       }
-      var modeBar='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:10px">'
+      var modeBar='<div class="le-light-shapes-v322" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:10px">'
         +choices.map(function(item){
           var active=(item.mode==='basic'&&baseMode&&e.shape===item.shape)||(item.mode==='rhombus'&&e.lightShapeMode==='rhombus');
-          return '<button type="button" onclick="leSelectLightPreset(\''+item.mode+'\',\''+item.shape+'\')" '
+          return '<button class="le-light-shape-v322" type="button" onclick="leSelectLightPreset(\''+item.mode+'\',\''+item.shape+'\')" '
             +'style="min-height:76px;padding:5px 3px;border-radius:12px;border:2px solid '+(active?'#2563eb':'#e2e8f0')+';'
             +'background:'+(active?'#eff6ff':'#fff')+';color:'+(active?'#2563eb':'#475569')+';font-weight:900;box-shadow:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">'
             +lightPresetIconV313(item.icon)
@@ -754,7 +775,9 @@
     var width35=Math.round(num(e.profileWidth,35))!==50;
     el('leBody').innerHTML=
       '<div style="font-size:12px;font-weight:900;color:#334155;margin:2px 0 7px">'+(e.elementType==='lightLine'?'Форма світлової лінії':'Форма лінійного елемента')+'</div>'
-      +(e.elementType==='lightLine'?'':'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+shapeButtons+'</div>')
+      +(e.elementType==='lightLine'?'':(isFreePolyline(e)
+        ?'<div style="display:flex;align-items:center;gap:9px;padding:10px 12px;margin-bottom:10px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:900"><span style="font-size:20px">✍</span><span>Намальовано пальцем · кожен сегмент можна уточнити нижче</span></div>'
+        :'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+shapeButtons+'</div>'))
       +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'
       +'<span style="background:#f0fdf4;color:#15803d;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800">Кутів: '+e.cornerCount+'</span>'
       +'<span id="leTotal" style="background:#f8fafc;color:#334155;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800">'+Math.round(e.totalLengthCm)+' см</span></div>'
@@ -763,21 +786,21 @@
         var hits=_leFindIntersections(arr()).filter(function(h){return h.a===e||h.b===e;});
         var breaks=_leBreakCount(e);
         if(!hits.length&&!breaks)return '<div style="margin:10px 0;padding:10px 12px;border-radius:12px;background:#f8fafc;color:#475569;font-size:11px;font-weight:800">Автопрорахунок: перехресть 0 · обривів 0</div>';
-        return '<div style="margin:10px 0;padding:11px;border:1px solid #fed7aa;background:#fff7ed;border-radius:14px">'
+        return '<div class="le-auto-install-v322" style="margin:10px 0;padding:11px;border:1px solid #fed7aa;background:#fff7ed;border-radius:14px">'
           +'<div style="font-size:12px;font-weight:950;color:#9a3412;margin-bottom:7px">Автопрорахунок монтажу</div>'
           +'<div style="font-size:11px;font-weight:800;color:#475569;margin-bottom:8px">Обривів цієї лінії: <b>'+breaks+'</b>. Обрив — вільний кінець, який не торкається основного профілю.</div>'
           +(hits.length?'<div style="font-size:11px;font-weight:800;color:#475569;margin-bottom:5px">Перехрестя (за замовчуванням 4 кути):</div>':'')
           +hits.map(function(h,idx){return '<div style="display:grid;grid-template-columns:1fr 92px;gap:8px;align-items:center;margin-top:6px"><span style="font-size:11px;font-weight:850;color:#334155">Перехрестя '+(idx+1)+'</span><select onchange="setLinearIntersectionCorners(\''+h.key+'\',this.value)" style="height:36px;border:1px solid #fdba74;border-radius:10px;background:#fff;padding:0 7px;font-weight:900">'+[0,1,2,3,4].map(function(v){return '<option value="'+v+'" '+(v===h.corners?'selected':'')+'>'+v+' кути</option>';}).join('')+'</select></div>';}).join('')
           +'</div>';
       })():'')
-      +'<div style="font-size:12px;font-weight:900;color:#334155;margin:14px 0 7px">Ширина профілю</div>'
+      +'<div class="le-profile-title-v322" style="font-size:12px;font-weight:900;color:#334155;margin:14px 0 7px">Ширина профілю</div>'
       +'<input id="leW" type="hidden" value="'+(width35?35:50)+'">'
-      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
+      +'<div class="le-profile-grid-v322" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
       +'<button id="leW35" type="button" onclick="leSetWidth(35)" style="min-height:40px;border-radius:12px;border:2px solid '+(width35?'#2563eb':'#dbe2ea')+';background:'+(width35?'#eff6ff':'#fff')+';color:'+(width35?'#2563eb':'#334155')+';font-size:15px;font-weight:900;box-shadow:none">35 мм</button>'
       +'<button id="leW50" type="button" onclick="leSetWidth(50)" style="min-height:40px;border-radius:12px;border:2px solid '+(!width35?'#2563eb':'#dbe2ea')+';background:'+(!width35?'#eff6ff':'#fff')+';color:'+(!width35?'#2563eb':'#334155')+';font-size:15px;font-weight:900;box-shadow:none">50 мм</button></div>'
-      +(e.elementType==='lightLine'
-        ?'<div style="font-size:12px;font-weight:900;color:#334155;margin:14px 0 7px">Поворот всієї фігури</div>'
-          +'<div style="display:grid;grid-template-columns:52px 1fr 52px;gap:7px;align-items:center;margin-bottom:8px">'
+      +(isRotatable(e)
+        ?'<div class="le-rotation-title-v322" style="font-size:12px;font-weight:900;color:#334155;margin:14px 0 7px">Поворот всієї фігури</div>'
+          +'<div class="le-rotation-grid-v322" style="display:grid;grid-template-columns:52px 1fr 52px;gap:7px;align-items:center;margin-bottom:8px">'
           +'<button type="button" onclick="leRotateStep(-5)" style="height:44px;border-radius:11px;border:1px solid #cbd5e1;background:#fff;color:#334155;font-size:21px;font-weight:900;box-shadow:none">↺</button>'
           +'<div style="display:flex;align-items:center;gap:6px;height:44px">'
             +'<input id="leRotationDeg" type="number" inputmode="decimal" step="1" min="-360" max="360" value="'+(Math.round(num(e.rotation,0)*10)/10)+'" '
@@ -786,13 +809,13 @@
           +'</div>'
           +'<button type="button" onclick="leRotateStep(5)" style="height:44px;border-radius:11px;border:1px solid #cbd5e1;background:#fff;color:#334155;font-size:21px;font-weight:900;box-shadow:none">↻</button>'
           +'</div>'
-          +'<button type="button" onclick="leAlignHorizontal()" style="width:100%;height:42px;margin:0 0 8px;border-radius:11px;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;font-weight:900;box-shadow:none">'+(e.lightShapeMode==='rhombus'?'◇ Вирівняти ромб':'↔ Вирівняти по горизонталі')+'</button>'
-          +'<button type="button" onclick="leAlignToRoomWalls()" style="width:100%;height:42px;margin:0 0 8px;border-radius:11px;border:1px solid #bbf7d0;background:#f0fdf4;color:#15803d;font-weight:900;box-shadow:none">▱ Вирівняти по стінах кімнати</button>'
-          +'<div style="font-size:10px;color:#64748b;margin-bottom:10px">'+(e.lightShapeMode==='rhombus'
+          +'<button class="le-align-btn-v322" type="button" onclick="leAlignHorizontal()" style="width:100%;height:42px;margin:0 0 8px;border-radius:11px;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;font-weight:900;box-shadow:none">'+(e.lightShapeMode==='rhombus'?'◇ Вирівняти ромб':'↔ Вирівняти по горизонталі')+'</button>'
+          +'<button class="le-align-btn-v322" type="button" onclick="leAlignToRoomWalls()" style="width:100%;height:42px;margin:0 0 8px;border-radius:11px;border:1px solid #bbf7d0;background:#f0fdf4;color:#15803d;font-weight:900;box-shadow:none">▱ Вирівняти по стінах кімнати</button>'
+          +'<div class="le-align-hint-v322" style="font-size:10px;color:#64748b;margin-bottom:10px">'+(e.lightShapeMode==='rhombus'
             ?'Перша кнопка рівняє ромб по екрану. Друга — по напрямку основних стін кімнати. Внутрішній кут ромба не змінюється.'
             :'Можна вирівняти по екрану або автоматично по напрямку основних стін кімнати.')+'</div>'
         :'')
-      +'<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:8px;margin-bottom:10px">'
+      +'<div class="le-place-grid-v322" style="display:grid;grid-template-columns:1.4fr 1fr;gap:8px;margin-bottom:10px">'
       +'<button type="button" onclick="leStartMove()" style="background:#eff6ff;color:#1d4ed8;font-weight:900">🎮 Перемістити на плані</button>'
       +'<button type="button" onclick="leCenterNow()" style="background:#f8fafc;color:#334155;font-weight:900">По центру</button></div>'
       +'<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:10px">'
@@ -801,6 +824,8 @@
       +'<button type="button" id="leSaveBtnV322" onclick="leApply()" style="flex:2;background:linear-gradient(135deg,#2563eb,#6366f1);color:#fff;font-weight:800">Зберегти</button>'
       +'<button type="button" id="leDel" onclick="leDelete(this)" style="flex:1;background:#fef2f2;color:#dc2626;font-weight:800">🗑</button></div>';
     el('leModal').style.display='flex';
+    var editorCard=el('leModal').querySelector('.le-modal-card-v322');
+    if(editorCard){editorCard.scrollTop=0;requestAnimationFrame(function(){editorCard.scrollTop=0;});}
   }
   window.openLinearElementEditor=openEditor;
   window.leSelectShape=function(shape){
@@ -832,7 +857,7 @@
   };
 
   function leCaptureLightInputs(e){
-    if(!e||e.elementType!=='lightLine')return;
+    if(!e||(e.elementType!=='lightLine'&&!isFreePolyline(e)))return;
     var segs=Array.prototype.slice.call(document.querySelectorAll('#leBody .le-seg'));
     var angs=Array.prototype.slice.call(document.querySelectorAll('#leBody .le-angle'));
     if(segs.length){
@@ -844,7 +869,7 @@
     computeTotals(e);syncPoints(e);
   }
   window.leSetLightShapeMode=function(mode){
-    var e=find(curId);if(!e||e.elementType!=='lightLine')return;
+    var e=find(curId);if(!e||(e.elementType!=='lightLine'&&!isFreePolyline(e)))return;
     if(e.lightShapeMode==='free'&&typeof leCaptureLightInputs==='function')leCaptureLightInputs(e);
     e.lightShapeMode=(mode==='rhombus'?'rhombus':'free');
     if(e.lightShapeMode==='rhombus'){
@@ -862,7 +887,7 @@
     var av=el('leRhombusAngleValue');if(av)av.textContent=Math.round(e.rhombusAngle*10)/10;
   };
   window.leAddLightSegment=function(){
-    var e=find(curId);if(!e||e.elementType!=='lightLine')return;
+    var e=find(curId);if(!e||(e.elementType!=='lightLine'&&!isFreePolyline(e)))return;
     leCaptureLightInputs(e);
     var lastLen=e.segments.length?num(e.segments[e.segments.length-1],100):100;
     var lastAng=e.segmentAngles&&e.segmentAngles.length?num(e.segmentAngles[e.segmentAngles.length-1],0):0;
@@ -872,7 +897,7 @@
     computeTotals(e);syncPoints(e);repaintOnly();openEditor(curId);
   };
   window.leRemoveLightSegment=function(index){
-    var e=find(curId);if(!e||e.elementType!=='lightLine'||e.segments.length<=1)return;
+    var e=find(curId);if(!e||(e.elementType!=='lightLine'&&!isFreePolyline(e))||e.segments.length<=1)return;
     leCaptureLightInputs(e);
     e.segments.splice(index,1);
     if(Array.isArray(e.segmentAngles))e.segmentAngles.splice(index,1);
@@ -940,7 +965,7 @@
   }
 
   window.leAlignToRoomWalls=function(){
-    var e=find(curId);if(!e||e.elementType!=='lightLine')return;
+    var e=find(curId);if(!e||!isRotatable(e))return;
     var wallAngle=leDominantRoomWallAngleV312();
 
     if(e.lightShapeMode==='rhombus'){
@@ -948,7 +973,7 @@
          The local long diagonal is at alpha/2 relative to the first side. */
       var alpha=Math.max(10,Math.min(170,num(e.rhombusAngle,60)));
       e.rotation=wallAngle-(alpha/2);
-    }else if(e.lightShapeMode==='free'&&Array.isArray(e.segmentAngles)&&e.segmentAngles.length){
+    }else if(((e.lightShapeMode==='free')||isFreePolyline(e))&&Array.isArray(e.segmentAngles)&&e.segmentAngles.length){
       e.rotation=wallAngle-num(e.segmentAngles[0],0);
     }else{
       e.rotation=wallAngle;
@@ -966,7 +991,7 @@
   };
 
   window.leAlignHorizontal=function(){
-    var e=find(curId);if(!e||e.elementType!=='lightLine')return;
+    var e=find(curId);if(!e||!isRotatable(e))return;
 
     if(e.lightShapeMode==='rhombus'){
       /* Для ромба вирівнюємо НЕ сторону, а осі симетрії:
@@ -976,7 +1001,7 @@
          тому для "стоячого" ромба повертаємо її на 90°. */
       var alpha=Math.max(10,Math.min(170,num(e.rhombusAngle,60)));
       e.rotation=90-(alpha/2);
-    }else if(e.lightShapeMode==='free'&&Array.isArray(e.segmentAngles)&&e.segmentAngles.length){
+    }else if(((e.lightShapeMode==='free')||isFreePolyline(e))&&Array.isArray(e.segmentAngles)&&e.segmentAngles.length){
       /* Для ламаної — горизонтально по першому сегменту. */
       e.rotation=-num(e.segmentAngles[0],0);
     }else{
@@ -996,7 +1021,7 @@
     }
   };
   window.leRotateStep=function(delta){
-    var e=find(curId);if(!e||e.elementType!=='lightLine')return;
+    var e=find(curId);if(!e||!isRotatable(e))return;
     var inp=el('leRotationDeg');
     var base=inp?num(inp.value,num(e.rotation,0)):num(e.rotation,0);
     e.rotation=base+num(delta,0);
@@ -1041,13 +1066,13 @@
       }else{
         e.segments=next;
       }
-      if(e.elementType==='lightLine'&&e.lightShapeMode==='free'){
+      if((e.elementType==='lightLine'&&e.lightShapeMode==='free')||isFreePolyline(e)){
         var angleInputs=Array.prototype.slice.call(document.querySelectorAll('#leBody .le-angle'));
         e.segmentAngles=angleInputs.map(function(inp){return Math.max(-180,Math.min(180,num(inp.value,0)));});
         while(e.segmentAngles.length<e.segments.length)e.segmentAngles.push(0);
       }
     }
-    if(e.elementType==='lightLine'){
+    if(isRotatable(e)){
       var rotInput=el('leRotationDeg');
       if(rotInput)e.rotation=num(rotInput.value,num(e.rotation,0));
     }
@@ -1125,17 +1150,89 @@
     el('leBody').innerHTML='<div style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:8px">Оберіть тип</div>'
       +TYPES.map(function(t){ return '<button type="button" onclick="leChooseType(\''+t.key+'\')" style="width:100%;display:flex;align-items:center;gap:10px;background:#f8fafc;color:#0f172a;font-weight:700;margin-bottom:6px;justify-content:flex-start;padding:12px"><span style="font-size:18px">'+t.icon+'</span>'+t.label+'</button>'; }).join('');
     el('leModal').style.display='flex';
+    var pickerCard=el('leModal').querySelector('.le-modal-card-v322');
+    if(pickerCard){pickerCard.scrollTop=0;requestAnimationFrame(function(){pickerCard.scrollTop=0;});}
   };
   window.leChooseType=function(k){
     if(k==='lightLine'){ create(k,'line'); return; }
     el('leTitle').textContent=typeDef(k).icon+' '+typeDef(k).label;
     el('leBody').innerHTML='<div style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:8px">Оберіть форму</div>'
-      +Object.keys(SHAPES).map(function(s){
+      +((k==='magneticTrack'||k==='surfaceTrack')
+        ?'<button type="button" onclick="leStartTrackFinger(\''+k+'\')" style="width:100%;display:flex;align-items:center;gap:11px;text-align:left;margin-bottom:10px;padding:13px;border:2px solid #2563eb;border-radius:14px;background:#eff6ff;color:#1d4ed8;font-weight:900;box-shadow:none"><span style="font-size:23px">✍</span><span>Намалювати пальцем<small style="display:block;margin-top:2px;color:#64748b;font-size:10px">Z-подібна, коса або довільна ламана</small></span></button>'
+        :'')
+      +Object.keys(SHAPES).filter(function(s){return s!=='free';}).map(function(s){
         var on=STAGE1.indexOf(s)>=0;
         return '<button type="button" '+(on?'onclick="leCreate(\''+k+'\',\''+s+'\')"':'disabled')+' style="width:100%;text-align:left;margin-bottom:6px;padding:12px;font-weight:700;'+(on?'background:#f8fafc;color:#0f172a':'background:#f1f5f9;color:#cbd5e1')+'">'+SHAPES[s].label+(on?'':' — скоро')+'</button>';
       }).join('');
   };
   window.leCreate=function(k,s){ create(k,s); };
+
+  function leRdpTrack(points,epsilon){
+    if(points.length<3)return points.slice();
+    var first=points[0],last=points[points.length-1],max=0,index=0,dx=last.x-first.x,dy=last.y-first.y,den=dx*dx+dy*dy;
+    for(var i=1;i<points.length-1;i++){
+      var d;if(den<1e-9)d=Math.hypot(points[i].x-first.x,points[i].y-first.y);
+      else{var t=((points[i].x-first.x)*dx+(points[i].y-first.y)*dy)/den;t=Math.max(0,Math.min(1,t));d=Math.hypot(points[i].x-(first.x+t*dx),points[i].y-(first.y+t*dy));}
+      if(d>max){max=d;index=i;}
+    }
+    if(max>epsilon){
+      var a=leRdpTrack(points.slice(0,index+1),epsilon),b=leRdpTrack(points.slice(index),epsilon);
+      return a.slice(0,-1).concat(b);
+    }
+    return [first,last];
+  }
+  function leTrackCleanPoints(points){
+    var clean=leRdpTrack(points,14);
+    if(clean.length<3)return clean;
+    var out=[clean[0]];
+    for(var i=1;i<clean.length-1;i++){
+      var a=out[out.length-1],b=clean[i],c=clean[i+1];
+      var ab=Math.atan2(b.y-a.y,b.x-a.x),bc=Math.atan2(c.y-b.y,c.x-b.x);
+      var diff=Math.abs(((bc-ab+Math.PI*3)%(Math.PI*2))-Math.PI);
+      if(diff>12*Math.PI/180)out.push(b);
+    }
+    out.push(clean[clean.length-1]);return out;
+  }
+  function leCreateFreeTrack(k,screenPoints,canvas,rect){
+    var sx=ACEILCanvas.width(canvas)/rect.width,sy=ACEILCanvas.height(canvas)/rect.height;
+    var scale=typeof viewScale!=='undefined'&&isFinite(viewScale)&&viewScale?viewScale:1;
+    var ox=typeof viewOffsetX!=='undefined'&&isFinite(viewOffsetX)?viewOffsetX:0;
+    var oy=typeof viewOffsetY!=='undefined'&&isFinite(viewOffsetY)?viewOffsetY:0;
+    var base=screenPoints.map(function(p){return {x:(p.x*sx-ox)/scale,y:(p.y*sy-oy)/scale};});
+    var px=1;try{if(typeof _pxPerCm==='function'&&_pxPerCm()>0)px=_pxPerCm();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    var segments=[],angles=[];
+    for(var i=0;i<base.length-1;i++){
+      var dx=base[i+1].x-base[i].x,dy=base[i+1].y-base[i].y,len=Math.hypot(dx,dy)/px;
+      if(len<3)continue;
+      var angle=Math.atan2(dy,dx)*180/Math.PI;
+      var axis=Math.round(angle/90)*90;if(Math.abs(angle-axis)<7)angle=axis;
+      segments.push(Math.round(len*10)/10);angles.push(Math.round(angle*10)/10);
+    }
+    if(!segments.length)return null;
+    var minX=Math.min.apply(null,base.map(function(p){return p.x;})),maxX=Math.max.apply(null,base.map(function(p){return p.x;}));
+    var minY=Math.min.apply(null,base.map(function(p){return p.y;})),maxY=Math.max.apply(null,base.map(function(p){return p.y;}));
+    var c=roomCenterCm(),td=typeDef(k),item={id:uid(),type:'linearElement',elementType:td.key,shape:'free',center:{x:c.x,y:c.y},baseIndex:Number.isFinite(+c.baseIndex)?+c.baseIndex:0,centerCanvasPx:{x:(minX+maxX)/2,y:(minY+maxY)/2},rotation:0,segments:segments,segmentAngles:angles,points:[],profileWidth:td.width,anchor:{sideIndex:-1,alongCm:0,inwardCm:30,direction:'parallel'}};
+    computeTotals(item);syncPoints(item);syncLogicalCenterFromCanvas(item);arr().push(item);persist();return item;
+  }
+  window.leStartTrackFinger=function(k){
+    var canvas=typeof cv!=='undefined'&&cv?cv:document.querySelector('canvas');if(!canvas)return;
+    var modal=el('leModal');if(modal)modal.style.display='none';
+    var rect=canvas.getBoundingClientRect(),wrap=document.createElement('div');wrap.id='leTrackDrawOverlay';
+    wrap.style.cssText='position:fixed;left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;height:'+rect.height+'px;z-index:100000;touch-action:none;background:rgba(239,246,255,.10);';
+    var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 '+rect.width+' '+rect.height);svg.style.cssText='width:100%;height:100%;display:block;overflow:visible';
+    var path=document.createElementNS('http://www.w3.org/2000/svg','polyline');path.setAttribute('fill','none');path.setAttribute('stroke','#7c3aed');path.setAttribute('stroke-width','7');path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');svg.appendChild(path);wrap.appendChild(svg);
+    var hint=document.createElement('div');hint.style.cssText='position:absolute;left:12px;right:12px;bottom:14px;padding:10px 46px 10px 12px;border-radius:13px;background:rgba(15,23,42,.93);color:#fff;font:800 12px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:center;box-shadow:0 8px 24px rgba(15,23,42,.25)';hint.textContent='Намалюйте трек одним рухом. Лінії автоматично вирівняються.';wrap.appendChild(hint);
+    var cancel=document.createElement('button');cancel.type='button';cancel.textContent='×';cancel.style.cssText='position:absolute;right:9px;top:9px;width:40px;height:40px;border:0;border-radius:12px;background:#fff;color:#dc2626;font-size:25px;font-weight:900;box-shadow:0 4px 14px rgba(15,23,42,.18)';wrap.appendChild(cancel);
+    var raw=[],drawing=false;
+    function local(ev){return {x:Math.max(0,Math.min(rect.width,ev.clientX-rect.left)),y:Math.max(0,Math.min(rect.height,ev.clientY-rect.top))};}
+    function preview(){var p=leTrackCleanPoints(raw);path.setAttribute('points',p.map(function(v){return v.x+','+v.y;}).join(' '));}
+    function close(){if(wrap.parentNode)wrap.parentNode.removeChild(wrap);}
+    cancel.addEventListener('click',function(){close();window.leChooseType(k);if(modal)modal.style.display='flex';});
+    wrap.addEventListener('pointerdown',function(ev){if(ev.target===cancel)return;drawing=true;raw=[local(ev)];try{wrap.setPointerCapture(ev.pointerId);}catch(_){window.__diagSilent&&window.__diagSilent(_)}ev.preventDefault();});
+    wrap.addEventListener('pointermove',function(ev){if(!drawing)return;var p=local(ev),last=raw[raw.length-1];if(Math.hypot(p.x-last.x,p.y-last.y)>=4){raw.push(p);preview();}ev.preventDefault();});
+    function finish(ev){if(!drawing)return;drawing=false;var p=local(ev),last=raw[raw.length-1];if(Math.hypot(p.x-last.x,p.y-last.y)>4)raw.push(p);var clean=leTrackCleanPoints(raw);if(clean.length<2||Math.hypot(clean[clean.length-1].x-clean[0].x,clean[clean.length-1].y-clean[0].y)<18){if(typeof showToast==='function')showToast('⚠️ Намалюйте довшу лінію');return;}var item=leCreateFreeTrack(k,clean,canvas,rect);close();if(item){openEditor(item.id);if(typeof showToast==='function')showToast('✓ Форму треку створено');}}
+    wrap.addEventListener('pointerup',finish);wrap.addEventListener('pointercancel',function(){drawing=false;});document.body.appendChild(wrap);
+  };
 
   /* Пункт у меню світла (renderLightMenu перемальовує меню — доповнюємо після нього) */
   function addMenuItem(){
