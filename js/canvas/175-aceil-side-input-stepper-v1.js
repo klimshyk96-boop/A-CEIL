@@ -258,17 +258,28 @@ function apply(){
 }
 
 /* ---------- публічні точки входу ---------- */
-function wallListRowAt(clientX,clientY){
+function wallControlAt(clientX,clientY){
   var c=document.getElementById("cv"),rows=(window.__aceilShortWallHits||[]).concat(window.__aceilWLRows||[]);
-  if(!c||!rows.length)return -1;
-  var r=c.getBoundingClientRect();if(!r.width||!r.height)return -1;
+  if(!c||!rows.length)return null;
+  var r=c.getBoundingClientRect();if(!r.width||!r.height)return null;
   var px=(clientX-r.left)*(ACEILCanvas.width(c)/r.width),py=(clientY-r.top)*(ACEILCanvas.height(c)/r.height);
-  for(var i=0;i<rows.length;i++){var q=rows[i];if(px>=q.x&&px<=q.x+q.w&&py>=q.y&&py<=q.y+q.h)return q.i}
-  return -1;
+  for(var i=0;i<rows.length;i++){
+    var q=rows[i];
+    if(px>=q.x&&px<=q.x+q.w&&py>=q.y&&py<=q.y+q.h)return{i:q.i,action:q.action||"dimensions"};
+  }
+  return null;
 }
 function openWallListRow(e,point){
-  var i=wallListRowAt(point.clientX,point.clientY);if(i<0)return;
-  if(e.cancelable)e.preventDefault();e.stopImmediatePropagation();open(i);
+  var hit=wallControlAt(point.clientX,point.clientY);if(!hit)return;
+  if(hit.action==="wall"){
+    if(typeof window.rmWallTapOpenV84!=="function")return;
+    if(e.cancelable)e.preventDefault();e.stopImmediatePropagation();
+    try{if(typeof flashWallSide==="function")flashWallSide(hit.i);}catch(_){}
+    window.__A_CEILSelectedSideV89=hit.i;
+    window.rmWallTapOpenV84(hit.i);
+    return;
+  }
+  if(e.cancelable)e.preventDefault();e.stopImmediatePropagation();open(hit.i);
 }
 document.addEventListener("touchstart",function(e){var t=e.touches&&e.touches[0];if(e.touches&&e.touches.length===1&&t)openWallListRow(e,t)},{capture:true,passive:false});
 document.addEventListener("mousedown",function(e){openWallListRow(e,e)},true);
