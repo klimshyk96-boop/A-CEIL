@@ -125,8 +125,8 @@ body.aceil-all-split-v14 .canvas-container{
 
 <script src="js/canvas/viewport.js?v=20261003-clean1"></script>
 <script src="js/canvas/contour-state.js?v=20261003-clean1"></script>
-<script src="js/canvas/renderer.js?v=20261003-clean1"></script>
-<script src="js/nomenclature/019-inline.js?v=20261007-report-diag1"></script>
+<script src="js/canvas/renderer.js?v=20261009-short-walls1"></script>
+<script src="js/nomenclature/019-inline.js?v=20261009-short-walls1"></script>
 
 <script src="js/reports/020-inline.js?v=20261003-clean1"></script>
 
@@ -723,7 +723,7 @@ body.aceil-all-split-v14 .canvas-container{
       sessionStorage.setItem(updateKey,"1");
       location.reload();
     });
-      navigator.serviceWorker.register("/sw.js?v=20261009-track-width30",{scope:"/"}).then(function(reg){
+      navigator.serviceWorker.register("/sw.js?v=20261009-short-walls1",{scope:"/"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
