@@ -4,9 +4,9 @@
   "use strict";
   var TYPES=[
     {key:'lightLine',      label:'Світлова лінія',   icon:'💡', width:35},
-    {key:'magneticTrack',  label:'Трекове освітлення',icon:'🧲', width:35},
-    {key:'surfaceTrack',   label:'Накладний трек',   icon:'▭',  width:35},
-    {key:'recessedTrack',  label:'Вмонтований трек', icon:'▰',  width:35},
+    {key:'magneticTrack',  label:'Трекове освітлення',icon:'🧲', width:30},
+    {key:'surfaceTrack',   label:'Накладний трек',   icon:'▭',  width:30},
+    {key:'recessedTrack',  label:'Вмонтований трек', icon:'▰',  width:30},
     {key:'custom',         label:'Інший',            icon:'⚙️', width:35}
   ];
   var SHAPES={line:{label:'Пряма',segs:1,corners:0},L:{label:'Г-подібна',segs:2,corners:1},U:{label:'П-подібна',segs:3,corners:2},rectangle:{label:'Прямокутник',segs:2,corners:4},free:{label:'Довільна',segs:0,corners:0}};
@@ -388,7 +388,7 @@
       if(pts2.some(function(p){return !p||!isFinite(p.x)||!isFinite(p.y);} )) return;
       /* profileWidth is stored in millimetres. On plan it is a slim path,
          not a filled construction rectangle. */
-      var physicalPx=(num(el.profileWidth,35)/10)*px;
+      var physicalPx=((isTrackType(el)?30:num(el.profileWidth,35))/10)*px;
       var reportMode=(typeof _reportMode!=='undefined'&&_reportMode)||window.__A·CEILReportRendering===true;
       var w=Math.max(3,Math.min(reportMode?24:9,physicalPx+(reportMode?10:0)));
       var color=el.elementType==='curtainHidden'?'#8b5cf6':
@@ -674,6 +674,7 @@
   }
   function openEditor(id){
     ensureModal(); curId=id; var e=find(id); if(!e) return;
+    if(isTrackType(e))e.profileWidth=30;
     var td=typeDef(e.elementType), sh=(SHAPES[e.shape]||SHAPES.line);
     el('leTitle').textContent=td.icon+' '+td.label;
     var labels=e.shape==='line'?['Довжина']:e.shape==='L'?['Верхня горизонталь','Права вертикаль вниз']:e.shape==='U'?['Ліва сторона','Нижня горизонталь','Права сторона']:['Ширина','Висота'];
@@ -701,7 +702,7 @@
           +'</div>'
           +'<div class="le-segment-fields-v323" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
           +'<label class="le-segment-label-v323" style="font-size:11px;color:#64748b;font-weight:800">Довжина, см'
-          +'<input class="le-seg" data-index="'+i+'" type="number" inputmode="decimal" min="1" step="0.1" value="'+num(v,0)+'" '
+          +'<input class="le-seg" data-index="'+i+'" type="number" inputmode="decimal" min="1" step="0.1" value="'+num(v,0)+'" oninput="leTrackSegmentLengthInput(this)" '
           +'style="width:100%;box-sizing:border-box;height:44px;margin-top:4px;padding:7px 9px;border:2px solid #e2e8f0;border-radius:11px;font-size:16px;font-weight:800;text-align:center"></label>'
           +'<label class="le-segment-label-v323" style="font-size:11px;color:#64748b;font-weight:800">Кут, °'
           +'<input class="le-angle" data-index="'+i+'" type="number" inputmode="decimal" min="-180" max="180" step="'+(isTrackType(e)?90:1)+'" value="'+angle+'" '
@@ -808,6 +809,7 @@
       +'<div class="le-metrics-v323" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'
       +'<span style="background:#f0fdf4;color:#15803d;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800">Кутів: '+e.cornerCount+'</span>'
       +'<span id="leTotal" style="background:#f8fafc;color:#334155;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800">'+Math.round(e.totalLengthCm)+' см</span></div>'
+      +(isTrackType(e)&&isFreePolyline(e)?'<label style="display:flex;align-items:center;gap:9px;margin:4px 0 10px;padding:9px 11px;border:1px solid #bfdbfe;border-radius:11px;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:900"><input id="leEqualTrackSegments" type="checkbox" '+(e.equalSegmentLengths?'checked':'')+' onchange="leToggleEqualTrackSegments(this.checked)" style="width:20px;height:20px;margin:0;accent-color:#2563eb"><span>Однакова довжина всіх сегментів</span></label>':'')
       +segmentFields
       +(isTrackType(e)?'<label style="display:block;font-size:11px;color:#334155;font-weight:900;margin:10px 0 4px">Трекові світильники, шт<input id="leTrackFixtureCount" type="number" inputmode="numeric" min="0" step="1" value="'+Math.max(0,Math.round(num(e.trackFixtureCount,0)))+'" style="width:100%;box-sizing:border-box;height:44px;margin-top:4px;padding:7px 9px;border:2px solid #e2e8f0;border-radius:11px;font-size:16px;font-weight:800;text-align:center"></label>':'')
       +(e.elementType==='lightLine'?(function(){
@@ -821,11 +823,11 @@
           +hits.map(function(h,idx){return '<div style="display:grid;grid-template-columns:1fr 92px;gap:8px;align-items:center;margin-top:6px"><span style="font-size:11px;font-weight:850;color:#334155">Перехрестя '+(idx+1)+'</span><select onchange="setLinearIntersectionCorners(\''+h.key+'\',this.value)" style="height:36px;border:1px solid #fdba74;border-radius:10px;background:#fff;padding:0 7px;font-weight:900">'+[0,1,2,3,4].map(function(v){return '<option value="'+v+'" '+(v===h.corners?'selected':'')+'>'+v+' кути</option>';}).join('')+'</select></div>';}).join('')
           +'</div>';
       })():'')
-      +'<div class="le-profile-title-v322" style="font-size:12px;font-weight:900;color:#334155;margin:14px 0 7px">Ширина профілю</div>'
+      +(isTrackType(e)?'':('<div class="le-profile-title-v322" style="font-size:12px;font-weight:900;color:#334155;margin:14px 0 7px">Ширина профілю</div>'
       +'<input id="leW" type="hidden" value="'+(width35?35:50)+'">'
       +'<div class="le-profile-grid-v322" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
       +'<button id="leW35" type="button" onclick="leSetWidth(35)" style="min-height:40px;border-radius:12px;border:2px solid '+(width35?'#2563eb':'#dbe2ea')+';background:'+(width35?'#eff6ff':'#fff')+';color:'+(width35?'#2563eb':'#334155')+';font-size:15px;font-weight:900;box-shadow:none">35 мм</button>'
-      +'<button id="leW50" type="button" onclick="leSetWidth(50)" style="min-height:40px;border-radius:12px;border:2px solid '+(!width35?'#2563eb':'#dbe2ea')+';background:'+(!width35?'#eff6ff':'#fff')+';color:'+(!width35?'#2563eb':'#334155')+';font-size:15px;font-weight:900;box-shadow:none">50 мм</button></div>'
+      +'<button id="leW50" type="button" onclick="leSetWidth(50)" style="min-height:40px;border-radius:12px;border:2px solid '+(!width35?'#2563eb':'#dbe2ea')+';background:'+(!width35?'#eff6ff':'#fff')+';color:'+(!width35?'#2563eb':'#334155')+';font-size:15px;font-weight:900;box-shadow:none">50 мм</button></div>'))
       +(isRotatable(e)
         ?'<div class="le-rotation-title-v322" style="font-size:12px;font-weight:900;color:#334155;margin:14px 0 7px">Поворот всієї фігури</div>'
           +'<div class="le-rotation-grid-v322" style="display:grid;grid-template-columns:52px 1fr 52px;gap:7px;align-items:center;margin-bottom:8px">'
@@ -1074,6 +1076,28 @@
     });
   };
 
+  window.leToggleEqualTrackSegments=function(checked){
+    var e=find(curId);if(!e||!isTrackType(e)||!isFreePolyline(e))return;
+    e.equalSegmentLengths=!!checked;
+    var inputs=Array.prototype.slice.call(document.querySelectorAll('#leBody .le-seg'));
+    if(e.equalSegmentLengths&&inputs.length){
+      var value=Math.max(1,num(inputs[0].value,e.segments&&e.segments[0]||1));
+      inputs.forEach(function(inp){inp.value=value;});
+      e.segments=inputs.map(function(){return value;});
+      computeTotals(e);syncPoints(e);repaintOnly();
+      var total=el('leTotal');if(total)total.textContent=Math.round(e.totalLengthCm)+' см';
+    }
+  };
+  window.leTrackSegmentLengthInput=function(input){
+    var e=find(curId);if(!e||!isTrackType(e)||!isFreePolyline(e)||!e.equalSegmentLengths)return;
+    var value=Math.max(1,num(input&&input.value,1));
+    var inputs=Array.prototype.slice.call(document.querySelectorAll('#leBody .le-seg'));
+    inputs.forEach(function(inp){if(inp!==input)inp.value=value;});
+    e.segments=inputs.map(function(){return value;});
+    computeTotals(e);syncPoints(e);repaintOnly();
+    var total=el('leTotal');if(total)total.textContent=Math.round(e.totalLengthCm)+' см';
+  };
+
   window.leClose=function(){ var m=el('leModal'); if(m) m.style.display='none'; var j=el('leJoystick');if(j)j.style.display='none';joySnapshot=null;curId=null; };
   window.leApply=function(){
     var e=find(curId); if(!e) return;
@@ -1102,13 +1126,17 @@
         var angleInputs=Array.prototype.slice.call(document.querySelectorAll('#leBody .le-angle'));
         e.segmentAngles=angleInputs.map(function(inp){return isTrackType(e)?snapTrackAngle(inp.value):Math.max(-180,Math.min(180,num(inp.value,0)));});
         while(e.segmentAngles.length<e.segments.length)e.segmentAngles.push(0);
+        if(isTrackType(e)&&e.equalSegmentLengths&&e.segments.length){
+          var equalLength=Math.max(1,num(e.segments[0],1));
+          e.segments=e.segments.map(function(){return equalLength;});
+        }
       }
     }
     if(isRotatable(e)){
       var rotInput=el('leRotationDeg');
       if(rotInput)e.rotation=num(rotInput.value,num(e.rotation,0));
     }
-    e.profileWidth=num(el('leW')&&el('leW').value,35)===50?50:35;
+    e.profileWidth=isTrackType(e)?30:(num(el('leW')&&el('leW').value,35)===50?50:35);
     if(isTrackType(e))e.trackFixtureCount=Math.max(0,Math.round(num(el('leTrackFixtureCount')&&el('leTrackFixtureCount').value,e.trackFixtureCount||0)));
     e.anchor=e.anchor||{};e.anchor.sideIndex=-1;
     computeTotals(e);syncPoints(e);syncLogicalCenterFromCanvas(e);persist();applyLinearNomenclature();
