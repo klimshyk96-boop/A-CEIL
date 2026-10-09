@@ -14,22 +14,17 @@ function drawShortWallBadges(targetCtx){
   short.forEach((i,order)=>{
     const a=sp[i],b=sp[(i+1)%sp.length],mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
     let nx=-dy/len,ny=dx/len;if((cx-mx)*nx+(cy-my)*ny>0){nx=-nx;ny=-ny}
-    const text=N(i)+N((i+1)%pts.length)+" · "+Math.round(Number(lengths[i])||0)+" см",editW=24*u;
-    targetCtx.font=`800 ${10.5*u}px -apple-system,Arial`;const bw=targetCtx.measureText(text).width+16*u+editW,bh=24*u,tx=-ny,ty=nx;
-    const candidates=[0,1,-1,2,-2].map(k=>({x:mx+nx*(34+Math.abs(k)*8)*u+tx*k*30*u,y:my+ny*(34+Math.abs(k)*8)*u+ty*k*30*u}));
+    const text=N(i)+N((i+1)%pts.length);
+    targetCtx.font=`850 ${9.5*u}px -apple-system,Arial`;const bw=Math.max(28*u,targetCtx.measureText(text).width+12*u),bh=18*u,tx=-ny,ty=nx;
+    const candidates=[0,1,-1,2,-2].map(k=>({x:mx+nx*(22+Math.abs(k)*6)*u+tx*k*22*u,y:my+ny*(22+Math.abs(k)*6)*u+ty*k*22*u}));
     let box=null;for(const p of candidates){const x=Math.max(6*u,Math.min(maxX-bw,p.x-bw/2)),y=Math.max(minY,Math.min(maxY-bh,p.y-bh/2)),r={x,y,w:bw,h:bh};if(!used.some(q=>r.x<q.x+q.w+5*u&&r.x+r.w+5*u>q.x&&r.y<q.y+q.h+5*u&&r.y+r.h+5*u>q.y)){box=r;break}}
-    if(!box){const x=Math.max(6*u,Math.min(maxX-bw,mx+nx*34*u-bw/2)),y=Math.max(minY,Math.min(maxY-bh,my+ny*34*u-bh/2+order*28*u));box={x,y,w:bw,h:bh}}
+    if(!box){const x=Math.max(6*u,Math.min(maxX-bw,mx+nx*22*u-bw/2)),y=Math.max(minY,Math.min(maxY-bh,my+ny*22*u-bh/2+order*21*u));box={x,y,w:bw,h:bh}}
     used.push(box);const bx=box.x+box.w/2,by=box.y+box.h/2;
-    targetCtx.strokeStyle="#2563eb";targetCtx.lineWidth=1.2*u;targetCtx.setLineDash([3*u,3*u]);targetCtx.beginPath();targetCtx.moveTo(mx,my);targetCtx.lineTo(bx,by);targetCtx.stroke();targetCtx.setLineDash([]);
-    targetCtx.beginPath();targetCtx.roundRect?targetCtx.roundRect(box.x,box.y,box.w,box.h,7*u):targetCtx.rect(box.x,box.y,box.w,box.h);targetCtx.fillStyle="rgba(239,246,255,.97)";targetCtx.fill();targetCtx.strokeStyle="#2563eb";targetCtx.lineWidth=1.2*u;targetCtx.stroke();
-    const splitX=box.x+box.w-editW,labelCx=box.x+(box.w-editW)/2;
-    targetCtx.strokeStyle="rgba(37,99,235,.25)";targetCtx.lineWidth=1*u;targetCtx.beginPath();targetCtx.moveTo(splitX,box.y+4*u);targetCtx.lineTo(splitX,box.y+box.h-4*u);targetCtx.stroke();
-    targetCtx.fillStyle="#1e3a8a";targetCtx.fillText(text,labelCx,by+.5*u);
-    targetCtx.fillStyle="#2563eb";targetCtx.font=`900 ${13*u}px -apple-system,Arial`;targetCtx.fillText("↔",splitX+editW/2,by+.5*u);
-    /* The label is a proxy for the tiny wall itself. Only the separate ↔
-       button opens dimensions, so wall actions never get intercepted. */
-    window.__aceilShortWallHits.push({x:splitX,y:box.y,w:editW,h:box.h,i:i,action:"dimensions"});
-    window.__aceilShortWallHits.push({x:box.x,y:box.y,w:box.w-editW,h:box.h,i:i,action:"wall"});
+    targetCtx.beginPath();targetCtx.roundRect?targetCtx.roundRect(box.x,box.y,box.w,box.h,6*u):targetCtx.rect(box.x,box.y,box.w,box.h);targetCtx.fillStyle="rgba(239,246,255,.92)";targetCtx.fill();targetCtx.strokeStyle="rgba(37,99,235,.72)";targetCtx.lineWidth=1*u;targetCtx.stroke();
+    targetCtx.fillStyle="#1e3a8a";targetCtx.fillText(text,bx,by+.25*u);
+    /* Compact wall proxy: no dimension text over the drawing. The invisible
+       touch target is larger than the visual chip for comfortable use. */
+    window.__aceilShortWallHits.push({x:bx-19*u,y:by-16*u,w:38*u,h:32*u,i:i,action:"wall"});
   });
   targetCtx.restore();
 }
