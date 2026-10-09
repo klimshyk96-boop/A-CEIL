@@ -140,6 +140,14 @@
   var previousReportBindings=window.drawLightBindings;
   if(typeof previousReportBindings==='function'&&!previousReportBindings.__corniceOverhangV1){
     var reportBindingsWithOverhang=function(c){
+      /* drawLightBindings is a report-only layer.  Some older wrappers use
+         their own `_reportMode` lookup and can still paint the selected wall
+         on the live canvas.  That produced the hollow green duplicate next
+         to the real parallel cornice.  Stop the whole legacy chain here when
+         this is an ordinary canvas redraw. */
+      var inReport=false;
+      try{inReport=typeof _reportMode!=='undefined'&&!!_reportMode;}catch(_){inReport=false;}
+      if(!inReport)return;
       var result=previousReportBindings.apply(this,arguments);
       try{
         var list=getMarks();
