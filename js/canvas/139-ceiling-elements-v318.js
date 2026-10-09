@@ -84,6 +84,7 @@ function render(){
     +'<button type="button" class="rm-ce-card" onclick="rmStartDoubleSpotV1()"><span class="rm-ce-icon" style="letter-spacing:-3px">⊙⊙</span><span><b>Подвійний точковий світильник</b><small>горизонтально / вертикально</small></span></button>'
     +ventBtn
     +'<button type="button" class="rm-ce-card" onclick="rmCeTrackV318()"><span class="rm-ce-icon">▭</span><span><b>Трекове освітлення</b><small>магнітний або накладний трек</small></span></button>'
+    +'<button type="button" class="rm-ce-card" onclick="rmCeRecessedTrackV318()"><span class="rm-ce-icon" style="color:#0891b2">▰</span><span><b>Вмонтований трек</b><small>окремий тип · бірюзовий колір</small></span></button>'
     +custom
     +'</div>'
     +'<button type="button" class="rm-ce-new" onclick="rmOpenNewCeilingElementV318()">＋ Новий елемент</button>';
@@ -179,6 +180,13 @@ window.rmCeTrackV318=function(){
   try{
     if(typeof window.rmOpenLinearElement==="function")window.rmOpenLinearElement();
     if(typeof window.leChooseType==="function")window.leChooseType("magneticTrack");
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+};
+window.rmCeRecessedTrackV318=function(){
+  closeMain();
+  try{
+    if(typeof window.rmOpenLinearElement==="function")window.rmOpenLinearElement();
+    if(typeof window.leChooseType==="function")window.leChooseType("recessedTrack");
   }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 };
 window.rmOpenNewCeilingElementV318=function(){
