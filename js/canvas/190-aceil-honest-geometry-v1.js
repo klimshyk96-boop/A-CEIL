@@ -182,16 +182,18 @@
   function ensureWarning(){
     var el=document.getElementById("aceilGeometryWarning");if(el)return el;
     var canvas=document.getElementById("cv"),host=canvas&&canvas.parentElement;if(!host)return null;
-    if(getComputedStyle(host).position==="static")host.style.position="relative";
     el=document.createElement("button");el.id="aceilGeometryWarning";el.type="button";
-    el.style.cssText="display:none;position:absolute;left:50%;top:39px;transform:translateX(-50%);z-index:63;max-width:calc(100% - 24px);padding:7px 11px;border:1px solid #f59e0b;border-radius:11px;background:rgba(255,251,235,.97);color:#92400e;box-shadow:0 5px 18px rgba(146,64,14,.16);font:800 10.5px/1.25 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;text-align:center;white-space:normal";
+    el.style.cssText="display:none;position:relative;z-index:3;width:calc(100% - 24px);min-height:34px;margin:7px 12px 5px;padding:6px 34px 6px 10px;border:1px solid #f59e0b;border-radius:10px;background:#fffbeb;color:#92400e;box-shadow:none;font:800 10.5px/1.2 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
+    el.innerHTML='<span aria-hidden="true">⚠</span> <span class="aceil-geometry-warning-text"></span><span aria-hidden="true" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:15px">›</span>';
     el.addEventListener("click",function(){try{window["A·CEILMeasureConfidence"]&&window["A·CEILMeasureConfidence"].open()}catch(_){}});
-    host.appendChild(el);return el;
+    host.insertBefore(el,canvas);return el;
   }
   function setWarning(result){
     var el=ensureWarning();if(!el)return;
-    if(!result||!result.warning){el.style.display="none";el.textContent="";return}
-    el.textContent=result.warning;el.style.display="block";
+    if(!result||!result.warning){el.style.display="none";el.removeAttribute("title");el.removeAttribute("aria-label");return}
+    var text=el.querySelector(".aceil-geometry-warning-text");
+    if(text)text.textContent=result.invalid?"Помилка розмірів — натисніть для деталей":"Розміри потребують перевірки";
+    el.title=result.warning;el.setAttribute("aria-label",result.warning);el.style.display="block";
     el.style.borderColor=result.invalid?"#ef4444":"#f59e0b";
     el.style.background=result.invalid?"rgba(254,242,242,.97)":"rgba(255,251,235,.97)";
     el.style.color=result.invalid?"#991b1b":"#92400e";

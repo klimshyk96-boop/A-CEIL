@@ -278,15 +278,36 @@
     var mark=currentMark(),input=byId("rwe2WallDistance");
     if(mark&&input)mark.wallDistanceCm=Math.max(0,Math.round(Number(String(input.value||"0").replace(",","."))||0));
   }
+  function readCorniceOverhang(){
+    var mark=currentMark(),name=String((byId("rwe2Name")||byId("wallEditType"))?.value||mark&&mark.type||"").trim();
+    if(!mark||!/карниз/i.test(name))return null;
+    var lenInput=byId("rwe2Len")||byId("wallEditLen"),offsetInput=byId("rwe2Offset")||byId("wallEditOffset");
+    var anchorInput=byId("rwe2Anchor")||byId("wallEditAnchor"),len=Math.max(0,Number(String(lenInput&&lenInput.value||mark.lenCm||0).replace(",","."))||0);
+    var side=0;try{side=Number(_sideLenCm(Number(mark.sideIndex)||0))||0;}catch(e){side=Number(mark.lenCm)||0;}
+    if(!(len>side))return{mark:mark,allow:false};
+    var anchor=String(anchorInput&&anchorInput.value||mark.anchor||"center"),rawOffset=Math.max(0,Number(String(offsetInput&&offsetInput.value||0).replace(",","."))||0),offset=rawOffset;
+    if(anchor==="center")offset=(side-len)/2;
+    else if(anchor==="end")offset=side-len-rawOffset;
+    else if(anchor==="full"){len=side;offset=0;}
+    return{mark:mark,allow:len>side,name:name,len:len,offset:offset,anchor:anchor};
+  }
+  function restoreCorniceOverhang(data){
+    if(!data||!data.mark)return;
+    data.mark.allowWallOverhang=!!data.allow;
+    if(!data.allow)return;
+    data.mark.type=data.name;data.mark.lenCm=Math.round(data.len);data.mark.offsetCm=Math.round(data.offset);data.mark.anchor=data.anchor;
+    if(typeof window.saveState==="function")window.saveState();
+    if(typeof window.requestDraw==="function")window.requestDraw();else if(typeof window.draw==="function")window.draw();
+  }
   var prevRweSave=window.rwe2Save;
   if(typeof prevRweSave==="function"&&!prevRweSave.__wallDistanceV1){
-    var rweSaveWrapped=function(){saveWallDistance();return prevRweSave.apply(this,arguments);};
+    var rweSaveWrapped=function(){saveWallDistance();var overhang=readCorniceOverhang(),result=prevRweSave.apply(this,arguments);restoreCorniceOverhang(overhang);return result;};
     rweSaveWrapped.__wallDistanceV1=true;window.rwe2Save=rweSaveWrapped;
     try{rwe2Save=rweSaveWrapped;}catch(e){window.__diagSilent&&window.__diagSilent(e);}
   }
   var prevLegacySave=window.saveWallEdit;
   if(typeof prevLegacySave==="function"&&!prevLegacySave.__wallDistanceV1){
-    var legacySaveWrapped=function(){saveWallDistance();return prevLegacySave.apply(this,arguments);};
+    var legacySaveWrapped=function(){saveWallDistance();var overhang=readCorniceOverhang(),result=prevLegacySave.apply(this,arguments);restoreCorniceOverhang(overhang);return result;};
     legacySaveWrapped.__wallDistanceV1=true;window.saveWallEdit=legacySaveWrapped;
     try{saveWallEdit=legacySaveWrapped;}catch(e){window.__diagSilent&&window.__diagSilent(e);}
   }

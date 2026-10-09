@@ -30,10 +30,12 @@
     if(p.length<2||!m)return null;
     var i=Number(m.sideIndex)||0, a=p[i], b=p[(i+1)%p.length];
     if(!a||!b)return null;
-    var sideLen=getSideLen(i,a,b), len=Math.max(0,Number(m.lenCm)||0), off=Math.max(0,Number(m.offsetCm)||0);
+    var sideLen=getSideLen(i,a,b), len=Math.max(0,Number(m.lenCm)||0), allowOverhang=/карниз/i.test(String(m.type||""));
+    var off=allowOverhang?num(m.offsetCm):Math.max(0,Number(m.offsetCm)||0);
     if(!sideLen||!len)return null;
-    if(off+len>sideLen)off=Math.max(0,sideLen-len);
-    var t1=clamp(off/sideLen,0,1), t2=clamp((off+len)/sideLen,0,1);
+    if(!allowOverhang&&off+len>sideLen)off=Math.max(0,sideLen-len);
+    var t1=allowOverhang?off/sideLen:clamp(off/sideLen,0,1);
+    var t2=allowOverhang?(off+len)/sideLen:clamp((off+len)/sideLen,0,1);
     var dx=num(b.x)-num(a.x), dy=num(b.y)-num(a.y), L=Math.hypot(dx,dy)||1;
     var nx=-dy/L, ny=dx/L;
     var x1=num(a.x)+dx*t1, y1=num(a.y)+dy*t1, x2=num(a.x)+dx*t2, y2=num(a.y)+dy*t2;
@@ -130,4 +132,32 @@
     return best.dist<=34?best.idx:-1;
   };
   try{findWallMarkHit=window.findWallMarkHit;}catch(_){ }
+
+  /* The older report renderer clips every wall element to 0..100% of the
+     selected side. Repaint only the permitted cornice overhangs afterwards,
+     so the normal report and the canvas use the same actual length. */
+  var previousReportBindings=window.drawLightBindings;
+  if(typeof previousReportBindings==='function'&&!previousReportBindings.__corniceOverhangV1){
+    var reportBindingsWithOverhang=function(c){
+      var result=previousReportBindings.apply(this,arguments);
+      try{
+        var list=getMarks();
+        c.save();c.lineCap='round';c.lineJoin='round';c.setLineDash([]);
+        list.forEach(function(m,i){
+          if(!/карниз/i.test(String(m&&m.type||'')))return;
+          var g=geometry(m);if(!g)return;
+          var sideLen=g.pxPerCm>0?Math.hypot(g.dx,g.dy)/g.pxPerCm:0;
+          if(!(Number(m.lenCm)>sideLen+.5))return;
+          var col=color(m.color,i);
+          c.strokeStyle=col;c.lineWidth=7;c.beginPath();c.moveTo(g.x1,g.y1);c.lineTo(g.x2,g.y2);c.stroke();
+          c.strokeStyle='rgba(255,255,255,.72)';c.lineWidth=2.4;c.beginPath();c.moveTo(g.x1,g.y1);c.lineTo(g.x2,g.y2);c.stroke();
+        });
+        c.restore();
+      }catch(e){try{c.restore()}catch(_){ }try{window.__diagSilent&&window.__diagSilent(e)}catch(_){ }}
+      return result;
+    };
+    reportBindingsWithOverhang.__corniceOverhangV1=true;
+    window.drawLightBindings=reportBindingsWithOverhang;
+    try{drawLightBindings=reportBindingsWithOverhang;}catch(_){ }
+  }
 })();
