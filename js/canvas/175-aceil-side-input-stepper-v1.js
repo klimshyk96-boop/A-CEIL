@@ -214,15 +214,15 @@ function setMode(m){
 }
 
 /* ---------- відкриття / закриття / застосування ---------- */
-function open(){
+function open(initialIndex){
   if(typeof closed==="undefined"||!closed||pts.length<3){try{showToast("Спочатку замкніть контур");}catch(_){}return;}
   if(!layer)build();
   var n=pts.length,i;draft=[];
   for(i=0;i<n;i++)draft[i]=num(lengths[i]);
-  mode="all";activeIndex=0;
+  mode="all";activeIndex=Math.max(0,Math.min(n-1,Number.isFinite(+initialIndex)?+initialIndex:0));
   renderBody();
   isOpen=true;layer.hidden=false;document.body.classList.add("aceil-dims-open");
-  bindViewport();paint();layout();paintWall(0);
+  bindViewport();paint();layout();paintWall(activeIndex);
   focusField();                                    /* синхронно в жесті дотику — інакше iOS не покаже клавіатуру */
   setTimeout(function(){if(isOpen){layout();if(!layer.contains(document.activeElement))focusField();}},120);
 }
@@ -248,6 +248,21 @@ function apply(){
 }
 
 /* ---------- публічні точки входу ---------- */
+function wallListRowAt(clientX,clientY){
+  var c=document.getElementById("cv"),rows=window.__aceilWLRows||[];
+  if(!c||!rows.length)return -1;
+  var r=c.getBoundingClientRect();if(!r.width||!r.height)return -1;
+  var px=(clientX-r.left)*(ACEILCanvas.width(c)/r.width),py=(clientY-r.top)*(ACEILCanvas.height(c)/r.height);
+  for(var i=0;i<rows.length;i++){var q=rows[i];if(px>=q.x&&px<=q.x+q.w&&py>=q.y&&py<=q.y+q.h)return q.i}
+  return -1;
+}
+function openWallListRow(e,point){
+  var i=wallListRowAt(point.clientX,point.clientY);if(i<0)return;
+  if(e.cancelable)e.preventDefault();e.stopImmediatePropagation();open(i);
+}
+document.addEventListener("touchstart",function(e){var t=e.touches&&e.touches[0];if(e.touches&&e.touches.length===1&&t)openWallListRow(e,t)},{capture:true,passive:false});
+document.addEventListener("mousedown",function(e){openWallListRow(e,e)},true);
+
 window.openSideInputModal=open;                        /* плитка «Розміри», меню стіни, ПК-сайдбар */
 window.openSideInputModalLegacy=legacyOpen;            /* старе вікно з дугами — для редактора кривих (#130) */
 window.openAllSideInputsModalV11=open;                 /* кнопка «Ввести всі розміри» у старому вікні → нова таблиця */
