@@ -125,8 +125,8 @@ body.aceil-all-split-v14 .canvas-container{
 
 <script src="js/canvas/viewport.js?v=20261003-clean1"></script>
 <script src="js/canvas/contour-state.js?v=20261003-clean1"></script>
-<script src="js/canvas/renderer.js?v=20261009-short-walls1"></script>
-<script src="js/nomenclature/019-inline.js?v=20261009-short-walls1"></script>
+<script src="js/canvas/renderer.js?v=20261009-short-walls2"></script>
+<script src="js/nomenclature/019-inline.js?v=20261007-report-diag1"></script>
 
 <script src="js/reports/020-inline.js?v=20261003-clean1"></script>
 
@@ -702,7 +702,7 @@ body.aceil-all-split-v14 .canvas-container{
 <script id="aceil-plan-report-pwa-v1" src="js/reports/172-aceil-plan-report-pwa-v1.js?v=20261003-clean1"></script>
 <script id="aceil-wall-elements-persistence-v2" src="js/projects/173-aceil-wall-elements-persistence-v2.js?v=20261003-clean1"></script>
 <script id="aceil-overall-dims-and-light-colors-fix-v1" src="js/canvas/174-aceil-overall-dims-and-light-colors-fix-v1.js?v=20261003-clean1"></script>
-<script id="aceil-side-input-stepper-v1" src="js/canvas/175-aceil-side-input-stepper-v1.js?v=20261003-clean1"></script>
+<script id="aceil-side-input-stepper-v1" src="js/canvas/175-aceil-side-input-stepper-v1.js?v=20261009-short-walls2"></script>
 <script id="aceil-honest-geometry-v1" src="js/canvas/190-aceil-honest-geometry-v1.js?v=20261009-cornice-warning2"></script>
 <script id="aceil-nomenclature-manage-ui-v1" src="js/nomenclature/191-aceil-nomenclature-manage-ui-v1.js?v=20261003-clean1"></script>
 <script id="aceil-insert-choice-guard-v1" src="js/nomenclature/177-aceil-insert-choice-guard-v1.js?v=20261008-item-auto1"></script>
@@ -712,7 +712,7 @@ body.aceil-all-split-v14 .canvas-container{
   "use strict";
   if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
   window.addEventListener("load",function(){
-    var updateKey="aceil-pwa-update-20261007-report-diag1";
+    var updateKey="aceil-pwa-update-20261009-short-walls2";
     navigator.serviceWorker.addEventListener("message",function(event){
       if(!event.data||event.data.type!=="A_CEIL_UPDATE_READY"||sessionStorage.getItem(updateKey))return;
       sessionStorage.setItem(updateKey,"1");
@@ -723,7 +723,7 @@ body.aceil-all-split-v14 .canvas-container{
       sessionStorage.setItem(updateKey,"1");
       location.reload();
     });
-      navigator.serviceWorker.register("/sw.js?v=20261009-short-walls1",{scope:"/"}).then(function(reg){
+      navigator.serviceWorker.register("/sw.js?v=20261009-short-walls2",{scope:"/"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
