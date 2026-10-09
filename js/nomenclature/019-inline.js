@@ -545,14 +545,15 @@ function findWallSideHitTouch(clientX,clientY){
   const r=cv.getBoundingClientRect();
   const p=getCanvasPoint(clientX,clientY);
   const canvasPerCss=((ACEILCanvas.width(cv)/(r.width||ACEILCanvas.width(cv)||1))+(ACEILCanvas.height(cv)/(r.height||ACEILCanvas.height(cv)||1)))/2;
-  const threshold=(6*canvasPerCss)/(viewScale||1);
+  const normalThreshold=(6*canvasPerCss)/(viewScale||1),shortThreshold=(18*canvasPerCss)/(viewScale||1);
   let best={idx:-1,dist:Infinity};
   for(let i=0;i<pts.length;i++){
     const a=pts[i],b=pts[(i+1)%pts.length];
     const d=_pointToSegmentDistance(p.x,p.y,a.x,a.y,b.x,b.y);
     if(d.dist<best.dist)best={idx:i,dist:d.dist};
   }
-  return best.dist<=threshold?best.idx:-1;
+  const limit=best.idx>=0&&Number(lengths[best.idx])>0&&Number(lengths[best.idx])<=50?shortThreshold:normalThreshold;
+  return best.dist<=limit?best.idx:-1;
 }
 
 /* v3.49 — wall tap means the visible wall stroke, not "nearest wall". */
@@ -571,7 +572,8 @@ function A·CEILTrueWallHitV349(clientX,clientY){
     }
     for(let i=0;i<pts.length;i++){
       const a=screen(pts[i]),b=screen(pts[(i+1)%pts.length]);
-      if(distance(clientX,clientY,a,b)<=4)return true;
+      const limit=Number(lengths[i])>0&&Number(lengths[i])<=50?18:4;
+      if(distance(clientX,clientY,a,b)<=limit)return true;
     }
   }catch(_){}
   return false;
