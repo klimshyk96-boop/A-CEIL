@@ -183,10 +183,15 @@
     var el=document.getElementById("aceilGeometryWarning");if(el)return el;
     var canvas=document.getElementById("cv"),host=canvas&&canvas.parentElement;if(!host)return null;
     el=document.createElement("button");el.id="aceilGeometryWarning";el.type="button";
-    el.style.cssText="display:none;position:relative;z-index:3;width:calc(100% - 24px);min-height:34px;margin:7px 12px 5px;padding:6px 34px 6px 10px;border:1px solid #f59e0b;border-radius:10px;background:#fffbeb;color:#92400e;box-shadow:none;font:800 10.5px/1.2 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
+    el.style.cssText="display:none;position:relative;z-index:1;width:calc(100% - 24px);min-height:34px;margin:7px 12px 6px;padding:6px 34px 6px 10px;border:1px solid #f59e0b;border-radius:10px;background:#fffbeb;color:#92400e;box-shadow:none;font:800 10.5px/1.2 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
     el.innerHTML='<span aria-hidden="true">⚠</span> <span class="aceil-geometry-warning-text"></span><span aria-hidden="true" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:15px">›</span>';
     el.addEventListener("click",function(){try{window["A·CEILMeasureConfidence"]&&window["A·CEILMeasureConfidence"].open()}catch(_){}});
-    host.insertBefore(el,canvas);return el;
+    /* The room tabs are absolutely positioned inside the canvas host.  A
+       warning inserted there was covered by those tabs.  Keep the warning in
+       normal document flow immediately above the whole canvas card. */
+    var row=host.parentNode;
+    if(row&&row.parentNode)row.parentNode.insertBefore(el,row);else host.insertBefore(el,canvas);
+    return el;
   }
   function setWarning(result){
     var el=ensureWarning();if(!el)return;

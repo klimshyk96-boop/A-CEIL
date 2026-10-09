@@ -60,10 +60,11 @@
     var g=geometry(mark);if(!g)return null;
     var requested=Math.max(0,Number(mark.wallDistanceCm)||0);
     var lane=laneIndex(list,mark,g);
-    /* A positive value is a real perpendicular distance in centimetres.
-       Zero keeps the old small visual lane so an element placed directly on
-       a wall is still visible and tappable. */
-    var dist=requested>0?requested*g.pxPerCm:7*(lane+1);
+    /* Zero means exactly on the selected wall.  The former automatic 7 px
+       lane made one cornice look like two parallel cornices because the
+       legacy renderer also paints the wall-bound stroke.  Only an explicitly
+       entered distance may move the element away from the wall. */
+    var dist=requested>0?requested*g.pxPerCm:0;
     var sx=-g.nx*dist,sy=-g.ny*dist;
     return {i:g.i,x1:g.x1+sx,y1:g.y1+sy,x2:g.x2+sx,y2:g.y2+sy,mx:g.mx+sx,my:g.my+sy,nx:g.nx,ny:g.ny,dx:g.dx,dy:g.dy,len:g.len,pxPerCm:g.pxPerCm,lane:lane};
   }
