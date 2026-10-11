@@ -1064,3 +1064,21 @@ body.rp-home-pro #A·CEILToolPanel #lightBadge,body.rp-home-pro #A·CEILToolPane
   #aceilAdminModal .aceil-admin-tabs .aceil-svg{width:17px!important;height:17px!important;}
   #aceilAdminModal .aceil-debug-count{top:4px!important;right:4px!important;}
 }
+
+/* Catalog editing: controls occupy their own row; delete belongs to the dialog. */
+#rmLightStartModal .rm-ce-edit-mode .rm-ce-card{padding-top:52px!important;padding-right:14px!important;}
+#rmLightStartModal .aceil-cat-tools{right:8px;top:7px;display:flex;gap:5px;}
+#rmLightStartModal .aceil-cat-tools button{width:34px!important;height:34px!important;padding:0!important;font:600 16px/1 system-ui!important;}
+#aceilCatalogEditModal{z-index:13020!important;padding:12px!important;box-sizing:border-box;}
+#aceilCatalogEditModal .aceil-catalog-editor{width:100%!important;max-width:380px!important;max-height:calc(100dvh - 24px)!important;overflow:auto!important;padding:16px!important;border-radius:18px!important;box-sizing:border-box;font:400 14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;}
+#aceilCatalogEditModal .aceil-catalog-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;}
+#aceilCatalogEditModal .aceil-catalog-head b{font-size:17px;font-weight:600;}
+#aceilCatalogEditModal label{display:block;font-size:13px;font-weight:500;margin:10px 0 5px;}
+#aceilCatalogEditModal input,#aceilCatalogEditModal select{width:100%!important;min-width:0;box-sizing:border-box;height:44px!important;padding:8px 10px!important;font:400 16px/1.3 system-ui!important;border:1px solid #dbe4ef;border-radius:10px;background:#fff;color:#0f172a;}
+#aceilCatalogEditModal button{position:static!important;box-sizing:border-box;min-height:40px!important;border:1px solid #dbe4ef;border-radius:10px;background:#fff;color:#334155;padding:8px 12px;font:600 14px/1.3 system-ui!important;box-shadow:none!important;}
+#aceilCatalogEditModal .aceil-catalog-icons{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:5px;margin-top:8px;}
+#aceilCatalogEditModal .aceil-catalog-icons button{padding:5px!important;min-width:0;font-size:20px!important;}
+#aceilCatalogEditModal .aceil-catalog-save,#aceilCatalogEditModal .aceil-catalog-delete{display:block;width:100%;margin-top:14px;min-height:44px!important;}
+#aceilCatalogEditModal .aceil-catalog-save{background:#315ff4;color:#fff;border-color:#315ff4;}
+#aceilCatalogEditModal .aceil-catalog-delete{background:#fff1f2;color:#b91c1c;border-color:#fecdd3;}
+#aceilCatalogEditModal .aceil-catalog-delete[hidden]{display:none!important;}
