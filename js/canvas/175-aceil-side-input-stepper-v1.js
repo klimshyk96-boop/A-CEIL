@@ -19,6 +19,7 @@ window.__A_CEIL_SIDE_INPUT_DOCK_V18=true;
 var legacyOpen=window.openSideInputModal;   /* оригінальне вікно з редактором дуг (#019 + обгортка #129) */
 var layer=null,view=null,pv=null,pctx=null,sheet=null,body=null,countEl=null,modeBtn=null,prevBtn=null,nextBtn=null;
 var isOpen=false,mode="all",activeIndex=0,draft=[],bound=false,layoutRaf=0,syncRaf=0;
+var voice={rec:null,on:false,seen:{},timer:0,btn:null,hint:null};
 
 function nm(i){try{return N(i);}catch(_){return String.fromCharCode(65+(i%26));}}
 function sideName(i){return nm(i)+nm((i+1)%pts.length);}
@@ -101,7 +102,14 @@ function build(){
       '#aceilDimsV18 .aceil-dims-cell.active{border-color:#2563eb!important;background:#eff6ff!important}'+
       '#aceilDimsV18 .aceil-dims-cell.active .aceil-dims-lab{color:#1d4ed8!important}'+
       '#aceilDimsV18 .aceil-dims-single strong{color:#1d4ed8!important}'+
-      '#aceilDimsV18 .aceil-dims-field{border-color:#2563eb!important;background:#eff6ff!important}';
+      '#aceilDimsV18 .aceil-dims-field{border-color:#2563eb!important;background:#eff6ff!important}'+
+      '#aceilDimsV18 .aceil-dims-voice-btn{margin-left:auto!important;height:32px!important;min-height:32px!important;width:40px!important;padding:0!important;border:0!important;border-radius:10px!important;background:#eff6ff!important;color:#1d4ed8!important;font-size:16px!important;box-shadow:none!important}'+
+      '#aceilDimsV18 .aceil-dims-voice-btn[hidden]{display:none!important}'+
+      '#aceilDimsV18 .aceil-dims-voice-btn+.aceil-dims-mode{margin-left:0!important}'+
+      '#aceilDimsV18 .aceil-dims-voice-btn.on{background:#dc2626!important;color:#fff!important}'+
+      '#aceilDimsV18 .aceil-dims-voice-hint{flex:0 0 auto;padding:0 2px 4px;font-size:13px;font-weight:700;color:#1d4ed8}'+
+      '#aceilDimsV18 .aceil-dims-voice-hint.bad{color:#b45309}'+
+      '#aceilDimsV18 .aceil-dims-voice-hint[hidden]{display:none!important}';
     document.head.appendChild(style);
   }
   layer=document.createElement("div");
@@ -111,8 +119,10 @@ function build(){
     '<div class="aceil-dims-view"><canvas class="aceil-dims-cv" aria-hidden="true"></canvas></div>'+
     '<div class="aceil-dims-sheet">'+
       '<div class="aceil-dims-head"><h3>📋 Розміри</h3><span class="aceil-dims-count"></span>'+
+        '<button type="button" class="aceil-dims-voice-btn" aria-label="Голосовий ввід розмірів" hidden>🎤</button>'+
         '<button type="button" class="aceil-dims-mode"></button>'+
         '<button type="button" class="aceil-dims-x" aria-label="Закрити">×</button></div>'+
+      '<div class="aceil-dims-voice-hint" hidden></div>'+
       '<div class="aceil-dims-body"></div>'+
       '<div class="aceil-dims-actions">'+
         '<button type="button" class="aceil-dims-nav" data-nav="-1" aria-label="Попередня сторона">‹</button>'+
@@ -125,6 +135,7 @@ function build(){
   sheet=layer.querySelector(".aceil-dims-sheet");body=layer.querySelector(".aceil-dims-body");
   countEl=layer.querySelector(".aceil-dims-count");modeBtn=layer.querySelector(".aceil-dims-mode");
   prevBtn=layer.querySelector('[data-nav="-1"]');nextBtn=layer.querySelector('[data-nav="1"]');
+  voice.btn=layer.querySelector(".aceil-dims-voice-btn");voice.hint=layer.querySelector(".aceil-dims-voice-hint");
 
   /* кнопки не забирають фокус із поля (на ПК) — клавіатура не мигає */
   layer.querySelectorAll("button").forEach(function(b){b.addEventListener("mousedown",function(e){e.preventDefault();});});
@@ -133,6 +144,7 @@ function build(){
   modeBtn.onclick=function(){setMode(mode==="all"?"single":"all");};
   prevBtn.onclick=function(){go(activeIndex-1,true);};
   nextBtn.onclick=function(){next();};
+  voice.btn.onclick=function(){if(voice.on)voiceStop();else voiceStart();};   /* старт — у жесті дотику: iOS інакше не дасть мікрофон */
   /* не гортаємо сторінку під шаром (iOS) — крім самої таблиці */
   layer.addEventListener("touchmove",function(e){if(!e.target.closest||!e.target.closest(".aceil-dims-body"))e.preventDefault();},{passive:false});
 }
@@ -231,6 +243,7 @@ function open(initialIndex){
   for(i=0;i<n;i++)draft[i]=num(lengths[i]);
   mode="all";activeIndex=Math.max(0,Math.min(n-1,Number.isFinite(+initialIndex)?+initialIndex:0));
   renderBody();
+  voiceStop();voice.btn.hidden=!(voiceSR()&&window.A_CEIL_VoiceNumber);
   isOpen=true;layer.hidden=false;document.body.classList.add("aceil-dims-open");
   bindViewport();paint();layout();paintWall(activeIndex);
   focusField();                                    /* синхронно в жесті дотику — інакше iOS не покаже клавіатуру */
@@ -238,7 +251,7 @@ function open(initialIndex){
 }
 function hide(redraw){
   if(!isOpen)return;
-  isOpen=false;layer.hidden=true;document.body.classList.remove("aceil-dims-open");
+  isOpen=false;voiceStop();layer.hidden=true;document.body.classList.remove("aceil-dims-open");
   try{if(layer.contains(document.activeElement))document.activeElement.blur();}catch(_){}
   try{_wallSideFlash=-1;}catch(_){}
   if(redraw!==false){try{draw();}catch(_){}}
@@ -255,6 +268,89 @@ function apply(){
   hide(false);
   rebuild();saveState();
   setTimeout(function(){try{window["A·CEILMeasureConfidence"]&&typeof window["A·CEILMeasureConfidence"].notify==="function"&&window["A·CEILMeasureConfidence"].notify(true);}catch(e){window.__diagSilent&&window.__diagSilent(e);}},250);
+}
+
+/* ---------- голосовий ввід ----------
+   Одна безперервна сесія розпізнавання (без перезапусків із таймера: iOS Safari їх блокує).
+   Сказане число стає значенням активної сторони, далі те саме next(), що й по Enter;
+   після останньої сторони next() викликає apply() — тобто «Побудувати» (мікрофон гаситься в hide()). */
+function voiceSR(){return window.SpeechRecognition||window.webkitSpeechRecognition||null;}
+function voiceSetHint(text,bad){
+  if(!voice.hint)return;
+  voice.hint.hidden=!text;voice.hint.textContent=text||"";voice.hint.classList.toggle("bad",!!bad);
+}
+function voiceUi(){
+  if(!voice.btn)return;
+  voice.btn.classList.toggle("on",voice.on);
+  voice.btn.textContent=voice.on?"⏹":"🎤";
+  voice.btn.setAttribute("aria-pressed",voice.on?"true":"false");
+}
+function voiceStop(keepHint){
+  var r=voice.rec;voice.rec=null;voice.on=false;clearTimeout(voice.timer);voice.seen={};
+  try{if(r)r.stop();}catch(_){}
+  voiceUi();if(!keepHint)voiceSetHint("");
+}
+function voiceField(){
+  return mode==="all"?body.querySelector('input[data-di="'+activeIndex+'"]'):body.querySelector("input[data-di]");
+}
+function voiceSetValue(v){
+  var f=voiceField();if(!f)return;
+  f.value=v;f.dispatchEvent(new Event("input",{bubbles:true}));   /* той самий шлях, що й ручне введення */
+}
+function voiceHandle(raw){
+  var VN=window.A_CEIL_VoiceNumber;if(!VN||!isOpen)return;
+  var cmd=VN.command(raw),n=pts.length;
+  if(cmd==="stop"){voiceStop();return;}
+  if(cmd==="back"){go(activeIndex-1,true);voiceSetHint("Назад: "+sideName(activeIndex));return;}
+  if(cmd==="next"){go(Math.min(n-1,activeIndex+1),true);voiceSetHint("Далі: "+sideName(activeIndex));return;}
+  if(cmd==="clear"){voiceSetValue("");voiceSetHint("Очищено: "+sideName(activeIndex));return;}
+  var r=VN.parse(raw);
+  if(!r){voiceSetHint("Не зрозумів: «"+raw+"»",true);return;}
+  var name=sideName(activeIndex);
+  voiceSetValue(String(r.cm));
+  voiceSetHint(name+" = "+r.cm+" см"+((r.cm<10||r.cm>3000)?" — перевірте":""),r.cm<10||r.cm>3000);
+  next();
+}
+function voiceFlush(){
+  Object.keys(voice.seen).forEach(function(k){
+    var o=voice.seen[k],t=o.cur;
+    if(!t||t===o.done)return;
+    var add=(o.done&&t.indexOf(o.done)===0)?t.slice(o.done.length).trim():t;   /* Safari іноді віддає текст наростаючим рядком */
+    o.done=t;
+    if(add)voiceHandle(add);
+  });
+}
+function voiceStart(){
+  var SR=voiceSR();if(!SR||!isOpen)return;
+  var r=new SR();
+  r.lang="uk-UA";r.continuous=true;r.interimResults=true;r.maxAlternatives=1;
+  voice.seen={};
+  r.onresult=function(e){
+    if(voice.rec!==r)return;
+    var changed=false,last=e.results.length-1;
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      var t=String(e.results[i][0].transcript||"").trim();
+      var o=voice.seen[i]=voice.seen[i]||{done:"",cur:""};
+      if(o.final&&t!==o.cur)o.done="";               /* той самий номер, нове висловлювання */
+      o.cur=t;o.final=e.results[i].isFinal;changed=true;
+    }
+    if(changed){clearTimeout(voice.timer);voice.timer=setTimeout(voiceFlush,e.results[last].isFinal?50:1100);}
+  };
+  r.onerror=function(e){
+    if(voice.rec!==r||e.error==="no-speech"||e.error==="aborted")return;
+    var denied=e.error==="not-allowed"||e.error==="service-not-allowed";
+    voiceStop(true);
+    voiceSetHint(denied?"Мікрофон недоступний. Дозвольте його для сайту в Safari (або відкрийте сайт у вкладці Safari)":"Помилка мікрофона: "+e.error,true);
+  };
+  r.onend=function(){
+    if(voice.rec!==r)return;
+    voice.rec=null;voice.on=false;voiceUi();
+    voiceSetHint("Мікрофон зупинився. Натисніть 🎤, щоб продовжити з "+sideName(activeIndex));
+  };
+  voice.rec=r;voice.on=true;
+  try{r.start();}catch(_){voice.rec=null;voice.on=false;voiceSetHint("Не вдалося запустити мікрофон",true);}
+  voiceUi();
+  if(voice.on)voiceSetHint("Слухаю: "+sideName(activeIndex)+" (скажіть розмір у см)");
 }
 
 /* ---------- публічні точки входу ---------- */
