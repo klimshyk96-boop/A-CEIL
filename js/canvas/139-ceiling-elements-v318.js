@@ -131,6 +131,13 @@ window.rmCeDeleteCustomV318=function(id){
   var question='Видалити «'+String(target.label||"Елемент")+'» зі списку?';
   if(placed)question+=' Також буде видалено з плану: '+placed+' шт.';
   if(typeof confirm==="function"&&!confirm(question))return;
+  // Remember explicit removals so catalog recovery cannot resurrect them.
+  try{
+    var prefs=JSON.parse(localStorage.getItem("aceil_ce_catalog_prefs_v2")||"{}");
+    prefs.deleted=Array.isArray(prefs.deleted)?prefs.deleted:[];
+    if(prefs.deleted.indexOf(id)<0)prefs.deleted.push(id);
+    localStorage.setItem("aceil_ce_catalog_prefs_v2",JSON.stringify(prefs));
+  }catch(_){}
   var next=all.filter(function(t){return !t||String(t.id)!==id});
   try{localStorage.setItem("lightTypes_v1",JSON.stringify(next))}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   try{window.lightTypes=next;lightTypes=next}catch(_){window.lightTypes=next}
@@ -153,6 +160,7 @@ window.rmCeDeleteCustomV318=function(id){
   try{if(typeof requestDraw==="function")requestDraw();else if(typeof draw==="function")draw()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   render();
   try{if(typeof showToast==="function")showToast("✓ "+String(target.label||"Елемент")+" видалено")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  return true;
 };
 
 /* Built-in double spot: one placed mark = one nomenclature item. */

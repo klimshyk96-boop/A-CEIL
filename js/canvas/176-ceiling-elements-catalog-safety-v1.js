@@ -37,7 +37,9 @@ function merge(){
 /* Keep the pre-cloud list so an older cloud copy cannot erase local cards. */
 var startupSnapshot=read();
 function repair(){
-  var next=merge(READY,startupSnapshot,read(),current());
+  var deleted=[];
+  try{var prefs=JSON.parse(localStorage.getItem("aceil_ce_catalog_prefs_v2")||"{}");deleted=Array.isArray(prefs.deleted)?prefs.deleted:[];}catch(_){}
+  var next=merge(READY,startupSnapshot,read(),current()).filter(function(t){return deleted.indexOf(String(t.id))<0;});
   if(!next.length)return;
   try{localStorage.setItem(KEY,JSON.stringify(next))}catch(_){/* noop */}
   try{window.lightTypes=next;lightTypes=next}catch(_){window.lightTypes=next}
