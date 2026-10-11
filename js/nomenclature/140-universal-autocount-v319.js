@@ -202,8 +202,14 @@ function contourPerimeterM(state){
   try{var value=parseFloat(String(document.getElementById("per")&&document.getElementById("per").textContent||"0").replace(",","."));return isFinite(value)?value:0}catch(_){return 0}
 }
 function explicitContourProfile(list,draft){
-  if(draft&&draft.fullContourSelected&&/^(main_profile|shadow_profile|floating_profile)$/.test(draft.source))return draft;
-  return list.find(function(it){return it&&it.fullContourSelected&&/^(main_profile|shadow_profile|floating_profile)$/.test(it.source)})||null;
+  /* Aluminium is the remainder of the contour, not an overriding "whole
+     contour" choice. Older saved rooms can still contain
+     fullContourSelected=true on the main profile. Ignoring that stale flag is
+     essential: otherwise a shadow/floating wall is never subtracted from the
+     aluminium profile or from the insert. Only a special profile may replace
+     the whole contour explicitly. */
+  if(draft&&draft.fullContourSelected&&/^(shadow_profile|floating_profile)$/.test(draft.source))return draft;
+  return list.find(function(it){return it&&it.fullContourSelected&&/^(shadow_profile|floating_profile)$/.test(it.source)})||null;
 }
 function inferredContourProfile(list,state){
   var perimeter=contourPerimeterM(state);if(!(perimeter>0))return null;
