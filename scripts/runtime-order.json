@@ -140,6 +140,7 @@
   "js/reports/172-aceil-plan-report-pwa-v1.js",
   "js/projects/173-aceil-wall-elements-persistence-v2.js",
   "js/canvas/174-aceil-overall-dims-and-light-colors-fix-v1.js",
+  "js/core/aceil-voice-number.js",
   "js/canvas/175-aceil-side-input-stepper-v1.js",
   "js/canvas/190-aceil-honest-geometry-v1.js",
   "js/nomenclature/191-aceil-nomenclature-manage-ui-v1.js",
