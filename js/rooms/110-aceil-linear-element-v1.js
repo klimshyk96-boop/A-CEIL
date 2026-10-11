@@ -4,9 +4,9 @@
   "use strict";
   var TYPES=[
     {key:'lightLine',      label:'Світлова лінія',   icon:'💡', width:35},
-    {key:'magneticTrack',  label:'Трекове освітлення',icon:'🧲', width:30},
-    {key:'surfaceTrack',   label:'Накладний трек',   icon:'▭',  width:30},
-    {key:'recessedTrack',  label:'Вмонтований трек', icon:'▰',  width:30},
+    {key:'magneticTrack',  label:'Магнітний шинопровід',icon:'🧲', width:30},
+    {key:'surfaceTrack',   label:'Накладний шинопровід',   icon:'▭',  width:30},
+    {key:'recessedTrack',  label:'Вмонтований шинопровід', icon:'▰',  width:30},
     {key:'custom',         label:'Інший',            icon:'⚙️', width:35}
   ];
   var SHAPES={line:{label:'Пряма',segs:1,corners:0},L:{label:'Г-подібна',segs:2,corners:1},U:{label:'П-подібна',segs:3,corners:2},rectangle:{label:'Прямокутник',segs:2,corners:4},free:{label:'Довільна',segs:0,corners:0}};
@@ -23,7 +23,13 @@
     try{linearElements=window.linearElements;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     return window.linearElements;
   }
-  function typeDef(k){ for(var i=0;i<TYPES.length;i++) if(TYPES[i].key===k) return TYPES[i]; return TYPES[0]; }
+  function typeDef(k){
+    var base=TYPES.find(function(t){return t.key===k;})||TYPES[0];
+    var names=typeof lightTypes!=="undefined"&&Array.isArray(lightTypes)?lightTypes:(Array.isArray(window.lightTypes)?window.lightTypes:[]);
+    var alias=names.find(function(t){return t&&t.id==='linear_'+base.key;});
+    return Object.assign({},base,alias?{label:alias.label,icon:alias.icon}:{});
+  }
+  function trackColor(k){return k==='recessedTrack'?'#0891b2':k==='magneticTrack'?'#db2777':'#7c3aed';}
   function uid(){ return 'le_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7); }
   function num(v,d){ var n=parseFloat(v); return isFinite(n)?n:d; }
   function isFreePolyline(el){return !!(el&&el.shape==='free'&&Array.isArray(el.segmentAngles));}
@@ -43,6 +49,7 @@
     for(var i=1;i<angles.length;i++){
       if(snapTrackAngle(angles[i])!==snapTrackAngle(angles[i-1]))count++;
     }
+    if(el.closedPath&&angles.length>1&&snapTrackAngle(angles[0])!==snapTrackAngle(angles[angles.length-1]))count++;
     return count;
   }
   function isRotatable(el){return !!(el&&(el.elementType==='lightLine'||isFreePolyline(el)));}
@@ -356,6 +363,7 @@
 
   function persist(){
     arr().forEach(function(e){ computeTotals(e); if(e.anchor&&+e.anchor.sideIndex>=0) applyWallAnchor(e); else syncPoints(e); });
+    applyLinearNomenclature();
     try{ if(typeof draw==='function') draw(); }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     try{ if(typeof saveState==='function') saveState(); }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     try{ if(typeof recalcElemTotal==='function') recalcElemTotal(); }catch(_){window.__diagSilent&&window.__diagSilent(_)}
@@ -393,8 +401,7 @@
       var w=Math.max(3,Math.min(reportMode?24:9,physicalPx+(reportMode?10:0)));
       var color=el.elementType==='curtainHidden'?'#8b5cf6':
         (el.elementType==='lightLine'?'#f59e0b':
-        (el.elementType==='recessedTrack'?'#0891b2':
-        (isTrackType(el)?'#7c3aed':'#64748b')));
+        (isTrackType(el)?trackColor(el.elementType):'#64748b'));
       c.lineCap='round'; c.lineJoin='round';
       c.strokeStyle='rgba(255,255,255,.95)'; c.lineWidth=w+3;
       c.beginPath(); c.moveTo(pts2[0].x,pts2[0].y); for(var i3=1;i3<pts2.length;i3++) c.lineTo(pts2[i3].x,pts2[i3].y); c.stroke();
@@ -557,8 +564,8 @@
       var isTrack=isTrackType(el),fixtures=isTrack?Math.max(0,Math.round(num(e.trackFixtureCount,0))):0;
       out.count++;out.totalLengthCm+=el.totalLengthCm;out.baseCornerCount+=isLight?el.cornerCount:0;out.breakCount+=breaks;
       if(isTrack){out.trackCornerCount+=el.cornerCount;out.trackFixtureCount+=fixtures;}
-      var k=el.elementType||'custom';if(!out.byType[k])out.byType[k]={label:typeDef(k).label,lengthCm:0,corners:0,breaks:0,count:0};
-      out.byType[k].lengthCm+=el.totalLengthCm;out.byType[k].corners+=(isLight||isTrack)?el.cornerCount:0;out.byType[k].breaks+=breaks;out.byType[k].count++;
+      var k=el.elementType||'custom';if(!out.byType[k])out.byType[k]={label:typeDef(k).label,lengthCm:0,corners:0,breaks:0,fixtures:0,count:0};
+      out.byType[k].lengthCm+=el.totalLengthCm;out.byType[k].corners+=(isLight||isTrack)?el.cornerCount:0;out.byType[k].breaks+=breaks;out.byType[k].fixtures+=fixtures;out.byType[k].count++;
     });
     var hits=_leFindIntersections(src);out.intersectionCount=hits.length;
     hits.forEach(function(h){out.intersectionCornerCount+=h.corners;});
@@ -566,21 +573,44 @@
     if(out.byType.lightLine)out.byType.lightLine.corners+=out.intersectionCornerCount;
     out.totalLengthM=Math.round((out.totalLengthCm/100)*100)/100;return out;
   };
+  /* Stable source ids, shared by the live editor and the estimate. Labels are UI only. */
+  window.linearSourceOptions=function(){
+    var options=[];
+    ['lightLine','surfaceTrack','recessedTrack','magneticTrack'].forEach(function(k){
+      var label=typeDef(k).label;
+      options.push({key:'lineartype:'+k,label:label+' — довжина',icon:'━',unit:'м'});
+      options.push({key:'linearcorners:'+k,label:label+' — кути',icon:'⌞',unit:'шт'});
+      if(isTrackType(k))options.push({key:'linearfixtures:'+k,label:label+' — світильники',icon:'◉',unit:'шт'});
+      else options.push({key:'linearbreaks:'+k,label:label+' — обриви',icon:'✂',unit:'шт'});
+    });
+    return options;
+  };
+  window.computeLinearSource=function(source,state,summary){
+    if(!/^(linear_length|linear_corner|linear_break|(?:lineartype|linearcorners|linearfixtures|linearbreaks|lineartrack):.+)$/.test(String(source||'')))return null;
+    var sum=summary||window.linearElementsSummary(state),parts=String(source||'').split(':'),metric=parts[0],key=parts[1];
+    var legacy={linear_length:'lengthCm',linear_corner:'corners',linear_break:'breaks'};
+    if(legacy[source]){metric=legacy[source];key='lightLine';}
+    else if(source==='lineartrack:fixtures')return {qty:sum.trackFixtureCount,unit:'шт'};
+    else if(source==='lineartrack:corners')return {qty:sum.trackCornerCount,unit:'шт'};
+    else if(metric==='lineartype')metric='lengthCm';
+    else if(metric==='linearcorners')metric='corners';
+    else if(metric==='linearfixtures')metric='fixtures';
+    else if(metric==='linearbreaks')metric='breaks';
+    else return null;
+    if(!TYPES.some(function(t){return t.key===key;}))return null;
+    var values=sum.byType[key]||{},value=Number(values[metric])||0;
+    return {qty:metric==='lengthCm'?Math.round(value)/100:value,unit:metric==='lengthCm'?'м':'шт'};
+  };
   function applyLinearNomenclature(){
     try{
       if(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==='function'&&!window.A_CEIL_AutoCount.isEnabled())return 0;
       if(typeof elemItems==='undefined'||!Array.isArray(elemItems))return 0;
-      var sum=window.linearElementsSummary(),updated=0;
+      var updated=0,summary=window.linearElementsSummary();
       elemItems.forEach(function(it){
-        if(!it)return;var n=String(it.name||'').trim().toLowerCase(),src=String(it.source||'').trim().toLowerCase();
-        var related=n.indexOf('світлов')>=0||n.indexOf('ліні')>=0||n.indexOf('трек')>=0||src.indexOf('linear_')===0||src.indexOf('lineartrack:')===0;if(!related)return;
-        var changed=false;
-        if(src==='lineartrack:fixtures'||(n.indexOf('трек')>=0&&n.indexOf('світиль')>=0)){it.qty=sum.trackFixtureCount;it.unit='шт';changed=true;}
-        else if(src==='lineartrack:corners'||(n.indexOf('кут')>=0&&n.indexOf('трек')>=0)){it.qty=sum.trackCornerCount;it.unit='шт';changed=true;}
-        else if(src==='linear_corner'||n.indexOf('кут')>=0){it.qty=sum.cornerCount;it.unit='шт';changed=true;}
-        else if(src==='linear_break'||n.indexOf('обрив')>=0||n.indexOf('закінч')>=0){it.qty=sum.breakCount;it.unit='шт';changed=true;}
-        else if(src==='linear_length'||(n.indexOf('світлов')>=0&&n.indexOf('ліні')>=0)){it.qty=sum.totalLengthM;it.unit='м';changed=true;}
-        if(changed){updated++;it.autoFilled=true;it.autoZero=!(Number(it.qty)>0);}
+        if(!it||it.manualQtyOverride===true)return;
+        var value=window.computeLinearSource(it.source,null,summary);
+        if(!value)return;
+        it.qty=value.qty;it.unit=value.unit;it.autoFilled=true;it.autoZero=!(value.qty>0);updated++;
       });
       if(updated){try{renderElemList();}catch(_){}try{updateElemBadge();}catch(_){}try{recalcElemTotal();}catch(_){}try{saveState();}catch(_){}}
       return updated;
@@ -1209,7 +1239,7 @@
     ensureModal(); curId=null;
     el('leTitle').textContent='💡 Лінійне освітлення';
     el('leBody').innerHTML='<div style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:8px">Оберіть тип</div>'
-      +TYPES.map(function(t){ return '<button type="button" onclick="leChooseType(\''+t.key+'\')" style="width:100%;display:flex;align-items:center;gap:10px;background:#f8fafc;color:#0f172a;font-weight:700;margin-bottom:6px;justify-content:flex-start;padding:12px"><span style="font-size:18px">'+t.icon+'</span>'+t.label+'</button>'; }).join('');
+      +TYPES.map(function(t){ return '<button type="button" onclick="leChooseType(\''+t.key+'\')" style="width:100%;display:flex;align-items:center;gap:10px;background:#f8fafc;color:#0f172a;font-weight:700;margin-bottom:6px;justify-content:flex-start;padding:12px"><span style="font-size:18px">'+t.icon+'</span>'+typeDef(t.key).label+'</button>'; }).join('');
     el('leModal').style.display='flex';
     var pickerCard=el('leModal').querySelector('.le-modal-card-v322');
     if(pickerCard){pickerCard.scrollTop=0;requestAnimationFrame(function(){pickerCard.scrollTop=0;});}
@@ -1285,7 +1315,7 @@
     if(!segments.length)return null;
     var minX=Math.min.apply(null,base.map(function(p){return p.x;})),maxX=Math.max.apply(null,base.map(function(p){return p.x;}));
     var minY=Math.min.apply(null,base.map(function(p){return p.y;})),maxY=Math.max.apply(null,base.map(function(p){return p.y;}));
-    var c=roomCenterCm(),td=typeDef(k),item={id:uid(),type:'linearElement',elementType:td.key,shape:'free',center:{x:c.x,y:c.y},baseIndex:Number.isFinite(+c.baseIndex)?+c.baseIndex:0,centerCanvasPx:{x:(minX+maxX)/2,y:(minY+maxY)/2},rotation:0,segments:segments,segmentAngles:angles,trackFixtureCount:0,points:[],profileWidth:td.width,anchor:{sideIndex:-1,alongCm:0,inwardCm:30,direction:'parallel'}};
+    var c=roomCenterCm(),td=typeDef(k),item={id:uid(),type:'linearElement',elementType:td.key,shape:'free',center:{x:c.x,y:c.y},baseIndex:Number.isFinite(+c.baseIndex)?+c.baseIndex:0,centerCanvasPx:{x:(minX+maxX)/2,y:(minY+maxY)/2},rotation:0,segments:segments,segmentAngles:angles,closedPath:Math.hypot(base[base.length-1].x-base[0].x,base[base.length-1].y-base[0].y)<1,trackFixtureCount:0,points:[],profileWidth:td.width,anchor:{sideIndex:-1,alongCm:0,inwardCm:30,direction:'parallel'}};
     computeTotals(item);syncPoints(item);syncLogicalCenterFromCanvas(item);arr().push(item);persist();return item;
   }
   window.leStartTrackFinger=function(k){
@@ -1294,7 +1324,7 @@
     var rect=canvas.getBoundingClientRect(),wrap=document.createElement('div');wrap.id='leTrackDrawOverlay';
     wrap.style.cssText='position:fixed;left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;height:'+rect.height+'px;z-index:100000;touch-action:none;background:rgba(239,246,255,.10);';
     var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 '+rect.width+' '+rect.height);svg.style.cssText='width:100%;height:100%;display:block;overflow:visible';
-    var path=document.createElementNS('http://www.w3.org/2000/svg','polyline');path.setAttribute('fill','none');path.setAttribute('stroke',k==='recessedTrack'?'#0891b2':'#7c3aed');path.setAttribute('stroke-width','7');path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');svg.appendChild(path);wrap.appendChild(svg);
+    var path=document.createElementNS('http://www.w3.org/2000/svg','polyline');path.setAttribute('fill','none');path.setAttribute('stroke',trackColor(k));path.setAttribute('stroke-width','7');path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');svg.appendChild(path);wrap.appendChild(svg);
     var hint=document.createElement('div');hint.style.cssText='position:absolute;left:12px;right:12px;bottom:14px;padding:10px 46px 10px 12px;border-radius:13px;background:rgba(15,23,42,.93);color:#fff;font:800 12px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:center;box-shadow:0 8px 24px rgba(15,23,42,.25)';hint.textContent='Ведіть пальцем — трек одразу прилипає до горизонталі та вертикалі.';wrap.appendChild(hint);
     var cancel=document.createElement('button');cancel.type='button';cancel.textContent='×';cancel.style.cssText='position:absolute;right:9px;top:9px;width:40px;height:40px;border:0;border-radius:12px;background:#fff;color:#dc2626;font-size:25px;font-weight:900;box-shadow:0 4px 14px rgba(15,23,42,.18)';wrap.appendChild(cancel);
     var raw=[],drawing=false;
@@ -1304,7 +1334,7 @@
     cancel.addEventListener('click',function(){close();window.leChooseType(k);if(modal)modal.style.display='flex';});
     wrap.addEventListener('pointerdown',function(ev){if(ev.target===cancel)return;drawing=true;raw=[local(ev)];try{wrap.setPointerCapture(ev.pointerId);}catch(_){window.__diagSilent&&window.__diagSilent(_)}ev.preventDefault();});
     wrap.addEventListener('pointermove',function(ev){if(!drawing)return;var p=local(ev),last=raw[raw.length-1];if(Math.hypot(p.x-last.x,p.y-last.y)>=4){raw.push(p);preview();}ev.preventDefault();});
-    function finish(ev){if(!drawing)return;drawing=false;var p=local(ev),last=raw[raw.length-1];if(Math.hypot(p.x-last.x,p.y-last.y)>4)raw.push(p);var clean=leTrackOrthogonalPoints(raw);if(clean.length<2||Math.hypot(clean[clean.length-1].x-clean[0].x,clean[clean.length-1].y-clean[0].y)<18){if(typeof showToast==='function')showToast('⚠️ Намалюйте довшу лінію');return;}var item=leCreateFreeTrack(k,clean,canvas,rect);close();if(item){openEditor(item.id);if(typeof showToast==='function')showToast('✓ Форму треку створено');}}
+    function finish(ev){if(!drawing)return;drawing=false;var p=local(ev),last=raw[raw.length-1];if(Math.hypot(p.x-last.x,p.y-last.y)>4)raw.push(p);var clean=leTrackOrthogonalPoints(raw);if(clean.length<2||clean.slice(1).reduce(function(total,p,i){return total+Math.hypot(p.x-clean[i].x,p.y-clean[i].y);},0)<18){if(typeof showToast==='function')showToast('⚠️ Намалюйте довшу лінію');return;}var item=leCreateFreeTrack(k,clean,canvas,rect);close();if(item){openEditor(item.id);if(typeof showToast==='function')showToast('✓ Форму треку створено');}}
     wrap.addEventListener('pointerup',finish);wrap.addEventListener('pointercancel',function(){drawing=false;});document.body.appendChild(wrap);
   };
 
