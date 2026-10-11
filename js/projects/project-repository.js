@@ -65,6 +65,7 @@
       const before=storageBytes(),aggressive=!!(options&&options.aggressive),force=!!(options&&options.force),removed=[];
       if(!force && before<2300000)return {beforeBytes:before,afterBytes:before,removed:removed};
       try{
+        try{const sc=window.A·CEIL&&window.A·CEIL.StorageCleanup;if(sc){if(typeof sc.removeDeadCache==='function')sc.removeDeadCache();if(typeof sc.cleanLegacy==='function')sc.cleanLegacy();}}catch(_){}
         duplicateCacheKeys.forEach(key=>{
           if(localStorage.getItem(key)!=null){localStorage.removeItem(key);removed.push(key);}
         });
@@ -94,7 +95,7 @@
   }
 
   const STORAGE_KEY = 'ceiling_projects';
-  const CACHE_LIMIT = 8;
+  const CACHE_LIMIT = 8; /* Останні хмарні проєкти лишаються доступними без інтернету. */
   const schema = window.A·CEILProjectSchema || null;
   const isObject = value => !!value && typeof value === 'object' && !Array.isArray(value);
   const normalize = projects => schema && typeof schema.migrateProjects === 'function'
