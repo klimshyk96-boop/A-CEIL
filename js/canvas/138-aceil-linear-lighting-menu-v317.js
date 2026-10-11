@@ -34,9 +34,14 @@ function openFree(){
 var closeBtn=document.getElementById("rmLinearLightingCloseV317");
 var readyBtn=document.getElementById("rmLinearLightingReadyV317");
 var freeBtn=document.getElementById("rmLinearLightingFreeV317");
+var fingerBtn=document.getElementById("rmLinearLightingFingerV317");
 if(closeBtn)closeBtn.addEventListener("click",closeMenu);
 if(readyBtn)readyBtn.addEventListener("click",openReady);
 if(freeBtn)freeBtn.addEventListener("click",openFree);
+if(fingerBtn)fingerBtn.addEventListener("click",function(){
+  closeMenu();
+  if(typeof window.leStartTrackFinger==="function")window.leStartTrackFinger("lightLine");
+});
 var root=modal();
 if(root)root.addEventListener("click",function(e){if(e.target===root)closeMenu()});
 

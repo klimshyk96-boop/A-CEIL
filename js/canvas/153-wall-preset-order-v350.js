@@ -18,6 +18,14 @@ function render(selected){
 }
 function ensureOrderField(){
   var modal=gid("rwePresetEditModal"); if(!modal)return null;
+  // Delete must be reachable inside the active edit dialog, not behind it.
+  if(!gid("rwePresetEditDelete")){
+    var card=modal.querySelector(".rwe-preset-edit-card"),button=document.createElement("button");
+    button.id="rwePresetEditDelete";button.type="button";button.className="rwe-preset-del rwe2-delete-preset-action";
+    button.textContent="Видалити заготовку";
+    button.onclick=function(event){event.preventDefault();event.stopPropagation();window.rweDeletePreset();};
+    if(card)card.appendChild(button);
+  }
   var existing=gid("rwePresetEditOrder"); if(existing)return existing;
   var actions=modal.querySelector(".rwe-preset-edit-actions");
   if(!actions)return null;
@@ -74,13 +82,15 @@ try{rweSavePresetEdit=window.rweSavePresetEdit}catch(_){}
    Existing _wallPresetPushToCloud receives the new list, so reload cannot
    resurrect a deleted cloud preset. */
 window.rweDeletePreset=function(){
-  var name=String(gid("rwe2Preset")&&gid("rwe2Preset").value||gid("rwe2Name")&&gid("rwe2Name").value||"").trim();
+  var edit=gid("rwePresetEditModal"),editing=edit&&edit.classList.contains("open");
+  var name=String(editing?window.__rweEditingPresetName:(gid("rwe2Preset")&&gid("rwe2Preset").value||gid("rwe2Name")&&gid("rwe2Name").value||"")).trim();
   if(!name){if(typeof showToast==="function")showToast("Оберіть заготовку");return}
   var a=read();
   if(!a.some(function(p){return p.name===name})){if(typeof showToast==="function")showToast("Заготовку не знайдено");return}
   if(!confirm('Видалити заготовку "'+name+'"?'))return;
   var next=a.filter(function(p){return p.name!==name});
   write(next); render("");
+  if(editing&&typeof window.rweClosePresetEdit==="function")window.rweClosePresetEdit();
   if(gid("rwe2Preset"))gid("rwe2Preset").value="";
   if(gid("rwe2Name"))gid("rwe2Name").value="";
   try{if(typeof saveState==="function")saveState()}catch(_){}
