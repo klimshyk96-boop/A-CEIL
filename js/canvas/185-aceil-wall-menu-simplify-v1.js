@@ -32,7 +32,26 @@
     if (sib) sib.classList.add("rwe2-only-adv");
   }
 
+  function ensurePresetDeleteButton(modal){
+    var button=modal.querySelector(".rwe-preset-del");if(!button)return;
+    var toolbar=button.closest(".rwe-preset-toolbar");
+    /* Keep delete outside the name/order toolbar, with its own touch target. */
+    if(toolbar&&toolbar.parentNode)toolbar.parentNode.insertBefore(button,toolbar.nextSibling);
+    button.classList.remove("rwe-preset-mini-btn","rwe2-only-adv");
+    button.classList.add("rwe2-delete-preset-action");
+    if(button.dataset.separateDelete!=="1"){
+      button.dataset.separateDelete="1";
+      button.textContent="Видалити заготовку";
+      button.setAttribute("aria-label","Видалити вибрану заготовку");
+      button.onclick=function(event){
+        event.preventDefault();event.stopPropagation();
+        if(typeof window.rweDeletePreset==="function")window.rweDeletePreset();
+      };
+    }
+  }
+
   function tagHiddenFields(modal){
+    ensurePresetDeleteButton(modal);
     modal.querySelectorAll(".rwe-preset-del").forEach(function(btn){btn.classList.remove("rwe2-only-adv");});
     tagField(modal, "Назва на макеті"); // label + #wallEditType
     tagField(modal, "Колір на макеті"); // label + color-row div (#wallEditColor + swatches)
