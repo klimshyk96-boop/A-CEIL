@@ -58,8 +58,9 @@
 #wallEditModal #rwe2LivePreview{display:none!important;}
 
 /* Show the saved drawing color directly inside the selected preset field. */
-#wallEditModal .rwe-preset-toolbar{position:relative!important;}
-#wallEditModal .modal:not(.rwe2-advanced-open) .rwe-preset-toolbar{grid-template-columns:minmax(0,1fr) 44px!important;}
+#wallEditModal .rwe-preset-toolbar{position:relative!important;grid-template-columns:minmax(0,1fr) 44px!important;}
+#wallEditModal .modal:not(.rwe2-advanced-open) .rwe-preset-toolbar{grid-template-columns:minmax(0,1fr)!important;}
+#wallEditModal .rwe2-delete-preset-action{position:static!important;display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-height:40px!important;height:auto!important;box-sizing:border-box!important;margin:8px 0 0!important;padding:8px 10px!important;border-radius:12px!important;font:600 12px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;box-shadow:none!important;}
 #wallEditModal .rwe-preset-toolbar #rwe2Preset{padding-left:43px!important;}
 #wallEditModal .rwe2-preset-color-dot{
   position:absolute;
