@@ -254,7 +254,7 @@ body.aceil-all-split-v14 .canvas-container{
 
 <script id="A·CEIL-project-schema-migrations" src="js/nomenclature/094-aceil-project-schema-migrations.js?v=20261003-clean1"></script>
 
-<script id="A·CEIL-project-repository" src="js/projects/project-repository.js?v=20261003-clean1"></script>
+<script id="A·CEIL-project-repository" src="js/projects/project-repository.js?v=20261011-storage3"></script>
 
 <script id="A·CEIL-geometry-core-v1" src="js/projects/098-aceil-geometry-core-v1.js?v=20261003-clean1"></script>
 
@@ -626,7 +626,7 @@ body.aceil-all-split-v14 .canvas-container{
 
 <script id="rm-custom-ceiling-coords-v327" src="js/rooms/144-custom-ceiling-coords-v327.js?v=20261003-clean1"></script>
 
-<script id="rm-cloud-first-v330" src="js/nomenclature/145-cloud-first-v330.js?v=20261003-clean1"></script>
+<script id="rm-cloud-first-v330" src="js/nomenclature/145-cloud-first-v330.js?v=20261011-storage3"></script>
 
 <script id="A·CEIL-report-discount-advance-v1" src="js/reports/146-aceil-report-discount-advance-v1.js?v=20261003-clean1"></script>
 
@@ -635,7 +635,7 @@ body.aceil-all-split-v14 .canvas-container{
 <script id="A·CEIL-room-calc-isolation-v331" src="js/nomenclature/149-aceil-room-calc-isolation-v331.js?v=20261003-clean1"></script>
 <script id="A·CEIL-wall-color-autosource-v333" src="js/nomenclature/150-aceil-wall-color-autosource-v333.js?v=20261003-clean1"></script>
 
-<script id="A·CEIL-storage-audit-v340" src="js/projects/151-aceil-storage-audit-v340.js?v=20261003-clean1"></script>
+<script id="A·CEIL-storage-audit-v340" src="js/projects/151-aceil-storage-audit-v340.js?v=20261011-storage3"></script>
 
 <div class="modal-overlay" id="rmSmartAlign347">
  <div class="modal">
@@ -713,7 +713,7 @@ body.aceil-all-split-v14 .canvas-container{
   "use strict";
   if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
   window.addEventListener("load",function(){
-    var updateKey="aceil-pwa-update-20261009-clean-plan-report1";
+    var updateKey="aceil-pwa-update-20261011-storage3";
     navigator.serviceWorker.addEventListener("message",function(event){
       if(!event.data||event.data.type!=="A_CEIL_UPDATE_READY"||sessionStorage.getItem(updateKey))return;
       sessionStorage.setItem(updateKey,"1");
@@ -724,7 +724,7 @@ body.aceil-all-split-v14 .canvas-container{
       sessionStorage.setItem(updateKey,"1");
       location.reload();
     });
-      navigator.serviceWorker.register("/sw.js?v=20261011-closure5cm1",{scope:"/"}).then(function(reg){
+      navigator.serviceWorker.register("/sw.js?v=20261011-storage3",{scope:"/"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
