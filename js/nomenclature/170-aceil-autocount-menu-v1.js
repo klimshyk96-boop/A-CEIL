@@ -531,7 +531,7 @@
   function ensureContourFields(item){
     if(!gid("acWholeContourRow")){
       var row=document.createElement("div");row.id="acWholeContourRow";
-      row.innerHTML='<label style="display:flex;align-items:center;gap:8px;margin:10px 0"><input type="checkbox" id="acWholeContour"> На весь контур кімнати</label><label id="acContourPresetLabel">Колір із заготовки елементів стін<select id="acContourPreset" style="width:100%;min-width:0"></select></label>';
+      row.innerHTML='<label style="display:flex;align-items:center;gap:8px;margin:10px 0"><input type="checkbox" id="acWholeContour"><span id="acWholeContourText">Замінити базовий профіль на всьому контурі</span></label><label id="acContourPresetLabel">Колір із заготовки елементів стін<select id="acContourPreset" style="width:100%;min-width:0"></select></label>';
       gid("acEditFields").appendChild(row);
     }
     var presets=typeof window.rwe2WallPresetRead==="function"?window.rwe2WallPresetRead():[];
@@ -540,14 +540,20 @@
     if(item.fullContourPresetName&&!choices.some(function(p){return p.value===item.fullContourPresetName}))choices.push({value:item.fullContourPresetName,label:item.fullContourPresetName,color:item.fullContourColor});
     fillEditChoices(gid("acContourPreset"),choices,item.fullContourPresetName||"");
     gid("acContourPreset")._colors=choices;
-    gid("acWholeContour").checked=!!item.fullContourSelected;
+    var current=typeof window.aceilContourProfile==="function"?window.aceilContourProfile():null;
+    var isBase=item.source==="main_profile",isCurrent=current&&String(current.item&&current.item.id)===String(item.id);
+    gid("acWholeContour").checked=!!item.fullContourSelected||(!current.whole&&isBase)||isCurrent&&current.whole;
+    gid("acWholeContourText").textContent=isBase?(current&&current.source==="main_profile"?"Базовий алюмінієвий профіль активний":"Повернути базовий алюмінієвий профіль на весь контур"):(isCurrent&&current.whole?"Увесь контур цієї кімнати":"Замінити базовий профіль на всьому контурі");
+    gid("acWholeContour").dataset.defaultBase=!current.whole&&isBase?"1":"0";
+    gid("acWholeContour").disabled=!current.whole&&isBase;
   }
   function contourDraft(item){
     var enabled=gid("acEditEnabled").checked,source=gid("editElemSource").value;
     var eligible=/^(main_profile|shadow_profile|floating_profile)$/.test(source);
     gid("acWholeContourRow").hidden=!enabled||!eligible;
-    gid("acContourPresetLabel").hidden=!gid("acWholeContour").checked;
-    item.fullContourSelected=enabled&&eligible&&gid("acWholeContour").checked;
+    gid("acContourPresetLabel").hidden=!gid("acWholeContour").checked||source==="main_profile";
+    var keepDefaultBase=source==="main_profile"&&gid("acWholeContour").dataset.defaultBase==="1"&&gid("acWholeContour").checked;
+    item.fullContourSelected=enabled&&eligible&&gid("acWholeContour").checked&&!keepDefaultBase;
     item.fullContourPresetName=gid("acContourPreset").value;
     var choice=gid("acContourPreset")._colors.find(function(p){return p.value===item.fullContourPresetName});
     item.fullContourColor=choice&&choice.color||"#1d1d1f";

@@ -187,21 +187,66 @@ function dynamicSources(){
     out.push({key:'lineartype:custom',label:'Інший лінійний елемент — довжина',icon:'━',unit:'м'});
   return out;
 }
-// Whole-contour selection belongs to the room's persisted nomenclature item.
-// Source and item ID, never the editable title, determine calculation.
-function contourProfile(draft,collection){
-  var selected=draft&&draft.fullContourSelected?draft:(Array.isArray(collection)?collection:getElemItems()).find(function(it){return it&&it.fullContourSelected&&!it.manualQtyOverride&&/^(main_profile|shadow_profile|floating_profile)$/.test(it.source)});
-  if(!selected)return null;
+// This choice lives in the current room's nomenclature copy. Aluminium is the
+// normal default. A full shadow/floating contour is also inferred after
+// AutoFill when it replaces the full perimeter and the base row becomes zero.
+function contourPerimeterM(state){
+  if(state&&typeof state==="object"){
+    if(state.circleMode&&Number(state.circleDiamCm)>0)return Math.PI*Number(state.circleDiamCm)/100;
+    if(Array.isArray(state.lengths)&&state.lengths.length)return state.lengths.reduce(function(sum,value){return sum+(Number(value)||0)},0)/100;
+  }
+  try{
+    if(typeof circleMode!=="undefined"&&circleMode&&typeof circleDiamCm!=="undefined"&&circleDiamCm>0)return Math.PI*circleDiamCm/100;
+    if(typeof lengths!=="undefined"&&Array.isArray(lengths)&&lengths.length)return lengths.reduce(function(sum,value){return sum+(Number(value)||0)},0)/100;
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{var value=parseFloat(String(document.getElementById("per")&&document.getElementById("per").textContent||"0").replace(",","."));return isFinite(value)?value:0}catch(_){return 0}
+}
+function explicitContourProfile(list,draft){
+  if(draft&&draft.fullContourSelected&&/^(main_profile|shadow_profile|floating_profile)$/.test(draft.source))return draft;
+  return list.find(function(it){return it&&it.fullContourSelected&&/^(main_profile|shadow_profile|floating_profile)$/.test(it.source)})||null;
+}
+function inferredContourProfile(list,state){
+  var perimeter=contourPerimeterM(state);if(!(perimeter>0))return null;
+  var base=list.filter(function(it){return it&&it.source==="main_profile"}).reduce(function(sum,it){return sum+(Number(it.qty)||0)},0);
+  if(base>.01)return null;
+  var families=["shadow_profile","floating_profile"].map(function(source){
+    var rows=list.filter(function(it){return it&&it.source===source}),total=rows.reduce(function(sum,it){return sum+(Number(it.qty)||0)},0),keyword=source==="shadow_profile"?"тіньов":"парящ";
+    var marks=state&&Array.isArray(state.wallMarks)?state.wallMarks:getWallMarks();
+    var marked=marks.filter(function(m){return m&&norm(m.type||m.name||m.title).indexOf(keyword)>=0}).reduce(function(sum,m){return sum+(Number(m.lenCm)||0)},0)/100;
+    return {total:total,marked:marked,manual:rows.some(function(it){return it.manualQtyOverride===true}),item:rows.sort(function(a,b){return (Number(b.qty)||0)-(Number(a.qty)||0)})[0]};
+  }).filter(function(entry){
+    var tolerance=Math.max(.02,perimeter*.002);
+    return entry.item&&Math.abs(entry.total-perimeter)<=tolerance&&(entry.manual||Math.abs(entry.marked-perimeter)<=tolerance);
+  });
+  return families.length===1?families[0].item:null;
+}
+function presetColorFor(selected,presets,state){
+  if(!selected||selected.source==="main_profile")return "#1d1d1f";
+  var preset=presets.find(function(p){return p&&p.name===selected.fullContourPresetName});
+  if(preset&&preset.color)return preset.color;
+  var keyword=selected.source==="shadow_profile"?"тіньов":"парящ",variant=selected.sourceVariant||"",marks=state&&Array.isArray(state.wallMarks)?state.wallMarks:getWallMarks();
+  var mark=marks.find(function(m){return m&&norm(m.type||m.name||m.title).indexOf(keyword)>=0&&(!variant||wallProfileColor(m)===variant)&&/^#[0-9a-f]{3,8}$/i.test(String(m.color||""))});
+  if(mark)return mark.color;
+  preset=presets.find(function(p){return p&&norm(p.name).indexOf(keyword)>=0&&(!variant||colorFromName(p.name)===variant)&&/^#[0-9a-f]{3,8}$/i.test(String(p.color||""))});
+  return preset&&preset.color||selected.fullContourColor||"#1d1d1f";
+}
+function activeWholeContourProfile(draft,collection,state){
+  var list=Array.isArray(collection)?collection:getElemItems();
+  return explicitContourProfile(list,draft)||inferredContourProfile(list,state);
+}
+function contourProfile(draft,collection,state){
+  var list=Array.isArray(collection)?collection:getElemItems(),selected=activeWholeContourProfile(draft,list,state),whole=!!selected;
+  if(!selected)selected=list.find(function(it){return it&&it.source==="main_profile"})||{id:"__base_aluminium__",source:"main_profile",name:"Базовий алюмінієвий профіль"};
   var presets=typeof window.rwe2WallPresetRead==="function"?window.rwe2WallPresetRead():[];
-  var preset=Array.isArray(presets)?presets.find(function(p){return p&&p.name===selected.fullContourPresetName}):null;
-  var color=preset&&preset.color||selected.fullContourColor||"#1d1d1f";
+  presets=Array.isArray(presets)?presets:[];
+  var color=presetColorFor(selected,presets,state);
   if(!/^#[0-9a-f]{3,8}$/i.test(color))color="#1d1d1f";
-  return {item:selected,source:selected.source,color:color,label:selected.name||"Профіль контуру"};
+  return {item:selected,source:selected.source,color:color,label:selected.name||"Базовий алюмінієвий профіль",whole:whole};
 }
 window.aceilContourProfile=contourProfile;
 window.aceilContourProfileColor=function(){var p=contourProfile();return p?p.color:"#1d1d1f";};
 window.aceilWholeContourCompute=function(source,item,ctx){
-  var profile=contourProfile(item),relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
+  var selected=activeWholeContourProfile(item),profile=selected?contourProfile(item):null,relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
   if(!profile||!relevant.test(source))return null;
   var circle=typeof circleMode!=="undefined"&&circleMode;
   var ready=circle?typeof circleDiamCm!=="undefined"&&circleDiamCm>0:typeof closed!=="undefined"&&closed&&typeof pts!=="undefined"&&pts.length>=3;
