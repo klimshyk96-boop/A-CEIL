@@ -168,7 +168,7 @@
     if(!autoCountEnabled())return false;
     loadRules();var changed=false;
     items().forEach(function(it){
-      var source=String(it&&it.source||"");if(!source.startsWith("custom:"))return;
+      var source=String(it&&it.source||"");if(!source.startsWith("custom:")||it.manualQtyOverride===true)return;
       var rule=customRules.find(function(r){return "custom:"+r.id===source});if(!rule)return;
       var value=computeCustom(rule);if(Number(it.qty)!==value.qty||it.unit!==value.unit)changed=true;
       it.qty=value.qty;it.unit=value.unit;it.autoFilled=true;it.autoZero=value.qty===0;it.autoRuleNote="Моє правило: "+rule.name;
@@ -186,7 +186,7 @@
     var changed=false;
     items().forEach(function(it){
       var source=norm(it&&it.source);
-      if(source!=="cornice break"&&source!=="cornice corners")return;
+      if(it.manualQtyOverride===true||(source!=="cornice break"&&source!=="cornice corners"))return;
       var top=corniceTopology(itemColor(it));
       var qty=source==="cornice break"?top.breaks:top.corners;
       if(Number(it.qty)!==qty||it.unit!=="шт")changed=true;
@@ -487,6 +487,120 @@
     if(_customMenuItemId!=null&&typeof window.openQuickSourceMenu==="function")setTimeout(function(){window.openQuickSourceMenu(_customMenuItemId)},0);
   }
   window.A_CEIL_openCustomAutoRule=function(){openRuleModal(null)};
+
+  // The source select remains the canonical value consumed by saveElemEdit.
+  // These three dependent selects are a view over its existing options.
+  var editId=null,editCatalog=[];
+  var EDIT_CATEGORIES={base:"Кімната та полотно",wall:"Профілі та карнизи",linear:"Лінійне освітлення",light:"Світильники та інші елементи",other:"Додаткові правила"};
+  var EDIT_SOURCES={
+    full_perimeter:["base","Периметр кімнати","Повний периметр, м"],
+    total_area:["base","Полотно","Площа, м²"],corners:["base","Кути кімнати","Кількість, шт"],
+    main_profile:["wall","Основний профіль","Довжина з відніманнями, м"],
+    white_insert:["wall","Вставка","Довжина з відніманнями, м"],
+    floating_profile:["wall","Парящий профіль","Довжина, м"],floating_corners:["wall","Парящий профіль","Кути, шт"],
+    shadow_profile:["wall","Тіньовий профіль","Довжина, м"],shadow_corners:["wall","Тіньовий профіль","Кути, шт"],
+    profile_beam:["wall","Профіль-брус","Довжина, м"],hidden_curtain:["wall","Карниз","Довжина, м"],
+    cornice_corners:["wall","Прихований карниз","Кути, шт"],cornice_break:["wall","Прихований карниз","Обриви, шт"],
+    curve_length:["wall","Криволінійні ділянки","Довжина, м"],
+    spot_light:["light","Точкові світильники","Кількість, шт"],chandelier:["light","Люстри","Кількість, шт"],ventilation:["light","Витяжка та вентиляція","Кількість, шт"]
+  };
+  function editSourceDescriptor(value,label){
+    var entry=EDIT_SOURCES[value];if(entry)return {value:value,category:entry[0],element:entry[1],metric:entry[2]};
+    var legacy={linear_length:"lineartype:lightLine",linear_corner:"linearcorners:lightLine",linear_break:"linearbreaks:lightLine"};
+    var src=legacy[value]||value,parts=src.split(":"),prefix=parts[0],key=parts.slice(1).join(":"),element="",metric="";
+    var names={lightLine:"Світлова лінія",surfaceTrack:"Накладний шинопровід",recessedTrack:"Вмонтований шинопровід",magneticTrack:"Магнітний шинопровід"};
+    if(/^(lineartype|linearcorners|linearbreaks|linearfixtures)$/.test(prefix)&&names[key]){
+      element=typeof window.ceilingElementMenuName==="function"?window.ceilingElementMenuName("linear_"+key):names[key];
+      metric={lineartype:"Довжина, м",linearcorners:"Кути, шт",linearbreaks:"Обриви, шт",linearfixtures:"Світильники, шт"}[prefix];
+      return {value:value,category:"linear",element:element,metric:metric};
+    }
+    if(/^ceilingcornice/.test(prefix))return {value:value,category:"wall",element:"Карниз UNO",metric:prefix==="ceilingcornice"?"Довжина, м":prefix==="ceilingcornicecorners"?"Кути, шт":"Обриви, шт",color:prefix==="ceilingcornice"&&parts.length>2?parts[2]:"",ceilingColor:prefix==="ceilingcornice"};
+    if(prefix==="walltype"||prefix==="walltypecolor"){
+      var raw=prefix==="walltype"?key:parts.slice(2).join(":"),color=prefix==="walltypecolor"?parts[1]:"";
+      try{element=decodeURIComponent(raw)}catch(e){element=raw}
+      return {value:value,category:"wall",element:element,metric:"Довжина, м",color:color,dynamicWall:true};
+    }
+    if(prefix==="lighttype")return {value:value,category:"light",element:label.replace(/^[^\p{L}\p{N}]+/u,"").replace(/\s*\(кількість\)\s*$/, ""),metric:"Кількість, шт"};
+    return {value:value,category:"other",element:value?label:"Автовизначення за назвою (старе правило)",metric:"За правилом"};
+  }
+  function fillEditChoices(select,choices,selected){
+    select.innerHTML=choices.map(function(c){return '<option value="'+esc(c.value)+'">'+esc(c.label)+'</option>'}).join("");
+    if(choices.some(function(c){return c.value===selected}))select.value=selected;
+  }
+  function editColor(){try{return typeof _editingElemVariant!=="undefined"?_editingElemVariant:""}catch(e){return ""}}
+  function syncEditPreview(){
+    var source=gid("editElemSource").value,entry=editCatalog.find(function(d){return d.value===source});
+    var on=gid("acEditEnabled").checked,fields=gid("acEditFields"),preview=gid("acEditPreview");fields.hidden=!on;
+    gid("acEditManualQtyRow").hidden=on;
+    gid("editElemVariantRow").style.display=on&&entry&&entry.category==="wall"?"block":"none";
+    if(!on){preview.textContent="Кількість задається вручну";return;}
+    var draft=Object.assign({},items().find(function(it){return it.id===editId})||{},{source:source,sourceVariant:editColor()});
+    var result=typeof window.previewNomenclatureSource==="function"?window.previewNomenclatureSource(source,draft):null;
+    if(source.indexOf("custom:")===0){var rule=customRules.find(function(r){return "custom:"+r.id===source});if(rule)result=computeCustom(rule);}
+    if(!result&&source==="full_perimeter")result={qty:roomPerimeterM(),unit:"м"};
+    if(!result&&source==="total_area")result={qty:roomAreaM2(),unit:"м²"};
+    preview.textContent=result?"На плані: "+Number(result.qty.toFixed(2)).toLocaleString("uk-UA")+" "+result.unit+" · Оновлюється після змін на плані":"Правило вибрано · Збережіть і натисніть «Перерахувати»";
+    if(!autoCountEnabled())preview.textContent+=" · Загальний автопрорахунок вимкнений";
+  }
+  function refreshEditSelectors(source,level){
+    var selected=editCatalog.find(function(d){return d.value===source})||editCatalog[0];if(!selected)return;
+    var category=gid("acEditCategory"),element=gid("acEditElement"),metric=gid("acEditMetric");
+    if(!level)fillEditChoices(category,Object.keys(EDIT_CATEGORIES).filter(function(k){return editCatalog.some(function(d){return d.category===k})}).map(function(k){return {value:k,label:EDIT_CATEGORIES[k]}}),selected.category);
+    var rows=editCatalog.filter(function(d){return d.category===category.value});
+    if(level!=="metric"&&level!=="element")fillEditChoices(element,Array.from(new Set(rows.map(function(d){return d.element}))).map(function(n){return {value:n,label:n}}),level==="category"?null:selected.element);
+    rows=rows.filter(function(d){return d.element===element.value});
+    var seen={};rows=rows.filter(function(d){if(d.dynamicWall&&d.color)return false;if(seen[d.metric])return false;seen[d.metric]=true;return true;});
+    fillEditChoices(metric,rows.map(function(d){return {value:d.value,label:d.metric}}),source);
+    // Preserve the exact existing source, including legacy and colored values.
+    if(!level)gid("editElemSource").value=source;
+    else gid("editElemSource").value=metric.value;
+    updateSourceExtraFieldsVisibility();syncEditPreview();
+  }
+  function setupEditCalculation(id){
+    editId=id;var source=gid("editElemSource"),item=items().find(function(it){return it.id===id});if(!source||!item)return;
+    loadRules();customRules.forEach(function(rule){var value="custom:"+rule.id;if(!Array.prototype.some.call(source.options,function(o){return o.value===value})){var option=document.createElement("option");option.value=value;option.textContent=rule.name;source.appendChild(option);}});
+    if(item.source&&!Array.prototype.some.call(source.options,function(o){return o.value===item.source})){var option=document.createElement("option");option.value=item.source;option.textContent="Збережене правило";source.appendChild(option);}
+    source.value=item.source||"";editCatalog=Array.prototype.map.call(source.options,function(o){return editSourceDescriptor(o.value,o.textContent)});
+    var selected=editCatalog.find(function(d){return d.value===source.value});
+    if(selected&&selected.color&&typeof window.setEditElemVariant==="function")window.setEditElemVariant(selected.color);
+    gid("acEditEnabled").checked=item.manualQtyOverride!==true;
+    gid("acEditManualQty").value=Number(item.qty)||0;
+    gid("acEditAdvanced").open=false;refreshEditSelectors(source.value);
+  }
+  document.addEventListener("change",function(event){
+    var id=event.target&&event.target.id;
+    if(id==="acEditCategory")refreshEditSelectors("","category");
+    else if(id==="acEditElement")refreshEditSelectors("","element");
+    else if(id==="acEditMetric"){gid("editElemSource").value=gid(id).value;updateSourceExtraFieldsVisibility();syncEditPreview();}
+    else if(id==="acEditEnabled")syncEditPreview();
+  });
+  document.addEventListener("click",function(event){
+    if(event.target&&event.target.closest&&event.target.closest("#editElemVariantButtons")){
+      var source=gid("editElemSource"),entry=editCatalog.find(function(d){return d.value===source.value});
+      if(entry&&entry.dynamicWall){var next=editCatalog.find(function(d){return d.dynamicWall&&d.element===entry.element&&(d.color||"")===editColor()});if(next)source.value=next.value;}
+      if(entry&&entry.ceilingColor)source.value="ceilingcornice:uno";
+      syncEditPreview();
+    }
+  });
+  var oldEditOpen=window.openEditElemModal;
+  if(typeof oldEditOpen==="function"){
+    window.openEditElemModal=function(id){var result=oldEditOpen.apply(this,arguments);setupEditCalculation(id);return result;};
+    try{openEditElemModal=window.openEditElemModal}catch(e){}
+  }
+  var oldEditSave=window.saveElemEdit;
+  if(typeof oldEditSave==="function"){
+    window.saveElemEdit=function(){
+      var item=items().find(function(it){return it.id===editId});if(!item)return oldEditSave.apply(this,arguments);
+      if(!gid("editElemName").value.trim())return oldEditSave.apply(this,arguments);
+      item.manualQtyOverride=!gid("acEditEnabled").checked;
+      if(item.manualQtyOverride){item.qty=Math.max(0,Number(String(gid("acEditManualQty").value).replace(",","."))||0);item.autoFilled=false;item.autoZero=false;}
+      var result=oldEditSave.apply(this,arguments);
+      // Saving an explicit automatic rule is a user-requested calculation.
+      if(!item.manualQtyOverride&&autoCountEnabled()&&typeof window.autoFillNomenclature==="function")window.autoFillNomenclature({silent:true});
+      return result;
+    };
+    try{saveElemEdit=window.saveElemEdit}catch(e){}
+  }
 
   var previousRender=window.renderElemList;
   if(typeof previousRender==="function"&&!previousRender.__corniceRulesV2){

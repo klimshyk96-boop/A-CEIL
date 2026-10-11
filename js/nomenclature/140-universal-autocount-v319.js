@@ -360,6 +360,8 @@ function applyUniversal(opts){
   return changed;
 }
 window.rmUniversalAutoCountV319=applyUniversal;
+// Read-only preview: never write quantities or rebuild prices on modal open.
+window.previewNomenclatureSource=function(source,item){return computeSource(source,item)||(typeof window.previewLegacyNomenclatureSource==="function"?window.previewLegacyNomenclatureSource(source,item):null);};
 
 /* Existing AutoFill button also applies all dynamic sources. */
 var prevAuto=window.autoFillNomenclature||(typeof autoFillNomenclature==="function"?autoFillNomenclature:null);
