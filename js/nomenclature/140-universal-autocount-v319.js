@@ -187,8 +187,38 @@ function dynamicSources(){
     out.push({key:'lineartype:custom',label:'Інший лінійний елемент — довжина',icon:'━',unit:'м'});
   return out;
 }
+// Whole-contour selection belongs to the room's persisted nomenclature item.
+// Source and item ID, never the editable title, determine calculation.
+function contourProfile(draft,collection){
+  var selected=draft&&draft.fullContourSelected?draft:(Array.isArray(collection)?collection:getElemItems()).find(function(it){return it&&it.fullContourSelected&&!it.manualQtyOverride&&/^(main_profile|shadow_profile|floating_profile)$/.test(it.source)});
+  if(!selected)return null;
+  var presets=typeof window.rwe2WallPresetRead==="function"?window.rwe2WallPresetRead():[];
+  var preset=Array.isArray(presets)?presets.find(function(p){return p&&p.name===selected.fullContourPresetName}):null;
+  var color=preset&&preset.color||selected.fullContourColor||"#1d1d1f";
+  if(!/^#[0-9a-f]{3,8}$/i.test(color))color="#1d1d1f";
+  return {item:selected,source:selected.source,color:color,label:selected.name||"Профіль контуру"};
+}
+window.aceilContourProfile=contourProfile;
+window.aceilContourProfileColor=function(){var p=contourProfile();return p?p.color:"#1d1d1f";};
+window.aceilWholeContourCompute=function(source,item,ctx){
+  var profile=contourProfile(item),relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
+  if(!profile||!relevant.test(source))return null;
+  var circle=typeof circleMode!=="undefined"&&circleMode;
+  var ready=circle?typeof circleDiamCm!=="undefined"&&circleDiamCm>0:typeof closed!=="undefined"&&closed&&typeof pts!=="undefined"&&pts.length>=3;
+  var per=ready?(circle?Math.PI*circleDiamCm:ctx?ctx.perimeterCm:typeof getProjectPerimeterMeters==="function"?getProjectPerimeterMeters()*100:0):0;
+  var count=ready&&!circle?(ctx?ctx.cornersTotal:pts.length):0;
+  if(source==="white_insert")return profile.source==="main_profile"?Math.round(per)/100:0;
+  if(/_profile$/.test(source))return source===profile.source&&String(item.id)===String(profile.item.id)?Math.round(per)/100:0;
+  var cornerSource={main_profile:"corners",shadow_profile:"shadow_corners",floating_profile:"floating_corners"}[profile.source];
+  var variant=profile.item.sourceVariant||"",matching=!item.sourceVariant||item.sourceVariant===variant;
+  var rows=getElemItems().filter(function(row){return row&&row.source===cornerSource&&!row.manualQtyOverride;});
+  var chosen=rows.find(function(row){return (row.sourceVariant||"")===variant;})||rows.find(function(row){return !row.sourceVariant;});
+  return source===cornerSource&&matching&&(!chosen||String(chosen.id)===String(item.id))?count:0;
+};
 function computeSource(source,item,linearSummary){
   source=String(source||"");
+  var contourQty=window.aceilWholeContourCompute(source,item);
+  if(source!=="white_insert"&&contourQty!==null)return {qty:contourQty,unit:/corners$/.test(source)?"шт":"м"};
   if(typeof window.computeLinearSource==='function'){var linear=window.computeLinearSource(source,null,linearSummary);if(linear)return linear;}
   if(source==="lineartrack:fixtures"||source==="lineartrack:corners"){
     var fixtureCount=0,cornerCount=0;

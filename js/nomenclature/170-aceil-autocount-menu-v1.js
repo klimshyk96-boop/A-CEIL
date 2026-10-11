@@ -528,13 +528,40 @@
     if(choices.some(function(c){return c.value===selected}))select.value=selected;
   }
   function editColor(){try{return typeof _editingElemVariant!=="undefined"?_editingElemVariant:""}catch(e){return ""}}
+  function ensureContourFields(item){
+    if(!gid("acWholeContourRow")){
+      var row=document.createElement("div");row.id="acWholeContourRow";
+      row.innerHTML='<label style="display:flex;align-items:center;gap:8px;margin:10px 0"><input type="checkbox" id="acWholeContour"> На весь контур кімнати</label><label id="acContourPresetLabel">Колір із заготовки елементів стін<select id="acContourPreset" style="width:100%;min-width:0"></select></label>';
+      gid("acEditFields").appendChild(row);
+    }
+    var presets=typeof window.rwe2WallPresetRead==="function"?window.rwe2WallPresetRead():[];
+    presets=Array.isArray(presets)?presets.filter(function(p){return p&&p.name}):[];
+    var choices=[{value:"",label:"Звичайний контур",color:"#1d1d1f"}].concat(presets.map(function(p){return {value:p.name,label:p.name,color:p.color}}));
+    if(item.fullContourPresetName&&!choices.some(function(p){return p.value===item.fullContourPresetName}))choices.push({value:item.fullContourPresetName,label:item.fullContourPresetName,color:item.fullContourColor});
+    fillEditChoices(gid("acContourPreset"),choices,item.fullContourPresetName||"");
+    gid("acContourPreset")._colors=choices;
+    gid("acWholeContour").checked=!!item.fullContourSelected;
+  }
+  function contourDraft(item){
+    var enabled=gid("acEditEnabled").checked,source=gid("editElemSource").value;
+    var eligible=/^(main_profile|shadow_profile|floating_profile)$/.test(source);
+    gid("acWholeContourRow").hidden=!enabled||!eligible;
+    gid("acContourPresetLabel").hidden=!gid("acWholeContour").checked;
+    item.fullContourSelected=enabled&&eligible&&gid("acWholeContour").checked;
+    item.fullContourPresetName=gid("acContourPreset").value;
+    var choice=gid("acContourPreset")._colors.find(function(p){return p.value===item.fullContourPresetName});
+    item.fullContourColor=choice&&choice.color||"#1d1d1f";
+    return item;
+  }
   function syncEditPreview(){
     var source=gid("editElemSource").value,entry=editCatalog.find(function(d){return d.value===source});
+    if(!gid("acWholeContourRow"))ensureContourFields(items().find(function(it){return it.id===editId})||{});
     var on=gid("acEditEnabled").checked,fields=gid("acEditFields"),preview=gid("acEditPreview");fields.hidden=!on;
     gid("acEditManualQtyRow").hidden=on;
     gid("editElemVariantRow").style.display=on&&entry&&entry.category==="wall"?"block":"none";
     if(!on){preview.textContent="Кількість задається вручну";return;}
     var draft=Object.assign({},items().find(function(it){return it.id===editId})||{},{source:source,sourceVariant:editColor()});
+    contourDraft(draft);
     var result=typeof window.previewNomenclatureSource==="function"?window.previewNomenclatureSource(source,draft):null;
     if(source.indexOf("custom:")===0){var rule=customRules.find(function(r){return "custom:"+r.id===source});if(rule)result=computeCustom(rule);}
     if(!result&&source==="full_perimeter")result={qty:roomPerimeterM(),unit:"м"};
@@ -565,14 +592,14 @@
     if(selected&&selected.color&&typeof window.setEditElemVariant==="function")window.setEditElemVariant(selected.color);
     gid("acEditEnabled").checked=item.manualQtyOverride!==true;
     gid("acEditManualQty").value=Number(item.qty)||0;
-    gid("acEditAdvanced").open=false;refreshEditSelectors(source.value);
+    gid("acEditAdvanced").open=false;ensureContourFields(item);refreshEditSelectors(source.value);
   }
   document.addEventListener("change",function(event){
     var id=event.target&&event.target.id;
     if(id==="acEditCategory")refreshEditSelectors("","category");
     else if(id==="acEditElement")refreshEditSelectors("","element");
     else if(id==="acEditMetric"){gid("editElemSource").value=gid(id).value;updateSourceExtraFieldsVisibility();syncEditPreview();}
-    else if(id==="acEditEnabled")syncEditPreview();
+    else if(id==="acEditEnabled"||id==="acWholeContour"||id==="acContourPreset")syncEditPreview();
   });
   document.addEventListener("click",function(event){
     if(event.target&&event.target.closest&&event.target.closest("#editElemVariantButtons")){
@@ -592,9 +619,12 @@
     window.saveElemEdit=function(){
       var item=items().find(function(it){return it.id===editId});if(!item)return oldEditSave.apply(this,arguments);
       if(!gid("editElemName").value.trim())return oldEditSave.apply(this,arguments);
+      contourDraft(item);
+      if(item.fullContourSelected)items().forEach(function(other){if(other!==item)other.fullContourSelected=false;});
       item.manualQtyOverride=!gid("acEditEnabled").checked;
       if(item.manualQtyOverride){item.qty=Math.max(0,Number(String(gid("acEditManualQty").value).replace(",","."))||0);item.autoFilled=false;item.autoZero=false;}
       var result=oldEditSave.apply(this,arguments);
+      if(typeof window.draw==="function")window.draw();
       // Saving an explicit automatic rule is a user-requested calculation.
       if(!item.manualQtyOverride&&autoCountEnabled()&&typeof window.autoFillNomenclature==="function")window.autoFillNomenclature({silent:true});
       return result;

@@ -26,19 +26,9 @@
     });
   }
   function preferredBeforeAutofill(list){
-    /* A value entered by the user must override the catalog's default white
-       selection. Otherwise every recalculation resets black back to zero. */
-    var manualPositive=list.filter(function(item){
-      return Number(item.qty)>0&&(item.manualQtyOverride===true||item.autoFilled!==true);
-    });
-    if(manualPositive.length===1)return manualPositive[0];
-
     var selected=list.filter(function(item){return item.insertSelected===true;});
     if(selected.length===1)return selected[0];
-
-    var blackPositive=list.filter(function(item){return colorOf(item)==="black"&&Number(item.qty)>0&&(item.manualQtyOverride===true||item.insertSelected===true);});
-    if(blackPositive.length===1)return blackPositive[0];
-
+    if(selected.length>1)return null;
     /* Без явного локального вибору кімнати дефолт завжди білий.
        Не дозволяємо кількості/стану глобального каталогу зробити чорну
        вставку дефолтом для наступної кімнати або іншого проєкту. */
@@ -57,20 +47,26 @@
 
   var wrapped=function(){
     if(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==="function"&&!window.A_CEIL_AutoCount.isEnabled())return;
-    var before=candidates();
+    var before=candidates(),roomItems=items();
     var preferred=preferredBeforeAutofill(before);
     var preferredId=preferred&&preferred.id;
     var result=previous.apply(this,arguments);
     if(!preferred)return result;
 
     function restorePreferredInsert(){
+      if(items()!==roomItems)return;
       var after=candidates();
+      var current=preferredBeforeAutofill(after);if(!current||String(current.id)!==String(preferredId))return;
       var chosen=after.find(function(item){return item===preferred||String(item.id)===String(preferredId);});
       if(!chosen)return;
 
-      var calculatedQty=after.reduce(function(max,item){return Math.max(max,Number(item.qty)||0);},0);
+      // Read the geometric remainder, never reuse a stale black/manual quantity.
+      var preview=typeof window.previewNomenclatureSource==="function"?window.previewNomenclatureSource("white_insert",chosen):null;
+      if(!preview)return;
+      var calculatedQty=Math.max(0,Number(preview.qty)||0);
       var changed=false;
       after.forEach(function(item){
+        if(item.manualQtyOverride===true)return;
         var isChosen=item===chosen;
         var qty=isChosen?calculatedQty:0;
         if(Number(item.qty)!==qty||item.insertSelected!==isChosen)changed=true;
@@ -78,7 +74,7 @@
         item.insertSelected=isChosen;
         item.autoFilled=true;
         item.autoZero=qty===0;
-        item.manualQtyOverride=false;
+
       });
       if(changed)refreshAndSave();
     }
