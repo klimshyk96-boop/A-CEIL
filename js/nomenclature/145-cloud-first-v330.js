@@ -61,15 +61,9 @@ function match(p,id){
   });
 }
 function cacheState(){
-  try{
-    localStorage.setItem("A·CEIL_cloud_cache_v330",JSON.stringify({
-      savedAt:Date.now(),
-      projectId:typeof _currentProjectId!=="undefined"?_currentProjectId:null,
-      objectId:typeof _activeObjectId!=="undefined"?_activeObjectId:null,
-      roomId:window._activeRoomId||null,
-      state:currentState()
-    }));
-  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  /* Раніше тут щоразу писалась повна копія стану в A·CEIL_cloud_cache_v330, але її ніхто не читав
+     (поточний малюнок відновлюється з ceiling_v18, чернетка — з ceiling_recovery_draft_v1).
+     Це лише забирало місце в 5 МБ localStorage Safari, тому запис прибрано. */
 }
 function cloudReady(){return !!(sb()&&sbUser())}
 function isAutomaticDraft(p){
