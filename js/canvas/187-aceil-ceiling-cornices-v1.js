@@ -5,6 +5,7 @@
 
   var editingId=null;
   var pendingPlacement=null;
+  window.isCeilingCornicePlacementActive=function(){return !!pendingPlacement;};
   var suppressCanvasClickUntil=0;
   var backupKey="A·CEIL_ceiling_cornices_v1";
   var suspendPersistence=false;
@@ -252,7 +253,7 @@
     id("ccLengthA").value=Math.round(+value.lengthA||160);id("ccLengthB").value=Math.round(+value.lengthB||70);fillBaseOptions(value.baseIndex||0);id("ccOffsetX").value=Math.round(+value.offsetX||0);id("ccOffsetY").value=Math.round(+value.offsetY||0);id("ccProfile").value=value.profileName||"";var hasCorners=value.cornerCount!=null&&isFinite(Number(value.cornerCount));id("ccCornerCount").value=hasCorners?Math.max(0,Math.round(Number(value.cornerCount))):(value.shape==="L"?1:0);id("ccCornerCount").dataset.manual=hasCorners?"1":"0";id("ccDelete").style.display=editingId?"block":"none";id("ccSave").textContent=editingId?"✓ Зберегти":"Обрати стіну →";id("ccAdvanced").classList.toggle("open",!!editingId);updateSummary();id("ceilingCorniceModal").classList.add("open");
   }
   window.openCeilingCorniceModal=function(itemId){var item=itemId?list().find(function(x){return x.id===itemId;}):null;openEditor(item);};
-  window.closeCeilingCorniceModal=function(){var modal=id("ceilingCorniceModal");if(modal)modal.classList.remove("open");editingId=null;};
+  window.closeCeilingCorniceModal=function(){pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");var modal=id("ceilingCorniceModal");if(modal)modal.classList.remove("open");editingId=null;};
   window.saveCeilingCornice=function(){
     var shape=id("ccShapes").dataset.value||"L",a=Math.max(1,Math.round(+id("ccLengthA").value||0)),b=Math.max(1,Math.round(+id("ccLengthB").value||0));
     if(!a||(shape!=="straight"&&!b)){toast("Вкажіть розміри карниза");return;}
@@ -263,7 +264,7 @@
     persistNow();syncElemItems();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();window.closeCeilingCorniceModal();toast("✓ Карниз збережено");
   };
   window.deleteCeilingCornice=function(){if(!editingId)return;var index=list().findIndex(function(x){return x.id===editingId;});if(index>=0)list().splice(index,1);persistNow();syncElemItems();recalcNomenclature();try{if(typeof window.saveState==="function")window.saveState();}catch(e){}redraw();window.closeCeilingCorniceModal();toast("Карниз видалено");};
-  window.cancelCeilingCornicePlacement=function(){pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");toast("Розміщення скасовано");};
+  window.cancelCeilingCornicePlacement=function(){pendingPlacement=null;suppressCanvasClickUntil=0;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");toast("Розміщення скасовано");};
 
   function distanceToSegment(p,a,b){var vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y,c1=wx*vx+wy*vy;if(c1<=0)return Math.hypot(p.x-a.x,p.y-a.y);var c2=vx*vx+vy*vy;if(c2<=c1)return Math.hypot(p.x-b.x,p.y-b.y);var t=c1/c2;return Math.hypot(p.x-(a.x+t*vx),p.y-(a.y+t*vy));}
   function eventWorld(ev,canvas){var src=ev&&ev.touches&&ev.touches[0]||ev&&ev.changedTouches&&ev.changedTouches[0]||ev,r=canvas.getBoundingClientRect(),rawX=(((src&&src.clientX)||0)-r.left)*(ACEILCanvas.width(canvas)/r.width),rawY=(((src&&src.clientY)||0)-r.top)*(ACEILCanvas.height(canvas)/r.height),zoom=1,ox=0,oy=0;try{zoom=typeof viewScale!=="undefined"&&viewScale>0?viewScale:1;ox=typeof viewOffsetX!=="undefined"?viewOffsetX:0;oy=typeof viewOffsetY!=="undefined"?viewOffsetY:0;}catch(e){}var inCanvas=rawX>=0&&rawY>=0&&rawX<=ACEILCanvas.width(canvas)&&rawY<=ACEILCanvas.height(canvas);return{x:(rawX-ox)/zoom,y:(rawY-oy)/zoom,threshold:28/zoom,inCanvas:inCanvas};}
@@ -289,11 +290,12 @@
   function bindCanvas(){
     var canvas=id("cv");if(!canvas||canvas.dataset.ceilingCornicesBound==="1")return;canvas.dataset.ceilingCornicesBound="1";
     var tapItemId=null;
-    var downTypes=window.PointerEvent?["pointerdown"]:["touchstart","mousedown"];
-    var upTypes=window.PointerEvent?["pointerup","pointercancel"]:["touchend","touchcancel","mouseup"];
+    var downTypes=["pointerdown","touchstart","mousedown"];
+    var upTypes=["pointerup","pointercancel","touchend","touchcancel","mouseup"];
     downTypes.forEach(function(type){
       window.addEventListener(type,function(ev){
         if(ev.target!==canvas)return;
+        if(Date.now()<suppressCanvasClickUntil){ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();return;}
         var point=eventWorld(ev,canvas);
         if(!pendingPlacement){var hit=hitCornice(point);if(!hit)return;tapItemId=hit.id;}
         ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
@@ -314,9 +316,13 @@
   function injectLauncher(){
     var host=id("rmLightStartModal"),grid=host&&host.querySelector(".rm-ce-grid, .rm-ls-grid");if(!grid||id("ccLauncher"))return;
     var modern=grid.classList.contains("rm-ce-grid"),button=document.createElement("button");button.type="button";button.id="ccLauncher";button.className=modern?"rm-ce-card":"rm-ls-btn custom-real";
+    var names=Array.isArray(window.lightTypes)?window.lightTypes:[],alias=names.find(function(t){return t&&t.id==="ceiling_bathroomCornice";}),label=(typeof window.ceilingElementMenuName==="function"?window.ceilingElementMenuName("ceiling_bathroomCornice"):alias&&alias.label)||"Карниз ванної";
     button.innerHTML=modern?'<span class="rm-ce-icon cc-launch-icon">⌜</span><span><b>Карниз ванної</b><small>прямий або Г-подібний</small></span>':'<span class="rm-ls-icon cc-launch-icon">⌜</span><span><b>Карниз ванної</b></span>';
+    button.querySelector("b").textContent=label;
     button.onclick=function(){try{if(typeof window.closeRmLightStart==="function")window.closeRmLightStart();}catch(e){}window.openCeilingCorniceModal();};
-    var settings=grid.querySelector(".settings");grid.insertBefore(button,settings||null);
+    var wrap=document.createElement("div");wrap.className="rm-ce-custom-wrap";wrap.appendChild(button);
+    var edit=document.createElement("button");edit.type="button";edit.className="rm-ce-delete";edit.textContent="✎";edit.title="Змінити назву";edit.setAttribute("aria-label","Змінити назву карниза");edit.onclick=function(ev){ev.stopPropagation();if(typeof window.rmCeRenameGeometryV318==="function")window.rmCeRenameGeometryV318("ceiling_bathroomCornice");};wrap.appendChild(edit);
+    var settings=grid.querySelector(".settings");grid.insertBefore(wrap,settings||null);
   }
   function watchLauncher(){
     var host=id("rmLightStartModal");if(!host||host.dataset.ceilingCorniceObserved==="1"||typeof MutationObserver!=="function")return;
@@ -325,10 +331,10 @@
   }
   function wrapLauncher(){var previous=window.openRmLightStart;if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){var result=previous.apply(this,arguments);watchLauncher();setTimeout(injectLauncher,0);setTimeout(injectLauncher,80);setTimeout(injectLauncher,240);return result;};wrapped.__ceilingCornices=true;window.openRmLightStart=wrapped;try{openRmLightStart=wrapped;}catch(e){}}
 
-  function restoreFrom(target,key){window.ceilingCornices=savedCornices(target,key);redraw();}
+  function restoreFrom(target,key){pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");window.ceilingCornices=savedCornices(target,key);redraw();}
   function wrapPersistence(){
-    var loadRoom=window._loadRoomToCanvas;if(typeof loadRoom==="function"&&!loadRoom.__ceilingCornices){var roomWrapped=function(project,roomIndex){var room=project&&project.rooms&&project.rooms[roomIndex],keys=["room:"+String(project&&(project.id||project._dbId||project._localId))+":"+roomIndex,room&&room.id?"roomid:"+String(room.id):""],saved=savedCornices(room,keys),result;suspendPersistence=true;try{result=loadRoom.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved;syncElemItems();redraw();return result;};roomWrapped.__ceilingCornices=true;window._loadRoomToCanvas=roomWrapped;try{_loadRoomToCanvas=roomWrapped;}catch(e){}}
-    var loadProject=window.loadProject;if(typeof loadProject==="function"&&!loadProject.__ceilingCornices){var projectWrapped=function(projectId){var project=findProject(projectId),saved=savedCornices(project,["project:"+projectId,"projectid:"+String(project&&project.id||projectId)]),result;suspendPersistence=true;try{result=loadProject.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved;syncElemItems();redraw();return result;};projectWrapped.__ceilingCornices=true;window.loadProject=projectWrapped;}
+    var loadRoom=window._loadRoomToCanvas;if(typeof loadRoom==="function"&&!loadRoom.__ceilingCornices){var roomWrapped=function(project,roomIndex){pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");var room=project&&project.rooms&&project.rooms[roomIndex],keys=["room:"+String(project&&(project.id||project._dbId||project._localId))+":"+roomIndex,room&&room.id?"roomid:"+String(room.id):""],saved=savedCornices(room,keys),result;suspendPersistence=true;try{result=loadRoom.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved;syncElemItems();redraw();return result;};roomWrapped.__ceilingCornices=true;window._loadRoomToCanvas=roomWrapped;try{_loadRoomToCanvas=roomWrapped;}catch(e){}}
+    var loadProject=window.loadProject;if(typeof loadProject==="function"&&!loadProject.__ceilingCornices){var projectWrapped=function(projectId){pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");var project=findProject(projectId),saved=savedCornices(project,["project:"+projectId,"projectid:"+String(project&&project.id||projectId)]),result;suspendPersistence=true;try{result=loadProject.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved;syncElemItems();redraw();return result;};projectWrapped.__ceilingCornices=true;window.loadProject=projectWrapped;}
     var reportRoom=window._renderRoomForReport;if(typeof reportRoom==="function"&&!reportRoom.__ceilingCornices){var reportWrapped=function(room){var previousList=clone(list()),state=parse(room&&room.state);window.ceilingCornices=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:room&&room.ceilingCornices||[]);if(window.ceilingCornices.length)reportCorniceSeen=reportCorniceSeen.concat(clone(window.ceilingCornices));try{return reportRoom.apply(this,arguments);}finally{window.ceilingCornices=previousList;redraw();}};reportWrapped.__ceilingCornices=true;window._renderRoomForReport=reportWrapped;try{_renderRoomForReport=reportWrapped;}catch(e){}}
     ["saveState","saveCurrentRoom","saveProject"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){
       /* Patch the cornices onto the live room/project object BEFORE the
@@ -346,7 +352,7 @@
       if(!suspendPersistence){persistNow();if(result&&typeof result.then==="function")result.then(function(){persistNow();});}
       return result;
     };wrapped.__ceilingCornices=true;window[name]=wrapped;});
-    ["resetAll","resetAllSilent"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){window.ceilingCornices=[];return previous.apply(this,arguments);};wrapped.__ceilingCornices=true;window[name]=wrapped;});
+    ["resetAll","resetAllSilent"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){window.ceilingCornices=[];window.cancelCeilingCornicePlacement();return previous.apply(this,arguments);};wrapped.__ceilingCornices=true;window[name]=wrapped;});
   }
   function wrapReportLegend(){
     var previous=window._modernOpenPreview;if(typeof previous!=="function"||previous.__ceilingCorniceLegend)return;

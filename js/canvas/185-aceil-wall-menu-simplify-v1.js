@@ -33,12 +33,13 @@
   }
 
   function tagHiddenFields(modal){
+    modal.querySelectorAll(".rwe-preset-del").forEach(function(btn){btn.classList.remove("rwe2-only-adv");});
     tagField(modal, "Назва на макеті"); // label + #wallEditType
     tagField(modal, "Колір на макеті"); // label + color-row div (#wallEditColor + swatches)
 
     var identityHint = byId("rmCurtainIdHint");
     if (identityHint) identityHint.classList.add("rwe2-only-adv");
-    modal.querySelectorAll(".rwe-preset-edit,.rwe-preset-del").forEach(function(btn){
+    modal.querySelectorAll(".rwe-preset-edit").forEach(function(btn){
       btn.classList.add("rwe2-only-adv");
     });
   }

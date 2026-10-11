@@ -6,6 +6,7 @@ window.__rmCeilingElementsV318=true;
 function gid(x){return document.getElementById(x)}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]})}
 function types(){
+  try{if(typeof lightTypes!=="undefined"&&Array.isArray(lightTypes))return lightTypes.slice()}catch(_){}
   try{if(Array.isArray(window.lightTypes))return window.lightTypes.slice()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   try{var a=JSON.parse(localStorage.getItem("lightTypes_v1")||"[]");return Array.isArray(a)?a:[]}catch(_){return[]}
 }
@@ -56,8 +57,33 @@ function setMode(id){
 }
 function closeMain(){try{if(typeof window.closeRmLightStart==="function")window.closeRmLightStart()}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
 var editMode=false;
+var menuNames={linear_lightLine:{label:"Світлові лінії",icon:"━"},linear_surfaceTrack:{label:"Накладний шинопровід",icon:"▭"},linear_recessedTrack:{label:"Вмонтований шинопровід",icon:"▰"},linear_magneticTrack:{label:"Магнітний шинопровід",icon:"🧲"},ceiling_bathroomCornice:{label:"Карниз ванної",icon:"⌜"}};
+function isNamedGeometry(id){return Object.prototype.hasOwnProperty.call(menuNames,String(id||""));}
+function saveNames(arr){
+  try{lightTypes=arr;}catch(_){}
+  window.lightTypes=arr;
+  try{localStorage.setItem("lightTypes_v1",JSON.stringify(arr));}catch(_){}
+  try{if(typeof saveState==="function")saveState();}catch(_){}
+}
+function ensureNames(){
+  var all=types(),changed=false;
+  Object.keys(menuNames).forEach(function(id){if(!all.some(function(t){return t&&t.id===id;})){all.push(Object.assign({id:id},menuNames[id]));changed=true;}});
+  if(changed)saveNames(all);
+}
+window.ceilingElementMenuName=function(id){var found=types().find(function(t){return t&&t.id===id;});return found&&found.label||(menuNames[id]||{}).label||"";};
+window.rmCeRenameGeometryV318=function(id){
+  if(!isNamedGeometry(id))return;
+  var all=types(),item=all.find(function(t){return t&&t.id===id;});if(!item)return;
+  var name=prompt("Нова назва елемента:",item.label);if(!name||!name.trim())return;
+  item.label=name.trim();saveNames(all);render();
+};
+function geometryCard(id,action,icon,color){
+  var label=window.ceilingElementMenuName(id);
+  return '<div class="rm-ce-custom-wrap"><button type="button" class="rm-ce-card" onclick="'+action+'"><span class="rm-ce-icon" style="color:'+color+'">'+icon+'</span><span><b>'+esc(label)+'</b><small>готові фігури або малювання</small></span></button>'
+    +'<button type="button" class="rm-ce-delete" onclick="event.stopPropagation();rmCeRenameGeometryV318(\''+id+'\')" aria-label="Змінити назву" title="Змінити назву">✎</button></div>';
+}
 function customCards(){
-  return types().filter(function(t){return t&&!typeIsSystem(t)&&String(t.label||"").trim()}).map(function(t){
+  return types().filter(function(t){return t&&!isNamedGeometry(t.id)&&!typeIsSystem(t)&&String(t.label||"").trim()}).map(function(t){
     return '<div class="rm-ce-custom-wrap">'
       +'<button type="button" class="rm-ce-card" data-custom-ce="'+esc(t.id)+'" onclick="rmCeUseCustomV318(this.getAttribute(\'data-custom-ce\'))">'
       +'<span class="rm-ce-icon">'+esc(t.icon||"◉")+'</span><span><b>'+esc(t.label)+'</b><small>розмістити на плані</small></span></button>'
@@ -67,27 +93,30 @@ function customCards(){
 }
 function render(){
   var card=gid("rmLightStartModal")&&gid("rmLightStartModal").querySelector(".modal");if(!card)return;
+  ensureNames();
   var vent=findVent(), ventBtn=vent
     ?'<button type="button" class="rm-ce-card" onclick="rmCeVentV318()"><span class="rm-ce-icon">◯</span><span><b>Витяжка</b><small>розташування + кількість</small></span></button>'
     :"";
   var custom=customCards();
-  var editBtn=custom
+  var editBtn=true
     ?'<button type="button" class="rm-ce-edit-toggle'+(editMode?" on":"")+'" onclick="rmCeToggleEditV318()" aria-label="Редагувати список" title="Редагувати список">✎</button>'
     :"";
   card.innerHTML=
     '<div class="rm-ce-head"><div><div class="rm-ce-title">Елементи стелі</div><div class="rm-ce-sub">Розміщення елементів і автоматичний прорахунок</div></div>'
     +'<div class="rm-ce-head-actions">'+editBtn+'<button type="button" class="rm-ce-close" onclick="closeRmLightStart()">×</button></div></div>'
     +'<div class="rm-ce-grid'+(editMode?" rm-ce-edit-mode":"")+'">'
-    +'<button type="button" class="rm-ce-card primary wide" data-flp="1" onclick="rmOpenLinearLightingV317()"><span class="rm-ce-icon">━</span><span><b>Лінійне освітлення</b><small>Готові фігури • Довільна форма</small></span></button>'
+    +'<button type="button" class="rm-ce-card primary wide" data-flp="1" onclick="rmOpenLinearLightingV317()"><span class="rm-ce-icon">━</span><span><b>Світлові лінії</b><small>Готові фігури • Довільна форма</small></span></button>'
     +'<button type="button" class="rm-ce-card" onclick="rmStartChandelier()"><span class="rm-ce-icon">✶</span><span><b>Люстра</b><small>центр або ручне розташування</small></span></button>'
     +'<button type="button" class="rm-ce-card" onclick="rmStartSpotFlow()"><span class="rm-ce-icon">⊙</span><span><b>Точкові</b><small>один / ряд / сітка</small></span></button>'
     +'<button type="button" class="rm-ce-card" onclick="rmStartDoubleSpotV1()"><span class="rm-ce-icon" style="letter-spacing:-3px">⊙⊙</span><span><b>Подвійний точковий світильник</b><small>горизонтально / вертикально</small></span></button>'
     +ventBtn
-    +'<button type="button" class="rm-ce-card" onclick="rmCeTrackV318()"><span class="rm-ce-icon">▭</span><span><b>Трекове освітлення</b><small>магнітний або накладний трек</small></span></button>'
-    +'<button type="button" class="rm-ce-card" onclick="rmCeRecessedTrackV318()"><span class="rm-ce-icon" style="color:#0891b2">▰</span><span><b>Вмонтований трек</b><small>окремий тип · бірюзовий колір</small></span></button>'
+    +geometryCard("linear_surfaceTrack","rmCeSurfaceTrackV318()","▭","#7c3aed")
+    +geometryCard("linear_recessedTrack","rmCeRecessedTrackV318()","▰","#0891b2")
+    +geometryCard("linear_magneticTrack","rmCeTrackV318()","🧲","#db2777")
     +custom
     +'</div>'
     +'<button type="button" class="rm-ce-new" onclick="rmOpenNewCeilingElementV318()">＋ Новий елемент</button>';
+  var lightName=card.querySelector("[data-flp] b");if(lightName)lightName.textContent=window.ceilingElementMenuName("linear_lightLine");
 }
 window.rmCeToggleEditV318=function(){editMode=!editMode;render()};
 window.rmRenderCeilingElementsV318=render;
@@ -182,6 +211,7 @@ window.rmCeTrackV318=function(){
     if(typeof window.leChooseType==="function")window.leChooseType("magneticTrack");
   }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 };
+window.rmCeSurfaceTrackV318=function(){closeMain();if(typeof window.rmOpenLinearElement==="function")window.rmOpenLinearElement();if(typeof window.leChooseType==="function")window.leChooseType("surfaceTrack");};
 window.rmCeRecessedTrackV318=function(){
   closeMain();
   try{
