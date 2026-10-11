@@ -45,7 +45,6 @@
   display:none!important;
 }
 #wallEditModal .modal:not(.rwe2-advanced-open) .rwe-preset-edit,
-#wallEditModal .modal:not(.rwe2-advanced-open) .rwe-preset-del,
 #wallEditModal .modal:not(.rwe2-advanced-open) #rmCurtainIdHint,
 #wallEditModal .modal:not(.rwe2-advanced-open) #rwe2Name,
 #wallEditModal .modal:not(.rwe2-advanced-open) #rwe2Colors{
@@ -60,6 +59,7 @@
 
 /* Show the saved drawing color directly inside the selected preset field. */
 #wallEditModal .rwe-preset-toolbar{position:relative!important;}
+#wallEditModal .modal:not(.rwe2-advanced-open) .rwe-preset-toolbar{grid-template-columns:minmax(0,1fr) 44px!important;}
 #wallEditModal .rwe-preset-toolbar #rwe2Preset{padding-left:43px!important;}
 #wallEditModal .rwe2-preset-color-dot{
   position:absolute;
