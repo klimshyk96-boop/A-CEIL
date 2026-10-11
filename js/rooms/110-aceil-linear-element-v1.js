@@ -544,6 +544,7 @@
     var closedFigure=el.shape==='rectangle'||(el.elementType==='lightLine'&&el.lightShapeMode==='rhombus');
     if(closedFigure)return 0;
     var ps=canvasPointsOf(el);if(!ps||ps.length<2)return 0;
+    if(ps.length>2&&Math.hypot(ps[0].x-ps[ps.length-1].x,ps[0].y-ps[ps.length-1].y)<0.5)return 0;
     var n=0;if(!_leTouchesMainProfile(ps[0],12))n++;if(!_leTouchesMainProfile(ps[ps.length-1],12))n++;return n;
   }
   window.getLinearLightIntersections=function(state){
@@ -560,7 +561,7 @@
     var src=state&&Array.isArray(state.linearElements)?state.linearElements:arr();
     var out={count:0,totalLengthCm:0,cornerCount:0,breakCount:0,baseCornerCount:0,intersectionCount:0,intersectionCornerCount:0,trackCornerCount:0,trackFixtureCount:0,byType:{}};
     src.forEach(function(e){
-      var el=computeTotals(Object.assign({},e));var isLight=el.elementType==='lightLine';var breaks=isLight?_leBreakCount(e):0;
+      var el=computeTotals(Object.assign({},e));var isLight=el.elementType==='lightLine';var breaks=(isLight||isTrackType(el))?_leBreakCount(e):0;
       var isTrack=isTrackType(el),fixtures=isTrack?Math.max(0,Math.round(num(e.trackFixtureCount,0))):0;
       out.count++;out.totalLengthCm+=el.totalLengthCm;out.baseCornerCount+=isLight?el.cornerCount:0;out.breakCount+=breaks;
       if(isTrack){out.trackCornerCount+=el.cornerCount;out.trackFixtureCount+=fixtures;}
@@ -581,7 +582,7 @@
       options.push({key:'lineartype:'+k,label:label+' — довжина',icon:'━',unit:'м'});
       options.push({key:'linearcorners:'+k,label:label+' — кути',icon:'⌞',unit:'шт'});
       if(isTrackType(k))options.push({key:'linearfixtures:'+k,label:label+' — світильники',icon:'◉',unit:'шт'});
-      else options.push({key:'linearbreaks:'+k,label:label+' — обриви',icon:'✂',unit:'шт'});
+      options.push({key:'linearbreaks:'+k,label:label+' — обриви',icon:'✂',unit:'шт'});
     });
     return options;
   };
