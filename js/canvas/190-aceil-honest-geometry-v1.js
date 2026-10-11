@@ -83,6 +83,11 @@
     (extra||[]).forEach(function(c){max=Math.max(max,Math.abs(distance(points[c.a],points[c.b])-c.length))});
     return max;
   }
+  function maxExtraConstraintError(points,extra){
+    var max=0;
+    (extra||[]).forEach(function(c){max=Math.max(max,Math.abs(distance(points[c.a],points[c.b])-c.length))});
+    return max;
+  }
   function wrapAngle(value){
     while(value<=-Math.PI)value+=Math.PI*2;
     while(value>Math.PI)value-=Math.PI*2;
@@ -97,16 +102,35 @@
     }
     var endX=0,endY=0;
     for(var j=0;j<n;j++){endX+=target[j]*Math.cos(angles[j]);endY+=target[j]*Math.sin(angles[j])}
-    /* This is deliberately strict: snapping is allowed only when the entered
-       lengths already form a genuinely closed right-angled contour. */
-    if(Math.hypot(endX,endY)>.05)return null;
+    /* A difference up to 5 cm is normal measuring tolerance. Keep the walls
+       exactly orthogonal and distribute that tiny closure correction across
+       all parallel sides instead of tilting the whole room. */
+    var closureCm=Math.hypot(endX,endY);
+    if(closureCm>5.001)return null;
+    var m00=0,m01=0,m11=0;
+    for(var m=0;m<n;m++){
+      var ux=Math.cos(angles[m]),uy=Math.sin(angles[m]);
+      m00+=ux*ux;m01+=ux*uy;m11+=uy*uy;
+    }
+    var det=m00*m11-m01*m01;
+    if(Math.abs(det)<1e-9)return null;
+    var lambdaX=(-endX*m11+m01*endY)/det;
+    var lambdaY=(m01*endX-m00*endY)/det;
+    var adjusted=[],maxAdjustment=0;
+    for(var aIndex=0;aIndex<n;aIndex++){
+      var correction=Math.cos(angles[aIndex])*lambdaX+Math.sin(angles[aIndex])*lambdaY;
+      var adjustedLength=target[aIndex]+correction;
+      if(!(adjustedLength>0))return null;
+      adjusted.push(adjustedLength);maxAdjustment=Math.max(maxAdjustment,Math.abs(correction));
+    }
     var result=[{x:0,y:0}];
     for(var p=0;p<n-1;p++)result.push({
-      x:result[p].x+target[p]*Math.cos(angles[p]),
-      y:result[p].y+target[p]*Math.sin(angles[p])
+      x:result[p].x+adjusted[p]*Math.cos(angles[p]),
+      y:result[p].y+adjusted[p]*Math.sin(angles[p])
     });
-    if(extra&&extra.length&&maxConstraintError(result,target,extra)>.25)return null;
-    return{points:result,maxErrorCm:maxConstraintError(result,target,extra),exactOrthogonal:true};
+    var extraError=maxExtraConstraintError(result,extra);
+    if(extra&&extra.length&&extraError>.25)return null;
+    return{points:result,maxErrorCm:extraError,maxSideAdjustmentCm:maxAdjustment,closureCorrectionCm:closureCm,exactOrthogonal:true};
   }
   function solveClosedPolygon(source,target,extra){
     var n=source.length,angles=[];
@@ -237,16 +261,16 @@
       rebuildBases.set(pts,{source:copyPoints(source),signature:pointSignature(pts)});
       var area=polygonArea(realPts),areaEl2=document.getElementById("area");
       if(areaEl2)areaEl2.textContent=(area/1e4).toFixed(2);
-      var stats=angleStats(source,pts),perimeter=target.reduce(function(sum,value){return sum+value},0);
-      /* A hand sketch is only a direction template. A few centimetres of
-         closure correction across the room are measuring tolerance, not a
-         contradiction in the entered side lengths. */
-      var closureTolerance=Math.max(5,perimeter*.0075);
+      var stats=angleStats(source,pts);
+      /* Up to 5 cm is absorbed without skewing a right-angled contour. Above
+         that limit the user gets a measurement warning. */
+      var closureTolerance=5;
       var changed=!solved.exactOrthogonal&&beforeClosure.diffCm>closureTolerance;
       var result={
         invalid:solved.maxErrorCm>1.5,
         closureBefore:beforeClosure,
-        maxSideErrorCm:solved.maxErrorCm,
+        maxSideErrorCm:Math.max(solved.maxErrorCm,solved.maxSideAdjustmentCm||0),
+        closureCorrectionCm:solved.closureCorrectionCm||0,
         maxAngleChange:stats.maxChange,
         areaCm2:area,
         warning:""
@@ -287,7 +311,7 @@
   }
 
   window.A_CEIL_HonestGeometry={
-    version:"1.5",
+    version:"1.6",
     solve:solveClosedPolygon,
     solveExactOrthogonal:solveExactOrthogonal,
     closure:legacyClosure,
