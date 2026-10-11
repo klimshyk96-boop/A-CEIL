@@ -57,7 +57,9 @@ function covered(legacyList,scopedLists){
 }
 function listOf(v){var x=parse(v);return Array.isArray(x)?x:(x&&Array.isArray(x.projects)?x.projects:undefined);}
 
-/* Removes dead unscoped copies. Returns {ok,removed:[],kept:[],freedBytes,skipped?}. Never touches other accounts' keys. */
+/* Removes dead unscoped copies. The primary owner's scoped project list is the
+   live cache; the unscoped list is a frozen pre-isolation copy and is never
+   read again. Keep it only when the scoped list is absent or invalid. */
 function cleanLegacy(){
   var out={ok:true,removed:[],kept:[],freedBytes:0};
   var u=us(),uid=currentUid();
@@ -71,7 +73,8 @@ function cleanLegacy(){
     var safe=false;
     if(base===KEY_PROJECTS){
       var l=listOf(legacy);
-      safe=Array.isArray(l)&&Array.isArray(scopedProjects)&&covered(l,[scopedProjects]);
+      safe=Array.isArray(l)&&Array.isArray(scopedProjects)&&scopedProjects.length>0;
+      if(safe&&!covered(l,[scopedProjects]))out.projectCoverage="cloud_cache_is_authoritative";
     }else if(base===KEY_BACKUP){
       var lb=listOf(legacy);
       safe=Array.isArray(lb)&&Array.isArray(scopedProjects)&&covered(lb,[scopedProjects,scopedBackup]);
