@@ -68,7 +68,7 @@
        [width,height] incorrectly produced one corner instead of four. */
     el.cornerCount=(el.elementType==='lightLine'&&el.lightShapeMode==='rhombus')?4:
       (isTrackType(el)&&isFreePolyline(el))?countTrackCorners(el):
-      ((el.elementType==='lightLine'&&el.lightShapeMode==='free')||isFreePolyline(el))?Math.max(0,s.length-1):
+      ((el.elementType==='lightLine'&&el.lightShapeMode==='free')||isFreePolyline(el))?Math.max(0,s.length-1+(el.closedPath?1:0)):
       (SHAPES[el.shape]||SHAPES.line).corners;
     return el;
   }
@@ -348,7 +348,7 @@
       rotation:0, segments:segments, points:[], profileWidth:td.width,
       anchor:{sideIndex:-1,alongCm:0,inwardCm:30,direction:'parallel'} };
     if(td.key==='lightLine'){
-      el.shape='line';
+      el.shape=shape;
       el.lightShapeMode='basic';
       el.segmentAngles=segments.map(function(_,i){return 0;});
       el.rhombusSide=Math.max(1,num(segments[0],100));
@@ -715,11 +715,6 @@
     }
     if(e.elementType==='lightLine'){
       if(!e.lightShapeMode)e.lightShapeMode='basic';
-      if(e.lightShapeMode==='free'){
-        e.lightShapeMode='basic';
-        e.shape='line';
-        e.segments=[Math.max(1,num(e.segments&&e.segments[0],200))];
-      }
       if(!(num(e.rhombusSide,0)>0))e.rhombusSide=Math.max(1,num(e.segments&&e.segments[0],100));
       if(!(num(e.rhombusAngle,0)>0))e.rhombusAngle=60;
     }
@@ -891,6 +886,7 @@
   window.openLinearElementEditor=openEditor;
   window.leSelectShape=function(shape){
     var e=find(curId);if(!e)return;
+    e.closedPath=false;
     if(e.elementType==='lightLine')e.lightShapeMode='basic';
     e.shape=shape;
     e.segments=shapeDefaultSegments(shape,e.segments);
@@ -900,6 +896,7 @@
   };
   window.leSelectLightPreset=function(mode,shape){
     var e=find(curId);if(!e||e.elementType!=='lightLine')return;
+    e.closedPath=false;
     if(e.lightShapeMode==='free'&&typeof leCaptureLightInputs==='function')leCaptureLightInputs(e);
     if(mode==='basic'){
       e.lightShapeMode='basic';
@@ -1246,10 +1243,9 @@
     if(pickerCard){pickerCard.scrollTop=0;requestAnimationFrame(function(){pickerCard.scrollTop=0;});}
   };
   window.leChooseType=function(k){
-    if(k==='lightLine'){ create(k,'line'); return; }
     el('leTitle').textContent=typeDef(k).icon+' '+typeDef(k).label;
     el('leBody').innerHTML='<div style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:8px">Оберіть форму</div>'
-      +((isTrackType(k))
+      +((isTrackType(k)||k==='lightLine')
         ?'<button type="button" onclick="leStartTrackFinger(\''+k+'\')" style="width:100%;display:flex;align-items:center;gap:11px;text-align:left;margin-bottom:10px;padding:13px;border:2px solid #2563eb;border-radius:14px;background:#eff6ff;color:#1d4ed8;font-weight:900;box-shadow:none"><span style="font-size:23px">✍</span><span>Намалювати пальцем<small style="display:block;margin-top:2px;color:#64748b;font-size:10px">Тільки прямі сегменти та кути 90°</small></span></button>'
         :'')
       +Object.keys(SHAPES).filter(function(s){return s!=='free';}).map(function(s){
@@ -1317,16 +1313,19 @@
     var minX=Math.min.apply(null,base.map(function(p){return p.x;})),maxX=Math.max.apply(null,base.map(function(p){return p.x;}));
     var minY=Math.min.apply(null,base.map(function(p){return p.y;})),maxY=Math.max.apply(null,base.map(function(p){return p.y;}));
     var c=roomCenterCm(),td=typeDef(k),item={id:uid(),type:'linearElement',elementType:td.key,shape:'free',center:{x:c.x,y:c.y},baseIndex:Number.isFinite(+c.baseIndex)?+c.baseIndex:0,centerCanvasPx:{x:(minX+maxX)/2,y:(minY+maxY)/2},rotation:0,segments:segments,segmentAngles:angles,closedPath:Math.hypot(base[base.length-1].x-base[0].x,base[base.length-1].y-base[0].y)<1,trackFixtureCount:0,points:[],profileWidth:td.width,anchor:{sideIndex:-1,alongCm:0,inwardCm:30,direction:'parallel'}};
+    if(k==='lightLine')item.lightShapeMode='free';
     computeTotals(item);syncPoints(item);syncLogicalCenterFromCanvas(item);arr().push(item);persist();return item;
   }
   window.leStartTrackFinger=function(k){
     var canvas=typeof cv!=='undefined'&&cv?cv:document.querySelector('canvas');if(!canvas)return;
+    ensureModal();
+    var previous=el('leTrackDrawOverlay');if(previous)previous.remove();
     var modal=el('leModal');if(modal)modal.style.display='none';
     var rect=canvas.getBoundingClientRect(),wrap=document.createElement('div');wrap.id='leTrackDrawOverlay';
     wrap.style.cssText='position:fixed;left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;height:'+rect.height+'px;z-index:100000;touch-action:none;background:rgba(239,246,255,.10);';
     var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 '+rect.width+' '+rect.height);svg.style.cssText='width:100%;height:100%;display:block;overflow:visible';
-    var path=document.createElementNS('http://www.w3.org/2000/svg','polyline');path.setAttribute('fill','none');path.setAttribute('stroke',trackColor(k));path.setAttribute('stroke-width','7');path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');svg.appendChild(path);wrap.appendChild(svg);
-    var hint=document.createElement('div');hint.style.cssText='position:absolute;left:12px;right:12px;bottom:14px;padding:10px 46px 10px 12px;border-radius:13px;background:rgba(15,23,42,.93);color:#fff;font:800 12px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:center;box-shadow:0 8px 24px rgba(15,23,42,.25)';hint.textContent='Ведіть пальцем — трек одразу прилипає до горизонталі та вертикалі.';wrap.appendChild(hint);
+    var path=document.createElementNS('http://www.w3.org/2000/svg','polyline');path.setAttribute('fill','none');path.setAttribute('stroke',k==='lightLine'?'#f59e0b':trackColor(k));path.setAttribute('stroke-width','7');path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');svg.appendChild(path);wrap.appendChild(svg);
+    var hint=document.createElement('div');hint.style.cssText='position:absolute;left:12px;right:12px;bottom:14px;padding:10px 46px 10px 12px;border-radius:13px;background:rgba(15,23,42,.93);color:#fff;font:800 12px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:center;box-shadow:0 8px 24px rgba(15,23,42,.25)';hint.textContent='Ведіть пальцем — лінія одразу прилипає до горизонталі та вертикалі.';wrap.appendChild(hint);
     var cancel=document.createElement('button');cancel.type='button';cancel.textContent='×';cancel.style.cssText='position:absolute;right:9px;top:9px;width:40px;height:40px;border:0;border-radius:12px;background:#fff;color:#dc2626;font-size:25px;font-weight:900;box-shadow:0 4px 14px rgba(15,23,42,.18)';wrap.appendChild(cancel);
     var raw=[],drawing=false;
     function local(ev){return {x:Math.max(0,Math.min(rect.width,ev.clientX-rect.left)),y:Math.max(0,Math.min(rect.height,ev.clientY-rect.top))};}
@@ -1335,7 +1334,7 @@
     cancel.addEventListener('click',function(){close();window.leChooseType(k);if(modal)modal.style.display='flex';});
     wrap.addEventListener('pointerdown',function(ev){if(ev.target===cancel)return;drawing=true;raw=[local(ev)];try{wrap.setPointerCapture(ev.pointerId);}catch(_){window.__diagSilent&&window.__diagSilent(_)}ev.preventDefault();});
     wrap.addEventListener('pointermove',function(ev){if(!drawing)return;var p=local(ev),last=raw[raw.length-1];if(Math.hypot(p.x-last.x,p.y-last.y)>=4){raw.push(p);preview();}ev.preventDefault();});
-    function finish(ev){if(!drawing)return;drawing=false;var p=local(ev),last=raw[raw.length-1];if(Math.hypot(p.x-last.x,p.y-last.y)>4)raw.push(p);var clean=leTrackOrthogonalPoints(raw);if(clean.length<2||clean.slice(1).reduce(function(total,p,i){return total+Math.hypot(p.x-clean[i].x,p.y-clean[i].y);},0)<18){if(typeof showToast==='function')showToast('⚠️ Намалюйте довшу лінію');return;}var item=leCreateFreeTrack(k,clean,canvas,rect);close();if(item){openEditor(item.id);if(typeof showToast==='function')showToast('✓ Форму треку створено');}}
+    function finish(ev){if(!drawing)return;drawing=false;var p=local(ev),last=raw[raw.length-1];if(Math.hypot(p.x-last.x,p.y-last.y)>4)raw.push(p);var clean=leTrackOrthogonalPoints(raw);if(clean.length<2||clean.slice(1).reduce(function(total,p,i){return total+Math.hypot(p.x-clean[i].x,p.y-clean[i].y);},0)<18){if(typeof showToast==='function')showToast('⚠️ Намалюйте довшу лінію');return;}var item=leCreateFreeTrack(k,clean,canvas,rect);close();if(item){openEditor(item.id);if(typeof showToast==='function')showToast('✓ Форму освітлення створено');}}
     wrap.addEventListener('pointerup',finish);wrap.addEventListener('pointercancel',function(){drawing=false;});document.body.appendChild(wrap);
   };
 
