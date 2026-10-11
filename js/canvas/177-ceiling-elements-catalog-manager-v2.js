@@ -2,9 +2,28 @@
 "use strict";
 if(window.__aceilCeCatalogManagerV2)return; window.__aceilCeCatalogManagerV2=true;
 var KEY="aceil_ce_catalog_prefs_v2", applying=false, scheduled=false;
-var DEFAULT_LABELS={linear:"Лінійне освітлення",chandelier:"Люстра",spot:"Точкові",double_spot:"Подвійний точковий світильник",vent:"Витяжка",track:"Трекове освітлення",ce_pipe_bypass_lt50:"Обхід труби < 50 мм",ce_pipe_bypass_gt50:"Обхід труби > 50 мм"};
+var ETALON_VERSION="20261011-first-photo-1";
+var ETALON_ORDER=["linear_lightLine","chandelier","spot","double_spot","vent","ce_magnetic_exhaust","linear_recessedTrack","linear_surfaceTrack","linear_magneticTrack","ce_camera_sensor","ce_pipe_bypass_lt50","ce_pipe_bypass_gt50","ceiling_bathroomCornice"];
+var DEFAULT_LABELS={linear:"Лінійне освітлення",linear_lightLine:"Світлові лінії",chandelier:"Люстра",spot:"Точковий світильник",double_spot:"Подвійний точковий світильник",vent:"Витяжка",linear_surfaceTrack:"Накладний шинопровід",linear_recessedTrack:"Вмонтований шинопровід",linear_magneticTrack:"Магнітний шинопровід",track:"Трекове освітлення",ce_pipe_bypass_lt50:"Обхід труби < 50 мм",ce_pipe_bypass_gt50:"Обхід труби > 50 мм"};
 function read(){try{var x=JSON.parse(localStorage.getItem(KEY)||"{}");return x&&typeof x==="object"?x:{}}catch(_){return{}}}
 function save(x){try{localStorage.setItem(KEY,JSON.stringify(x))}catch(_){}}
+function etalonPrefs(){
+  var p=read();
+  if(p.etalonVersion===ETALON_VERSION)return p;
+  p.labels=p.labels||{};p.icons=p.icons||{};
+  p.labels.spot="Точковий світильник";
+  p.labels.linear_lightLine="Світлові лінії";
+  p.labels.linear_surfaceTrack="Накладний шинопровід";
+  p.labels.linear_recessedTrack="Вмонтований шинопровід";
+  p.labels.linear_magneticTrack="Магнітний шинопровід";
+  p.icons.linear_surfaceTrack="▭";
+  p.icons.linear_recessedTrack="▰";
+  p.icons.linear_magneticTrack="▭";
+  var previous=Array.isArray(p.order)?p.order:[];
+  p.order=ETALON_ORDER.concat(previous.filter(function(k){return ETALON_ORDER.indexOf(k)<0;}));
+  p.etalonVersion=ETALON_VERSION;
+  save(p);return p;
+}
 function keyFor(card){
   var c=card.getAttribute("onclick")||"",id=card.getAttribute("data-custom-ce");
   if(id)return String(id);
@@ -30,7 +49,7 @@ function apply(){
   var grid=document.querySelector("#rmLightStartModal .rm-ce-grid");if(!grid)return;
   applying=true;
   try{
-    var p=read(),list=cards(grid),map={},keys=[];
+    var p=etalonPrefs(),list=cards(grid),map={},keys=[];
     list.forEach(function(card){
       var k=keyFor(card);if(!k)return;
       card.dataset.catalogKey=k;map[k]=wrapper(card);keys.push(k);

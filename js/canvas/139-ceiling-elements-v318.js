@@ -57,7 +57,7 @@ function setMode(id){
 }
 function closeMain(){try{if(typeof window.closeRmLightStart==="function")window.closeRmLightStart()}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
 var editMode=false;
-var menuNames={linear_lightLine:{label:"Світлові лінії",icon:"━"},linear_surfaceTrack:{label:"Накладний шинопровід",icon:"▭"},linear_recessedTrack:{label:"Вмонтований шинопровід",icon:"▰"},linear_magneticTrack:{label:"Магнітний шинопровід",icon:"🧲"},ceiling_bathroomCornice:{label:"Карниз ванної",icon:"⌜"}};
+var menuNames={linear_lightLine:{label:"Світлові лінії",icon:"━"},linear_surfaceTrack:{label:"Накладний шинопровід",icon:"▭"},linear_recessedTrack:{label:"Вмонтований шинопровід",icon:"▰"},linear_magneticTrack:{label:"Магнітний шинопровід",icon:"▭"},ceiling_bathroomCornice:{label:"Карниз ванної",icon:"⌜"}};
 function isNamedGeometry(id){return Object.prototype.hasOwnProperty.call(menuNames,String(id||""));}
 function saveNames(arr){
   try{lightTypes=arr;}catch(_){}
@@ -107,12 +107,12 @@ function render(){
     +'<div class="rm-ce-grid'+(editMode?" rm-ce-edit-mode":"")+'">'
     +'<button type="button" class="rm-ce-card primary wide" data-flp="1" onclick="rmOpenLinearLightingV317()"><span class="rm-ce-icon">━</span><span><b>Світлові лінії</b><small>Готові фігури • Довільна форма</small></span></button>'
     +'<button type="button" class="rm-ce-card" onclick="rmStartChandelier()"><span class="rm-ce-icon">✶</span><span><b>Люстра</b><small>центр або ручне розташування</small></span></button>'
-    +'<button type="button" class="rm-ce-card" onclick="rmStartSpotFlow()"><span class="rm-ce-icon">⊙</span><span><b>Точкові</b><small>один / ряд / сітка</small></span></button>'
+    +'<button type="button" class="rm-ce-card" onclick="rmStartSpotFlow()"><span class="rm-ce-icon">⊙</span><span><b>Точковий світильник</b><small>один / ряд / сітка</small></span></button>'
     +'<button type="button" class="rm-ce-card" onclick="rmStartDoubleSpotV1()"><span class="rm-ce-icon" style="letter-spacing:-3px">⊙⊙</span><span><b>Подвійний точковий світильник</b><small>горизонтально / вертикально</small></span></button>'
     +ventBtn
-    +geometryCard("linear_surfaceTrack","rmCeSurfaceTrackV318()","▭","#7c3aed")
     +geometryCard("linear_recessedTrack","rmCeRecessedTrackV318()","▰","#0891b2")
-    +geometryCard("linear_magneticTrack","rmCeTrackV318()","🧲","#db2777")
+    +geometryCard("linear_surfaceTrack","rmCeSurfaceTrackV318()","▭","#7c3aed")
+    +geometryCard("linear_magneticTrack","rmCeTrackV318()","▭","#db2777")
     +custom
     +'</div>'
     +'<button type="button" class="rm-ce-new" onclick="rmOpenNewCeilingElementV318()">＋ Новий елемент</button>';
