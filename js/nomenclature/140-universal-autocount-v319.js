@@ -21,6 +21,7 @@ function autoCountEnabled(){
   }catch(_){return true}
 }
 function getLightTypes(){
+  try{if(typeof lightTypes!=="undefined"&&Array.isArray(lightTypes))return lightTypes.slice()}catch(_){}
   try{if(Array.isArray(window.lightTypes))return window.lightTypes.slice()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   try{var a=JSON.parse(localStorage.getItem("lightTypes_v1")||"[]");return Array.isArray(a)?a:[]}catch(_){return[]}
 }
@@ -140,9 +141,9 @@ function linearTypeLabel(el){
   var key=String(el&&el.elementType||"");
   var labels={
     lightLine:"Світлова лінія",
-    magneticTrack:"Магнітний трек",
-    surfaceTrack:"Накладний трек",
-    recessedTrack:"Вмонтований трек",
+    magneticTrack:"Магнітний шинопровід",
+    surfaceTrack:"Накладний шинопровід",
+    recessedTrack:"Вмонтований шинопровід",
     custom:"Інший"
   };
   return labels[key]||String(el&&el.label||el&&el.name||key);
@@ -155,7 +156,7 @@ function dynamicSources(){
   out.push({key:"lineartrack:fixtures",label:"Трековий світильник (кількість)",icon:"◉",unit:"шт"});
   out.push({key:"lineartrack:corners",label:"Кут трека (кількість)",icon:"⌞",unit:"шт"});
   getLightTypes().forEach(function(t){
-    if(!t||!t.id||!String(t.label||"").trim())return;
+    if(!t||!t.id||/^(linear_|ceiling_bathroomCornice$)/.test(String(t.id))||!String(t.label||"").trim())return;
     out.push({
       key:"lighttype:"+String(t.id),
       label:String(t.label)+" (кількість)",
@@ -180,17 +181,15 @@ function dynamicSources(){
     addWallSources(String(m&&m.type||m&&m.name||m&&m.title||"").trim());
   });
 
-  var seenLinear={};
-  getLinear().forEach(function(el){
-    var key=String(el&&el.elementType||"custom");
-    var label=linearTypeLabel(el);
-    var sk=key+"|"+norm(label); if(seenLinear[sk])return; seenLinear[sk]=1;
-    out.push({key:"lineartype:"+encodeURIComponent(key),label:label+" (довжина)",icon:"▱",unit:"м"});
-  });
+  if(typeof window.linearSourceOptions==='function')out=out.concat(window.linearSourceOptions());
+  /* Custom legacy linear types remain available without mixing the four lighting families. */
+  if(getLinear().some(function(el){return el&&el.elementType==='custom';}))
+    out.push({key:'lineartype:custom',label:'Інший лінійний елемент — довжина',icon:'━',unit:'м'});
   return out;
 }
-function computeSource(source,item){
+function computeSource(source,item,linearSummary){
   source=String(source||"");
+  if(typeof window.computeLinearSource==='function'){var linear=window.computeLinearSource(source,null,linearSummary);if(linear)return linear;}
   if(source==="lineartrack:fixtures"||source==="lineartrack:corners"){
     var fixtureCount=0,cornerCount=0;
     getLinear().forEach(function(el){
@@ -269,8 +268,6 @@ function computeSource(source,item){
 }
 function exactAutoSourceForName(name){
   var n=norm(name); if(!n)return null;
-  if(n.indexOf("трек")>=0&&n.indexOf("світиль")>=0)return {source:"lineartrack:fixtures",unit:"шт"};
-  if(n.indexOf("кут")>=0&&n.indexOf("трек")>=0)return {source:"lineartrack:corners",unit:"шт"};
   if(n==="кут uno"||n==="кути uno"||n==="кут уно"||n==="кути уно"||n.indexOf("кут до uno")>=0||n.indexOf("кут до уно")>=0){
     return {source:"ceilingcornicecorners:uno",unit:"шт"};
   }
@@ -304,24 +301,12 @@ function exactAutoSourceForName(name){
     }
   });
 
-  var linearKeys={};
-  getLinear().forEach(function(el){
-    var label=linearTypeLabel(el);
-    if(norm(label)===n){
-      var key=String(el&&el.elementType||"custom");
-      linearKeys[key]=1;
-    }
-  });
-  Object.keys(linearKeys).forEach(function(key){
-    matches.push({source:"lineartype:"+encodeURIComponent(key),unit:"м"});
-  });
-
   return matches.length===1?matches[0]:null;
 }
 function applyUniversal(opts){
   opts=opts||{};
   if(!autoCountEnabled())return 0;
-  var changed=0,allItems=getElemItems();
+  var changed=0,allItems=getElemItems(),linearSummary=typeof window.linearElementsSummary==="function"?window.linearElementsSummary():null;
   var hasColoredUnoRows=allItems.some(function(row){
     if(!row)return false;
     var rowSource=String(row.source||"");
@@ -337,7 +322,7 @@ function applyUniversal(opts){
     if(src==="ceilingcornice:uno"&&hasColoredUnoRows&&it.sourceVariant!=="white"&&it.sourceVariant!=="black"){
       it.qty=0;it.unit="м";it.autoFilled=true;it.autoZero=true;it.universalAuto=true;changed++;return;
     }
-    var dynamic=computeSource(src,it);
+    var dynamic=computeSource(src,it,linearSummary);
     if(dynamic){
       it.qty=dynamic.qty;
       it.unit=dynamic.unit;

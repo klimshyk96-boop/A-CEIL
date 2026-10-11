@@ -282,7 +282,7 @@
     if(String(source||"").startsWith("custom:"))return "custom";
     if(String(source||"").startsWith("walltype:" )||String(source||"").startsWith("walltypecolor:"))return "wall";
     if(String(source||"").startsWith("lighttype:"))return "light";
-    if(String(source||"").startsWith("lineartype:"))return "linear";
+    if(/^(lineartype|linearcorners|linearfixtures|linearbreaks|lineartrack):/.test(String(source||"")))return "linear";
     if(isDynamic)return "plan";
     var names=Object.keys(GROUPS);
     for(var i=0;i<names.length;i++)if(GROUPS[names[i]].keys.indexOf(source)>=0)return names[i];

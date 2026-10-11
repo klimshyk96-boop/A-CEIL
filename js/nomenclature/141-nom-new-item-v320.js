@@ -34,7 +34,7 @@ function sourceOptions(){
   try{
     var types=Array.isArray(window.lightTypes)?window.lightTypes:JSON.parse(localStorage.getItem("lightTypes_v1")||"[]");
     if(Array.isArray(types))types.forEach(function(t){
-      if(!t||!t.id||!String(t.label||"").trim())return;
+      if(!t||!t.id||/^(linear_|ceiling_bathroomCornice$)/.test(String(t.id))||!String(t.label||"").trim())return;
       var v="lighttype:"+String(t.id);
       if(!out.some(function(x){return x.value===v})){
         out.push({value:v,label:String(t.icon||"◉")+" "+String(t.label)+" (кількість)"});
@@ -53,11 +53,8 @@ function sourceOptions(){
     var le=(typeof linearElements!=="undefined"&&Array.isArray(linearElements))?linearElements:(window.linearElements||[]);
     out.push({value:"lineartrack:fixtures",label:"◉ Трековий світильник (кількість)"});
     out.push({value:"lineartrack:corners",label:"⌞ Кут трека (кількість)"});
-    var labels={lightLine:"Світлова лінія",magneticTrack:"Магнітний трек",surfaceTrack:"Накладний трек",recessedTrack:"Вмонтований трек",custom:"Інший"};
-    var seenL={};
-    le.forEach(function(e){
-      var key=String(e&&e.elementType||"custom");if(seenL[key])return;seenL[key]=1;
-      out.push({value:"lineartype:"+encodeURIComponent(key),label:"▱ "+(labels[key]||key)+" (довжина)"});
+    if(typeof window.linearSourceOptions==='function')window.linearSourceOptions().forEach(function(option){
+      out.push({value:option.key,label:option.icon+' '+option.label});
     });
   }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return out;
