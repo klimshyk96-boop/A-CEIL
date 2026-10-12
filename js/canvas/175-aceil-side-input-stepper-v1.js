@@ -366,6 +366,7 @@ function wallControlAt(clientX,clientY){
   return null;
 }
 function openWallListRow(e,point){
+  try{if(typeof closed!=="undefined"&&!closed)return;}catch(_){}
   var hit=wallControlAt(point.clientX,point.clientY);if(!hit)return;
   if(hit.action==="wall"){
     if(typeof window.rmWallTapOpenV84!=="function")return;
