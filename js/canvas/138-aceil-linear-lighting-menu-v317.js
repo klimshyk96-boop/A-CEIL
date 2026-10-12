@@ -7,8 +7,9 @@ window.__A·CEILLinearLightingMenuV317=true;
 function modal(){return document.getElementById("rmLinearLightingModalV317")}
 function openMenu(){
   try{if(typeof closeRmLightStart==="function")closeRmLightStart()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-  var m=modal();if(!m)return;
-  m.classList.add("open");m.setAttribute("aria-hidden","false");
+  /* Skip the obsolete Ready/Free/Finger level. The universal picker already
+     contains type, monochrome presets and finger drawing in one flow. */
+  try{if(typeof window.rmOpenLinearElement==="function")window.rmOpenLinearElement()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 function closeMenu(){
   var m=modal();if(!m)return;

@@ -105,18 +105,15 @@ function render(){
     '<div class="rm-ce-head"><div><div class="rm-ce-title">Елементи стелі</div><div class="rm-ce-sub">Розміщення елементів і автоматичний прорахунок</div></div>'
     +'<div class="rm-ce-head-actions">'+editBtn+'<button type="button" class="rm-ce-close" onclick="closeRmLightStart()">×</button></div></div>'
     +'<div class="rm-ce-grid'+(editMode?" rm-ce-edit-mode":"")+'">'
-    +'<button type="button" class="rm-ce-card primary wide" data-flp="1" onclick="rmOpenLinearLightingV317()"><span class="rm-ce-icon">━</span><span><b>Світлові лінії</b><small>Готові фігури • Довільна форма</small></span></button>'
+    +'<button type="button" class="rm-ce-card primary wide" data-flp="1" onclick="rmOpenLinearLightingV317()"><span class="rm-ce-icon">━</span><span><b>Лінійне освітлення</b><small>Світлові лінії та шинопроводи</small></span></button>'
     +'<button type="button" class="rm-ce-card" onclick="rmStartChandelier()"><span class="rm-ce-icon">✶</span><span><b>Люстра</b><small>центр або ручне розташування</small></span></button>'
     +'<button type="button" class="rm-ce-card" onclick="rmStartSpotFlow()"><span class="rm-ce-icon">⊙</span><span><b>Точковий світильник</b><small>один / ряд / сітка</small></span></button>'
     +'<button type="button" class="rm-ce-card" onclick="rmStartDoubleSpotV1()"><span class="rm-ce-icon" style="letter-spacing:-3px">⊙⊙</span><span><b>Подвійний точковий світильник</b><small>горизонтально / вертикально</small></span></button>'
     +ventBtn
-    +geometryCard("linear_recessedTrack","rmCeRecessedTrackV318()","▰","#0891b2")
-    +geometryCard("linear_surfaceTrack","rmCeSurfaceTrackV318()","▭","#7c3aed")
-    +geometryCard("linear_magneticTrack","rmCeTrackV318()","▭","#db2777")
     +custom
     +'</div>'
     +'<button type="button" class="rm-ce-new" onclick="rmOpenNewCeilingElementV318()">＋ Новий елемент</button>';
-  var lightName=card.querySelector("[data-flp] b");if(lightName)lightName.textContent=window.ceilingElementMenuName("linear_lightLine");
+  var lightName=card.querySelector("[data-flp] b");if(lightName)lightName.textContent="Лінійне освітлення";
 }
 window.rmCeToggleEditV318=function(){editMode=!editMode;render()};
 window.rmRenderCeilingElementsV318=render;
