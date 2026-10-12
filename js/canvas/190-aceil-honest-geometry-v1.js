@@ -102,11 +102,13 @@
     }
     var endX=0,endY=0;
     for(var j=0;j<n;j++){endX+=target[j]*Math.cos(angles[j]);endY+=target[j]*Math.sin(angles[j])}
-    /* A difference up to 5 cm is normal measuring tolerance. Keep the walls
-       exactly orthogonal and distribute that tiny closure correction across
-       all parallel sides instead of tilting the whole room. */
+    /* A difference up to 5 cm on EACH axis is normal measuring tolerance.
+       Do not combine horizontal and vertical mismatches with hypot(): e.g.
+       5 cm horizontally + 4 cm vertically is still within tolerance on both
+       axes, although the resulting vector is 6.4 cm. Keep the walls exactly
+       orthogonal and distribute the tiny corrections across parallel sides. */
     var closureCm=Math.hypot(endX,endY);
-    if(closureCm>5.001)return null;
+    if(Math.max(Math.abs(endX),Math.abs(endY))>5.001)return null;
     var m00=0,m01=0,m11=0;
     for(var m=0;m<n;m++){
       var ux=Math.cos(angles[m]),uy=Math.sin(angles[m]);
@@ -221,7 +223,7 @@
     var el=ensureWarning();if(!el)return;
     if(!result||!result.warning){el.style.display="none";el.removeAttribute("title");el.removeAttribute("aria-label");return}
     var text=el.querySelector(".aceil-geometry-warning-text");
-    if(text)text.textContent=result.invalid?"Помилка розмірів — натисніть для деталей":"Розміри потребують перевірки";
+    if(text)text.textContent=result.invalid?"Помилка розмірів — натисніть для деталей":result.unconfirmedGeometry?"Коса кімната — введіть діагональ":"Розміри потребують перевірки";
     el.title=result.warning;el.setAttribute("aria-label",result.warning);el.style.display="block";
     el.style.borderColor=result.invalid?"#ef4444":"#f59e0b";
     el.style.background=result.invalid?"rgba(254,242,242,.97)":"rgba(255,251,235,.97)";
@@ -277,9 +279,11 @@
       };
       if(result.invalid){
         result.warning="❌ Розміри суперечать контрольним вимірам. Максимальна похибка "+solved.maxErrorCm.toFixed(1)+" см";
-      }else if(changed){
-        result.warning="⚠️ Перевірте заміри: для замикання контуру потрібне коригування "+Math.round(beforeClosure.diffCm)+" см";
+      }else if(changed&&extra.length===0){
+        result.unconfirmedGeometry=true;
+        result.warning="ℹ️ Кімната має значний перекіс. Введіть реальну діагональ для підтвердження форми та площі";
       }else if(n>3&&extra.length===0&&!solved.exactOrthogonal&&!stats.sourceMostlyRight){
+        result.unconfirmedGeometry=true;
         result.warning="⚠️ Косі стіни не підтверджені діагоналлю — площа орієнтовна";
       }
       window.A_CEIL_HonestGeometry.lastResult=result;
@@ -301,7 +305,7 @@
       if(pts.length<4){setWarning(null);return}
       var hasManual=false;Object.keys(diagonalOverrides||{}).forEach(function(key){if(Number(diagonalOverrides[key])>0)hasManual=true});
       var crooked=false;for(var i=0;i<pts.length;i++){var a=interiorAngle(pts,i);if(Number.isFinite(a)&&Math.abs(a-90)>3){crooked=true;break}}
-      setWarning(crooked&&!hasManual?{warning:"⚠️ Косі стіни не підтверджені діагоналлю — площа орієнтовна"}:null);
+      setWarning(crooked&&!hasManual?{unconfirmedGeometry:true,warning:"ℹ️ Коса кімната — введіть реальну діагональ для підтвердження форми та площі"}:null);
     }catch(_){}
   }
   function clearWarningState(){
@@ -311,7 +315,7 @@
   }
 
   window.A_CEIL_HonestGeometry={
-    version:"1.6",
+    version:"1.7",
     solve:solveClosedPolygon,
     solveExactOrthogonal:solveExactOrthogonal,
     closure:legacyClosure,
