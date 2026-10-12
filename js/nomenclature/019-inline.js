@@ -654,15 +654,10 @@ if(!A·CEILTrueWallHitV349(clientX,clientY))return false;
   menu.setAttribute("aria-hidden","false");
   return true;
 }
-let _canvasPointSaveTimer=null;
-function scheduleCanvasPointSave(immediate){
-  clearTimeout(_canvasPointSaveTimer);
-  _canvasPointSaveTimer=setTimeout(()=>{_canvasPointSaveTimer=null;saveState()},immediate?0:300);
-}
 function canvasCloseRadius(){
   const rect=cv.getBoundingClientRect();
   const scale=rect.width?ACEILCanvas.width(cv)/rect.width:1;
-  return Math.max(34,Math.min(58,36*scale/viewScale));
+  return Math.max(48,Math.min(72,44*scale/viewScale));
 }
 function handleInputEvent(clientX,clientY){
   const point=getCanvasPoint(clientX,clientY);let x=point.x,y=point.y;
@@ -671,7 +666,7 @@ function handleInputEvent(clientX,clientY){
       const dx=x-pts[0].x,dy=y-pts[0].y;
       if(Math.hypot(dx,dy)<=canvasCloseRadius()){
         closeShape();
-        scheduleCanvasPointSave(true);
+        setTimeout(saveState,0);
         return;
       }
     }
@@ -680,7 +675,7 @@ function handleInputEvent(clientX,clientY){
       if(angle<22.5)y=p.y;else if(angle>67.5)x=p.x;else{let dist=Math.min(Math.abs(dx),Math.abs(dy));x=p.x+Math.sign(dx)*dist,y=p.y+Math.sign(dy)*dist}
     }
     pts.push({x:x,y:y});
-    updateCornerCount();requestDraw();updateChecks();scheduleCanvasPointSave(false);
+    updateCornerCount();requestDraw();
     return;
   }
   if(handleLightTap(x,y)||A·CEILHandleWallTapV89(x,y))return;
@@ -980,6 +975,7 @@ if(!closed&&!circleMode&&viewScale<=1){
     window.__aceilWLBound=true;
     var swallow=false;
     function hit(cx,cy){
+      if(typeof closed!=="undefined"&&!closed)return false;
       var h=window.__aceilWLHit,r=cv.getBoundingClientRect();
       if(!h||!r.width||!r.height)return false;
       var k=ACEILCanvas.width(cv)/r.width,px=(cx-r.left)*k,py=(cy-r.top)*(ACEILCanvas.height(cv)/r.height),pad=6*k;
