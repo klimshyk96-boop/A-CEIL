@@ -3,8 +3,8 @@
 (function(){
   "use strict";
   var TYPES=[
-    {key:'lightLine',      label:'Світлова лінія',   icon:'💡', width:35},
-    {key:'magneticTrack',  label:'Магнітний шинопровід',icon:'🧲', width:30},
+    {key:'lightLine',      label:'Світлова лінія',   icon:'━', width:35},
+    {key:'magneticTrack',  label:'Магнітний шинопровід',icon:'▭', width:30},
     {key:'surfaceTrack',   label:'Накладний шинопровід',   icon:'▭',  width:30},
     {key:'recessedTrack',  label:'Вмонтований шинопровід', icon:'▰',  width:30},
     {key:'custom',         label:'Інший',            icon:'⚙️', width:35}
@@ -338,18 +338,19 @@
     try{ if(typeof draw==='function') draw(); }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   function create(elementType,shape){
-    if(STAGE1.indexOf(shape)<0) shape='line';
+    var makeRhombus=elementType==='lightLine'&&shape==='rhombus';
+    if(!makeRhombus&&STAGE1.indexOf(shape)<0) shape='line';
     var c=roomCenterCm(), td=typeDef(elementType);
     var def=Math.max(40,Math.round((c.w||200)*0.45/10)*10);
     var defB=Math.max(40,Math.round((c.h||200)*0.35/10)*10);
-    var segments=shape==='line'?[def]:shape==='L'?[def,defB]:shape==='U'?[defB,def,defB]:[def,defB];
-    var el={ id:uid(), type:'linearElement', elementType:td.key, shape:shape,
+    var segments=makeRhombus?[def]:shape==='line'?[def]:shape==='L'?[def,defB]:shape==='U'?[defB,def,defB]:[def,defB];
+    var el={ id:uid(), type:'linearElement', elementType:td.key, shape:makeRhombus?'rectangle':shape,
       center:{x:c.x,y:c.y}, baseIndex:Number.isFinite(+c.baseIndex)?+c.baseIndex:0,
       rotation:0, segments:segments, points:[], profileWidth:td.width,
       anchor:{sideIndex:-1,alongCm:0,inwardCm:30,direction:'parallel'} };
     if(td.key==='lightLine'){
-      el.shape=shape;
-      el.lightShapeMode='basic';
+      el.shape=makeRhombus?'rectangle':shape;
+      el.lightShapeMode=makeRhombus?'rhombus':'basic';
       el.segmentAngles=segments.map(function(_,i){return 0;});
       el.rhombusSide=Math.max(1,num(segments[0],100));
       el.rhombusAngle=60;
@@ -357,7 +358,7 @@
     computeTotals(el); putInRoomCenter(el,true); smartOrientLinearElement(el);
     arr().push(el);
     persist(); openEditor(el.id);
-    if(typeof showToast==='function') showToast(td.icon+' '+td.label+' додано');
+    if(typeof showToast==='function') showToast(td.label+' додано');
     return el;
   }
 
@@ -689,9 +690,9 @@
     if(shape==='line') path='<path d="M14 34H78"/>';
     else if(shape==='L') path='<path d="M14 18H68V56"/>';
     else if(shape==='U') path='<path d="M18 14V54H74V14"/>';
+    else if(shape==='rhombus') path='<path d="M46 10L76 34L46 58L16 34Z"/>';
     else path='<rect x="18" y="12" width="56" height="44" rx="2"/>';
-    return '<svg '+common+'><g fill="none" stroke="#111827" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">'+path+'</g>'
-      +'<g fill="none" stroke="#facc15" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">'+path+'</g></svg>';
+    return '<svg '+common+'><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">'+path+'</g></svg>';
   }
   function shapeDefaultSegments(shape,current){
     current=Array.isArray(current)?current:[];
@@ -707,7 +708,7 @@
     ensureModal(); curId=id; var e=find(id); if(!e) return;
     if(isTrackType(e))e.profileWidth=30;
     var td=typeDef(e.elementType), sh=(SHAPES[e.shape]||SHAPES.line);
-    el('leTitle').textContent=td.icon+' '+td.label;
+    el('leTitle').textContent=td.label;
     var labels=e.shape==='line'?['Довжина']:e.shape==='L'?['Верхня горизонталь','Права вертикаль вниз']:e.shape==='U'?['Ліва сторона','Нижня горизонталь','Права сторона']:['Ширина','Висота'];
     if(e.elementType==='lightLine'||isFreePolyline(e)){
       if(!Array.isArray(e.segmentAngles))e.segmentAngles=(e.segments||[]).map(function(){return 0;});
@@ -783,7 +784,7 @@
         +'</div>';
 
       if(e.lightShapeMode==='rhombus'){
-        segmentFields=modeBar
+        segmentFields=''
           +'<div style="border:1px solid #ddd6fe;background:#faf5ff;border-radius:14px;padding:11px;margin:8px 0">'
           +'<label style="display:block;font-size:11px;color:#64748b;font-weight:800">Довжина сторони, см'
           +'<input id="leRhombusSide" type="number" inputmode="decimal" min="1" step="0.1" value="'+num(e.rhombusSide,100)+'" style="width:100%;box-sizing:border-box;height:44px;margin-top:4px;padding:7px 9px;border:2px solid #ddd6fe;border-radius:11px;font-size:16px;font-weight:800;text-align:center"></label>'
@@ -803,35 +804,25 @@
         var basicValues=e.shape==='U'
           ?[num(e.segments[0],100),num(e.segments[1],300)]
           :basicLabels.map(function(_,i){return num(e.segments[i],0);});
-        segmentFields=modeBar+basicLabels.map(function(label,i){
+        segmentFields=basicLabels.map(function(label,i){
           return '<label style="display:block;font-size:11px;color:#64748b;font-weight:800;margin:6px 0 3px">'+label+', см</label>'
             +'<input class="le-seg" data-index="'+i+'" type="number" inputmode="decimal" min="1" step="0.1" value="'+basicValues[i]+'" '
             +'style="width:100%;box-sizing:border-box;height:46px;padding:7px 10px;border:2px solid #e2e8f0;border-radius:12px;font-size:17px;font-weight:800;text-align:center">';
         }).join('')
         +(e.shape==='U'?'<div style="font-size:10px;color:#64748b;margin:4px 2px 8px">Ліва і права бокові сторони завжди однакові.</div>':'');
       }else{
-        segmentFields=modeBar+segmentFields;
+        segmentFields=segmentFields;
       }
     }
 
-    var shapeButtons=e.elementType==='lightLine'?'':[
-      {key:'line',label:'Пряма'},
-      {key:'L',label:'Г-подібна'},
-      {key:'U',label:'П-подібна'},
-      {key:'rectangle',label:'Квадрат'}
-    ].map(function(item){
-      var active=e.shape===item.key;
-      return '<button type="button" onclick="leSelectShape(\''+item.key+'\')" style="min-height:84px;padding:4px 3px;border-radius:15px;border:2px solid '+(active?'#2563eb':'#dbe2ea')+';background:'+(active?'#eff6ff':'#fff')+';box-shadow:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0">'
-        +linearShapeIcon(item.key)
-        +'<span style="font-size:11px;font-weight:900;color:'+(active?'#2563eb':'#334155')+'">'+item.label+'</span></button>';
-    }).join('');
+    var shapeButtons='';
 
     var width35=Math.round(num(e.profileWidth,35))!==50;
     el('leBody').innerHTML=
       '<div style="font-size:12px;font-weight:900;color:#334155;margin:2px 0 7px">'+(e.elementType==='lightLine'?'Форма світлової лінії':'Форма лінійного елемента')+'</div>'
       +(e.elementType==='lightLine'?'':(isFreePolyline(e)
         ?'<div class="le-drawn-hint-v323" style="display:flex;align-items:center;gap:9px;padding:10px 12px;margin-bottom:10px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:900"><span style="font-size:20px">✍</span><span>Намальовано пальцем · сегменти можна уточнити</span></div>'
-        :'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+shapeButtons+'</div>'))
+        :'<div style="margin-bottom:10px;padding:9px 11px;border:1px solid #e2e8f0;border-radius:11px;background:#f8fafc;color:#475569;font-size:11px;font-weight:900">Форма: '+sh.label+'</div>'))
       +'<div class="le-metrics-v323" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'
       +'<span style="background:#f0fdf4;color:#15803d;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800">Кутів: '+e.cornerCount+'</span>'
       +'<span id="leTotal" style="background:#f8fafc;color:#334155;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800">'+Math.round(e.totalLengthCm)+' см</span></div>'
@@ -1235,23 +1226,29 @@
     try{ if(typeof closeRmLightStart==='function') closeRmLightStart(); }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     try{ if(typeof closeLightMenu==='function') closeLightMenu(); }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     ensureModal(); curId=null;
-    el('leTitle').textContent='💡 Лінійне освітлення';
-    el('leBody').innerHTML='<div style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:8px">Оберіть тип</div>'
-      +TYPES.map(function(t){ return '<button type="button" onclick="leChooseType(\''+t.key+'\')" style="width:100%;display:flex;align-items:center;gap:10px;background:#f8fafc;color:#0f172a;font-weight:700;margin-bottom:6px;justify-content:flex-start;padding:12px"><span style="font-size:18px">'+t.icon+'</span>'+typeDef(t.key).label+'</button>'; }).join('');
+    el('leTitle').textContent='Лінійне освітлення';
+    el('leBody').innerHTML='<div style="font-size:12px;color:#64748b;font-weight:800;margin-bottom:9px">Оберіть тип</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+      +TYPES.filter(function(t){return t.key!=="custom";}).map(function(t){return '<button type="button" onclick="leChooseType(\''+t.key+'\')" style="min-height:82px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;background:#fff;color:#172033;border:1.5px solid #dbe2ea;border-radius:14px;font-weight:900;padding:9px;box-shadow:none;text-align:center"><span style="font-size:28px;line-height:1;color:#111827">'+t.icon+'</span><span style="font-size:11px;line-height:1.2">'+typeDef(t.key).label+'</span></button>';}).join('')
+      +'</div>';
     el('leModal').style.display='flex';
     var pickerCard=el('leModal').querySelector('.le-modal-card-v322');
     if(pickerCard){pickerCard.scrollTop=0;requestAnimationFrame(function(){pickerCard.scrollTop=0;});}
   };
   window.leChooseType=function(k){
-    el('leTitle').textContent=typeDef(k).icon+' '+typeDef(k).label;
-    el('leBody').innerHTML='<div style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:8px">Оберіть форму</div>'
-      +((isTrackType(k)||k==='lightLine')
-        ?'<button type="button" onclick="leStartTrackFinger(\''+k+'\')" style="width:100%;display:flex;align-items:center;gap:11px;text-align:left;margin-bottom:10px;padding:13px;border:2px solid #2563eb;border-radius:14px;background:#eff6ff;color:#1d4ed8;font-weight:900;box-shadow:none"><span style="font-size:23px">✍</span><span>Намалювати пальцем<small style="display:block;margin-top:2px;color:#64748b;font-size:10px">Тільки прямі сегменти та кути 90°</small></span></button>'
-        :'')
-      +Object.keys(SHAPES).filter(function(s){return s!=='free';}).map(function(s){
-        var on=STAGE1.indexOf(s)>=0;
-        return '<button type="button" '+(on?'onclick="leCreate(\''+k+'\',\''+s+'\')"':'disabled')+' style="width:100%;text-align:left;margin-bottom:6px;padding:12px;font-weight:700;'+(on?'background:#f8fafc;color:#0f172a':'background:#f1f5f9;color:#cbd5e1')+'">'+SHAPES[s].label+(on?'':' — скоро')+'</button>';
-      }).join('');
+    el('leTitle').textContent=typeDef(k).label;
+    var choices=[
+      {key:'line',label:'Пряма'},
+      {key:'L',label:'Г-подібна'},
+      {key:'U',label:'П-подібна'},
+      {key:'rectangle',label:'Прямокутник'}
+    ];
+    if(k==='lightLine')choices.push({key:'rhombus',label:'Ромб'});
+    el('leBody').innerHTML='<div style="font-size:12px;color:#64748b;font-weight:800;margin-bottom:8px">Оберіть форму</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
+      +choices.map(function(item){return '<button type="button" onclick="leCreate(\''+k+'\',\''+item.key+'\')" style="min-height:92px;padding:7px 4px;border:1.5px solid #dbe2ea;border-radius:14px;background:#fff;color:#111827;box-shadow:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">'+linearShapeIcon(item.key)+'<span style="font-size:11px;font-weight:900">'+item.label+'</span></button>';}).join('')
+      +'</div>'
+      +'<button type="button" onclick="leStartTrackFinger(\''+k+'\')" style="width:100%;display:flex;align-items:center;gap:11px;text-align:left;padding:12px 13px;border:1.5px solid #bfdbfe;border-radius:14px;background:#eff6ff;color:#1d4ed8;font-weight:900;box-shadow:none"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" style="flex:0 0 28px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M7 25l4-1 13-13-3-3L8 21l-1 4zM18 11l3 3M6 28h20"/></svg><span>Намалювати пальцем<small style="display:block;margin-top:2px;color:#64748b;font-size:10px">Прямі сегменти та повороти під 90°</small></span></button>';
   };
   window.leCreate=function(k,s){ create(k,s); };
 
