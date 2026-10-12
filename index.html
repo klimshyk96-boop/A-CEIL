@@ -267,7 +267,7 @@ body.aceil-all-split-v14 .canvas-container{
 
 <script id="A·CEIL-elem-menu-viewport-fix-script" src="js/canvas/109-aceil-elem-menu-viewport-fix-script.js?v=20261003-clean1"></script>
 
-<script id="A·CEIL-linear-element-v1" src="js/rooms/110-aceil-linear-element-v1.js?v=20261011-auto-editor-finger2"></script>
+<script id="A·CEIL-linear-element-v1" src="js/rooms/110-aceil-linear-element-v1.js?v=20261012-linear-menu1"></script>
 
 <script id="A·CEIL-json-io-v1" src="js/nomenclature/111-aceil-json-io-v1.js?v=20261003-clean1"></script>
 
@@ -518,7 +518,7 @@ body.aceil-all-split-v14 .canvas-container{
   </div>
 </div>
 
-<script id="A·CEIL-linear-lighting-menu-v317" src="js/canvas/138-aceil-linear-lighting-menu-v317.js?v=20261011-auto-editor-finger2"></script>
+<script id="A·CEIL-linear-lighting-menu-v317" src="js/canvas/138-aceil-linear-lighting-menu-v317.js?v=20261012-linear-menu1"></script>
 
 <div id="rmNewCeilingElementV318" aria-hidden="true">
   <div class="rm-nce-card">
@@ -545,7 +545,7 @@ body.aceil-all-split-v14 .canvas-container{
   </div>
 </div>
 
-<script id="rm-ceiling-elements-v318" src="js/canvas/139-ceiling-elements-v318.js?v=20261011-menu-etalon1"></script>
+<script id="rm-ceiling-elements-v318" src="js/canvas/139-ceiling-elements-v318.js?v=20261012-linear-menu1"></script>
 
 <section id="aceilAllDimsPanelV14" class="aceil-all-panel-v14" hidden>
   <div class="aceil-all-head-v14">
@@ -713,7 +713,7 @@ body.aceil-all-split-v14 .canvas-container{
   "use strict";
   if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
   window.addEventListener("load",function(){
-    var updateKey="aceil-pwa-update-20261012-pc-canvas5";
+    var updateKey="aceil-pwa-update-20261012-linear-menu1";
     navigator.serviceWorker.addEventListener("message",function(event){
       if(!event.data||event.data.type!=="A_CEIL_UPDATE_READY"||sessionStorage.getItem(updateKey))return;
       sessionStorage.setItem(updateKey,"1");
@@ -724,7 +724,7 @@ body.aceil-all-split-v14 .canvas-container{
       sessionStorage.setItem(updateKey,"1");
       location.reload();
     });
-      navigator.serviceWorker.register("/sw.js?v=20261012-pc-canvas5",{scope:"/",updateViaCache:"none"}).then(function(reg){
+      navigator.serviceWorker.register("/sw.js?v=20261012-linear-menu1",{scope:"/",updateViaCache:"none"}).then(function(reg){
       reg.update().catch(function(){});
     }).catch(function(e){window.__diagSilent&&window.__diagSilent(e)});
   },{once:true});
