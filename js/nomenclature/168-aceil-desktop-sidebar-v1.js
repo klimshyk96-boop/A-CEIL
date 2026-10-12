@@ -75,8 +75,18 @@ function installDesktopCanvasZoom(){
   control.id="aceilDesktopCanvasZoom";
   control.innerHTML='<button type="button" data-dir="-1" aria-label="Зменшити масштаб">−</button><span id="aceilDesktopZoomValue">100%</span><button type="button" data-dir="1" aria-label="Збільшити масштаб">+</button>'+
     (isUltrawide?'<button type="button" class="adcz-fit" data-fit="1" aria-label="Підігнати під висоту екрана">На всю висоту</button>':"");
+  function fittedSize(){
+    /* На desktop контейнер може бути значно більшим або меншим за нативні
+       750 px canvas. Раніше 100% завжди означало 750 px, тому сітка навколо
+       виглядала робочою, хоча події приймала лише центральна ділянка. */
+    var style=window.getComputedStyle?getComputedStyle(host):null;
+    var px=style?(parseFloat(style.paddingLeft)||0)+(parseFloat(style.paddingRight)||0):0;
+    var py=style?(parseFloat(style.paddingTop)||0)+(parseFloat(style.paddingBottom)||0):0;
+    var availableW=Math.max(240,host.clientWidth-px-4);
+    var availableH=Math.max(240,host.clientHeight-py-56);
+    return Math.max(240,Math.min(900,availableW,availableH));
+  }
   function apply(){
-    var base=Number(canvas.getAttribute("width"))||750;
     if(fitOn){
       var availH=host.clientHeight-96;
       if(availH<200)availH=window.innerHeight-260; // container not laid out yet on first call
@@ -84,7 +94,7 @@ function installDesktopCanvasZoom(){
       canvas.style.setProperty("width","auto","important");
       canvas.style.setProperty("max-width","none","important");
     }else{
-      canvas.style.setProperty("width",Math.round(base*zoom/100)+"px","important");
+      canvas.style.setProperty("width",Math.round(fittedSize()*zoom/100)+"px","important");
       canvas.style.setProperty("max-width","none","important");
       canvas.style.setProperty("height","auto","important");
     }
@@ -104,11 +114,17 @@ function installDesktopCanvasZoom(){
     var i=steps.indexOf(zoom),next=Math.max(0,Math.min(steps.length-1,i+Number(btn.getAttribute("data-dir"))));
     zoom=steps[next];apply();
   });
-  if(isUltrawide){
-    window.addEventListener("resize",function(){if(fitOn)apply()});
+  var resizeFrame=0;
+  function onResize(){
+    if(resizeFrame)cancelAnimationFrame(resizeFrame);
+    resizeFrame=requestAnimationFrame(function(){resizeFrame=0;apply()});
+  }
+  window.addEventListener("resize",onResize);
+  if(window.ResizeObserver){
+    try{new ResizeObserver(onResize).observe(host)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   host.appendChild(control);apply();
-  if(fitOn){requestAnimationFrame(apply);setTimeout(apply,300)}
+  requestAnimationFrame(apply);setTimeout(apply,300);
 }
 
 /* Той самий принцип іконки-за-назвою, що й isFilmItem()/category() у проєкті —
