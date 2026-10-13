@@ -491,6 +491,11 @@ async function alphaSingle(rs){
   const finalOut=_finalizeReportCanvas(out,W,contentBottom,rs);
   _modernOpenPreview(finalOut,`A·CEIL_pro_${audience(rs)}_${(_currentProjName||"steli").replace(/\s+/g,"_")}.png`);
 }
+function contractorProductionBadge(c,right,y,value){
+  const map={urgent:{label:"ТЕРМІНОВО",fill:"#fef2f2",stroke:"#dc2626",text:"#b91c1c"},today:{label:"НА СЬОГОДНІ",fill:"#fff7ed",stroke:"#f97316",text:"#c2410c"},tomorrow:{label:"НА ЗАВТРА",fill:"#eff6ff",stroke:"#2563eb",text:"#1d4ed8"},normal:{label:"НЕ ТЕРМІНОВО",fill:"#f1f5f9",stroke:"#94a3b8",text:"#475569"}},item=map[String(value||"")]||map.normal;
+  const label="ВИГОТОВЛЕННЯ: "+item.label,w=296,h=36,x=right-w;
+  rr(c,x,y,w,h,12,item.fill,item.stroke);c.fillStyle=item.text;c.font="900 14px Arial";c.textAlign="center";c.textBaseline="middle";c.fillText(label,x+w/2,y+h/2+1);c.textAlign="left";c.textBaseline="alphabetic";
+}
 function contractorMaterialCard(c,x,y,w,h,ceilingColor,harpoonColor){
   rr(c,x,y,w,h,18,"#fff","#dbe7f5");
   section(c,x+18,y+34,"Матеріал");
@@ -519,6 +524,7 @@ async function alphaContractorObject(obj,rs){
   let y=126;
   for(const rd of prepared){
     c.fillStyle="#0f172a";c.font="bold 25px Arial";c.textAlign="left";c.fillText(String(rd.r.name||"Кімната"),PAD,y+30);y+=48;
+    contractorProductionBadge(c,W-PAD,y-43,rs.productionTime);
     const drawing=!1!==rs.drawing?_renderRoomForReport(rd.r,rs):null;
     await plan(c,PAD,y,W-PAD*2,PLAN_H,drawing,"Макет стелі",rd.st);
     y+=PLAN_H+12;
