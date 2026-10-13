@@ -468,8 +468,48 @@ async function alphaSingle(rs){
   const finalOut=_finalizeReportCanvas(out,W,contentBottom,rs);
   _modernOpenPreview(finalOut,`A·CEIL_pro_${audience(rs)}_${(_currentProjName||"steli").replace(/\s+/g,"_")}.png`);
 }
+function contractorMaterialCard(c,x,y,w,h,ceilingColor,harpoonColor){
+  rr(c,x,y,w,h,18,"#fff","#dbe7f5");
+  section(c,x+18,y+34,"Матеріал");
+  c.fillStyle="#7b899f";c.font="bold 13px Arial";c.fillText("КОЛІР СТЕЛІ",x+18,y+76);
+  c.beginPath();c.arc(x+34,y+112,15,0,Math.PI*2);c.fillStyle="#e5e7eb";c.fill();c.strokeStyle="#a8b4c5";c.lineWidth=1.5;c.stroke();
+  c.fillStyle="#0f172a";c.font="bold 18px Arial";c.fillText(String(ceilingColor||"НЕ ВИБРАНО"),x+60,y+119);
+  c.strokeStyle="#e5e7eb";c.lineWidth=1;c.beginPath();c.moveTo(x+18,y+148);c.lineTo(x+w-18,y+148);c.stroke();
+  c.fillStyle="#7b899f";c.font="bold 13px Arial";c.fillText("КОЛІР ГАРПУНА",x+18,y+184);
+  const black=String(harpoonColor||"").toLowerCase()==="black";
+  c.beginPath();c.arc(x+34,y+218,15,0,Math.PI*2);c.fillStyle=black?"#111827":"#ffffff";c.fill();c.strokeStyle=black?"#111827":"#7b899f";c.lineWidth=2;c.stroke();
+  c.fillStyle="#0f172a";c.font="bold 18px Arial";c.fillText(black?"Чорний":"Білий",x+60,y+225);
+}
+async function alphaContractorObject(obj,rs){
+  const W=1080,PAD=24,GAP=16,PLAN_H=660,rooms=Array.isArray(obj.rooms)?obj.rooms:[],prepared=[];
+  let H=126;
+  for(const r of rooms){
+    let st={};try{st=r&&r.state?(typeof r.state==="string"?JSON.parse(r.state):r.state):{}}catch(_e){st={}}
+    const dimensions=_allWallDimensionLines(st||{}),tableH=dimensions.length?78+Math.ceil(dimensions.length/2)*27:90,bottomH=Math.max(246,tableH);
+    prepared.push({r:r||{},st,dimensions,tableH,bottomH});
+    H+=48+PLAN_H+12+bottomH+30;
+  }
+  H=Math.max(H+74,1180);
+  const _hd=rmReportCreateHQCanvas(W,H),out=_hd.out,c=_hd.c;
+  c.fillStyle="#f4f7fb";c.fillRect(0,0,W,H);
+  header(c,W,28,rs,obj.name||"Новий обʼєкт",rooms.length===1?String(rooms[0].name||"Кімната"):String(rooms.length)+" кімнат");
+  let y=126;
+  for(const rd of prepared){
+    c.fillStyle="#0f172a";c.font="bold 25px Arial";c.textAlign="left";c.fillText(String(rd.r.name||"Кімната"),PAD,y+30);y+=48;
+    const drawing=!1!==rs.drawing?_renderRoomForReport(rd.r,rs):null;
+    await plan(c,PAD,y,W-PAD*2,PLAN_H,drawing,"Макет стелі");
+    y+=PLAN_H+12;
+    const leftW=692,rightX=PAD+leftW+GAP,rightW=W-PAD-rightX;
+    wallDimensionsList(c,PAD,y,leftW,rd.dimensions,"Розміри не задані","Розміри стін");
+    contractorMaterialCard(c,rightX,y,rightW,rd.bottomH,rd.r.ceilingColor,rs.harpoonColor);
+    y+=rd.bottomH+30;
+  }
+  const finalOut=_finalizeReportCanvas(out,W,y+24,rs);
+  _modernOpenPreview(finalOut,`A·CEIL_blank_vykonavtsiu_${(obj.name||"obekt").replace(/\s+/g,"_")}.png`);
+}
 async function alphaObject(obj,rs){
   rs=rs||((typeof window._loadRS==="function"&&window._loadRS())||window.reportSettings||{});
+  if(rs.reportAudience==="contractor-sheet")return alphaContractorObject(obj,rs);
   const W=1080,rooms=obj.rooms||[];let data=[],totalAll=0,H=180;
   const showTech=!isClient(rs),showPrice=!isInstaller(rs)||isFull(rs);
   for(const r of rooms){
