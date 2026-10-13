@@ -266,7 +266,27 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
     });
   }
   return h;
-}async function plan(c,x,y,w,h,imgSrc,titleText){
+}function contractorPointLabels(c,state,sourceBounds,sx,sy,scale,dx,dy,x,y,w,h){
+  const points=state&&Array.isArray(state.pts)&&state.pts.length?state.pts:(state&&Array.isArray(state.realPts)?state.realPts:[]);
+  if(points.length<2||!sourceBounds)return;
+  const clean=points.filter(p=>p&&Number.isFinite(Number(p.x))&&Number.isFinite(Number(p.y)));
+  if(clean.length<2)return;
+  const xs=clean.map(p=>Number(p.x)),ys=clean.map(p=>Number(p.y)),minPX=Math.min(...xs),maxPX=Math.max(...xs),minPY=Math.min(...ys),maxPY=Math.max(...ys);
+  const bw=Math.max(1,maxPX-minPX),bh=Math.max(1,maxPY-minPY);
+  const left=dx+(sourceBounds.minX-sx)*scale,right=dx+(sourceBounds.maxX-sx)*scale,top=dy+(sourceBounds.minY-sy)*scale,bottom=dy+(sourceBounds.maxY-sy)*scale;
+  const cx=clean.reduce((s,p)=>s+Number(p.x),0)/clean.length,cy=clean.reduce((s,p)=>s+Number(p.y),0)/clean.length,names="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  c.save();c.textAlign="center";c.textBaseline="middle";
+  clean.forEach((p,i)=>{
+    let px=left+(Number(p.x)-minPX)/bw*(right-left),py=top+(Number(p.y)-minPY)/bh*(bottom-top);
+    let vx=Number(p.x)-cx,vy=Number(p.y)-cy,len=Math.hypot(vx,vy)||1;
+    px+=vx/len*19;py+=vy/len*19;
+    px=Math.max(x+24,Math.min(x+w-24,px));py=Math.max(y+58,Math.min(y+h-22,py));
+    c.beginPath();c.arc(px,py,17,0,Math.PI*2);c.fillStyle="#ffffff";c.fill();c.strokeStyle="#2563eb";c.lineWidth=2.2;c.stroke();
+    c.fillStyle="#0f172a";c.font="900 19px Arial";c.fillText(names[i]||String(i+1),px,py+1);
+  });
+  c.restore();
+}
+async function plan(c,x,y,w,h,imgSrc,titleText,labelState){
   rr(c,x,y,w,h,18,"#fff","#e2e8f0");
   section(c,x+18,y+32,titleText||"1. План приміщення");
   await new Promise(res=>{
@@ -274,7 +294,7 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
     const img=new Image;
     img.onload=()=>{
       const aw=w-44,ah=h-62;
-      let sx=0,sy=0,sw=img.width,sh=img.height;
+      let sx=0,sy=0,sw=img.width,sh=img.height,sourceBounds=null;
       try{
         const t=document.createElement("canvas");t.width=img.width;t.height=img.height;
         const tc=t.getContext("2d",{willReadFrequently:true});tc.drawImage(img,0,0);
@@ -288,13 +308,16 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
           }
         }
         if(maxX>minX&&maxY>minY){
+          sourceBounds={minX,minY,maxX,maxY};
           const pad=Math.max(18,Math.round(Math.max(maxX-minX,maxY-minY)*.06));
           sx=Math.max(0,minX-pad);sy=Math.max(0,minY-pad);
           sw=Math.min(t.width-sx,maxX-minX+pad*2);sh=Math.min(t.height-sy,maxY-minY+pad*2);
         }
       }catch(_e){}
       const sc=Math.min(aw/sw,ah/sh),dw=sw*sc,dh=sh*sc;
-      c.drawImage(img,sx,sy,sw,sh,x+(w-dw)/2,y+48+(ah-dh)/2,dw,dh);
+      const dx=x+(w-dw)/2,dy=y+48+(ah-dh)/2;
+      c.drawImage(img,sx,sy,sw,sh,dx,dy,dw,dh);
+      contractorPointLabels(c,labelState,sourceBounds,sx,sy,sc,dx,dy,x,y,w,h);
       res();
     };
     img.onerror=res;img.src=imgSrc;
@@ -497,7 +520,7 @@ async function alphaContractorObject(obj,rs){
   for(const rd of prepared){
     c.fillStyle="#0f172a";c.font="bold 25px Arial";c.textAlign="left";c.fillText(String(rd.r.name||"Кімната"),PAD,y+30);y+=48;
     const drawing=!1!==rs.drawing?_renderRoomForReport(rd.r,rs):null;
-    await plan(c,PAD,y,W-PAD*2,PLAN_H,drawing,"Макет стелі");
+    await plan(c,PAD,y,W-PAD*2,PLAN_H,drawing,"Макет стелі",rd.st);
     y+=PLAN_H+12;
     const leftW=692,rightX=PAD+leftW+GAP,rightW=W-PAD-rightX;
     wallDimensionsList(c,PAD,y,leftW,rd.dimensions,"Розміри не задані","Розміри стін");
