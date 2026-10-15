@@ -87,7 +87,7 @@ function findMainProfileItem(baseItems, assumptions){
 }
 
 /* The "insert" is white_insert's actual selected candidate - mirrors
-   177-aceil-insert-choice-guard-v1.js: prefer the explicitly chosen one
+   179-aceil-insert-choice-guard-v1.js: prefer the explicitly chosen one
    (insertSelected), then the only one currently carrying quantity, then the
    only candidate at all. Never every item merely named "вставка". */
 function findInsertItem(baseItems, assumptions){

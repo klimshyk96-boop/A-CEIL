@@ -58,6 +58,50 @@
     return "https://a-ceil.pp.ua/report/" + value;
   }
 
+  function optimizeImage(dataUrl, maxWidth, maxPixels, quality) {
+    if (!/^data:image\//i.test(String(dataUrl || "")) || String(dataUrl).length < 240000) {
+      return Promise.resolve(dataUrl || "");
+    }
+    return new Promise(function (resolve) {
+      var image = new Image();
+      image.onload = function () {
+        try {
+          var sourceWidth = image.naturalWidth || image.width || 1;
+          var sourceHeight = image.naturalHeight || image.height || 1;
+          var ratio = Math.min(
+            1,
+            (maxWidth || 1280) / sourceWidth,
+            Math.sqrt((maxPixels || 4500000) / (sourceWidth * sourceHeight))
+          );
+          var canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(sourceWidth * ratio));
+          canvas.height = Math.max(1, Math.round(sourceHeight * ratio));
+          var context = canvas.getContext("2d", { alpha: false });
+          context.fillStyle = "#fff";
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          context.imageSmoothingEnabled = true;
+          context.imageSmoothingQuality = "high";
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          var optimized = canvas.toDataURL("image/webp", quality || 0.84);
+          if (!/^data:image\/webp/i.test(optimized)) optimized = canvas.toDataURL("image/jpeg", quality || 0.84);
+          resolve(optimized.length < String(dataUrl).length ? optimized : dataUrl);
+        } catch (_) { resolve(dataUrl); }
+      };
+      image.onerror = function () { resolve(dataUrl); };
+      image.src = dataUrl;
+    });
+  }
+
+  async function optimizePayload(payload) {
+    var optimized = Object.assign({}, payload || {});
+    if (optimized.image) optimized.image = await optimizeImage(optimized.image, 1280, 4500000, 0.84);
+    if (optimized.structured && optimized.structured.drawing) {
+      optimized.structured = Object.assign({}, optimized.structured);
+      optimized.structured.drawing = await optimizeImage(optimized.structured.drawing, 900, 1800000, 0.86);
+    }
+    return optimized;
+  }
+
   function patchLocal(project, values) {
     if (!project) return;
     Object.assign(project, values);
@@ -87,7 +131,7 @@
 
     var value = token();
     var expires = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString();
-    var safePayload = Object.assign({}, payload || {}, { expiresAt: expires });
+    var safePayload = Object.assign(await optimizePayload(payload), { expiresAt: expires });
     var result = await client.rpc("aceil_publish_report_link", {
       p_project_id: projectId,
       p_token: value,
@@ -161,6 +205,13 @@
     var wrapped = async function () {
       var sourceButton = arguments[1] || null;
       try {
+        if (sourceButton) {
+          sourceButton.disabled = true;
+          sourceButton.textContent = "⏳ Створюється посилання…";
+        }
+        var statusNode = sourceButton && sourceButton.ownerDocument && sourceButton.ownerDocument.getElementById("reportStatus");
+        if (statusNode) statusNode.textContent = "Оптимізація та завантаження звіту…";
+        await new Promise(function (resolve) { requestAnimationFrame(function () { resolve(); }); });
         if (typeof window.A_CEIL_GetReportPayload !== "function") throw new Error("Дані звіту ще не готові. Сформуйте звіт повторно");
         var report = window.A_CEIL_GetReportPayload(arguments[0]);
         if (!report || !report.payload) throw new Error("Не вдалося підготувати дані звіту");

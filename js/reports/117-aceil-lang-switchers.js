@@ -54,6 +54,8 @@ function wireAuthSwitcher(){
 
 /* --- Перемикач після входу: кнопка в кокпіті поруч із "Проєкти" --- */
 function ensureAppSwitcher(){
+  var duplicateSheets=document.querySelectorAll("#rmAppLangSheet");
+  for(var d=1;d<duplicateSheets.length;d++)duplicateSheets[d].remove();
   if(document.getElementById("rmAppLangBtn"))return;
   var host=document.querySelector("#rpCockpit .rpc-tools");
   if(!host)return;
@@ -62,19 +64,22 @@ function ensureAppSwitcher(){
   btn.id="rmAppLangBtn";
   btn.setAttribute("aria-label","Вибір мови");
   btn.textContent="UA";
-  var sheet=document.createElement("div");
-  sheet.id="rmAppLangSheet";
-  sheet.hidden=true;
-  sheet.style.cssText="position:fixed;z-index:10050;width:190px;padding:7px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 18px 45px rgba(15,23,42,.18)";
-  LANGS.forEach(function(l){
-    var b=document.createElement("button");
-    b.type="button";
-    b.dataset.lang=l[0];
-    b.textContent=l[1];
-    b.style.cssText="display:block;width:100%;padding:11px 12px;text-align:left;border:0;border-radius:10px;background:transparent;color:#0f172a;box-shadow:none;font-size:14px;font-weight:800";
-    sheet.appendChild(b);
-  });
-  document.body.appendChild(sheet);
+  var sheet=document.getElementById("rmAppLangSheet");
+  if(!sheet){
+    sheet=document.createElement("div");
+    sheet.id="rmAppLangSheet";
+    sheet.hidden=true;
+    sheet.style.cssText="position:fixed;z-index:10050;width:190px;padding:7px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 18px 45px rgba(15,23,42,.18)";
+    LANGS.forEach(function(l){
+      var b=document.createElement("button");
+      b.type="button";
+      b.dataset.lang=l[0];
+      b.textContent=l[1];
+      b.style.cssText="display:block;width:100%;padding:11px 12px;text-align:left;border:0;border-radius:10px;background:transparent;color:#0f172a;box-shadow:none;font-size:14px;font-weight:800";
+      sheet.appendChild(b);
+    });
+    document.body.appendChild(sheet);
+  }
   btn.addEventListener("click",function(e){
     e.stopPropagation();
     if(sheet.hidden){
@@ -84,15 +89,22 @@ function ensureAppSwitcher(){
       sheet.hidden=false;
     }else sheet.hidden=true;
   });
-  sheet.addEventListener("click",function(e){
-    var x=e.target.closest("button[data-lang]");
-    if(!x)return;
-    sheet.hidden=true;
-    activateLanguage(x.dataset.lang);
-  });
-  document.addEventListener("click",function(e){
-    if(!sheet.hidden&&!e.target.closest("#rmAppLangSheet")&&e.target!==btn)sheet.hidden=true;
-  });
+  if(!sheet.__rmWired){
+    sheet.__rmWired=true;
+    sheet.addEventListener("click",function(e){
+      var x=e.target.closest("button[data-lang]");
+      if(!x)return;
+      sheet.hidden=true;
+      activateLanguage(x.dataset.lang);
+    });
+  }
+  if(!document.__rmAppLangOutsideWired){
+    document.__rmAppLangOutsideWired=true;
+    document.addEventListener("click",function(e){
+      var currentSheet=document.getElementById("rmAppLangSheet");
+      if(currentSheet&&!currentSheet.hidden&&!e.target.closest("#rmAppLangSheet")&&!e.target.closest("#rmAppLangBtn"))currentSheet.hidden=true;
+    });
+  }
   host.appendChild(btn);
   updateLangButtons();
 }

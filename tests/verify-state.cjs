@@ -45,6 +45,29 @@ const checks=[];function check(name,value,info){assert.ok(value,name+': '+JSON.s
   });
   check('Live rhombus side updates in its owner module',lighting.sideFound&&lighting.side===140,lighting);
   if(lighting.rotationFound)check('Live rotation updates',lighting.rotation===45,lighting);
+  const linearSources=await page.evaluate(()=>{
+   resetAllSilent();pts=[{x:100,y:100},{x:700,y:100},{x:700,y:700},{x:100,y:700}];realPts=[{x:0,y:0},{x:600,y:0},{x:600,y:600},{x:0,y:600}];lengths=[600,600,600,600];closed=true;viewScale=1;viewOffsetX=0;viewOffsetY=0;
+   const make=(id,elementType,segments,fixtures)=>({id,type:'linearElement',elementType,shape:'free',center:{x:300,y:300},centerCanvasPx:{x:400,y:400},rotation:0,segments,segmentAngles:[0,90,0],closedPath:false,trackFixtureCount:fixtures||0,profileWidth:30,anchor:{sideIndex:-1,alongCm:0,inwardCm:30,direction:'parallel'}});
+   linearElements=[
+    make('line','lightLine',[300,100,200],0),
+    make('surface','surfaceTrack',[400,100,300],2),
+    make('recessed','recessedTrack',[200,100,200],3),
+    make('magnetic','magneticTrack',[500,100,300],4)
+   ];window.linearElements=linearElements;
+   const summary=linearElementsSummary();
+   const source=key=>computeLinearSource(key,null,summary);
+   return {summary,sources:{
+    lineLength:source('lineartype:lightLine'),lineCorners:source('linearcorners:lightLine'),lineBreaks:source('linearbreaks:lightLine'),
+    surfaceLength:source('lineartype:surfaceTrack'),surfaceCorners:source('linearcorners:surfaceTrack'),surfaceBreaks:source('linearbreaks:surfaceTrack'),surfaceFixtures:source('linearfixtures:surfaceTrack'),
+    recessedLength:source('lineartype:recessedTrack'),recessedCorners:source('linearcorners:recessedTrack'),recessedBreaks:source('linearbreaks:recessedTrack'),recessedFixtures:source('linearfixtures:recessedTrack'),
+    magneticLength:source('lineartype:magneticTrack'),magneticCorners:source('linearcorners:magneticTrack'),magneticBreaks:source('linearbreaks:magneticTrack'),magneticFixtures:source('linearfixtures:magneticTrack')
+   }};
+  });
+  const q=linearSources.sources;
+  check('Light line length, corners and breaks use their stable source',q.lineLength.qty===6&&q.lineCorners.qty===2&&q.lineBreaks.qty===2,linearSources);
+  check('Surface track length, corners, breaks and fixtures stay isolated',q.surfaceLength.qty===8&&q.surfaceCorners.qty===2&&q.surfaceBreaks.qty===2&&q.surfaceFixtures.qty===2,linearSources);
+  check('Recessed track length, corners, breaks and fixtures stay isolated',q.recessedLength.qty===5&&q.recessedCorners.qty===2&&q.recessedBreaks.qty===2&&q.recessedFixtures.qty===3,linearSources);
+  check('Magnetic track length, corners, breaks and fixtures stay isolated',q.magneticLength.qty===9&&q.magneticCorners.qty===2&&q.magneticBreaks.qty===2&&q.magneticFixtures.qty===4,linearSources);
   await page.evaluate(()=>{
    document.querySelectorAll('.modal-overlay,[id="leModal"]').forEach(e=>{e.classList.remove('open');if(e.id==='leModal')e.style.display='none';});
    resetAllSilent();pts=[{x:100,y:100},{x:650,y:100},{x:650,y:330},{x:400,y:330},{x:400,y:620},{x:100,y:620}];realPts=structuredClone(pts);lengths=[550,230,250,290,300,520];closed=true;viewScale=1;viewOffsetX=0;viewOffsetY=0;draw();
@@ -57,6 +80,7 @@ const checks=[];function check(name,value,info){assert.ok(value,name+': '+JSON.s
   check('Expanded canvas keeps input mapping and geometry',collapsed.roundtrip<1e-6&&collapsed.pts===before.pts&&collapsed.lengths===before.lengths,collapsed);
   await page.evaluate(()=>window.A·CEIL.ToolPanel.expand());await page.waitForTimeout(200);
   check('Canvas returns to nominal size',await page.evaluate(()=>ACEILCanvas.height(cv)===750));
+  check('Language switcher keeps one sheet',await page.evaluate(()=>document.querySelectorAll('#rmAppLangSheet').length===1));
   check('No unhandled browser errors',errors.length===0,errors);
   fs.writeFileSync('verification-state.json',JSON.stringify({checks,passed:checks.length},null,2));console.log('PASS',checks.length);
  }finally{await b.close();}

@@ -1,4 +1,4 @@
-
+/* A·CEIL administration UI. */
 (function(){
 "use strict";
 var profile=null,loading=false;

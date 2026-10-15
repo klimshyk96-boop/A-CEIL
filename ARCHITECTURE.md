@@ -1,4 +1,4 @@
-# Current canvas architecture — 2026-10-03
+# Current canvas architecture — 2026-10-15
 
 - `js/canvas/viewport.js`: logical dimensions, backing-store resolution, draw hooks.
 - `js/canvas/renderer.js`: the sole `draw()` entry point and room scene.
@@ -10,6 +10,9 @@
 - CSS: app.css (base), theme.css (UI/theme/admin), layout.css (later layout sections).
   Keep their placement in index.html: runtime-injected styles depend on that cascade order.
 - `scripts/runtime-order.json` records the remaining legacy load order. Review dependencies before changing it.
+- Build id `20261015-stability2` is shared by local asset queries, the service-worker cache,
+  the PWA reload key and service-worker registration. `scripts/check-before-deploy.sh` enforces this.
+- `.vercelignore` keeps tests, build scripts and internal documentation outside the public deployment.
 
 Project persistence remains in `js/projects/project-repository.js`, rooms in `js/rooms/multiroom-lifecycle.js`.
 Auth/cloud behavior is unchanged. Never rebuild prices merely when opening a modal or project.

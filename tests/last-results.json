@@ -1,15 +1,6 @@
 {
   "canvas": {
     "checks": [
-      "CSS equivalence at 390px",
-      "No startup errors at 390px",
-      "No missing assets at 390px",
-      "CSS equivalence at 1440px",
-      "No startup errors at 1440px",
-      "No missing assets at 1440px",
-      "CSS equivalence at 2560px",
-      "No startup errors at 2560px",
-      "No missing assets at 2560px",
       "Coordinate round trips 390/1",
       "Read-only draw 390/1",
       "Report state restore 390/1",
@@ -41,7 +32,7 @@
       "Stable renderer and health 1440/2",
       "No scenario errors 1440/2"
     ],
-    "passed": 39
+    "passed": 30
   },
   "state": {
     "checks": [
@@ -55,10 +46,15 @@
       "Deleted room stays deleted after reload",
       "Live rhombus side updates in its owner module",
       "Live rotation updates",
+      "Light line length, corners and breaks use their stable source",
+      "Surface track length, corners, breaks and fixtures stay isolated",
+      "Recessed track length, corners, breaks and fixtures stay isolated",
+      "Magnetic track length, corners, breaks and fixtures stay isolated",
       "Expanded canvas keeps input mapping and geometry",
       "Canvas returns to nominal size",
+      "Language switcher keeps one sheet",
       "No unhandled browser errors"
     ],
-    "passed": 13
+    "passed": 18
   }
 }

@@ -2,7 +2,7 @@
 (function(){
   'use strict';
   window.A·CEIL = window.A·CEIL || {};
-  window.A·CEIL.VERSION = '2026.08.31-rc13';
+  window.A·CEIL.VERSION = '2026.10.15-stability2';
 
   /* Canonical Safari storage repair. Several later modules use this API, so it
      must live before ProjectRepository and must not be supplied by a late patch. */

@@ -1,3 +1,4 @@
+/* A·CEIL insert-choice guard. */
 (function(){
   "use strict";
   if(window.__aceilInsertChoiceGuardV1)return;

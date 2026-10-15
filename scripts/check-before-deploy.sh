@@ -15,6 +15,37 @@ fail() {
   errors=$((errors + 1))
 }
 
+build_versions="$(grep -Eo '(src|href)="[^"]+\.(js|css)\?v=[^"]+"' index.html | sed -E 's/.*\?v=([^"]+)"/\1/' | sort -u)"
+if [[ "$(printf '%s\n' "$build_versions" | sed '/^$/d' | wc -l)" -ne 1 ]]; then
+  fail "локальні JS/CSS мають різні cache-busting версії: $(printf '%s' "$build_versions" | tr '\n' ' ')"
+fi
+
+asset_build="$(printf '%s\n' "$build_versions" | sed '/^$/d' | head -n 1)"
+sw_build="$(sed -nE 's/.*SHELL_CACHE="aceil-shell-([^"]+)".*/\1/p' sw.js | head -n 1)"
+update_build="$(sed -nE 's/.*updateKey="aceil-pwa-update-([^"]+)".*/\1/p' index.html | head -n 1)"
+register_build="$(sed -nE 's/.*serviceWorker\.register\("\/sw\.js\?v=([^"]+)".*/\1/p' index.html | head -n 1)"
+if [[ -z "$asset_build" || "$asset_build" != "$sw_build" || "$asset_build" != "$update_build" || "$asset_build" != "$register_build" ]]; then
+  fail "версії PWA не узгоджені: assets=$asset_build sw=$sw_build update=$update_build register=$register_build"
+fi
+
+if [[ ! -f .vercelignore ]]; then
+  fail "немає .vercelignore"
+else
+  for pattern in '/tests/' '/scripts/' '/docs/' '/*.md' '/VERSION'; do
+    grep -Fxq "$pattern" .vercelignore || fail ".vercelignore не містить $pattern"
+  done
+fi
+
+duplicate_prefixes="$(find js -type f -name '[0-9][0-9][0-9]-*.js' -printf '%f\n' | cut -d- -f1 | sort | uniq -d)"
+if [[ -n "$duplicate_prefixes" ]]; then
+  fail "дубльовані числові префікси JS: $(printf '%s' "$duplicate_prefixes" | tr '\n' ' ')"
+fi
+
+legacy_handlers='rmCurveSetMode|rmCurveDelete|rmCurveApply|rmComplexAddRow|rmWizardBack|rmWizardNext|rmComplexApply|rmComplexDelete|rmShapeOpenArc|rmSimpleCurveClose|rmSimpleCurveDirection|rmSimpleCurveStraight|rmSimpleCurveApply'
+if grep -Eq "onclick=\"[^\"]*($legacy_handlers)" index.html; then
+  fail "index.html містить недоступні legacy-обробники кривих стін"
+fi
+
 while IFS= read -r -d '' file; do
   checked=$((checked + 1))
   if ! node --check "$file" >/dev/null 2>&1; then
