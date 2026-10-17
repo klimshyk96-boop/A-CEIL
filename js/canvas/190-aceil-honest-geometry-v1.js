@@ -8,7 +8,10 @@
   function pointSignature(list){return list.map(function(p){return p.x+","+p.y}).join(";")}
 
   function finitePoint(p){return p&&Number.isFinite(Number(p.x))&&Number.isFinite(Number(p.y))}
-  function distance(a,b){return Math.hypot(Number(b.x)-Number(a.x),Number(b.y)-Number(a.y))}
+  function distance(a,b){
+    var geometry=window["A·CEILGeometry"];
+    return geometry&&typeof geometry.distance==="function"?geometry.distance(a,b):Math.hypot(Number(b.x)-Number(a.x),Number(b.y)-Number(a.y));
+  }
   function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
   function copyPoints(list){return list.map(function(p){return{x:Number(p.x)||0,y:Number(p.y)||0}})}
   function median(values){
@@ -190,6 +193,8 @@
     return{points:result,maxErrorCm:maxConstraintError(result,target,extra)};
   }
   function polygonArea(list){
+    var geometry=window["A·CEILGeometry"];
+    if(geometry&&typeof geometry.area==="function")return geometry.area(list);
     var sum=0;
     for(var i=0;i<list.length;i++){var j=(i+1)%list.length;sum+=list[i].x*list[j].y-list[j].x*list[i].y}
     return Math.abs(sum)/2;

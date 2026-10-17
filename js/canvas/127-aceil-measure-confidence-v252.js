@@ -44,7 +44,8 @@ function labelPoint(i){
   return s;
 }
 function distance(a,b){
-  return Math.hypot(Number(b.x)-Number(a.x),Number(b.y)-Number(a.y));
+  var geometry=window["A·CEILGeometry"];
+  return geometry&&typeof geometry.distance==="function"?geometry.distance(a,b):Math.hypot(Number(b.x)-Number(a.x),Number(b.y)-Number(a.y));
 }
 function tol(lengthCm){
   var L=Math.max(0,Number(lengthCm)||0);

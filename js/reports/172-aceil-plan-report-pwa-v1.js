@@ -6,6 +6,32 @@ window.__A_CEIL_PlanReportPwaV1=true;
 function isInstalledApp(){
   try{return navigator.standalone===true||window.matchMedia("(display-mode: standalone)").matches||window.matchMedia("(display-mode: window-controls-overlay)").matches}catch(_){return false}
 }
+function useInAppReport(){
+  if(isInstalledApp())return true;
+  try{
+    var mobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent||"");
+    var touch=(navigator.maxTouchPoints||0)>0;
+    var coarse=window.matchMedia("(pointer: coarse)").matches;
+    return (mobile||touch&&coarse)&&window.innerWidth<=1100;
+  }catch(_){return false}
+}
+function clean(value){return String(value==null?"":value).trim()}
+function currentMeta(fileName){
+  var structuredName="";
+  try{structuredName=clean(window._currentProjName||document.getElementById("projName")&&document.getElementById("projName").value)}catch(_){}
+  return {
+    name:structuredName||clean(fileName)||"Звіт A·CEIL",
+    address:clean(window._currentProjAddr||document.getElementById("projAddr")&&document.getElementById("projAddr").value),
+    phone:clean(window._currentProjPhone||document.getElementById("projPhone")&&document.getElementById("projPhone").value),
+    comment:clean(window._currentProjComment||document.getElementById("projComment")&&document.getElementById("projComment").value)
+  };
+}
+function activeProjectReference(){
+  try{return window._activeObjectId||window._currentProjectId||null}catch(_){return null}
+}
+function activeLocation(){
+  try{return window["A·CEILLocation"]&&window["A·CEILLocation"].normalize?window["A·CEILLocation"].normalize(window["__A·CEILReportLocation"]):null}catch(_){return null}
+}
 /* aceil: redundant "live overall dimensions" patch removed — 037-inline.js now handles this directly */
 
 /* aceil: duplicate yellow-recolor pass removed — 174-aceil-overall-dims-and-light-colors-fix-v1.js already handles this (and exhaust icons) as the single authoritative layer */
@@ -14,11 +40,15 @@ function dataUrlToBlob(dataUrl){
   var parts=dataUrl.split(","),mime=(parts[0].match(/:(.*?);/)||[])[1]||"image/png",raw=atob(parts[1]),bytes=new Uint8Array(raw.length);
   for(var i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);return new Blob([bytes],{type:mime});
 }
-async function publishImageReport(canvas,fileName){
+async function publishImageReport(canvas,fileName,dataUrl){
   if(!window.A_CEIL_ReportLinks)throw new Error("Модуль захищених посилань не завантажено");
   var structured=null;try{if(typeof window.A_CEIL_buildCloudStructuredReport==="function")structured=window.A_CEIL_buildCloudStructuredReport(fileName)}catch(_){}
-  var payload={version:2,createdAt:new Date().toISOString(),meta:{name:String(window._currentProjName||fileName||"Звіт A·CEIL")},structured:structured,image:canvas.toDataURL("image/png")};
-  return window.A_CEIL_ReportLinks.publishPayload(payload);
+  if(structured&&structured.type==="single"&&typeof window.A_CEIL_cloudPlanImage==="function"){
+    try{structured.drawing=window.A_CEIL_cloudPlanImage(canvas)}catch(_){}
+  }
+  var payload={version:2,createdAt:new Date().toISOString(),meta:structured&&structured.meta||currentMeta(fileName),location:activeLocation(),structured:structured};
+  if(!(structured&&structured.drawing))payload.image=dataUrl||canvas.toDataURL("image/png");
+  return window.A_CEIL_ReportLinks.publishPayload(payload,{projectId:activeProjectReference()});
 }
 function openReportInsideApp(canvas,fileName){
   var dataUrl=canvas.toDataURL("image/png"),old=document.getElementById("A_CEIL_InAppImageReport");if(old)old.remove();
@@ -39,7 +69,7 @@ function openReportInsideApp(canvas,fileName){
   function onKey(e){if(e.key==="Escape")close()}
   function save(){var a=document.createElement("a");a.href=dataUrl;a.download=fileName||"A-CEIL-report.png";document.body.appendChild(a);a.click();a.remove()}
   var cloudButton=layer.querySelector("[data-cloud]"),shareButton=layer.querySelector("[data-share]"),cloudBox=layer.querySelector(".aceil-ir-cloud"),cloudInput=layer.querySelector("[data-cloud-url]"),copyButton=layer.querySelector("[data-copy]"),openButton=layer.querySelector("[data-open]");
-  async function cloudUrl(){if(cloudInput.value&&!/^Помилка:/.test(cloudInput.value))return cloudInput.value;cloudInput.value="";cloudButton.disabled=true;cloudButton.textContent="Завантаження…";try{var url=await publishImageReport(canvas,fileName);cloudInput.value=url;cloudBox.hidden=false;cloudButton.textContent="Посилання готове";return url}catch(e){var message=String(e&&e.message||e||"Помилка хмари");cloudButton.textContent="Повторити";cloudInput.value="Помилка: "+message;cloudBox.hidden=false;throw e}finally{cloudButton.disabled=false}}
+  async function cloudUrl(){if(cloudInput.value&&!/^Помилка:/.test(cloudInput.value))return cloudInput.value;cloudInput.value="";cloudButton.disabled=true;cloudButton.textContent="Завантаження…";try{var url=await publishImageReport(canvas,fileName,dataUrl);cloudInput.value=url;cloudBox.hidden=false;cloudButton.textContent="Посилання готове";return url}catch(e){var message=String(e&&e.message||e||"Помилка хмари");cloudButton.textContent="Повторити";cloudInput.value="Помилка: "+message;cloudBox.hidden=false;throw e}finally{cloudButton.disabled=false}}
   async function shareUrl(url){if(navigator.share){try{await navigator.share({title:"Звіт A·CEIL",text:"Звіт A·CEIL",url:url});return}catch(e){if(e&&e.name==="AbortError")return}}try{await navigator.clipboard.writeText(url);shareButton.textContent="Посилання скопійовано";setTimeout(function(){shareButton.textContent="Поділитися"},1800)}catch(_){cloudBox.hidden=false;cloudInput.focus();cloudInput.select()}}
   layer.querySelector("[data-close]").onclick=close;layer.querySelector("[data-save]").onclick=save;
   cloudButton.onclick=function(){cloudUrl().catch(function(e){try{showToast(e&&e.message?e.message:"Помилка хмари")}catch(_){}})};
@@ -50,7 +80,7 @@ function openReportInsideApp(canvas,fileName){
 }
 var previousPreview=window._modernOpenPreview;
 if(typeof previousPreview==="function"&&!previousPreview.__aceilInApp){
-  var previewWrapped=function(canvas,fileName){return isInstalledApp()?openReportInsideApp(canvas,fileName):previousPreview.apply(this,arguments)};
+  var previewWrapped=function(canvas,fileName){return useInAppReport()?openReportInsideApp(canvas,fileName):previousPreview.apply(this,arguments)};
   previewWrapped.__aceilInApp=true;window._modernOpenPreview=previewWrapped;try{_modernOpenPreview=previewWrapped}catch(_){}
 }
 })();

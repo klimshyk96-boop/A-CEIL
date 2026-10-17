@@ -37,6 +37,14 @@
     var key=typeof value==='string'?value:String(value&&value.elementType||'');
     return key==='magneticTrack'||key==='surfaceTrack'||key==='recessedTrack';
   }
+  /* One public registry for UI labels and autocount bindings. Labels may be
+     renamed by the user, while stable keys remain the calculation source. */
+  window.A_CEIL_LinearTypes=Object.freeze({
+    ids:Object.freeze(TYPES.map(function(type){return type.key;})),
+    get:function(key){return typeDef(key);},
+    label:function(key){return typeDef(key).label;},
+    isTrack:function(key){return isTrackType(key);}
+  });
   function snapTrackAngle(value){
     var a=Math.round(num(value,0)/90)*90;
     while(a>180)a-=360;while(a<=-180)a+=360;
@@ -368,6 +376,7 @@
     try{ if(typeof draw==='function') draw(); }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     try{ if(typeof saveState==='function') saveState(); }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     try{ if(typeof recalcElemTotal==='function') recalcElemTotal(); }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    scheduleLinearNomenclatureSync();
   }
   window._leRepaint=persist;
 
@@ -607,18 +616,33 @@
     try{
       if(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==='function'&&!window.A_CEIL_AutoCount.isEnabled())return 0;
       if(typeof elemItems==='undefined'||!Array.isArray(elemItems))return 0;
-      var updated=0,summary=window.linearElementsSummary();
+      var matched=0,changed=0,summary=window.linearElementsSummary();
       elemItems.forEach(function(it){
         if(!it||it.manualQtyOverride===true)return;
         var value=window.computeLinearSource(it.source,null,summary);
         if(!value)return;
-        it.qty=value.qty;it.unit=value.unit;it.autoFilled=true;it.autoZero=!(value.qty>0);updated++;
+        var zero=!(value.qty>0);
+        if(Number(it.qty)!==Number(value.qty)||it.unit!==value.unit||it.autoFilled!==true||it.autoZero!==zero)changed++;
+        it.qty=value.qty;it.unit=value.unit;it.autoFilled=true;it.autoZero=zero;matched++;
       });
-      if(updated){try{renderElemList();}catch(_){}try{updateElemBadge();}catch(_){}try{recalcElemTotal();}catch(_){}try{saveState();}catch(_){}}
-      return updated;
+      if(changed){try{renderElemList();}catch(_){}try{updateElemBadge();}catch(_){}try{recalcElemTotal();}catch(_){}try{saveState();}catch(_){}}
+      return matched;
     }catch(_){return 0;}
   }
   window.applyLinearNomenclature=applyLinearNomenclature;
+  /* Some older AutoFill wrappers briefly calculate the legacy
+     `linear_length` source as the sum of every linear element. Run the
+     source-specific pass again after all synchronous/deferred wrappers have
+     settled. The last value is therefore always determined by the stable
+     element type id, never by its visible name or by creation order. */
+  var linearSyncTimers=[];
+  function scheduleLinearNomenclatureSync(){
+    linearSyncTimers.forEach(function(timer){try{clearTimeout(timer);}catch(_){}});
+    linearSyncTimers=[0,120,420].map(function(delay){
+      return setTimeout(function(){applyLinearNomenclature();},delay);
+    });
+  }
+  window.scheduleLinearNomenclatureSync=scheduleLinearNomenclatureSync;
   var _prevAutoFill=window.autoFillNomenclature||(typeof autoFillNomenclature==='function'?autoFillNomenclature:null);
   if(typeof _prevAutoFill==='function'){
     window.autoFillNomenclature=function(){var r=_prevAutoFill.apply(this,arguments);applyLinearNomenclature();return r;};

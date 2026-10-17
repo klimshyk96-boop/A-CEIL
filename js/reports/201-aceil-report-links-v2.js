@@ -48,14 +48,84 @@
     return uuid(id) ? String(id) : "";
   }
 
+  function expandCompactToken(value) {
+    value = String(value || "").toLowerCase();
+    // Supabase's existing RPC contract accepts a 64-character hexadecimal
+    // token. New links expose only the first 80 random bits and rebuild the
+    // compatible storage token locally, so no database migration is needed.
+    return /^[a-f0-9]{20}$/.test(value) ? value + value + value + value.slice(0, 4) : value;
+  }
+
+  function compactToken(value) {
+    value = String(value || "").toLowerCase();
+    if (/^[a-f0-9]{64}$/.test(value)) {
+      var shortValue = value.slice(0, 20);
+      if (expandCompactToken(shortValue) === value) return shortValue;
+    }
+    return value;
+  }
+
   function token() {
-    var bytes = new Uint8Array(24);
+    // 80 random bits remain in the public URL; storage keeps the existing
+    // 64-hex RPC format for backward compatibility.
+    var bytes = new Uint8Array(10);
     crypto.getRandomValues(bytes);
-    return Array.prototype.map.call(bytes, function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+    var shortValue = Array.prototype.map.call(bytes, function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+    return expandCompactToken(shortValue);
   }
 
   function publicUrl(value) {
-    return "https://a-ceil.pp.ua/report/" + value;
+    return "https://a-ceil.pp.ua/r/" + compactToken(value);
+  }
+
+  function withTimeout(promise, milliseconds, message) {
+    return new Promise(function (resolve, reject) {
+      var settled = false;
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        reject(new Error(message || "Операція триває надто довго"));
+      }, milliseconds);
+      Promise.resolve(promise).then(function (value) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      }, function (error) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(error);
+      });
+    });
+  }
+
+  function canvasDataUrl(canvas, quality, fallback) {
+    return new Promise(function (resolve) {
+      var settled = false;
+      var timer = setTimeout(function () { finish(""); }, 7000);
+      function finish(value) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value || "");
+      }
+      function read(blob) {
+        if (!blob) return finish("");
+        var reader = new FileReader();
+        reader.onload = function () { finish(typeof reader.result === "string" ? reader.result : ""); };
+        reader.onerror = reader.onabort = function () { finish(""); };
+        try { reader.readAsDataURL(blob); } catch (_) { finish(""); }
+      }
+      try {
+        if (typeof canvas.toBlob === "function") {
+          canvas.toBlob(read, "image/webp", quality || 0.84);
+        } else {
+          var value = canvas.toDataURL("image/jpeg", quality || 0.84);
+          finish(value && value.length < String(fallback || "").length ? value : fallback);
+        }
+      } catch (_) { finish(""); }
+    });
   }
 
   function optimizeImage(dataUrl, maxWidth, maxPixels, quality) {
@@ -64,7 +134,16 @@
     }
     return new Promise(function (resolve) {
       var image = new Image();
-      image.onload = function () {
+      var settled = false;
+      var timer = setTimeout(function () { finish(dataUrl); }, 10000);
+      function finish(value) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        image.onload = image.onerror = null;
+        resolve(value || dataUrl);
+      }
+      image.onload = async function () {
         try {
           var sourceWidth = image.naturalWidth || image.width || 1;
           var sourceHeight = image.naturalHeight || image.height || 1;
@@ -82,22 +161,31 @@
           context.imageSmoothingEnabled = true;
           context.imageSmoothingQuality = "high";
           context.drawImage(image, 0, 0, canvas.width, canvas.height);
-          var optimized = canvas.toDataURL("image/webp", quality || 0.84);
-          if (!/^data:image\/webp/i.test(optimized)) optimized = canvas.toDataURL("image/jpeg", quality || 0.84);
-          resolve(optimized.length < String(dataUrl).length ? optimized : dataUrl);
-        } catch (_) { resolve(dataUrl); }
+          var optimized = await canvasDataUrl(canvas, quality || 0.84, dataUrl);
+          finish(optimized && optimized.length < String(dataUrl).length ? optimized : dataUrl);
+        } catch (_) { finish(dataUrl); }
       };
-      image.onerror = function () { resolve(dataUrl); };
-      image.src = dataUrl;
+      image.onerror = function () { finish(dataUrl); };
+      try { image.src = dataUrl; } catch (_) { finish(dataUrl); }
     });
   }
 
-  async function optimizePayload(payload) {
+  async function optimizePayload(payload, options) {
+    options = options || {};
     var optimized = Object.assign({}, payload || {});
-    if (optimized.image) optimized.image = await optimizeImage(optimized.image, 1280, 4500000, 0.84);
     if (optimized.structured && optimized.structured.drawing) {
       optimized.structured = Object.assign({}, optimized.structured);
-      optimized.structured.drawing = await optimizeImage(optimized.structured.drawing, 900, 1800000, 0.86);
+      // Safari pauses requestAnimationFrame/Image/canvas work in the opener as
+      // soon as the report popup becomes the active tab. In that case keep the
+      // already prepared drawing and only remove the duplicate full snapshot.
+      if (!options.backgroundSafe) {
+        optimized.structured.drawing = await optimizeImage(optimized.structured.drawing, 1600, 3500000, 0.94);
+      }
+      // The structured cloud page renders this drawing directly. Keeping the
+      // full canvas snapshot too only doubles the upload and can freeze Safari.
+      delete optimized.image;
+    } else if (optimized.image) {
+      optimized.image = await optimizeImage(optimized.image, 1600, 6500000, 0.90);
     }
     return optimized;
   }
@@ -131,13 +219,15 @@
 
     var value = token();
     var expires = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString();
-    var safePayload = Object.assign(await optimizePayload(payload), { expiresAt: expires });
-    var result = await client.rpc("aceil_publish_report_link", {
+    if (typeof options.onProgress === "function") options.onProgress("Оптимізація креслення…");
+    var safePayload = Object.assign(await optimizePayload(payload, options), { expiresAt: expires });
+    if (typeof options.onProgress === "function") options.onProgress("Завантаження звіту в хмару…");
+    var result = await withTimeout(client.rpc("aceil_publish_report_link", {
       p_project_id: projectId,
       p_token: value,
       p_payload: safePayload,
       p_expires_at: expires
-    });
+    }), 30000, "Хмара не відповіла за 30 секунд. Перевірте інтернет і повторіть");
     if (result.error) throw result.error;
     patchLocal(project, {
       report_token: value,
@@ -171,7 +261,9 @@
     publishPayload: publishPayload,
     revoke: revoke,
     status: reportStatus,
-    resolveProject: activeProject
+    resolveProject: activeProject,
+    expandToken: expandCompactToken,
+    compactToken: compactToken
   };
   window.A_CEILRevokeReport = revoke;
 
@@ -211,11 +303,14 @@
         }
         var statusNode = sourceButton && sourceButton.ownerDocument && sourceButton.ownerDocument.getElementById("reportStatus");
         if (statusNode) statusNode.textContent = "Оптимізація та завантаження звіту…";
-        await new Promise(function (resolve) { requestAnimationFrame(function () { resolve(); }); });
         if (typeof window.A_CEIL_GetReportPayload !== "function") throw new Error("Дані звіту ще не готові. Сформуйте звіт повторно");
         var report = window.A_CEIL_GetReportPayload(arguments[0]);
         if (!report || !report.payload) throw new Error("Не вдалося підготувати дані звіту");
-        var url = await publishPayload(report.payload, { projectId: report.projectId });
+        var url = await publishPayload(report.payload, {
+          projectId: report.projectId,
+          backgroundSafe: !!(sourceButton && sourceButton.ownerDocument && sourceButton.ownerDocument !== document),
+          onProgress: function (text) { if (statusNode) statusNode.textContent = text; }
+        });
         updateClassicUi(url, sourceButton);
         return url;
       } catch (error) {

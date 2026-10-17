@@ -34,20 +34,11 @@
 
   function ensurePresetDeleteButton(modal){
     var button=modal.querySelector(".rwe-preset-del");if(!button)return;
-    var toolbar=button.closest(".rwe-preset-toolbar");
-    /* Keep delete outside the name/order toolbar, with its own touch target. */
-    if(toolbar&&toolbar.parentNode)toolbar.parentNode.insertBefore(button,toolbar.nextSibling);
-    button.classList.remove("rwe-preset-mini-btn","rwe2-only-adv");
-    button.classList.add("rwe2-delete-preset-action");
-    if(button.dataset.separateDelete!=="1"){
-      button.dataset.separateDelete="1";
-      button.textContent="Видалити заготовку";
-      button.setAttribute("aria-label","Видалити вибрану заготовку");
-      button.onclick=function(event){
-        event.preventDefault();event.stopPropagation();
-        if(typeof window.rweDeletePreset==="function")window.rweDeletePreset();
-      };
-    }
+    /* Preset deletion belongs to the preset edit dialog.  Keeping a second
+       destructive action next to the select squeezed the field on phones
+       and made the label wrap vertically.  The edit dialog already owns the
+       confirmed delete action installed by wall-preset-order-v350. */
+    button.remove();
   }
 
   function tagHiddenFields(modal){

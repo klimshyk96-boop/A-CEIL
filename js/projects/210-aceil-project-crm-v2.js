@@ -40,7 +40,7 @@
     var data = readStore(), items = list(), changed = false;
     items.forEach(function (p) {
       var row = data[recordKey(p)] || Object.keys(data).map(function (k) { return data[k]; }).find(function (x) { return x.fingerprint && x.fingerprint === fingerprint(p); });
-      if (row) { ["order_source", "deal_status", "report_token", "report_published_at", "report_expires_at"].forEach(function (k) { if (row[k] !== undefined) p[k] = row[k]; }); changed = true; }
+      if (row) { ["order_source", "deal_status", "report_token", "report_published_at", "report_expires_at", "report_view_count"].forEach(function (k) { if (row[k] !== undefined) p[k] = row[k]; }); changed = true; }
     });
     if (changed) saveList(items);
   }
@@ -61,8 +61,22 @@
         var action = card.querySelector('[onclick*="editProject"]'), attr = action && action.getAttribute("onclick") || "";
         var match = attr.match(/editProject\(['\"]([^'\"]+)['\"]\)/), id = match && match[1];
         var p = id && items.find(function (x) { return [x.id, x._dbId, x._localId].some(function (v) { return v != null && String(v) === String(id); }); });
-        var head = card.querySelector(".rp-project-head"), old = card.querySelector(".aceil-report-active-badge");
-        if (!head || !hasActiveReport(p)) { if (old) old.remove(); return; }
+        var head = card.querySelector(".rp-project-head"), old = card.querySelector(".aceil-report-active-badge"), oldViews = card.querySelector(".aceil-report-view-count");
+        if (!head || !hasActiveReport(p)) { if (old) old.remove(); if (oldViews) oldViews.remove(); return; }
+        var rawCount = Number(p && p.report_view_count), hasCount = Number.isFinite(rawCount) && rawCount >= 0;
+        var metrics = card.querySelector(".rp-project-metrics");
+        if (metrics) {
+          var viewCount = hasCount ? Math.floor(rawCount) : 0;
+          var lastTwo = viewCount % 100, last = viewCount % 10;
+          var word = lastTwo >= 11 && lastTwo <= 14 ? "переглядів" : last === 1 ? "перегляд" : last >= 2 && last <= 4 ? "перегляди" : "переглядів";
+          var viewBadge = oldViews || document.createElement("span");
+          viewBadge.className = "aceil-report-view-count";
+          viewBadge.textContent = "👁 " + viewCount;
+          viewBadge.title = viewCount + " " + word + " звіту";
+          viewBadge.setAttribute("aria-label", viewBadge.title);
+          viewBadge.style.cssText = "display:inline-flex;align-items:center;gap:4px;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;border-radius:9px;padding:4px 8px;font-size:12px;font-weight:850;white-space:nowrap";
+          if (!oldViews) metrics.appendChild(viewBadge);
+        } else if (oldViews) oldViews.remove();
         if (old) return;
         var badge = document.createElement("span");
         badge.className = "aceil-report-active-badge";
@@ -73,6 +87,26 @@
         head.insertBefore(badge, title && title.nextSibling || head.firstChild);
       });
     } catch (_) {}
+  }
+
+  async function loadViewCounts(c, items, data) {
+    if (!c || typeof c.rpc !== "function") return;
+    var result = await c.rpc("aceil_get_report_view_counts");
+    if (result.error || !result.data || typeof result.data !== "object") return;
+    Object.keys(result.data).forEach(function (projectId) {
+      var count = Number(result.data[projectId]);
+      if (!Number.isFinite(count) || count < 0) return;
+      var cached = REPORT_CACHE[String(projectId)] || null;
+      var p = items.find(function (x) {
+        if (String(x._dbId || x.id) === String(projectId)) return true;
+        return cached && cached.report_token && x.report_token && String(x.report_token) === String(cached.report_token);
+      });
+      if (!p) return;
+      p.report_view_count = Math.floor(count);
+      REPORT_CACHE[String(projectId)] = Object.assign({}, REPORT_CACHE[String(projectId)] || {}, { report_view_count: p.report_view_count });
+      var key = recordKey(p);
+      data[key] = Object.assign({}, data[key] || {}, { report_view_count: p.report_view_count, fingerprint: fingerprint(p), updatedAt: Date.now() });
+    });
   }
   function installReportBadges() {
     var old = window.renderProjects || (typeof renderProjects === "function" ? renderProjects : null);
@@ -126,7 +160,7 @@
     if (!row || !row.report_token) { state.textContent = "🔗 Посилання на КП не створено"; return; }
     var expires = row.report_expires_at ? new Date(row.report_expires_at) : null;
     if (expires && expires.getTime() <= Date.now()) { state.textContent = "⌛ Термін дії КП закінчився"; revoke.style.display = "block"; return; }
-    box.dataset.url = "https://a-ceil.pp.ua/report/" + row.report_token;
+    box.dataset.url = "https://a-ceil.pp.ua/r/" + row.report_token;
     state.textContent = "🔗 КП активне до " + (expires && !isNaN(expires.getTime()) ? expires.toLocaleDateString("uk-UA") : "без вказаної дати");
     open.style.display = "block"; revoke.style.display = "block";
   }
@@ -152,6 +186,7 @@
       Object.assign(p, row); changed = true;
       var key = recordKey(p); data[key] = Object.assign({}, data[key] || {}, row, { fingerprint: fingerprint(p), updatedAt: Date.now() });
     });
+    await loadViewCounts(c, items, data);
     if (changed) { writeStore(data); saveList(items); try { if (typeof renderProjects === "function") renderProjects(); } catch (_) {} }
     setTimeout(decorateReportBadges, 0);
   }

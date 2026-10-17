@@ -139,6 +139,13 @@ function getElemItems(){
 }
 function linearTypeLabel(el){
   var key=String(el&&el.elementType||"");
+  try{
+    var registry=window.A_CEIL_LinearTypes;
+    if(registry&&typeof registry.label==="function"){
+      var registered=registry.label(key);
+      if(registered)return registered;
+    }
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   var labels={
     lightLine:"Світлова лінія",
     magneticTrack:"Магнітний шинопровід",
@@ -215,16 +222,143 @@ function inferredContourProfile(list,state){
   var perimeter=contourPerimeterM(state);if(!(perimeter>0))return null;
   var base=list.filter(function(it){return it&&it.source==="main_profile"}).reduce(function(sum,it){return sum+(Number(it.qty)||0)},0);
   if(base>.01)return null;
+  var marks=state&&Array.isArray(state.wallMarks)?state.wallMarks:getWallMarks();
+  var hasProfileMarks=marks.some(function(m){
+    var source=String(m&&m.profileSource||m&&m.autoCountSource||"");
+    var name=norm(m&&m.type||m&&m.name||m&&m.title||"");
+    return /^(shadow_profile|floating_profile)$/.test(source)||name.indexOf("тіньов")>=0||name.indexOf("парящ")>=0;
+  });
   var families=["shadow_profile","floating_profile"].map(function(source){
     var rows=list.filter(function(it){return it&&it.source===source}),total=rows.reduce(function(sum,it){return sum+(Number(it.qty)||0)},0),keyword=source==="shadow_profile"?"тіньов":"парящ";
-    var marks=state&&Array.isArray(state.wallMarks)?state.wallMarks:getWallMarks();
     var marked=marks.filter(function(m){return m&&norm(m.type||m.name||m.title).indexOf(keyword)>=0}).reduce(function(sum,m){return sum+(Number(m.lenCm)||0)},0)/100;
     return {total:total,marked:marked,manual:rows.some(function(it){return it.manualQtyOverride===true}),item:rows.sort(function(a,b){return (Number(b.qty)||0)-(Number(a.qty)||0)})[0]};
   }).filter(function(entry){
     var tolerance=Math.max(.02,perimeter*.002);
-    return entry.item&&Math.abs(entry.total-perimeter)<=tolerance&&(entry.manual||Math.abs(entry.marked-perimeter)<=tolerance);
+    /* A manual full-perimeter quantity is only a compatibility fallback for
+       old rooms that have no profile marks. Once even one wall is marked, the
+       wall geometry is authoritative. This prevents a stale manual 12 m row
+       from turning a new 3 m shadow wall into a full shadow contour. */
+    return entry.item&&Math.abs(entry.total-perimeter)<=tolerance&&(
+      Math.abs(entry.marked-perimeter)<=tolerance||(!hasProfileMarks&&entry.manual)
+    );
   });
   return families.length===1?families[0].item:null;
+}
+
+function profileFamilyOfMark(mark){
+  if(!mark)return "";
+  var source=String(mark.profileSource||mark.autoCountSource||"");
+  if(source==="shadow_profile"||source==="floating_profile")return source;
+  var name=norm(mark.type||mark.name||mark.title||"");
+  if(name.indexOf("тіньов")>=0)return "shadow_profile";
+  if(name.indexOf("парящ")>=0)return "floating_profile";
+  return "";
+}
+function profileVariantOfItem(item){
+  var variant=String(item&&item.sourceVariant||"");
+  return variant==="white"||variant==="black"?variant:colorFromName(item&&item.name||"");
+}
+function profileMarksFor(family,variant,ctx){
+  var marks=ctx&&Array.isArray(ctx.marksWall)?ctx.marksWall:getWallMarks();
+  return marks.filter(function(mark){
+    return profileFamilyOfMark(mark)===family&&(!variant||wallProfileColor(mark)===variant);
+  });
+}
+function currentSideLengths(ctx){
+  if(ctx&&Array.isArray(ctx.lengths))return ctx.lengths;
+  try{if(typeof lengths!=="undefined"&&Array.isArray(lengths))return lengths}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  return [];
+}
+function currentCornersTotal(ctx){
+  if(ctx&&ctx.cornersTotal!=null&&isFinite(Number(ctx.cornersTotal)))return Math.max(0,Number(ctx.cornersTotal));
+  try{if(typeof circleMode!=="undefined"&&circleMode)return 0}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{
+    if(typeof closed!=="undefined"&&closed&&typeof pts!=="undefined"&&Array.isArray(pts))return pts.length;
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{
+    var inside=Number(document.getElementById("inCorners")&&document.getElementById("inCorners").textContent)||0;
+    var outside=Number(document.getElementById("outCorners")&&document.getElementById("outCorners").textContent)||0;
+    if(inside+outside>0)return inside+outside;
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  return 0;
+}
+function mergedProfileLengthCm(marks,ctx){
+  var bySide={},loose=0,sideLengths=currentSideLengths(ctx);
+  marks.forEach(function(mark){
+    var len=Math.max(0,Number(mark&&mark.lenCm)||0);if(!(len>0))return;
+    var side=Number(mark.sideIndex);
+    if(!isFinite(side)||side<0){loose+=len;return;}
+    var sideLen=Math.max(0,Number(sideLengths[side])||0),start=Math.max(0,Number(mark.offsetCm)||0),end=start+len;
+    if(sideLen>0){start=Math.min(start,sideLen);end=Math.min(Math.max(start,end),sideLen);}
+    (bySide[side]||(bySide[side]=[])).push([start,end]);
+  });
+  Object.keys(bySide).forEach(function(side){
+    var intervals=bySide[side].sort(function(a,b){return a[0]-b[0]}),start=null,end=null;
+    intervals.forEach(function(pair){
+      if(start===null){start=pair[0];end=pair[1];return;}
+      if(pair[0]<=end+.01){end=Math.max(end,pair[1]);return;}
+      loose+=Math.max(0,end-start);start=pair[0];end=pair[1];
+    });
+    if(start!==null)loose+=Math.max(0,end-start);
+  });
+  return loose;
+}
+function profileCornerSet(marks,ctx){
+  var set={},sideLengths=currentSideLengths(ctx),total=currentCornersTotal(ctx);
+  marks.forEach(function(mark){
+    var side=Number(mark&&mark.sideIndex),sideLen=Math.max(0,Number(sideLengths[side])||0);
+    if(!isFinite(side)||side<0||!(sideLen>0)||!(total>0))return;
+    var start=Math.max(0,Number(mark.offsetCm)||0),end=start+Math.max(0,Number(mark.lenCm)||0),tolerance=Math.max(1,sideLen*.003);
+    if(start<=tolerance)set[((side%total)+total)%total]=1;
+    if(end>=sideLen-tolerance)set[(side+1)%total]=1;
+  });
+  return set;
+}
+function mergeCornerSets(target,source){Object.keys(source||{}).forEach(function(key){target[key]=1});return target;}
+function profileRowsFor(source){return getElemItems().filter(function(row){return row&&row.source===source&&!row.manualQtyOverride;});}
+function profileRowIsChosen(source,item,variant){
+  var rows=profileRowsFor(source),colored=rows.filter(function(row){return !!profileVariantOfItem(row);}),pool;
+  if(colored.length){
+    if(!variant)return false;
+    pool=colored.filter(function(row){return profileVariantOfItem(row)===variant;});
+  }else pool=rows.filter(function(row){return !profileVariantOfItem(row);});
+  return !pool.length||String(pool[0].id)===String(item&&item.id);
+}
+function insertRowIsChosen(item){
+  var rows=getElemItems().filter(function(row){return row&&row.source==="white_insert"&&!row.manualQtyOverride;});
+  if(!rows.length)return true;
+  var selected=rows.filter(function(row){return row.insertSelected===true;});
+  if(selected.length>1)return false;
+  var chosen=selected[0];
+  if(!chosen){
+    var white=rows.filter(function(row){return profileVariantOfItem(row)==="white";});
+    chosen=white.length===1?white[0]:(rows.length===1?rows[0]:null);
+  }
+  return !!chosen&&String(chosen.id)===String(item&&item.id);
+}
+function partialContourQty(source,item,ctx){
+  var relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
+  if(!relevant.test(source))return null;
+  var perimeterCm=Math.max(0,Number(ctx&&ctx.perimeterCm)||contourPerimeterM()*100),cornersTotal=currentCornersTotal(ctx);
+  var shadow=profileMarksFor("shadow_profile","",ctx),floating=profileMarksFor("floating_profile","",ctx),special=shadow.concat(floating);
+  var specialCm=Math.min(perimeterCm,mergedProfileLengthCm(special,ctx));
+  if(source==="main_profile")return Math.round(Math.max(0,perimeterCm-specialCm))/100;
+  if(source==="white_insert")return insertRowIsChosen(item)?Math.round(Math.max(0,perimeterCm-specialCm))/100:0;
+  var family=source.indexOf("shadow_")===0?"shadow_profile":"floating_profile",variant=profileVariantOfItem(item);
+  if(source===family){
+    if(!profileRowIsChosen(source,item,variant))return 0;
+    return Math.round(mergedProfileLengthCm(profileMarksFor(family,variant,ctx),ctx))/100;
+  }
+  var familyCorners=profileCornerSet(profileMarksFor(family,variant,ctx),ctx);
+  if(source===(family==="shadow_profile"?"shadow_corners":"floating_corners")){
+    if(!profileRowIsChosen(source,item,variant))return 0;
+    return Object.keys(familyCorners).length;
+  }
+  if(source==="corners"){
+    var claimed=mergeCornerSets(profileCornerSet(shadow,ctx),profileCornerSet(floating,ctx));
+    return Math.max(0,cornersTotal-Object.keys(claimed).length);
+  }
+  return null;
 }
 function presetColorFor(selected,presets,state){
   if(!selected||selected.source==="main_profile")return "#1d1d1f";
@@ -253,12 +387,13 @@ window.aceilContourProfile=contourProfile;
 window.aceilContourProfileColor=function(){var p=contourProfile();return p?p.color:"#1d1d1f";};
 window.aceilWholeContourCompute=function(source,item,ctx){
   var selected=activeWholeContourProfile(item),profile=selected?contourProfile(item):null,relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
-  if(!profile||!relevant.test(source))return null;
+  if(!relevant.test(source))return null;
+  if(!profile)return partialContourQty(source,item,ctx);
   var circle=typeof circleMode!=="undefined"&&circleMode;
   var ready=circle?typeof circleDiamCm!=="undefined"&&circleDiamCm>0:typeof closed!=="undefined"&&closed&&typeof pts!=="undefined"&&pts.length>=3;
   var per=ready?(circle?Math.PI*circleDiamCm:ctx?ctx.perimeterCm:typeof getProjectPerimeterMeters==="function"?getProjectPerimeterMeters()*100:0):0;
-  var count=ready&&!circle?(ctx?ctx.cornersTotal:pts.length):0;
-  if(source==="white_insert")return profile.source==="main_profile"?Math.round(per)/100:0;
+  var count=ready&&!circle?currentCornersTotal(ctx):0;
+  if(source==="white_insert")return insertRowIsChosen(item)&&profile.source==="main_profile"?Math.round(per)/100:0;
   if(/_profile$/.test(source))return source===profile.source&&String(item.id)===String(profile.item.id)?Math.round(per)/100:0;
   var cornerSource={main_profile:"corners",shadow_profile:"shadow_corners",floating_profile:"floating_corners"}[profile.source];
   var variant=profile.item.sourceVariant||"",matching=!item.sourceVariant||item.sourceVariant===variant;
@@ -269,7 +404,7 @@ window.aceilWholeContourCompute=function(source,item,ctx){
 function computeSource(source,item,linearSummary){
   source=String(source||"");
   var contourQty=window.aceilWholeContourCompute(source,item);
-  if(source!=="white_insert"&&contourQty!==null)return {qty:contourQty,unit:/corners$/.test(source)?"шт":"м"};
+  if(contourQty!==null)return {qty:contourQty,unit:/corners$/.test(source)?"шт":"м"};
   if(typeof window.computeLinearSource==='function'){var linear=window.computeLinearSource(source,null,linearSummary);if(linear)return linear;}
   if(source==="lineartrack:fixtures"||source==="lineartrack:corners"){
     var fixtureCount=0,cornerCount=0;

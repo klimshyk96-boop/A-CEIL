@@ -1,9 +1,16 @@
 (function () {
   "use strict";
   var query = new URLSearchParams(location.search);
-  var match = location.pathname.match(/^\/report\/([a-f0-9]{20,64})\/?$/i);
+  // /r/ is the compact canonical route; /report/ remains for old shared links.
+  var match = location.pathname.match(/^\/(?:r|report)\/([a-f0-9]{20,64})\/?$/i);
   var value = match ? match[1] : query.get("r");
   if (!value || !/^[a-f0-9]{20,64}$/i.test(value)) return;
+
+  function storageToken(input) {
+    input = String(input || "").toLowerCase();
+    return /^[a-f0-9]{20}$/.test(input) ? input + input + input + input.slice(0, 4) : input;
+  }
+  var lookupToken = storageToken(value);
 
   function esc(input) {
     return String(input == null ? "" : input).replace(/[&<>"']/g, function (c) {
@@ -45,7 +52,7 @@
   async function securePayload() {
     if (!window.supabase || !baseUrl() || !anonKey()) throw new Error("Сервіс звітів тимчасово недоступний");
     var client = window.supabase.createClient(baseUrl(), anonKey(), { auth: { persistSession: false, autoRefreshToken: false } });
-    var result = await client.rpc("aceil_get_public_report", { p_token: value.toLowerCase() });
+    var result = await client.rpc("aceil_get_public_report", { p_token: lookupToken });
     if (result.error) throw result.error;
     var data = result.data || {};
     if (data.status === "active" && data.payload) return data.payload;
@@ -60,6 +67,37 @@
     return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, function (c) {
       return (Number(c) ^ (window.crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (Number(c) / 4)))).toString(16);
     });
+  }
+
+  function persistentViewSessionId() {
+    var key = "A_CEIL_report_view_" + value.toLowerCase();
+    try {
+      var saved = sessionStorage.getItem(key);
+      if (saved && /^[0-9a-f-]{20,64}$/i.test(saved)) return saved;
+      var created = makeSessionId();
+      sessionStorage.setItem(key, created);
+      return created;
+    } catch (_) {
+      return makeSessionId();
+    }
+  }
+
+  // Окремий лічильник переглядів: повторне оновлення сторінки в межах однієї
+  // браузерної сесії не накручує цифру. Авторизований власник звіту також не
+  // враховується — це перевіряє серверна функція через auth.uid().
+  async function recordPublicView() {
+    try {
+      if (!window.supabase || !baseUrl() || !anonKey()) return;
+      var trackingClient = window._sb && typeof window._sb.rpc === "function"
+        ? window._sb
+        : window.supabase.createClient(baseUrl(), anonKey(), {
+            auth: { persistSession: true, autoRefreshToken: false, detectSessionInUrl: false }
+          });
+      await trackingClient.rpc("aceil_record_report_view", {
+        p_token: lookupToken,
+        p_session_id: persistentViewSessionId()
+      });
+    } catch (_) {}
   }
 
   // Ідентифікатор сесії створюється в браузері, а message_id і текст Telegram
@@ -96,7 +134,7 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          token: value.toLowerCase(),
+          token: lookupToken,
           session_id: reportSessionId
         }),
         keepalive: true
@@ -119,7 +157,7 @@
       var url = baseUrl();
       if (!url) return;
       var payload = Object.assign({
-        token: value.toLowerCase(),
+        token: lookupToken,
         session_id: reportSessionId,
         action: action
       }, extra || {});
@@ -211,6 +249,10 @@
 
   function render(overlay, data) {
     if (data && data.reportType === "manager" && data.managerHtml) { document.open(); document.write(data.managerHtml); document.close(); return; }
+    if (data && data.structured && typeof window.A_CEIL_renderStructuredCloudReport === "function") {
+      window.A_CEIL_renderStructuredCloudReport(overlay, data);
+      return;
+    }
     var meta = data.meta || {}, phone = String(meta.phone || "").replace(/[^+\d]/g, ""), map = route(data.location || null);
     overlay.innerHTML = '<header class="rpr-head"><div><b>A·CEIL PRO</b><h1>' + esc(meta.name || "Монтажний звіт") + '</h1></div><span>Монтажний лист</span></header><section class="rpr-info">' + (meta.address ? '<div>📍 ' + esc(meta.address) + '</div>' : "") + (phone ? '<div>📞 ' + esc(phone) + '</div>' : "") + (meta.comment ? '<div>💬 ' + esc(meta.comment) + '</div>' : "") + '</section><div class="rpr-actions">' + (map ? '<a href="' + esc(map) + '">🧭 Прокласти маршрут</a>' : "") + (phone ? '<a href="tel:' + esc(phone) + '">📞 Подзвонити клієнту</a>' : "") + '<a href="javascript:void(0)" id="rprShareBtn" onclick="window.__A·CEILShareReport()">🔗 Поділитися</a>' + '</div><div class="rpr-zoom" aria-label="Масштаб звіту"><button type="button" onclick="window.__A·CEILReportZoom(-0.25)" aria-label="Зменшити">−</button><button type="button" id="rprZoomLabel" onclick="window.__A·CEILReportZoomReset()" aria-label="Повернути масштаб 100%">100%</button><button type="button" onclick="window.__A·CEILReportZoom(0.25)" aria-label="Збільшити">+</button></div><img id="rprReportImage" class="rpr-image" src="' + esc(data.image || "") + '" alt="Звіт A·CEIL">';
     applyReportZoom(1);
@@ -227,6 +269,7 @@
       var data = await securePayload();
       render(overlay, data);
       resumeVisibleTimer();
+      recordPublicView();
       // Моніторинг запускається у фоні й ніколи не затримує показ звіту.
       notifyReportOpen();
     }

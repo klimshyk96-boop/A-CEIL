@@ -509,8 +509,10 @@
     var legacy={linear_length:"lineartype:lightLine",linear_corner:"linearcorners:lightLine",linear_break:"linearbreaks:lightLine"};
     var src=legacy[value]||value,parts=src.split(":"),prefix=parts[0],key=parts.slice(1).join(":"),element="",metric="";
     var names={lightLine:"Світлова лінія",surfaceTrack:"Накладний шинопровід",recessedTrack:"Вмонтований шинопровід",magneticTrack:"Магнітний шинопровід"};
-    if(/^(lineartype|linearcorners|linearbreaks|linearfixtures)$/.test(prefix)&&names[key]){
-      element=typeof window.ceilingElementMenuName==="function"?window.ceilingElementMenuName("linear_"+key):names[key];
+    var registeredName="";
+    try{if(window.A_CEIL_LinearTypes&&typeof window.A_CEIL_LinearTypes.label==="function")registeredName=window.A_CEIL_LinearTypes.label(key)||""}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    if(/^(lineartype|linearcorners|linearbreaks|linearfixtures)$/.test(prefix)&&(registeredName||names[key])){
+      element=typeof window.ceilingElementMenuName==="function"?window.ceilingElementMenuName("linear_"+key):(registeredName||names[key]);
       metric={lineartype:"Довжина, м",linearcorners:"Кути, шт",linearbreaks:"Обриви, шт",linearfixtures:"Світильники, шт"}[prefix];
       return {value:value,category:"linear",element:element,metric:metric};
     }

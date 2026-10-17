@@ -13,6 +13,12 @@ function zeroResult(it){
   c.qty=0;
   c.manualQtyOverride=false;
   c.autoFilled=false;c.autoZero=true;
+  /* A whole-contour replacement is a room decision, never a catalog default.
+     Without clearing it here, choosing a shadow/floating contour in one room
+     silently colours and recalculates every newly created room. */
+  c.fullContourSelected=false;
+  delete c.fullContourPresetName;
+  delete c.fullContourColor;
   /* Вставка рахується за замовчуванням завжди. Для НОВОЇ кімнати
      локальний дефолт — біла вставка. Вибір чорної зберігається лише
      у snapshot поточної кімнати і не змінює глобальний каталог/дефолт. */
@@ -56,7 +62,7 @@ function mergedRoomItems(room,catalog){
   var managed=roomFilmItems(saved),managedGroups=filmGroupSet(managed);
   var base=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(managedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0);});
   var bySaved={};saved.forEach(function(it){var k=key(it);if(k)bySaved[k]=it;var nk=nameKey(it);if(nk&&!bySaved[nk])bySaved[nk]=it;});
-  var ROOM_FIELDS=['qty','manualQtyOverride','autoFilled','autoZero','insertSelected','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount'];
+  var ROOM_FIELDS=['qty','manualQtyOverride','autoFilled','autoZero','insertSelected','fullContourSelected','fullContourPresetName','fullContourColor','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount'];
   var out=[],seen={};
   base.forEach(function(cat){
     var k=key(cat);if(!k||seen[k])return;seen[k]=1;

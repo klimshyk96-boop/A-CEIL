@@ -6,6 +6,11 @@ cd "$ROOT_DIR" || exit 1
 
 python3 scripts/check-runtime.py || exit 1
 node tests/voice-number.test.cjs || exit 1
+node tests/autocount-profile.test.cjs || exit 1
+node tests/linear-autocount.test.cjs || exit 1
+node tests/insert-choice.test.cjs || exit 1
+node tests/stability-regression.test.cjs || exit 1
+node scripts/check-architecture.cjs || exit 1
 
 errors=0
 checked=0
@@ -39,6 +44,28 @@ fi
 duplicate_prefixes="$(find js -type f -name '[0-9][0-9][0-9]-*.js' -printf '%f\n' | cut -d- -f1 | sort | uniq -d)"
 if [[ -n "$duplicate_prefixes" ]]; then
   fail "дубльовані числові префікси JS: $(printf '%s' "$duplicate_prefixes" | tr '\n' ' ')"
+fi
+
+duplicate_files="$(python3 - <<'PY'
+from collections import defaultdict
+from pathlib import Path
+import hashlib
+import re
+
+for mode in ("exact", "without_whitespace"):
+    groups = defaultdict(list)
+    for file in Path("js").rglob("*.js"):
+        data = file.read_bytes()
+        if mode == "without_whitespace":
+            data = re.sub(rb"\s+", b"", data)
+        groups[hashlib.sha256(data).hexdigest()].append(str(file))
+    for files in groups.values():
+        if len(files) > 1:
+            print(mode + ": " + " | ".join(files))
+PY
+)"
+if [[ -n "$duplicate_files" ]]; then
+  fail "знайдено однакові JS-файли: $duplicate_files"
 fi
 
 legacy_handlers='rmCurveSetMode|rmCurveDelete|rmCurveApply|rmComplexAddRow|rmWizardBack|rmWizardNext|rmComplexApply|rmComplexDelete|rmShapeOpenArc|rmSimpleCurveClose|rmSimpleCurveDirection|rmSimpleCurveStraight|rmSimpleCurveApply'

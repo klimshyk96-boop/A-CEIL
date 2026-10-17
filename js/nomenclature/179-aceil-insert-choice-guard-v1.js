@@ -57,7 +57,6 @@
     function restorePreferredInsert(){
       if(items()!==roomItems)return;
       var after=candidates();
-      var current=preferredBeforeAutofill(after);if(!current||String(current.id)!==String(preferredId))return;
       var chosen=after.find(function(item){return item===preferred||String(item.id)===String(preferredId);});
       if(!chosen)return;
 

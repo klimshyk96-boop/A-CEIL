@@ -3,3 +3,6 @@
 /docs/
 /*.md
 /VERSION
+/supabase/
+/verification*.json
+/review-*.png

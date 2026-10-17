@@ -157,5 +157,6 @@
   "js/nomenclature/212-aceil-film-group-state-fix-v1.js",
   "js/canvas/193-aceil-finger-draw-v1.js",
   "js/reports/223-aceil-installer-share-v1.js",
-  "js/reports/224-aceil-report-diagonals-menu-fix-v1.js"
+  "js/reports/224-aceil-report-diagonals-menu-fix-v1.js",
+  "js/core/225-aceil-public-api-v1.js"
 ]

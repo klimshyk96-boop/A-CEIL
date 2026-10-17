@@ -1,0 +1,322 @@
+{
+ "rooms": {
+  "rect500x300": {
+   "lengths": [
+    500,
+    300,
+    500,
+    300
+   ],
+   "items": [
+    {
+     "name": "M303 3.6м",
+     "qty": 15,
+     "unit": "м²",
+     "price": 380,
+     "source": null
+    },
+    {
+     "name": "M303 5.1м",
+     "qty": 0,
+     "unit": "м²",
+     "price": 420,
+     "source": null
+    },
+    {
+     "name": "M303 5.8м",
+     "qty": 0,
+     "unit": "м²",
+     "price": 420,
+     "source": null
+    }
+   ],
+   "total": 5700,
+   "groupNames": [
+    "Плівка Premium"
+   ]
+  },
+  "rect350x420": {
+   "lengths": [
+    350,
+    420,
+    350,
+    420
+   ],
+   "items": [
+    {
+     "name": "M303 3.6м",
+     "qty": 14.7,
+     "unit": "м²",
+     "price": 380,
+     "source": null
+    },
+    {
+     "name": "M303 5.1м",
+     "qty": 0,
+     "unit": "м²",
+     "price": 420,
+     "source": null
+    },
+    {
+     "name": "M303 5.8м",
+     "qty": 0,
+     "unit": "м²",
+     "price": 420,
+     "source": null
+    }
+   ],
+   "total": 5586,
+   "groupNames": [
+    "Плівка Premium"
+   ]
+  },
+  "lshape": {
+   "lengths": [
+    600,
+    200,
+    300,
+    200,
+    300,
+    400
+   ],
+   "items": [
+    {
+     "name": "M303 3.6м",
+     "qty": 0,
+     "unit": "м²",
+     "price": 380,
+     "source": null
+    },
+    {
+     "name": "M303 5.1м",
+     "qty": 18,
+     "unit": "м²",
+     "price": 420,
+     "source": null
+    },
+    {
+     "name": "M303 5.8м",
+     "qty": 0,
+     "unit": "м²",
+     "price": 420,
+     "source": null
+    }
+   ],
+   "total": 7560,
+   "groupNames": [
+    "Плівка Premium"
+   ]
+  }
+ },
+ "report": {
+  "golden-single": {
+   "type": "single",
+   "meta": {
+    "name": "Golden single",
+    "address": "",
+    "phone": "",
+    "comment": ""
+   },
+   "rooms": [
+    {
+     "name": "Golden single",
+     "area": "0.00",
+     "per": "0.00",
+     "inC": "0",
+     "outC": "0",
+     "lights": 0,
+     "dimensions": [],
+     "walls": [],
+     "lightLines": [],
+     "ceilingLines": [],
+     "exhaustLines": [],
+     "groups": [
+      {
+       "name": "Плівка Premium",
+       "items": [
+        {
+         "name": "M303 5.1м",
+         "icon": "🎨",
+         "qty": 18,
+         "unit": "м²",
+         "price": 420,
+         "total": 7560
+        }
+       ]
+      }
+     ],
+     "total": 7560
+    }
+   ],
+   "total": 7560
+  },
+  "golden-multi": {
+   "type": "object",
+   "meta": {
+    "name": "Golden multi",
+    "address": "",
+    "phone": "",
+    "comment": ""
+   },
+   "rooms": [
+    {
+     "name": "rect500x300",
+     "area": "—",
+     "per": "—",
+     "inC": "—",
+     "outC": "—",
+     "lights": 0,
+     "dimensions": [],
+     "walls": [],
+     "lightLines": [],
+     "ceilingLines": [],
+     "exhaustLines": [],
+     "groups": [
+      {
+       "name": "Плівка Premium",
+       "items": [
+        {
+         "name": "M303 3.6м",
+         "icon": "🎨",
+         "qty": 15,
+         "unit": "м²",
+         "price": 380,
+         "total": 5700
+        }
+       ]
+      }
+     ],
+     "total": 5700
+    },
+    {
+     "name": "rect350x420",
+     "area": "—",
+     "per": "—",
+     "inC": "—",
+     "outC": "—",
+     "lights": 0,
+     "dimensions": [],
+     "walls": [],
+     "lightLines": [],
+     "ceilingLines": [],
+     "exhaustLines": [],
+     "groups": [
+      {
+       "name": "Плівка Premium",
+       "items": [
+        {
+         "name": "M303 3.6м",
+         "icon": "🎨",
+         "qty": 14.7,
+         "unit": "м²",
+         "price": 380,
+         "total": 5586
+        }
+       ]
+      }
+     ],
+     "total": 5586
+    },
+    {
+     "name": "lshape",
+     "area": "—",
+     "per": "—",
+     "inC": "—",
+     "outC": "—",
+     "lights": 0,
+     "dimensions": [],
+     "walls": [],
+     "lightLines": [],
+     "ceilingLines": [],
+     "exhaustLines": [],
+     "groups": [
+      {
+       "name": "Плівка Premium",
+       "items": [
+        {
+         "name": "M303 5.1м",
+         "icon": "🎨",
+         "qty": 18,
+         "unit": "м²",
+         "price": 420,
+         "total": 7560
+        }
+       ]
+      }
+     ],
+     "total": 7560
+    }
+   ],
+   "total": 18846
+  }
+ },
+ "stableTotalMulti": 18846,
+ "rich": {
+  "items": [
+   {
+    "name": "Вентиляція",
+    "qty": 1,
+    "unit": "шт",
+    "price": 150,
+    "source": "ventilation"
+   },
+   {
+    "name": "Вставка біла",
+    "qty": 13,
+    "unit": "м",
+    "price": 80,
+    "source": "white_insert"
+   },
+   {
+    "name": "Кути",
+    "qty": 4,
+    "unit": "шт",
+    "price": 50,
+    "source": "corners"
+   },
+   {
+    "name": "Люстра",
+    "qty": 1,
+    "unit": "шт",
+    "price": 500,
+    "source": "chandelier"
+   },
+   {
+    "name": "Периметр",
+    "qty": 16,
+    "unit": "м",
+    "price": 20,
+    "source": "full_perimeter"
+   },
+   {
+    "name": "Профіль базовий",
+    "qty": 13,
+    "unit": "м",
+    "price": 100,
+    "source": "main_profile"
+   },
+   {
+    "name": "Профіль парящий",
+    "qty": 1,
+    "unit": "м",
+    "price": 350,
+    "source": "floating_profile"
+   },
+   {
+    "name": "Профіль тіньовий",
+    "qty": 2,
+    "unit": "м",
+    "price": 300,
+    "source": "shadow_profile"
+   },
+   {
+    "name": "Світильник",
+    "qty": 3,
+    "unit": "шт",
+    "price": 200,
+    "source": "spot_light"
+   }
+  ],
+  "total": 10646
+ }
+}

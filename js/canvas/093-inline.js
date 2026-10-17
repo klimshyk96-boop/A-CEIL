@@ -1,1 +1,136 @@
-!function(){function wallMarksArr(){return Array.isArray(window.wallMarks)?window.wallMarks:"undefined"!=typeof wallMarks&&Array.isArray(wallMarks)?wallMarks:[]}function currentEditId(){return window._rwe2CurrentWallId||window._wallEditId||null}window.__rwe2ProfileColor="",window.rwe2SetProfileColor=function(color){const c="white"===color||"black"===color?color:"";window.__rwe2ProfileColor=c;const row=document.getElementById("rwe2ProfileColorButtons");row&&row.querySelectorAll(".rwe-pcolor-btn").forEach(btn=>{btn.classList.toggle("active",(btn.getAttribute("data-color")||"")===c)})};const _prevOpenForColor=window.openWallEditModal;if("function"==typeof _prevOpenForColor&&!_prevOpenForColor.__profileColorPatched){const wrappedOpenForColor=function(id){const r=_prevOpenForColor.apply(this,arguments);try{!function(){if(document.getElementById("rwe2ProfileColorRow"))return document.getElementById("rwe2ProfileColorRow");const nameInput=document.getElementById("rwe2Name");if(!nameInput)return null;const wrap=document.createElement("div");wrap.id="rwe2ProfileColorRow";const label=document.createElement("label");label.className="rwe2-label",label.textContent="Колір профілю";const row=document.createElement("div");row.className="rwe-pcolor-row",row.id="rwe2ProfileColorButtons",row.innerHTML='<button type="button" class="rwe-pcolor-btn" data-color="white">⚪ Білий</button><button type="button" class="rwe-pcolor-btn" data-color="black">⚫ Чорний</button><button type="button" class="rwe-pcolor-btn" data-color="">Без кольору</button>',row.querySelectorAll(".rwe-pcolor-btn").forEach(btn=>{btn.addEventListener("click",()=>{window.rwe2SetProfileColor(btn.getAttribute("data-color")||"")})}),wrap.appendChild(label),wrap.appendChild(row),nameInput.insertAdjacentElement("afterend",wrap)}();const m=wallMarksArr().find(w=>w&&w.id===id);let color="";m&&(color="white"===m.profileColor||"black"===m.profileColor?m.profileColor:function(typeText){try{if("function"==typeof _colorWordFromName)return _colorWordFromName(typeText)}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}const n=String(typeText||"").trim().toLowerCase();return/білі|білий|біла|біле|білого|білих/.test(n)?"white":/чорн/.test(n)?"black":""}(m.type)),window.rwe2SetProfileColor(color)}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}return r};wrappedOpenForColor.__profileColorPatched=!0,window.openWallEditModal=wrappedOpenForColor;try{openWallEditModal=wrappedOpenForColor}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}const _prevSaveForColor=window.rwe2Save;if("function"==typeof _prevSaveForColor&&!_prevSaveForColor.__profileColorPatched){const wrappedSaveForColor=function(){const id=currentEditId(),r=_prevSaveForColor.apply(this,arguments);try{const m=wallMarksArr().find(w=>w&&w.id===id);if(m){const chosen=window.__rwe2ProfileColor;m.profileColor="white"===chosen||"black"===chosen?chosen:"","function"==typeof saveState&&saveState()}}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}return r};wrappedSaveForColor.__profileColorPatched=!0,window.rwe2Save=wrappedSaveForColor;try{rwe2Save=wrappedSaveForColor}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}const _prevSaveWallEditForColor=window.saveWallEdit;if("function"==typeof _prevSaveWallEditForColor&&!_prevSaveWallEditForColor.__profileColorPatched){const wrappedSaveWallEditForColor=function(){const id=currentEditId(),r=_prevSaveWallEditForColor.apply(this,arguments);try{const m=wallMarksArr().find(w=>w&&w.id===id);if(m){const chosen=window.__rwe2ProfileColor;m.profileColor="white"===chosen||"black"===chosen?chosen:"","function"==typeof saveState&&saveState()}}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}return r};wrappedSaveWallEditForColor.__profileColorPatched=!0,window.saveWallEdit=wrappedSaveWallEditForColor;try{saveWallEdit=wrappedSaveWallEditForColor}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}}}()
+(function(){
+  "use strict";
+
+  function wallMarksArr(){
+    if(Array.isArray(window.wallMarks))return window.wallMarks;
+    try{if(typeof wallMarks!=="undefined"&&Array.isArray(wallMarks))return wallMarks;}catch(error){window.__diagSilent&&window.__diagSilent(error);}
+    return [];
+  }
+
+  function currentEditId(){
+    return window._rwe2CurrentWallId||window._wallEditId||null;
+  }
+
+  function stopTap(event,prevent){
+    if(!event)return;
+    if(prevent&&event.cancelable)event.preventDefault();
+    event.stopPropagation();
+    if(typeof event.stopImmediatePropagation==="function")event.stopImmediatePropagation();
+  }
+
+  window.__rwe2ProfileColor="";
+  window.rwe2SetProfileColor=function(color){
+    var chosen=color==="white"||color==="black"?color:"";
+    window.__rwe2ProfileColor=chosen;
+    var row=document.getElementById("rwe2ProfileColorButtons");
+    if(row)row.querySelectorAll(".rwe-pcolor-btn").forEach(function(button){
+      button.classList.toggle("active",(button.getAttribute("data-color")||"")===chosen);
+    });
+  };
+
+  function bindProfileColorButton(button){
+    if(!button||button.dataset.safeTap==="1")return;
+    button.dataset.safeTap="1";
+    var lastPick=0;
+    function begin(event){stopTap(event,false);}
+    function choose(event){
+      stopTap(event,true);
+      var now=Date.now();
+      if(now-lastPick<250)return;
+      lastPick=now;
+      window.rwe2SetProfileColor(button.getAttribute("data-color")||"");
+    }
+    button.addEventListener("pointerdown",begin,{passive:false});
+    button.addEventListener("touchstart",begin,{passive:false});
+    button.addEventListener("mousedown",begin);
+    button.addEventListener("pointerup",choose,{passive:false});
+    button.addEventListener("touchend",choose,{passive:false});
+    button.addEventListener("click",choose);
+  }
+
+  function ensureProfileColorUi(){
+    var existing=document.getElementById("rwe2ProfileColorRow");
+    if(existing){
+      existing.querySelectorAll(".rwe-pcolor-btn").forEach(bindProfileColorButton);
+      return existing;
+    }
+    var nameInput=document.getElementById("rwe2Name");
+    if(!nameInput)return null;
+    var wrap=document.createElement("div");
+    wrap.id="rwe2ProfileColorRow";
+    var label=document.createElement("label");
+    label.className="rwe2-label";
+    label.textContent="Колір профілю";
+    var row=document.createElement("div");
+    row.className="rwe-pcolor-row";
+    row.id="rwe2ProfileColorButtons";
+    row.innerHTML='<button type="button" class="rwe-pcolor-btn" data-color="white">⚪ Білий</button><button type="button" class="rwe-pcolor-btn" data-color="black">⚫ Чорний</button><button type="button" class="rwe-pcolor-btn" data-color="">Без кольору</button>';
+    row.querySelectorAll(".rwe-pcolor-btn").forEach(bindProfileColorButton);
+    wrap.appendChild(label);
+    wrap.appendChild(row);
+    nameInput.insertAdjacentElement("afterend",wrap);
+    return wrap;
+  }
+
+  function colorFromName(typeText){
+    try{if(typeof _colorWordFromName==="function")return _colorWordFromName(typeText);}catch(error){window.__diagSilent&&window.__diagSilent(error);}
+    var name=String(typeText||"").trim().toLowerCase();
+    if(/білі|білий|біла|біле|білого|білих/.test(name))return "white";
+    if(/чорн/.test(name))return "black";
+    return "";
+  }
+
+  var previousOpen=window.openWallEditModal;
+  if(typeof previousOpen==="function"&&!previousOpen.__profileColorPatched){
+    var wrappedOpen=function(id){
+      var result=previousOpen.apply(this,arguments);
+      try{
+        ensureProfileColorUi();
+        var mark=wallMarksArr().find(function(item){return item&&item.id===id;});
+        var color="";
+        if(mark)color=mark.profileColor==="white"||mark.profileColor==="black"?mark.profileColor:colorFromName(mark.type);
+        window.rwe2SetProfileColor(color);
+      }catch(error){window.__diagSilent&&window.__diagSilent(error);}
+      return result;
+    };
+    wrappedOpen.__profileColorPatched=true;
+    window.openWallEditModal=wrappedOpen;
+    try{openWallEditModal=wrappedOpen;}catch(error){window.__diagSilent&&window.__diagSilent(error);}
+  }
+
+  function saveChosenProfileColor(id){
+    try{
+      var mark=wallMarksArr().find(function(item){return item&&item.id===id;});
+      if(!mark)return;
+      var chosen=window.__rwe2ProfileColor;
+      mark.profileColor=chosen==="white"||chosen==="black"?chosen:"";
+      if(typeof saveState==="function")saveState();
+    }catch(error){window.__diagSilent&&window.__diagSilent(error);}
+  }
+
+  var previousSave=window.rwe2Save;
+  if(typeof previousSave==="function"&&!previousSave.__profileColorPatched){
+    var wrappedSave=function(){
+      var id=currentEditId();
+      var result=previousSave.apply(this,arguments);
+      saveChosenProfileColor(id);
+      return result;
+    };
+    wrappedSave.__profileColorPatched=true;
+    window.rwe2Save=wrappedSave;
+    try{rwe2Save=wrappedSave;}catch(error){window.__diagSilent&&window.__diagSilent(error);}
+  }
+
+  var previousLegacySave=window.saveWallEdit;
+  if(typeof previousLegacySave==="function"&&!previousLegacySave.__profileColorPatched){
+    var wrappedLegacySave=function(){
+      var id=currentEditId();
+      var result=previousLegacySave.apply(this,arguments);
+      saveChosenProfileColor(id);
+      return result;
+    };
+    wrappedLegacySave.__profileColorPatched=true;
+    window.saveWallEdit=wrappedLegacySave;
+    try{saveWallEdit=wrappedLegacySave;}catch(error){window.__diagSilent&&window.__diagSilent(error);}
+  }
+})();
