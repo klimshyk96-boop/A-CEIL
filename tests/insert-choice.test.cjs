@@ -3,6 +3,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
+const factorySource = fs.readFileSync(
+  path.join(__dirname, '..', 'js', 'core', '007-aceil-pipeline-v1.js'),
+  'utf8'
+);
 const pipelineSource = fs.readFileSync(
   path.join(__dirname, '..', 'js', 'nomenclature', '105-aceil-autofill-pipeline-v1.js'),
   'utf8'
@@ -36,6 +40,7 @@ function run(items) {
     console
   };
   vm.createContext(context);
+  vm.runInContext(factorySource, context, { filename: '007-aceil-pipeline-v1.js' });
   vm.runInContext(pipelineSource, context, { filename: '105-aceil-autofill-pipeline-v1.js' });
   vm.runInContext(source, context, { filename: '179-aceil-insert-choice-guard-v1.js' });
   window.autoFillNomenclature({ silent: true });

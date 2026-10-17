@@ -68,16 +68,6 @@
    "js/nomenclature/038-aceil-rp-home-rooms-render.js",
    "js/nomenclature/039-aceil-rp-continue-measure.js"
   ],
-  "rpcUpdate": [
-   "js/nomenclature/040-aceil-rpc-cockpit-update.js",
-   "js/reports/041-aceil-current-project-meta.js",
-   "js/nomenclature/042-aceil-rpc-light-count-lines.js",
-   "js/reports/044-aceil-cockpit-tools-wall-modal-normalize.js",
-   "js/reports/061-aceil-wall-marks-bridge-room-load.js",
-   "js/nomenclature/062-aceil-nomenclature-cloud-merge.js",
-   "js/reports/065-aceil-cockpit-metric-icons.js",
-   "js/nomenclature/167-aceil-color-picker-v3.js"
-  ],
   "setWallFullSide": [
    "js/reports/044-aceil-cockpit-tools-wall-modal-normalize.js",
    "js/canvas/045-aceil-wall-full-side-color-presets.js",
@@ -569,5 +559,26 @@
   "js/nomenclature/019-aceil-core-ui-rooms-bulk-walls.js": 112750,
   "js/rooms/110-aceil-linear-element-v1.js": 90482,
   "js/reports/184-aceil-estimate-variants-ui-v1.js": 121223
- }
+ },
+ "dynamicAssigners": [
+  "js/core/007-aceil-pipeline-v1.js",
+  "js/projects/013-aceil-i18n-core.js",
+  "js/admin/033-aceil-supabase-auth-offline-access.js",
+  "js/reports/061-aceil-wall-marks-bridge-room-load.js",
+  "js/nomenclature/063-aceil-wall-marks-persist.js",
+  "js/nomenclature/105-aceil-autofill-pipeline-v1.js",
+  "js/nomenclature/121-aceil-state-manager-v1.js",
+  "js/projects/122-aceil-v222-critical-load-guard.js",
+  "js/rooms/126-aceil-v234-light-orientation-fix.js",
+  "js/reports/128-aceil-report-confidence-gate.js",
+  "js/nomenclature/140-universal-autocount-v319.js",
+  "js/projects/151-aceil-storage-audit-v340.js",
+  "js/canvas/154-aceil-light-menu-v351.js",
+  "js/admin/159-aceil-access-clean-v2.js",
+  "js/nomenclature/163-aceil-price-stability-v2.js",
+  "js/nomenclature/171-aceil-offline-nomenclature-v1.js",
+  "js/canvas/187-aceil-ceiling-cornices-v1.js",
+  "js/projects/210-aceil-project-crm-v2.js",
+  "js/core/225-aceil-public-api-v1.js"
+ ]
 }

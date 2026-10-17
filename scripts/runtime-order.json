@@ -5,6 +5,7 @@
   "js/projects/011-aceil-utils-v1.js",
   "js/core/debug-log.js",
   "js/core/006-user-storage-v1.js",
+  "js/core/007-aceil-pipeline-v1.js",
   "js/nomenclature/189-aceil-autocount-toggle-v1.js",
   "js/projects/013-aceil-i18n-core.js",
   "js/i18n/014-aceil-lang-uk.js",
