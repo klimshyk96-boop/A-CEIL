@@ -12,7 +12,7 @@ trap cleanup EXIT
 printf '%s\n' '## static + unit + architecture'
 bash scripts/check-before-deploy.sh
 
-for test_name in verify-aceil verify-state verify-storage verify-golden verify-pwa; do
+for test_name in verify-aceil verify-state verify-storage verify-golden verify-autofill verify-pwa; do
   printf '%s\n' "## $test_name"
   node "tests/$test_name.cjs"
 done

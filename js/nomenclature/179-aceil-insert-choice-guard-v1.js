@@ -43,15 +43,16 @@
     try{if(typeof saveState==="function")saveState();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
 
-  var previous=window.autoFillNomenclature;
-  if(typeof previous!=="function"||previous.__insertChoiceGuardV1)return;
-
-  var wrapped=function(){
-    if(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==="function"&&!window.A_CEIL_AutoCount.isEnabled())return;
+  var afInsert=window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].autofill;
+  if(!afInsert)return;
+  afInsert.stage("insertChoice",{
+    enabled:function(){return !(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==="function"&&!window.A_CEIL_AutoCount.isEnabled());},
+    skipValue:undefined,
+    around:function(next){
     var before=candidates(),roomItems=items();
     var preferred=preferredBeforeAutofill(before);
     var preferredId=preferred&&preferred.id;
-    var result=previous.apply(this,arguments);
+    var result=next();
     if(!preferred)return result;
 
     function restorePreferredInsert(){
@@ -87,8 +88,6 @@
     setTimeout(restorePreferredInsert,300);
     if(result&&typeof result.then==="function")result.then(restorePreferredInsert).catch(function(){});
     return result;
-  };
-  wrapped.__insertChoiceGuardV1=true;
-  window.autoFillNomenclature=wrapped;
-  try{autoFillNomenclature=wrapped;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    }
+  });
 })();

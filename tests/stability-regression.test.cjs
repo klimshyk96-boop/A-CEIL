@@ -21,7 +21,7 @@ const linearElements=read("js/rooms/110-aceil-linear-element-v1.js");
 const universalAutocount=read("js/nomenclature/140-universal-autocount-v319.js");
 const autocountMenu=read("js/nomenclature/170-aceil-autocount-menu-v1.js");
 const roomFlow=read("js/reports/087-aceil-multiroom-simple-flow.js");
-const wallUi=read("js/reports/044-inline.js")+read("js/canvas/045-inline.js");
+const wallUi=read("js/reports/044-aceil-cockpit-tools-wall-modal-normalize.js")+read("js/canvas/045-aceil-wall-full-side-color-presets.js");
 
 assert.match(links,/new Uint8Array\(10\)/,"new report URLs must retain 80 random bits");
 assert.match(links,/function expandCompactToken\(/,"short report tokens must expand to the existing server format");
@@ -78,6 +78,6 @@ assert.doesNotMatch(wallUi,/_prevOpenWallModalForInit/,
 const versions=[...index.matchAll(/(?:src|href)="[^"]+\.(?:js|css)\?v=([^"]+)"/g)].map(match=>match[1]);
 assert(versions.length>150,"runtime asset list unexpectedly shrank");
 assert.strictEqual(new Set(versions).size,1,"all runtime assets must share one build ID");
-assert.strictEqual(versions[0],"20261017-dropin1","unexpected stability build ID");
+assert.strictEqual(versions[0],"20261017-archsafe1","unexpected stability build ID");
 
 console.log("Stability regression tests: OK");

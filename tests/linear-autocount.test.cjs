@@ -3,6 +3,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
+const pipelineSource = fs.readFileSync(
+  path.join(__dirname, '..', 'js', 'nomenclature', '105-aceil-autofill-pipeline-v1.js'),
+  'utf8'
+);
 const source = fs.readFileSync(
   path.join(__dirname, '..', 'js', 'rooms', '110-aceil-linear-element-v1.js'),
   'utf8'
@@ -71,6 +75,7 @@ const context = {
   console
 };
 vm.createContext(context);
+vm.runInContext(pipelineSource, context, { filename: '105-aceil-autofill-pipeline-v1.js' });
 vm.runInContext(source, context, { filename: '110-aceil-linear-element-v1.js' });
 
 assert.deepEqual(

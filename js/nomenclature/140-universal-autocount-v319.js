@@ -580,16 +580,12 @@ window.rmUniversalAutoCountV319=applyUniversal;
 window.previewNomenclatureSource=function(source,item){return computeSource(source,item)||(typeof window.previewLegacyNomenclatureSource==="function"?window.previewLegacyNomenclatureSource(source,item):null);};
 
 /* Existing AutoFill button also applies all dynamic sources. */
-var prevAuto=window.autoFillNomenclature||(typeof autoFillNomenclature==="function"?autoFillNomenclature:null);
-if(typeof prevAuto==="function"){
-  window.autoFillNomenclature=function(){
-    if(!autoCountEnabled())return 0;
-    var r=prevAuto.apply(this,arguments);
-    applyUniversal({noSave:false});
-    return r;
-  };
-  try{autoFillNomenclature=window.autoFillNomenclature}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-}
+var afUniversal=window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].autofill;
+if(afUniversal)afUniversal.stage("universal",{
+  enabled:function(){return autoCountEnabled()},
+  skipValue:0,
+  after:function(){applyUniversal({noSave:false})}
+});
 
 /* Add dynamic sources to the manual source selector whenever an item is edited. */
 function fillEditDynamicSources(){

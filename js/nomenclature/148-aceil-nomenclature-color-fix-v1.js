@@ -99,16 +99,9 @@ function fixColorAwareQuantities(){
   } catch(e){}
 }
 
-var oldAutoFill = window.autoFillNomenclature;
-if ("function" == typeof oldAutoFill && !oldAutoFill.__colorFix401) {
-  var wrappedAutoFill = function(){
-    var r = oldAutoFill.apply(this, arguments);
-    try { fixColorAwareQuantities(); } catch(e){}
-    return r;
-  };
-  wrappedAutoFill.__colorFix401 = true;
-  window.autoFillNomenclature = wrappedAutoFill;
-  try { autoFillNomenclature = wrappedAutoFill; } catch(e){}
-}
+var afColorFix = window["A\u00b7CEIL"] && window["A\u00b7CEIL"].autofill;
+if (afColorFix) afColorFix.stage("colorFix", {
+  after: function(){ try { fixColorAwareQuantities(); } catch(e){} }
+});
 
 }();

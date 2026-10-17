@@ -202,19 +202,15 @@
   }
   window.A·CEILCorrectCorniceAutoCount=correctCorniceRules;
 
-  var previousAuto=window.autoFillNomenclature;
-  if(typeof previousAuto==="function"&&!previousAuto.__pvcCorniceFixed){
-    var wrappedAuto=function(){
-      if(!autoCountEnabled())return 0;
-      var result=previousAuto.apply(this,arguments);
+  var afCornices=window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].autofill;
+  if(afCornices)afCornices.stage("cornices",{
+    enabled:function(){return autoCountEnabled();},
+    skipValue:0,
+    after:function(){
       applyCustomRules(false);
       correctCorniceRules(true);
-      return result;
-    };
-    wrappedAuto.__pvcCorniceFixed=true;
-    window.autoFillNomenclature=wrappedAuto;
-    try{autoFillNomenclature=wrappedAuto;}catch(e){window.__diagSilent&&window.__diagSilent(e)}
-  }
+    }
+  });
 
   var LABELS={
     "":"Без окремого правила — визначати за назвою",

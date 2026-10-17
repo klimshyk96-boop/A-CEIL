@@ -10,7 +10,7 @@
 - CSS: app.css (base), theme.css (UI/theme/admin), layout.css (later layout sections).
   Keep their placement in index.html: runtime-injected styles depend on that cascade order.
 - `scripts/runtime-order.json` records the remaining legacy load order. Review dependencies before changing it.
-- Build id `20261017-dropin1` is shared by local asset queries, the service-worker cache,
+- Build id `20261017-archsafe1` is shared by local asset queries, the service-worker cache,
   the PWA reload key and service-worker registration. `scripts/check-before-deploy.sh` enforces this.
 - The service worker precaches only the essential shell. Versioned local JS/CSS use cache-first
   runtime caching; a build-id change is the only supported way to publish changed assets.
@@ -33,10 +33,24 @@ Older cleanup notes are historical, not a statement of the current file counts.
 
 ## Архітектурний запобіжник — 2026-10-17
 
+- Файли з історичними назвами `*-inline.js` перейменовано за їх реальною відповідальністю; порядок виконання не змінено.
 - `js/core/225-aceil-public-api-v1.js` створює `window["A·CEIL"].API` — стабільний вхід для нового коду й тестів. Усередині він поки делегує виклики чинним реалізаціям.
-- `scripts/check-architecture.cjs` блокує дубльовані номери, динамічний код, непідключені файли, нові ланцюги обгорток, нові анонімні назви та неконтрольований ріст великих файлів.
-- Старі `*-inline.js` тимчасово залишено навмисно: цей пакет можна розпакувати поверх локальної GitHub-папки без ручного видалення. Їхня кількість зафіксована у `scripts/architecture-baseline.json` і може лише зменшуватися.
-- `scripts/run-all-tests.sh` завершується помилкою при будь-якому падінні. `ALL OK` з'являється лише після успішного виконання всіх перевірок.
-- `scripts/prune-superseded-layers.cjs` без `--apply` лише показує кандидатів і нічого не змінює.
+- `scripts/check-architecture.cjs` блокує повернення анонімних назв, дубльованих номерів, динамічного коду, непідключених файлів, нових ланцюгів обгорток і неконтрольованого росту великих файлів.
+- `scripts/architecture-baseline.json` фіксує поточний борг: 108 ланцюгів обгорток. Цей показник може лише зменшуватись; після перевіреного скорочення базу оновлюють командою `node scripts/check-architecture.cjs --update`.
+- `scripts/run-all-tests.sh` запускає статичні, модульні та браузерні перевірки й завершується помилкою при будь-якому падінні. Повідомлення `ALL OK` виводиться тільки після успіху всіх тестів.
+- `scripts/prune-superseded-layers.cjs` є лише діагностичним інструментом. Без `--apply` він нічого не змінює; видалення шарів допускається тільки після браузерної регресії.
 
-Подальша консолідація: спочатку golden-тест, потім злиття одного ланцюга у файл-власник, повний тест і лише після цього оновлення бази командою `node scripts/check-architecture.cjs --update`. Назва позиції номенклатури не є джерелом типу або автопрорахунку — використовуються стабільні ID/source.
+Безпечний порядок подальшої консолідації: спочатку зафіксувати поведінку golden-тестом, потім злити один ланцюг у файл-власник, виконати `bash scripts/run-all-tests.sh` і лише після успіху оновити архітектурну базу. Перейменування позицій номенклатури не може бути джерелом типу або автопрорахунку — використовуються стабільні ID/source.
+
+## Конвеєр автопрорахунку — 2026-10-17
+
+- `js/nomenclature/105-aceil-autofill-pipeline-v1.js` є єдиним власником
+  `window.autoFillNomenclature`.
+- Функціональні шари реєструють етапи замість повторного перевизначення глобальної функції.
+  Зафіксований порядок: `linear → universal → colorFix → cornices → insertChoice → filmFix`.
+- `tests/verify-autofill.cjs` перевіряє контракт конвеєра, порядок етапів і вимкнений
+  автопрорахунок. `scripts/diff-autofill-builds.cjs` порівнює стару й нову збірки
+  на відтворюваних сценаріях.
+- Необов'язкові «вусаті» роботи та захист підлоги залишаються вимкненими за замовчуванням
+  і керуються власним чекбоксом. Автопрорахунок не скидає ручний вибір.
+- Подальші ланцюги зливаються лише по одному після окремого порівняння збірок.

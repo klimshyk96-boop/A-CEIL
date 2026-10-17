@@ -12,8 +12,8 @@ const read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):[path.join(d,e.name)]);
 const files=walk(path.join(root,'js')).filter(f=>f.endsWith('.js')).map(f=>path.relative(root,f).split(path.sep).join('/'));
 
-/* R1 legacy anonymous names are debt: existing ones may disappear, new ones are forbidden. */
-const inlineFiles=files.filter(f=>/-inline\.js$/.test(f));
+/* R1 meaningful names */
+files.filter(f=>/-inline\.js$/.test(f)).forEach(f=>errors.push('anonymous file name (rename by feature): '+f));
 /* R2 unique numeric prefixes */
 const nums={};files.forEach(f=>{const m=path.basename(f).match(/^(\d{3})-/);if(m)(nums[m[1]]=nums[m[1]]||[]).push(f);});
 Object.entries(nums).filter(([,v])=>v.length>1).forEach(([k,v])=>errors.push('duplicate number '+k+': '+v.join(', ')));
@@ -31,7 +31,7 @@ const chains={};
 for(const f of order){const s=read(f);const seen=new Set();let m;re.lastIndex=0;while((m=re.exec(s))){const n=m[1]||m[2];if(seen.has(n))continue;seen.add(n);(chains[n]=chains[n]||[]).push(f);}}
 const multi=Object.fromEntries(Object.entries(chains).filter(([,v])=>v.length>=2));
 const big=Object.fromEntries(order.filter(f=>fs.statSync(path.join(root,f)).size>BIG).map(f=>[f,fs.statSync(path.join(root,f)).size]));
-const now={chains:multi,bigFiles:big,inlineFiles};
+const now={chains:multi,bigFiles:big};
 
 if(update||!fs.existsSync(BASE)){fs.writeFileSync(BASE,JSON.stringify(now,null,1)+'\n');console.log('architecture baseline written:',Object.keys(multi).length,'chains,',Object.keys(big).length,'big files');}
 else{
@@ -41,9 +41,6 @@ else{
   else{const extra=v.filter(f=>!b.includes(f));if(extra.length)errors.push('window.'+n+' got new layer(s): '+extra.join(', '));}}
  for(const [n,b] of Object.entries(base.chains)){const v=multi[n]||[];if(v.length<b.length)notes.push('window.'+n+' chain shrank '+b.length+' -> '+v.length);}
  for(const [f,sz] of Object.entries(big)){const b=base.bigFiles[f];if(b===undefined)errors.push('new big file (>'+BIG/1024+' KB): '+f+' '+Math.round(sz/1024)+' KB');else if(sz>b*GROWTH)errors.push('big file grew >5%: '+f+' '+Math.round(b/1024)+' -> '+Math.round(sz/1024)+' KB');}
- const oldInline=base.inlineFiles||[];
- inlineFiles.filter(f=>!oldInline.includes(f)).forEach(f=>errors.push('new anonymous file name (name it by feature): '+f));
- if(inlineFiles.length<oldInline.length)notes.push('anonymous file names shrank '+oldInline.length+' -> '+inlineFiles.length);
  if(notes.length)console.log('improvements (run with --update to lock in):\n  '+notes.join('\n  '));
 }
 const longest=Object.entries(multi).sort((a,b)=>b[1].length-a[1].length).slice(0,3).map(([n,v])=>n+'×'+v.length).join(', ');
