@@ -1,16 +1,26 @@
-# Current canvas architecture — 2026-10-16
+# Current architecture — 2026-10-18
+
+## Карта модулів
+
+Код розкладено за предметною відповідальністю:
+`core` (інфраструктура) → `i18n` → `auth` / `admin` → `projects` → `rooms` → `canvas` → `nomenclature` → `reports`.
+Це лише групування за змістом: порядок виконання задає префікс `NNN` і `scripts/runtime-order.json`, а не папки.
+Нові файли отримують наступний вільний номер і ім'я `NNN-aceil-<призначення>.js`.
+Спільні сервіси лежать у `core/`: `A·CEILUtils` (011), `A·CEILGeometry` (098), `A·CEIL.pipeline` (007), `A·CEIL.API` (225), стан (121).
+
+## Canvas — 2026-10-16
 
 - `js/canvas/viewport.js`: logical dimensions, backing-store resolution, draw hooks.
 - `js/canvas/renderer.js`: the sole `draw()` entry point and room scene.
 - `js/canvas/contour-state.js`: transient curve cleanup and reset.
-- `js/rooms/110-aceil-linear-element-v1.js`: linear-element layer, editor and live inputs.
+- `js/rooms/110-aceil-linear-element.js`: linear-element layer, editor and live inputs.
 - Input/hit-testing code uses `ACEILCanvas.width/height(canvas)`, never live raster dimensions.
 - Exporters may temporarily resize the backing store and must restore it in finally.
 - New render layers register by name; never wrap or reassign window.draw.
 - CSS: app.css (base), theme.css (UI/theme/admin), layout.css (later layout sections).
   Keep their placement in index.html: runtime-injected styles depend on that cascade order.
 - `scripts/runtime-order.json` records the remaining legacy load order. Review dependencies before changing it.
-- Build id `20261018-real-scale1` is shared by local asset queries, the service-worker cache,
+- Build id `20261018-structure2` is shared by local asset queries, the service-worker cache,
   the PWA reload key and service-worker registration. `scripts/check-before-deploy.sh` enforces this.
 - The service worker precaches only the essential shell. Versioned local JS/CSS use cache-first
   runtime caching; a build-id change is the only supported way to publish changed assets.
@@ -34,9 +44,9 @@ Older cleanup notes are historical, not a statement of the current file counts.
 ## Архітектурний запобіжник — 2026-10-17
 
 - Файли з історичними назвами `*-inline.js` перейменовано за їх реальною відповідальністю; порядок виконання не змінено.
-- `js/core/225-aceil-public-api-v1.js` створює `window["A·CEIL"].API` — стабільний вхід для нового коду й тестів. Усередині він поки делегує виклики чинним реалізаціям.
+- `js/core/225-aceil-public-api.js` створює `window["A·CEIL"].API` — стабільний вхід для нового коду й тестів. Усередині він поки делегує виклики чинним реалізаціям.
 - `scripts/check-architecture.cjs` блокує повернення анонімних назв, дубльованих номерів, динамічного коду, непідключених файлів, нових ланцюгів обгорток і неконтрольованого росту великих файлів.
-- `scripts/architecture-baseline.json` фіксує поточний борг: 108 ланцюгів обгорток. Цей показник може лише зменшуватись; після перевіреного скорочення базу оновлюють командою `node scripts/check-architecture.cjs --update`.
+- `scripts/architecture-baseline.json` фіксує поточний борг: 105 ланцюгів обгорток. Цей показник може лише зменшуватись; після перевіреного скорочення базу оновлюють командою `node scripts/check-architecture.cjs --update`.
 - `scripts/run-all-tests.sh` запускає статичні, модульні та браузерні перевірки й завершується помилкою при будь-якому падінні. Повідомлення `ALL OK` виводиться тільки після успіху всіх тестів.
 - `scripts/prune-superseded-layers.cjs` є лише діагностичним інструментом. Без `--apply` він нічого не змінює; видалення шарів допускається тільки після браузерної регресії.
 
@@ -44,7 +54,7 @@ Older cleanup notes are historical, not a statement of the current file counts.
 
 ## Конвеєр автопрорахунку — 2026-10-17
 
-- `js/nomenclature/105-aceil-autofill-pipeline-v1.js` є єдиним власником
+- `js/nomenclature/105-aceil-autofill-pipeline.js` є єдиним власником
   `window.autoFillNomenclature`.
 - Функціональні шари реєструють етапи замість повторного перевизначення глобальної функції.
   Зафіксований порядок: `linear → universal → colorFix → cornices → insertChoice → filmFix`.

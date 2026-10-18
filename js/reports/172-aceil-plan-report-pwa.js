@@ -34,7 +34,7 @@ function activeLocation(){
 }
 /* aceil: redundant "live overall dimensions" patch removed — 037-inline.js now handles this directly */
 
-/* aceil: duplicate yellow-recolor pass removed — 174-aceil-overall-dims-and-light-colors-fix-v1.js already handles this (and exhaust icons) as the single authoritative layer */
+/* aceil: duplicate yellow-recolor pass removed — 174-aceil-overall-dims-and-light-colors-fix.js already handles this (and exhaust icons) as the single authoritative layer */
 
 function dataUrlToBlob(dataUrl){
   var parts=dataUrl.split(","),mime=(parts[0].match(/:(.*?);/)||[])[1]||"image/png",raw=atob(parts[1]),bytes=new Uint8Array(raw.length);

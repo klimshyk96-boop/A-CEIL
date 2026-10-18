@@ -8,20 +8,20 @@ const read=name=>fs.readFileSync(path.join(root,name),"utf8");
 
 const index=read("index.html");
 const sw=read("sw.js");
-const links=read("js/reports/201-aceil-report-links-v2.js");
-const classicPreview=read("js/reports/091-aceil-pdf-cloud-report-v1.js");
-const publicPage=read("js/reports/092-aceil-public-report-page-v1.js");
-const mobilePreview=read("js/reports/172-aceil-plan-report-pwa-v1.js");
+const links=read("js/reports/201-aceil-report-links.js");
+const classicPreview=read("js/reports/091-aceil-pdf-cloud-report.js");
+const publicPage=read("js/reports/092-aceil-public-report-page.js");
+const mobilePreview=read("js/reports/172-aceil-plan-report-pwa.js");
 const vercel=JSON.parse(read("vercel.json"));
 const vercelIgnore=read(".vercelignore");
-const geometryCore=read("js/projects/098-aceil-geometry-core-v1.js");
-const honestGeometry=read("js/canvas/190-aceil-honest-geometry-v1.js");
-const measureConfidence=read("js/canvas/127-aceil-measure-confidence-v252.js");
-const linearElements=read("js/rooms/110-aceil-linear-element-v1.js");
-const universalAutocount=read("js/nomenclature/140-universal-autocount-v319.js");
-const autocountMenu=read("js/nomenclature/170-aceil-autocount-menu-v1.js");
-const roomFlow=read("js/reports/087-aceil-multiroom-simple-flow.js");
-const wallUi=read("js/reports/044-aceil-cockpit-tools-wall-modal-normalize.js")+read("js/canvas/045-aceil-wall-full-side-color-presets.js");
+const geometryCore=read("js/core/098-aceil-geometry-core.js");
+const honestGeometry=read("js/canvas/190-aceil-honest-geometry.js");
+const measureConfidence=read("js/canvas/127-aceil-measure-confidence.js");
+const linearElements=read("js/rooms/110-aceil-linear-element.js");
+const universalAutocount=read("js/nomenclature/140-aceil-universal-autocount.js");
+const autocountMenu=read("js/nomenclature/170-aceil-autocount-menu.js");
+const roomFlow=read("js/rooms/087-aceil-multiroom-simple-flow.js");
+const wallUi=read("js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js")+read("js/canvas/045-aceil-wall-full-side-color-presets.js");
 
 assert.match(links,/new Uint8Array\(10\)/,"new report URLs must retain 80 random bits");
 assert.match(links,/function expandCompactToken\(/,"short report tokens must expand to the existing server format");
@@ -78,6 +78,6 @@ assert.doesNotMatch(wallUi,/_prevOpenWallModalForInit/,
 const versions=[...index.matchAll(/(?:src|href)="[^"]+\.(?:js|css)\?v=([^"]+)"/g)].map(match=>match[1]);
 assert(versions.length>150,"runtime asset list unexpectedly shrank");
 assert.strictEqual(new Set(versions).size,1,"all runtime assets must share one build ID");
-assert.strictEqual(versions[0],"20261018-real-scale1","unexpected stability build ID");
+assert.strictEqual(versions[0],"20261018-structure2","unexpected stability build ID");
 
 console.log("Stability regression tests: OK");

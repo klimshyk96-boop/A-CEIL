@@ -103,7 +103,7 @@ function category(groupName,itemName){
   return"other";
 }
 /* Неінвазивний експорт для js/reports/183-aceil-estimate-variants-v1.js та
-   js/reports/184-aceil-estimate-variants-ui-v1.js: щоб не дублювати regex-класифікацію
+   js/reports/184-aceil-estimate-variants-ui.js: щоб не дублювати regex-класифікацію
    "профіль/плівка/вставка/світло/інше" по кількох файлах. */
 if(!window.A·CEILReportCategory)window.A·CEILReportCategory=category;
 function unitNorm(v){return String(v||"шт").replace(/\s+/g," ").trim()}

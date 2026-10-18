@@ -1005,7 +1005,7 @@
     overflow:auto!important;scrollbar-width:thin
   ;}
   /* Precise width/height for a given zoom % or "fit to height" is set inline by
-     installDesktopCanvasZoom() in js/nomenclature/168-aceil-desktop-sidebar-v1.js
+     installDesktopCanvasZoom() in js/core/168-aceil-desktop-sidebar.js
      (inline !important wins over this rule, as intended). This just reserves the
      top gap for the zoom control / room tabs and keeps the canvas from stretching. */
   body.rp-home-pro canvas#cv{

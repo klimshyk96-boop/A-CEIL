@@ -87,7 +87,7 @@ function findMainProfileItem(baseItems, assumptions){
 }
 
 /* The "insert" is white_insert's actual selected candidate - mirrors
-   179-aceil-insert-choice-guard-v1.js: prefer the explicitly chosen one
+   179-aceil-insert-choice-guard.js: prefer the explicitly chosen one
    (insertSelected), then the only one currently carrying quantity, then the
    only candidate at all. Never every item merely named "вставка". */
 function findInsertItem(baseItems, assumptions){
@@ -115,7 +115,7 @@ function lightingSourceItems(baseItems){
 
 /* ---------- film / canvas (plivka) helpers ----------
    Film color items are NOT shared catalog items like profile/insert/
-   lighting - 167-aceil-color-picker-v3.js synthesizes a fresh, room-scoped
+   lighting - 167-aceil-color-picker.js synthesizes a fresh, room-scoped
    pair of elemItems (roomScopedKind:'film-color') the moment a color is
    chosen for THAT room, with ids unique to that click. So a variant film
    override never targets an existing item id; it stores which series+code
@@ -161,7 +161,7 @@ function findFilmGroupId(items, groups){
 }
 
 /* Mirrors getRoomBoundingBoxMeters()/getRequiredFilmWidthMeters() from
-   167-aceil-color-picker-v3.js, but reads STORED room.state geometry
+   167-aceil-color-picker.js, but reads STORED room.state geometry
    instead of the live canvas globals, since this runs with no canvas
    attached. Same rule: the room's smaller bounding-box dimension is the
    width the roll must cover. */
@@ -858,7 +858,7 @@ window.A_CEIL_EstimateVariants = {
 })();
 
 
-/* === consolidated from js/reports/184-aceil-estimate-variants-ui-v1.js === */
+/* === consolidated from js/reports/184-aceil-estimate-variants-ui.js === */
 
 (function(){
 'use strict';
@@ -1527,7 +1527,7 @@ function openBulkModal(project, baseVariantId){
   });
 
   /* ---- Film / canvas (plivka) block: series -> texture -> color, with
-     search and popular codes, mirroring 167-aceil-color-picker-v3.js's UX
+     search and popular codes, mirroring 167-aceil-color-picker.js's UX
      but reading the shared series registry so Classic/Kralton light up the
      moment real data is added to it - no separate color catalog here. */
   var filmState={mode:'keep', seriesId:null, code:null};

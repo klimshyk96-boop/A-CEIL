@@ -51,8 +51,8 @@ function makeContext({ items, groups, localStorage, base }) {
     console
   };
   vm.createContext(context);
-  vm.runInContext(read("js/core/007-aceil-pipeline-v1.js"), context, { filename: "007-aceil-pipeline-v1.js" });
-  vm.runInContext(read("js/nomenclature/026-aceil-render-elem-list-pipeline-v1.js"), context, { filename: "026-aceil-render-elem-list-pipeline-v1.js" });
+  vm.runInContext(read("js/core/007-aceil-pipeline.js"), context, { filename: "007-aceil-pipeline.js" });
+  vm.runInContext(read("js/nomenclature/026-aceil-render-elem-list-pipeline.js"), context, { filename: "026-aceil-render-elem-list-pipeline.js" });
   return context;
 }
 
@@ -70,7 +70,7 @@ function makeContext({ items, groups, localStorage, base }) {
     localStorage: storage({ A_CEIL_custom_auto_rules_v1: JSON.stringify(rule) }),
     base() { baseCalls++; }
   });
-  vm.runInContext(read("js/nomenclature/170-aceil-autocount-menu-v1.js"), context, { filename: "170-aceil-autocount-menu-v1.js" });
+  vm.runInContext(read("js/nomenclature/170-aceil-autocount-menu.js"), context, { filename: "170-aceil-autocount-menu.js" });
   context.window.renderElemList();
   assert.equal(baseCalls, 1, "base list renderer must run once");
   assert.equal(items[0].qty, 14, "custom perimeter rule must run before rendering");
@@ -107,7 +107,7 @@ function makeContext({ items, groups, localStorage, base }) {
       };
     }
   });
-  vm.runInContext(read("js/nomenclature/212-aceil-film-group-state-fix-v1.js"), context, { filename: "212-aceil-film-group-state-fix-v1.js" });
+  vm.runInContext(read("js/nomenclature/212-aceil-film-group-state-fix.js"), context, { filename: "212-aceil-film-group-state-fix.js" });
   context.window.renderElemList();
   assert.deepEqual(snapshot.groups, ["film-active", "ordinary"], "active film group must be the single first film group");
   assert.deepEqual(snapshot.items, ["active", "profile"], "duplicate and stale film rows must be removed");

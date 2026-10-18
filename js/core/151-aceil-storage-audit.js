@@ -1,5 +1,5 @@
 /* Storage audit + safe cleanup of dead legacy duplicates.
-   006-user-storage-v1.js scopes tenant keys as "<key>::user:<id>". For the primary owner it COPIES the old
+   006-aceil-user-storage.js scopes tenant keys as "<key>::user:<id>". For the primary owner it COPIES the old
    unscoped key into the scoped one and leaves the old key behind. Nothing reads the old key afterwards,
    but it still counts against Safari's ~5 MB localStorage quota. This module removes such dead copies,
    and only when the scoped copy exists (and, for projects, already contains every legacy project). */

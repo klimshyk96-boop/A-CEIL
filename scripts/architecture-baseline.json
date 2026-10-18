@@ -1,36 +1,36 @@
 {
  "chains": {
   "totalCurveLength": [
-   "js/nomenclature/019-aceil-core-ui-rooms-bulk-walls.js",
-   "js/nomenclature/129-aceil-curve-rebuild-v83.js"
+   "js/core/019-aceil-core-ui-rooms-bulk-walls.js",
+   "js/canvas/129-aceil-curve-rebuild.js"
   ],
   "getArcSidesCount": [
-   "js/nomenclature/019-aceil-core-ui-rooms-bulk-walls.js",
-   "js/nomenclature/129-aceil-curve-rebuild-v83.js"
+   "js/core/019-aceil-core-ui-rooms-bulk-walls.js",
+   "js/canvas/129-aceil-curve-rebuild.js"
   ],
   "__A·CEILSelectedSideV89": [
-   "js/nomenclature/019-aceil-core-ui-rooms-bulk-walls.js",
-   "js/reports/130-aceil-wall-tap-menu-v84.js"
+   "js/core/019-aceil-core-ui-rooms-bulk-walls.js",
+   "js/canvas/130-aceil-wall-tap-menu.js"
   ],
   "renderItemRow": [
-   "js/nomenclature/021-aceil-v370-optional-install-works.js",
-   "js/nomenclature/191-aceil-nomenclature-manage-ui-v1.js"
+   "js/nomenclature/021-aceil-optional-install-works.js",
+   "js/nomenclature/191-aceil-nomenclature-manage-ui.js"
   ],
   "reportSettings": [
    "js/reports/029-aceil-report-hd-and-settings.js",
    "js/reports/037-aceil-report-settings-generator.js",
-   "js/reports/084-rspro-clean-script.js",
-   "js/reports/146-aceil-report-discount-advance-v1.js",
-   "js/reports/223-aceil-installer-share-v1.js"
+   "js/reports/084-aceil-report-capture-labels-settings-ui.js",
+   "js/reports/146-aceil-report-discount-advance.js",
+   "js/reports/223-aceil-installer-share.js"
   ],
   "_sbUser": [
-   "js/admin/033-aceil-supabase-auth-offline-access.js",
+   "js/auth/033-aceil-supabase-auth-offline-access.js",
    "js/nomenclature/062-aceil-nomenclature-cloud-merge.js",
-   "js/admin/159-aceil-access-clean-v2.js"
+   "js/admin/159-aceil-access-clean.js"
   ],
   "signInWithGoogle": [
-   "js/admin/033-aceil-supabase-auth-offline-access.js",
-   "js/admin/178-aceil-google-oauth-canonical-v1.js"
+   "js/auth/033-aceil-supabase-auth-offline-access.js",
+   "js/auth/178-aceil-google-oauth-canonical.js"
   ],
   "_loadRS": [
    "js/reports/037-aceil-report-settings-generator.js",
@@ -38,66 +38,66 @@
   ],
   "saveReportSettings": [
    "js/reports/037-aceil-report-settings-generator.js",
-   "js/reports/146-aceil-report-discount-advance-v1.js"
+   "js/reports/146-aceil-report-discount-advance.js"
   ],
   "openReportSettings": [
    "js/reports/037-aceil-report-settings-generator.js",
    "js/reports/053-aceil-report-settings-force-modern.js",
-   "js/reports/084-rspro-clean-script.js",
-   "js/reports/146-aceil-report-discount-advance-v1.js",
-   "js/reports/162-aceil-manager-report-v2.js",
-   "js/reports/224-aceil-report-diagonals-menu-fix-v1.js"
+   "js/reports/084-aceil-report-capture-labels-settings-ui.js",
+   "js/reports/146-aceil-report-discount-advance.js",
+   "js/reports/162-aceil-manager-report.js",
+   "js/reports/224-aceil-report-diagonals-menu-fix.js"
   ],
   "generateModernSingleReport": [
    "js/reports/037-aceil-report-settings-generator.js",
-   "js/projects/090-aceil-geolocation-v1.js",
-   "js/reports/091-aceil-pdf-cloud-report-v1.js"
+   "js/projects/090-aceil-geolocation.js",
+   "js/reports/091-aceil-pdf-cloud-report.js"
   ],
   "generateModernObjectReport": [
    "js/reports/037-aceil-report-settings-generator.js",
-   "js/projects/090-aceil-geolocation-v1.js",
-   "js/reports/091-aceil-pdf-cloud-report-v1.js",
-   "js/reports/184-aceil-estimate-variants-ui-v1.js"
+   "js/projects/090-aceil-geolocation.js",
+   "js/reports/091-aceil-pdf-cloud-report.js",
+   "js/reports/184-aceil-estimate-variants-ui.js"
   ],
   "rpUpdateHome": [
-   "js/nomenclature/038-aceil-rp-home-rooms-render.js",
-   "js/nomenclature/039-aceil-rp-continue-measure.js",
-   "js/reports/065-aceil-cockpit-metric-icons.js"
+   "js/rooms/038-aceil-rp-home-rooms-render.js",
+   "js/rooms/039-aceil-rp-continue-measure.js",
+   "js/rooms/065-aceil-cockpit-metric-icons.js"
   ],
   "rpContinueMeasure": [
-   "js/nomenclature/038-aceil-rp-home-rooms-render.js",
-   "js/nomenclature/039-aceil-rp-continue-measure.js"
+   "js/rooms/038-aceil-rp-home-rooms-render.js",
+   "js/rooms/039-aceil-rp-continue-measure.js"
   ],
   "setWallFullSide": [
-   "js/reports/044-aceil-cockpit-tools-wall-modal-normalize.js",
+   "js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js",
    "js/canvas/045-aceil-wall-full-side-color-presets.js",
    "js/canvas/066-aceil-wall-anchor-sync.js"
   ],
   "updateWallAnchorUI": [
-   "js/reports/044-aceil-cockpit-tools-wall-modal-normalize.js",
+   "js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js",
    "js/canvas/045-aceil-wall-full-side-color-presets.js"
   ],
   "saveWallEdit": [
-   "js/reports/044-aceil-cockpit-tools-wall-modal-normalize.js",
+   "js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js",
    "js/canvas/045-aceil-wall-full-side-color-presets.js",
    "js/canvas/046-aceil-wall-presets.js",
    "js/canvas/093-aceil-wall-profile-color.js",
-   "js/nomenclature/150-aceil-wall-color-autosource-v333.js",
-   "js/canvas/169-aceil-wall-placement-restore-v1.js",
-   "js/canvas/185-aceil-wall-menu-simplify-v1.js"
+   "js/nomenclature/150-aceil-wall-color-autosource.js",
+   "js/canvas/169-aceil-wall-placement-restore.js",
+   "js/canvas/185-aceil-wall-menu-simplify.js"
   ],
   "openWallEditModal": [
-   "js/reports/044-aceil-cockpit-tools-wall-modal-normalize.js",
+   "js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js",
    "js/canvas/045-aceil-wall-full-side-color-presets.js",
    "js/canvas/047-aceil-wall-preset-editor.js",
-   "js/nomenclature/051-aceil-wall-preset-storage.js",
+   "js/canvas/051-aceil-wall-preset-storage.js",
    "js/projects/059-aceil-dirty-state-delete-guards.js",
    "js/canvas/066-aceil-wall-anchor-sync.js",
    "js/canvas/068-aceil-wall-position-preview.js",
    "js/canvas/069-aceil-wall-preset-toolbar.js",
    "js/canvas/093-aceil-wall-profile-color.js",
-   "js/canvas/169-aceil-wall-placement-restore-v1.js",
-   "js/canvas/185-aceil-wall-menu-simplify-v1.js"
+   "js/canvas/169-aceil-wall-placement-restore.js",
+   "js/canvas/185-aceil-wall-menu-simplify.js"
   ],
   "applyWallPreset": [
    "js/canvas/045-aceil-wall-full-side-color-presets.js",
@@ -108,13 +108,13 @@
    "js/canvas/046-aceil-wall-presets.js",
    "js/canvas/047-aceil-wall-preset-editor.js",
    "js/canvas/052-aceil-wall-presets-cloud-sync.js",
-   "js/reports/084-rspro-clean-script.js"
+   "js/reports/084-aceil-report-capture-labels-settings-ui.js"
   ],
   "setWallPresets": [
    "js/canvas/046-aceil-wall-presets.js",
    "js/canvas/047-aceil-wall-preset-editor.js",
    "js/canvas/052-aceil-wall-presets-cloud-sync.js",
-   "js/reports/084-rspro-clean-script.js"
+   "js/reports/084-aceil-report-capture-labels-settings-ui.js"
   ],
   "renderWallPresetSelect": [
    "js/canvas/046-aceil-wall-presets.js",
@@ -126,11 +126,11 @@
   ],
   "handleWallTap": [
    "js/canvas/046-aceil-wall-presets.js",
-   "js/reports/130-aceil-wall-tap-menu-v84.js"
+   "js/canvas/130-aceil-wall-tap-menu.js"
   ],
   "rwe2ApplyPreset": [
    "js/canvas/047-aceil-wall-preset-editor.js",
-   "js/nomenclature/051-aceil-wall-preset-storage.js",
+   "js/canvas/051-aceil-wall-preset-storage.js",
    "js/canvas/069-aceil-wall-preset-toolbar.js"
   ],
   "rwe2AnchorChanged": [
@@ -149,149 +149,149 @@
   "rwe2Save": [
    "js/canvas/047-aceil-wall-preset-editor.js",
    "js/canvas/050-aceil-wall-edit-modal.js",
-   "js/nomenclature/051-aceil-wall-preset-storage.js",
+   "js/canvas/051-aceil-wall-preset-storage.js",
    "js/canvas/066-aceil-wall-anchor-sync.js",
    "js/canvas/093-aceil-wall-profile-color.js",
-   "js/nomenclature/150-aceil-wall-color-autosource-v333.js",
-   "js/canvas/169-aceil-wall-placement-restore-v1.js",
-   "js/canvas/185-aceil-wall-menu-simplify-v1.js"
+   "js/nomenclature/150-aceil-wall-color-autosource.js",
+   "js/canvas/169-aceil-wall-placement-restore.js",
+   "js/canvas/185-aceil-wall-menu-simplify.js"
   ],
   "rwe2SavePreset": [
    "js/canvas/047-aceil-wall-preset-editor.js",
-   "js/nomenclature/051-aceil-wall-preset-storage.js",
+   "js/canvas/051-aceil-wall-preset-storage.js",
    "js/canvas/052-aceil-wall-presets-cloud-sync.js",
    "js/canvas/069-aceil-wall-preset-toolbar.js"
   ],
   "wallMarks": [
    "js/canvas/050-aceil-wall-edit-modal.js",
-   "js/reports/061-aceil-wall-marks-bridge-room-load.js",
-   "js/nomenclature/063-aceil-wall-marks-persist.js",
+   "js/canvas/061-aceil-wall-marks-bridge-room-load.js",
+   "js/canvas/063-aceil-wall-marks-persist.js",
    "js/canvas/066-aceil-wall-anchor-sync.js",
    "js/canvas/068-aceil-wall-position-preview.js",
-   "js/reports/104-aceil-multiroom-report-sandbox-fix-v30.js",
-   "js/projects/173-aceil-wall-elements-persistence-v2.js"
+   "js/reports/104-aceil-multiroom-report-sandbox-fix.js",
+   "js/canvas/173-aceil-wall-elements-persistence.js"
   ],
   "rwe2WallPresetRead": [
-   "js/nomenclature/051-aceil-wall-preset-storage.js",
+   "js/canvas/051-aceil-wall-preset-storage.js",
    "js/canvas/052-aceil-wall-presets-cloud-sync.js",
    "js/canvas/069-aceil-wall-preset-toolbar.js",
-   "js/reports/084-rspro-clean-script.js"
+   "js/reports/084-aceil-report-capture-labels-settings-ui.js"
   ],
   "rwe2WallPresetWrite": [
-   "js/nomenclature/051-aceil-wall-preset-storage.js",
+   "js/canvas/051-aceil-wall-preset-storage.js",
    "js/canvas/052-aceil-wall-presets-cloud-sync.js",
    "js/canvas/069-aceil-wall-preset-toolbar.js",
-   "js/reports/084-rspro-clean-script.js"
+   "js/reports/084-aceil-report-capture-labels-settings-ui.js"
   ],
   "rwe2WallPresetUpsert": [
-   "js/nomenclature/051-aceil-wall-preset-storage.js",
+   "js/canvas/051-aceil-wall-preset-storage.js",
    "js/canvas/052-aceil-wall-presets-cloud-sync.js"
   ],
   "rwe2WallPresetRender": [
-   "js/nomenclature/051-aceil-wall-preset-storage.js",
+   "js/canvas/051-aceil-wall-preset-storage.js",
    "js/canvas/069-aceil-wall-preset-toolbar.js",
-   "js/reports/084-rspro-clean-script.js"
+   "js/reports/084-aceil-report-capture-labels-settings-ui.js"
   ],
   "openLightEditModal": [
    "js/rooms/054-aceil-light-compact-editor.js",
    "js/projects/059-aceil-dirty-state-delete-guards.js",
-   "js/canvas/060-aceil-light-svg-icons.js",
+   "js/rooms/060-aceil-light-svg-icons.js",
    "js/rooms/081-aceil-exhaust-types-modal.js",
    "js/rooms/085-aceil-light-editor-clean.js"
   ],
   "lightTypes": [
-   "js/canvas/058-aceil-light-types-store-ui.js",
-   "js/canvas/060-aceil-light-svg-icons.js",
-   "js/nomenclature/063-aceil-wall-marks-persist.js",
+   "js/rooms/058-aceil-light-types-store-ui.js",
+   "js/rooms/060-aceil-light-svg-icons.js",
+   "js/canvas/063-aceil-wall-marks-persist.js",
    "js/rooms/081-aceil-exhaust-types-modal.js",
-   "js/canvas/082-aceil-exhaust-marks-count.js",
-   "js/canvas/139-ceiling-elements-v318.js",
-   "js/canvas/176-ceiling-elements-catalog-safety-v1.js",
-   "js/canvas/177-ceiling-elements-catalog-manager-v2.js"
+   "js/rooms/082-aceil-exhaust-marks-count.js",
+   "js/canvas/139-aceil-ceiling-elements.js",
+   "js/canvas/176-aceil-ceiling-elements-catalog-safety.js",
+   "js/canvas/177-aceil-ceiling-elements-catalog-manager.js"
   ],
   "addLightTypeV2": [
-   "js/canvas/058-aceil-light-types-store-ui.js",
+   "js/rooms/058-aceil-light-types-store-ui.js",
    "js/rooms/076-aceil-light-types-smart-center.js"
   ],
   "deleteLightTypeV2": [
-   "js/canvas/058-aceil-light-types-store-ui.js",
+   "js/rooms/058-aceil-light-types-store-ui.js",
    "js/rooms/076-aceil-light-types-smart-center.js"
   ],
   "saveLightSettings": [
-   "js/canvas/058-aceil-light-types-store-ui.js",
-   "js/canvas/060-aceil-light-svg-icons.js",
+   "js/rooms/058-aceil-light-types-store-ui.js",
+   "js/rooms/060-aceil-light-svg-icons.js",
    "js/rooms/076-aceil-light-types-smart-center.js"
   ],
   "openLightSettings": [
-   "js/canvas/058-aceil-light-types-store-ui.js",
-   "js/canvas/060-aceil-light-svg-icons.js",
+   "js/rooms/058-aceil-light-types-store-ui.js",
+   "js/rooms/060-aceil-light-svg-icons.js",
    "js/rooms/076-aceil-light-types-smart-center.js"
   ],
   "saveState": [
    "js/projects/059-aceil-dirty-state-delete-guards.js",
-   "js/reports/061-aceil-wall-marks-bridge-room-load.js",
-   "js/nomenclature/063-aceil-wall-marks-persist.js",
-   "js/reports/112-aceil-linear-element-persist-report-fix-v5.js",
-   "js/nomenclature/145-cloud-first-v330.js",
-   "js/nomenclature/170-aceil-autocount-menu-v1.js",
-   "js/projects/173-aceil-wall-elements-persistence-v2.js"
+   "js/canvas/061-aceil-wall-marks-bridge-room-load.js",
+   "js/canvas/063-aceil-wall-marks-persist.js",
+   "js/reports/112-aceil-linear-element-persist-report-fix.js",
+   "js/nomenclature/145-aceil-cloud-first.js",
+   "js/nomenclature/170-aceil-autocount-menu.js",
+   "js/canvas/173-aceil-wall-elements-persistence.js"
   ],
   "saveProject": [
    "js/projects/059-aceil-dirty-state-delete-guards.js",
-   "js/projects/088-aceil-multiroom-save-controller-v1.js",
-   "js/projects/090-aceil-geolocation-v1.js",
-   "js/projects/161-aceil-save-memory-roomprice-fix-v1.js",
-   "js/projects/173-aceil-wall-elements-persistence-v2.js"
+   "js/rooms/088-aceil-multiroom-save-controller.js",
+   "js/projects/090-aceil-geolocation.js",
+   "js/projects/161-aceil-save-memory-roomprice-fix.js",
+   "js/canvas/173-aceil-wall-elements-persistence.js"
   ],
   "drawLightMarks": [
-   "js/canvas/060-aceil-light-svg-icons.js",
-   "js/nomenclature/063-aceil-wall-marks-persist.js",
-   "js/canvas/174-aceil-overall-dims-and-light-colors-fix-v1.js",
-   "js/canvas/187-aceil-ceiling-cornices-v1.js"
+   "js/rooms/060-aceil-light-svg-icons.js",
+   "js/canvas/063-aceil-wall-marks-persist.js",
+   "js/canvas/174-aceil-overall-dims-and-light-colors-fix.js",
+   "js/canvas/187-aceil-ceiling-cornices.js"
   ],
   "renderLightMenu": [
-   "js/canvas/060-aceil-light-svg-icons.js",
-   "js/nomenclature/063-aceil-wall-marks-persist.js",
-   "js/canvas/073-aceil-smart-light-recommend.js",
+   "js/rooms/060-aceil-light-svg-icons.js",
+   "js/canvas/063-aceil-wall-marks-persist.js",
+   "js/rooms/073-aceil-smart-light-recommend.js",
    "js/rooms/074-aceil-light-grid-placement.js",
-   "js/rooms/110-aceil-linear-element-v1.js"
+   "js/rooms/110-aceil-linear-element.js"
   ],
   "_loadRoomToCanvas": [
-   "js/reports/061-aceil-wall-marks-bridge-room-load.js",
-   "js/nomenclature/063-aceil-wall-marks-persist.js",
-   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix-v1.js",
-   "js/nomenclature/149-aceil-room-calc-isolation-v331.js",
-   "js/admin/159-aceil-access-clean-v2.js",
-   "js/projects/161-aceil-save-memory-roomprice-fix-v1.js",
-   "js/nomenclature/167-aceil-color-picker-v3.js",
-   "js/projects/173-aceil-wall-elements-persistence-v2.js",
-   "js/reports/184-aceil-estimate-variants-ui-v1.js",
-   "js/canvas/187-aceil-ceiling-cornices-v1.js"
+   "js/canvas/061-aceil-wall-marks-bridge-room-load.js",
+   "js/canvas/063-aceil-wall-marks-persist.js",
+   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",
+   "js/nomenclature/149-aceil-room-calc-isolation.js",
+   "js/admin/159-aceil-access-clean.js",
+   "js/projects/161-aceil-save-memory-roomprice-fix.js",
+   "js/nomenclature/167-aceil-color-picker.js",
+   "js/canvas/173-aceil-wall-elements-persistence.js",
+   "js/reports/184-aceil-estimate-variants-ui.js",
+   "js/canvas/187-aceil-ceiling-cornices.js"
   ],
   "_sb": [
    "js/nomenclature/062-aceil-nomenclature-cloud-merge.js",
-   "js/admin/159-aceil-access-clean-v2.js"
+   "js/admin/159-aceil-access-clean.js"
   ],
   "forceLoadNomenclature": [
    "js/nomenclature/062-aceil-nomenclature-cloud-merge.js",
-   "js/canvas/176-ceiling-elements-catalog-safety-v1.js",
-   "js/admin/159-aceil-access-clean-v2.js",
-   "js/nomenclature/171-aceil-offline-nomenclature-v1.js"
+   "js/canvas/176-aceil-ceiling-elements-catalog-safety.js",
+   "js/admin/159-aceil-access-clean.js",
+   "js/nomenclature/171-aceil-offline-nomenclature.js"
   ],
   "openElementsModal": [
    "js/nomenclature/062-aceil-nomenclature-cloud-merge.js",
-   "js/admin/159-aceil-access-clean-v2.js",
-   "js/nomenclature/164-aceil-elements-open-readonly-v1.js",
-   "js/nomenclature/171-aceil-offline-nomenclature-v1.js",
-   "js/reports/184-aceil-estimate-variants-ui-v1.js",
-   "js/nomenclature/212-aceil-film-group-state-fix-v1.js"
+   "js/admin/159-aceil-access-clean.js",
+   "js/nomenclature/164-aceil-elements-open-readonly.js",
+   "js/nomenclature/171-aceil-offline-nomenclature.js",
+   "js/reports/184-aceil-estimate-variants-ui.js",
+   "js/nomenclature/212-aceil-film-group-state-fix.js"
   ],
   "loadProject": [
-   "js/nomenclature/063-aceil-wall-marks-persist.js",
+   "js/canvas/063-aceil-wall-marks-persist.js",
    "js/rooms/multiroom-lifecycle.js",
-   "js/reports/112-aceil-linear-element-persist-report-fix-v5.js",
-   "js/projects/173-aceil-wall-elements-persistence-v2.js",
-   "js/canvas/187-aceil-ceiling-cornices-v1.js"
+   "js/reports/112-aceil-linear-element-persist-report-fix.js",
+   "js/canvas/173-aceil-wall-elements-persistence.js",
+   "js/canvas/187-aceil-ceiling-cornices.js"
   ],
   "_rwe2CurrentWallId": [
    "js/canvas/066-aceil-wall-anchor-sync.js",
@@ -303,41 +303,41 @@
   ],
   "rweOpenPresetEdit": [
    "js/canvas/069-aceil-wall-preset-toolbar.js",
-   "js/canvas/153-wall-preset-order-v350.js"
+   "js/canvas/153-aceil-wall-preset-order.js"
   ],
   "rweSavePresetEdit": [
    "js/canvas/069-aceil-wall-preset-toolbar.js",
-   "js/canvas/153-wall-preset-order-v350.js"
+   "js/canvas/153-aceil-wall-preset-order.js"
   ],
   "rweDeletePreset": [
    "js/canvas/069-aceil-wall-preset-toolbar.js",
-   "js/canvas/153-wall-preset-order-v350.js"
+   "js/canvas/153-aceil-wall-preset-order.js"
   ],
   "saveCurrentRoom": [
-   "js/nomenclature/072-aceil-object-room-save-cloud.js",
+   "js/projects/072-aceil-object-room-save-cloud.js",
    "js/rooms/multiroom-lifecycle.js",
-   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix-v1.js",
-   "js/projects/173-aceil-wall-elements-persistence-v2.js"
+   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",
+   "js/canvas/173-aceil-wall-elements-persistence.js"
   ],
   "_syncObjectToCloud": [
-   "js/nomenclature/072-aceil-object-room-save-cloud.js",
-   "js/projects/210-aceil-project-crm-v2.js"
+   "js/projects/072-aceil-object-room-save-cloud.js",
+   "js/projects/210-aceil-project-crm.js"
   ],
   "getProjects": [
-   "js/nomenclature/072-aceil-object-room-save-cloud.js",
-   "js/nomenclature/094-aceil-project-schema-migrations.js",
+   "js/projects/072-aceil-object-room-save-cloud.js",
+   "js/projects/094-aceil-project-schema-migrations.js",
    "js/projects/project-repository.js",
-   "js/reports/184-aceil-estimate-variants-ui-v1.js"
+   "js/reports/184-aceil-estimate-variants-ui.js"
   ],
   "openLightFlowModal": [
    "js/rooms/074-aceil-light-grid-placement.js",
-   "js/canvas/154-aceil-light-menu-v351.js",
-   "js/rooms/155-aceil-light-clean-v353.js"
+   "js/rooms/154-aceil-light-menu.js",
+   "js/rooms/155-aceil-light-clean.js"
   ],
   "rmLfApply": [
    "js/rooms/074-aceil-light-grid-placement.js",
    "js/rooms/076-aceil-light-types-smart-center.js",
-   "js/rooms/126-aceil-v234-light-orientation-fix.js"
+   "js/rooms/126-aceil-light-orientation-fix.js"
   ],
   "toggleLightMenu": [
    "js/rooms/074-aceil-light-grid-placement.js",
@@ -345,16 +345,16 @@
   ],
   "openRmLightStart": [
    "js/rooms/076-aceil-light-types-smart-center.js",
-   "js/rooms/110-aceil-linear-element-v1.js",
-   "js/canvas/138-aceil-linear-lighting-menu-v317.js",
-   "js/canvas/139-ceiling-elements-v318.js",
-   "js/canvas/187-aceil-ceiling-cornices-v1.js"
+   "js/rooms/110-aceil-linear-element.js",
+   "js/rooms/138-aceil-linear-lighting-menu.js",
+   "js/canvas/139-aceil-ceiling-elements.js",
+   "js/canvas/187-aceil-ceiling-cornices.js"
   ],
   "rmStartSpotFlow": [
    "js/rooms/076-aceil-light-types-smart-center.js",
-   "js/projects/152-aceil-smart-align-v347.js",
-   "js/canvas/154-aceil-light-menu-v351.js",
-   "js/rooms/155-aceil-light-clean-v353.js"
+   "js/canvas/152-aceil-smart-align.js",
+   "js/rooms/154-aceil-light-menu.js",
+   "js/rooms/155-aceil-light-clean.js"
   ],
   "rmUseRealLightType": [
    "js/rooms/076-aceil-light-types-smart-center.js",
@@ -362,216 +362,216 @@
   ],
   "rmIsExhaustLightType": [
    "js/rooms/081-aceil-exhaust-types-modal.js",
-   "js/canvas/082-aceil-exhaust-marks-count.js"
+   "js/rooms/082-aceil-exhaust-marks-count.js"
   ],
   "setLightMode": [
    "js/rooms/081-aceil-exhaust-types-modal.js",
-   "js/rooms/144-custom-ceiling-coords-v327.js"
+   "js/canvas/144-aceil-custom-ceiling-coords.js"
   ],
   "updateLightBadge": [
    "js/rooms/081-aceil-exhaust-types-modal.js",
-   "js/canvas/082-aceil-exhaust-marks-count.js",
-   "js/nomenclature/140-universal-autocount-v319.js",
-   "js/nomenclature/167-aceil-color-picker-v3.js",
-   "js/nomenclature/170-aceil-autocount-menu-v1.js"
+   "js/rooms/082-aceil-exhaust-marks-count.js",
+   "js/nomenclature/140-aceil-universal-autocount.js",
+   "js/nomenclature/167-aceil-color-picker.js",
+   "js/nomenclature/170-aceil-autocount-menu.js"
   ],
   "legend": [
-   "js/canvas/082-aceil-exhaust-marks-count.js",
-   "js/canvas/174-aceil-overall-dims-and-light-colors-fix-v1.js"
+   "js/rooms/082-aceil-exhaust-marks-count.js",
+   "js/canvas/174-aceil-overall-dims-and-light-colors-fix.js"
   ],
   "_renderRoomForReport": [
-   "js/reports/084-rspro-clean-script.js",
-   "js/reports/104-aceil-multiroom-report-sandbox-fix-v30.js",
-   "js/canvas/187-aceil-ceiling-cornices-v1.js"
+   "js/reports/084-aceil-report-capture-labels-settings-ui.js",
+   "js/reports/104-aceil-multiroom-report-sandbox-fix.js",
+   "js/canvas/187-aceil-ceiling-cornices.js"
   ],
   "drawWallMarks": [
-   "js/reports/084-rspro-clean-script.js",
+   "js/reports/084-aceil-report-capture-labels-settings-ui.js",
    "js/rooms/085-aceil-light-editor-clean.js",
-   "js/reports/086-aceil-wall-labels-final-draw.js",
+   "js/canvas/086-aceil-wall-labels-final-draw.js",
    "js/canvas/wall-elements-parallel.js"
   ],
   "drawLightBindings": [
-   "js/reports/084-rspro-clean-script.js",
-   "js/reports/086-aceil-wall-labels-final-draw.js",
+   "js/reports/084-aceil-report-capture-labels-settings-ui.js",
+   "js/canvas/086-aceil-wall-labels-final-draw.js",
    "js/canvas/wall-elements-parallel.js"
   ],
   "rpcSaveProject": [
-   "js/reports/087-aceil-multiroom-simple-flow.js",
-   "js/projects/088-aceil-multiroom-save-controller-v1.js"
+   "js/rooms/087-aceil-multiroom-simple-flow.js",
+   "js/rooms/088-aceil-multiroom-save-controller.js"
   ],
   "openSaveProjectModal": [
-   "js/projects/088-aceil-multiroom-save-controller-v1.js",
-   "js/projects/090-aceil-geolocation-v1.js",
-   "js/projects/210-aceil-project-crm-v2.js"
+   "js/rooms/088-aceil-multiroom-save-controller.js",
+   "js/projects/090-aceil-geolocation.js",
+   "js/projects/210-aceil-project-crm.js"
   ],
   "getLightCoordLines": [
    "js/reports/089-aceil-report-light-grouped-restored.js",
-   "js/reports/112-aceil-linear-element-persist-report-fix-v5.js"
+   "js/reports/112-aceil-linear-element-persist-report-fix.js"
   ],
   "_modernOpenPreview": [
-   "js/projects/090-aceil-geolocation-v1.js",
-   "js/reports/091-aceil-pdf-cloud-report-v1.js",
+   "js/projects/090-aceil-geolocation.js",
+   "js/reports/091-aceil-pdf-cloud-report.js",
    "js/reports/128-aceil-report-confidence-gate.js",
-   "js/reports/172-aceil-plan-report-pwa-v1.js",
-   "js/canvas/187-aceil-ceiling-cornices-v1.js",
-   "js/reports/223-aceil-installer-share-v1.js"
+   "js/reports/172-aceil-plan-report-pwa.js",
+   "js/canvas/187-aceil-ceiling-cornices.js",
+   "js/reports/223-aceil-installer-share.js"
   ],
   "A·CEILPublishReport": [
-   "js/reports/091-aceil-pdf-cloud-report-v1.js",
-   "js/reports/201-aceil-report-links-v2.js"
+   "js/reports/091-aceil-pdf-cloud-report.js",
+   "js/reports/201-aceil-report-links.js"
   ],
   "setProjects": [
-   "js/nomenclature/094-aceil-project-schema-migrations.js",
+   "js/projects/094-aceil-project-schema-migrations.js",
    "js/projects/project-repository.js"
   ],
   "A·CEILMergeCloudProjects": [
-   "js/nomenclature/094-aceil-project-schema-migrations.js",
+   "js/projects/094-aceil-project-schema-migrations.js",
    "js/projects/project-repository.js",
    "js/rooms/multiroom-lifecycle.js"
   ],
   "lightMarks": [
-   "js/reports/104-aceil-multiroom-report-sandbox-fix-v30.js",
-   "js/canvas/174-aceil-overall-dims-and-light-colors-fix-v1.js"
+   "js/reports/104-aceil-multiroom-report-sandbox-fix.js",
+   "js/canvas/174-aceil-overall-dims-and-light-colors-fix.js"
   ],
   "linearElements": [
-   "js/reports/104-aceil-multiroom-report-sandbox-fix-v30.js",
-   "js/rooms/110-aceil-linear-element-v1.js"
+   "js/reports/104-aceil-multiroom-report-sandbox-fix.js",
+   "js/rooms/110-aceil-linear-element.js"
   ],
   "wallTypes": [
-   "js/reports/104-aceil-multiroom-report-sandbox-fix-v30.js",
-   "js/canvas/132-aceil-curve-measure-points-v301.js"
+   "js/reports/104-aceil-multiroom-report-sandbox-fix.js",
+   "js/canvas/132-aceil-curve-measure-points.js"
   ],
   "arcPoints": [
-   "js/reports/104-aceil-multiroom-report-sandbox-fix-v30.js",
-   "js/canvas/132-aceil-curve-measure-points-v301.js"
+   "js/reports/104-aceil-multiroom-report-sandbox-fix.js",
+   "js/canvas/132-aceil-curve-measure-points.js"
   ],
   "saveToPhone": [
-   "js/reports/104-aceil-multiroom-report-sandbox-fix-v30.js",
-   "js/reports/146-aceil-report-discount-advance-v1.js"
+   "js/reports/104-aceil-multiroom-report-sandbox-fix.js",
+   "js/reports/146-aceil-report-discount-advance.js"
   ],
   "confirmNewRoom": [
    "js/rooms/multiroom-lifecycle.js",
-   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix-v1.js",
-   "js/nomenclature/149-aceil-room-calc-isolation-v331.js"
+   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",
+   "js/nomenclature/149-aceil-room-calc-isolation.js"
   ],
   "openObjectRooms": [
    "js/rooms/multiroom-lifecycle.js",
-   "js/reports/112-aceil-linear-element-persist-report-fix-v5.js"
+   "js/reports/112-aceil-linear-element-persist-report-fix.js"
   ],
   "elemItems": [
-   "js/nomenclature/118-aceil-nomen-raise-v1.js",
-   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix-v1.js",
-   "js/nomenclature/149-aceil-room-calc-isolation-v331.js",
-   "js/nomenclature/164-aceil-elements-open-readonly-v1.js"
+   "js/nomenclature/118-aceil-nomen-raise.js",
+   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",
+   "js/nomenclature/149-aceil-room-calc-isolation.js",
+   "js/nomenclature/164-aceil-elements-open-readonly.js"
   ],
   "elemGroups": [
-   "js/nomenclature/118-aceil-nomen-raise-v1.js",
-   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix-v1.js",
-   "js/nomenclature/149-aceil-room-calc-isolation-v331.js"
+   "js/nomenclature/118-aceil-nomen-raise.js",
+   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",
+   "js/nomenclature/149-aceil-room-calc-isolation.js"
   ],
   "generateObjectReport": [
    "js/reports/128-aceil-report-confidence-gate.js",
-   "js/reports/184-aceil-estimate-variants-ui-v1.js"
+   "js/reports/184-aceil-estimate-variants-ui.js"
   ],
   "_isArcSide": [
-   "js/nomenclature/129-aceil-curve-rebuild-v83.js",
-   "js/projects/133-aceil-curve-circle-geometry-v302.js",
-   "js/projects/135-aceil-curve-fixed-ends-v305.js"
+   "js/canvas/129-aceil-curve-rebuild.js",
+   "js/canvas/133-aceil-curve-circle-geometry.js",
+   "js/canvas/135-aceil-curve-fixed-ends.js"
   ],
   "_sideArcCanvasPts": [
-   "js/nomenclature/129-aceil-curve-rebuild-v83.js",
-   "js/projects/133-aceil-curve-circle-geometry-v302.js",
-   "js/projects/135-aceil-curve-fixed-ends-v305.js"
+   "js/canvas/129-aceil-curve-rebuild.js",
+   "js/canvas/133-aceil-curve-circle-geometry.js",
+   "js/canvas/135-aceil-curve-fixed-ends.js"
   ],
   "_sideCurveLenCm": [
-   "js/nomenclature/129-aceil-curve-rebuild-v83.js",
-   "js/projects/135-aceil-curve-fixed-ends-v305.js"
+   "js/canvas/129-aceil-curve-rebuild.js",
+   "js/canvas/135-aceil-curve-fixed-ends.js"
   ],
   "_sideEffectiveLenCm": [
-   "js/nomenclature/129-aceil-curve-rebuild-v83.js",
-   "js/projects/133-aceil-curve-circle-geometry-v302.js",
-   "js/projects/135-aceil-curve-fixed-ends-v305.js"
+   "js/canvas/129-aceil-curve-rebuild.js",
+   "js/canvas/133-aceil-curve-circle-geometry.js",
+   "js/canvas/135-aceil-curve-fixed-ends.js"
   ],
   "openSideInputModal": [
-   "js/nomenclature/129-aceil-curve-rebuild-v83.js",
-   "js/canvas/175-aceil-side-input-stepper-v1.js"
+   "js/canvas/129-aceil-curve-rebuild.js",
+   "js/canvas/175-aceil-side-input-stepper.js"
   ],
   "rmWallTapOpenV84": [
-   "js/reports/130-aceil-wall-tap-menu-v84.js",
-   "js/canvas/132-aceil-curve-measure-points-v301.js",
-   "js/canvas/134-aceil-curve-hit-test-v304.js"
+   "js/canvas/130-aceil-wall-tap-menu.js",
+   "js/canvas/132-aceil-curve-measure-points.js",
+   "js/canvas/134-aceil-curve-hit-test.js"
   ],
   "A·CEILWallCurveV89": [
-   "js/canvas/131-aceil-wall-actions-v89.js",
-   "js/canvas/132-aceil-curve-measure-points-v301.js"
+   "js/canvas/131-aceil-wall-actions.js",
+   "js/canvas/132-aceil-curve-measure-points.js"
   ],
   "rmCurveOpenV87": [
-   "js/canvas/132-aceil-curve-measure-points-v301.js",
-   "js/projects/135-aceil-curve-fixed-ends-v305.js"
+   "js/canvas/132-aceil-curve-measure-points.js",
+   "js/canvas/135-aceil-curve-fixed-ends.js"
   ],
   "lightMode": [
-   "js/canvas/139-ceiling-elements-v318.js",
-   "js/rooms/144-custom-ceiling-coords-v327.js"
+   "js/canvas/139-aceil-ceiling-elements.js",
+   "js/canvas/144-aceil-custom-ceiling-coords.js"
   ],
   "rmSaveNewCeilingElementV318": [
-   "js/canvas/139-ceiling-elements-v318.js",
-   "js/nomenclature/140-universal-autocount-v319.js"
+   "js/canvas/139-aceil-ceiling-elements.js",
+   "js/nomenclature/140-aceil-universal-autocount.js"
   ],
   "openEditElemModal": [
-   "js/nomenclature/140-universal-autocount-v319.js",
-   "js/nomenclature/170-aceil-autocount-menu-v1.js"
+   "js/nomenclature/140-aceil-universal-autocount.js",
+   "js/nomenclature/170-aceil-autocount-menu.js"
   ],
   "saveElemEdit": [
-   "js/nomenclature/140-universal-autocount-v319.js",
-   "js/nomenclature/170-aceil-autocount-menu-v1.js"
+   "js/nomenclature/140-aceil-universal-autocount.js",
+   "js/nomenclature/170-aceil-autocount-menu.js"
   ],
   "openQuickSourceMenu": [
-   "js/nomenclature/140-universal-autocount-v319.js",
-   "js/nomenclature/170-aceil-autocount-menu-v1.js"
+   "js/nomenclature/140-aceil-universal-autocount.js",
+   "js/nomenclature/170-aceil-autocount-menu.js"
   ],
   "openProjectsModal": [
-   "js/admin/159-aceil-access-clean-v2.js",
-   "js/projects/186-aceil-projects-menu-clean-v1.js",
-   "js/projects/210-aceil-project-crm-v2.js"
+   "js/admin/159-aceil-access-clean.js",
+   "js/projects/186-aceil-projects-menu-clean.js",
+   "js/projects/210-aceil-project-crm.js"
   ],
   "A_CEIL_buildCloudStructuredReport": [
-   "js/reports/160-aceil-cloud-html-report-v2.js",
-   "js/reports/184-aceil-estimate-variants-ui-v1.js"
+   "js/reports/160-aceil-cloud-html-report.js",
+   "js/reports/184-aceil-estimate-variants-ui.js"
   ],
   "A_CEIL_PublishManagerReport": [
-   "js/reports/162-aceil-manager-report-v2.js",
-   "js/reports/184-aceil-estimate-variants-ui-v1.js"
+   "js/reports/162-aceil-manager-report.js",
+   "js/reports/184-aceil-estimate-variants-ui.js"
   ],
   "A_CEIL_OpenManagerReport": [
-   "js/reports/162-aceil-manager-report-v2.js",
-   "js/reports/184-aceil-estimate-variants-ui-v1.js"
+   "js/reports/162-aceil-manager-report.js",
+   "js/reports/184-aceil-estimate-variants-ui.js"
   ]
  },
  "bigFiles": {
-  "js/nomenclature/019-aceil-core-ui-rooms-bulk-walls.js": 112750,
-  "js/rooms/110-aceil-linear-element-v1.js": 90482,
-  "js/reports/184-aceil-estimate-variants-ui-v1.js": 121223
+  "js/core/019-aceil-core-ui-rooms-bulk-walls.js": 112827,
+  "js/rooms/110-aceil-linear-element.js": 90482,
+  "js/reports/184-aceil-estimate-variants-ui.js": 121208
  },
  "dynamicAssigners": [
-  "js/core/007-aceil-pipeline-v1.js",
-  "js/projects/013-aceil-i18n-core.js",
-  "js/nomenclature/026-aceil-render-elem-list-pipeline-v1.js",
-  "js/admin/033-aceil-supabase-auth-offline-access.js",
-  "js/reports/061-aceil-wall-marks-bridge-room-load.js",
-  "js/nomenclature/063-aceil-wall-marks-persist.js",
-  "js/nomenclature/105-aceil-autofill-pipeline-v1.js",
-  "js/nomenclature/121-aceil-state-manager-v1.js",
-  "js/projects/122-aceil-v222-critical-load-guard.js",
-  "js/rooms/126-aceil-v234-light-orientation-fix.js",
+  "js/core/007-aceil-pipeline.js",
+  "js/i18n/013-aceil-i18n-core.js",
+  "js/nomenclature/026-aceil-render-elem-list-pipeline.js",
+  "js/auth/033-aceil-supabase-auth-offline-access.js",
+  "js/canvas/061-aceil-wall-marks-bridge-room-load.js",
+  "js/canvas/063-aceil-wall-marks-persist.js",
+  "js/nomenclature/105-aceil-autofill-pipeline.js",
+  "js/core/121-aceil-state-manager.js",
+  "js/core/122-aceil-critical-load-guard.js",
+  "js/rooms/126-aceil-light-orientation-fix.js",
   "js/reports/128-aceil-report-confidence-gate.js",
-  "js/nomenclature/140-universal-autocount-v319.js",
-  "js/projects/151-aceil-storage-audit-v340.js",
-  "js/canvas/154-aceil-light-menu-v351.js",
-  "js/admin/159-aceil-access-clean-v2.js",
-  "js/nomenclature/163-aceil-price-stability-v2.js",
-  "js/nomenclature/171-aceil-offline-nomenclature-v1.js",
-  "js/canvas/187-aceil-ceiling-cornices-v1.js",
-  "js/projects/210-aceil-project-crm-v2.js",
-  "js/core/225-aceil-public-api-v1.js"
+  "js/nomenclature/140-aceil-universal-autocount.js",
+  "js/core/151-aceil-storage-audit.js",
+  "js/rooms/154-aceil-light-menu.js",
+  "js/admin/159-aceil-access-clean.js",
+  "js/nomenclature/163-aceil-price-stability.js",
+  "js/nomenclature/171-aceil-offline-nomenclature.js",
+  "js/canvas/187-aceil-ceiling-cornices.js",
+  "js/projects/210-aceil-project-crm.js",
+  "js/core/225-aceil-public-api.js"
  ]
 }

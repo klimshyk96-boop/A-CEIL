@@ -4,15 +4,15 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const factorySource = fs.readFileSync(
-  path.join(__dirname, '..', 'js', 'core', '007-aceil-pipeline-v1.js'),
+  path.join(__dirname, '..', 'js', 'core', '007-aceil-pipeline.js'),
   'utf8'
 );
 const pipelineSource = fs.readFileSync(
-  path.join(__dirname, '..', 'js', 'nomenclature', '105-aceil-autofill-pipeline-v1.js'),
+  path.join(__dirname, '..', 'js', 'nomenclature', '105-aceil-autofill-pipeline.js'),
   'utf8'
 );
 const source = fs.readFileSync(
-  path.join(__dirname, '..', 'js', 'nomenclature', '179-aceil-insert-choice-guard-v1.js'),
+  path.join(__dirname, '..', 'js', 'nomenclature', '179-aceil-insert-choice-guard.js'),
   'utf8'
 );
 
@@ -40,9 +40,9 @@ function run(items, chooseId, afterAutofill) {
     console
   };
   vm.createContext(context);
-  vm.runInContext(factorySource, context, { filename: '007-aceil-pipeline-v1.js' });
-  vm.runInContext(pipelineSource, context, { filename: '105-aceil-autofill-pipeline-v1.js' });
-  vm.runInContext(source, context, { filename: '179-aceil-insert-choice-guard-v1.js' });
+  vm.runInContext(factorySource, context, { filename: '007-aceil-pipeline.js' });
+  vm.runInContext(pipelineSource, context, { filename: '105-aceil-autofill-pipeline.js' });
+  vm.runInContext(source, context, { filename: '179-aceil-insert-choice-guard.js' });
   if (chooseId) {
     const chosen = items.find(item => item.id === chooseId);
     window.A_CEIL_SetInsertChoiceFromQty(chosen, chosen.qty);
@@ -115,10 +115,10 @@ const dirtyCatalog=[
 ];
 const currentRoom=JSON.parse(JSON.stringify(dirtyCatalog));
 const mergeCases=[
- ['js/admin/033-aceil-supabase-auth-offline-access.js','function _nomenV339Clone','async function saveNomenclatureToCloud','_nomenV339MergeCatalogWithRoom'],
- ['js/admin/159-aceil-access-clean-v2.js','function nomItemKey','function mergeCatalogGroupsWithRoom','mergeCatalogWithRoomResults'],
+ ['js/auth/033-aceil-supabase-auth-offline-access.js','function _nomenV339Clone','async function saveNomenclatureToCloud','_nomenV339MergeCatalogWithRoom'],
+ ['js/admin/159-aceil-access-clean.js','function nomItemKey','function mergeCatalogGroupsWithRoom','mergeCatalogWithRoomResults'],
  ['js/nomenclature/062-aceil-nomenclature-cloud-merge.js','function _nom3623Key','async function forceLoadNomenclature','_nom3623Merge'],
- ['js/nomenclature/171-aceil-offline-nomenclature-v1.js','  function clone','  function mergeGroups','mergeItems']
+ ['js/nomenclature/171-aceil-offline-nomenclature.js','  function clone','  function mergeGroups','mergeItems']
 ];
 for(const [file,start,end,name] of mergeCases){
  const code=fs.readFileSync(path.join(__dirname,'..',file),'utf8');

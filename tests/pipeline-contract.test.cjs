@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, "..");
 const read = file => fs.readFileSync(path.join(root, file), "utf8");
 const context = { window: {} };
 vm.createContext(context);
-vm.runInContext(read("js/core/007-aceil-pipeline-v1.js"), context);
+vm.runInContext(read("js/core/007-aceil-pipeline.js"), context);
 
 const pipeline = context.window["A·CEIL"].pipeline;
 assert.ok(Object.isFrozen(pipeline), "pipeline factory must be frozen");
@@ -39,45 +39,45 @@ assert.deepEqual(calls, ["outer-before", "base:4", "inner-after:5", "outer-after
 
 const index = read("index.html");
 const runtime = JSON.parse(read("scripts/runtime-order.json"));
-const factoryPos = runtime.indexOf("js/core/007-aceil-pipeline-v1.js");
+const factoryPos = runtime.indexOf("js/core/007-aceil-pipeline.js");
 assert.ok(factoryPos >= 0, "factory must be present in runtime order");
 for (const owner of [
-  "js/nomenclature/040-aceil-rpc-cockpit-update.js",
-  "js/nomenclature/105-aceil-autofill-pipeline-v1.js"
+  "js/rooms/040-aceil-rpc-cockpit-update.js",
+  "js/nomenclature/105-aceil-autofill-pipeline.js"
 ]) {
   assert.ok(factoryPos < runtime.indexOf(owner), "factory must load before " + owner);
 }
-assert.ok(index.includes("js/core/007-aceil-pipeline-v1.js"), "factory must be loaded by index");
+assert.ok(index.includes("js/core/007-aceil-pipeline.js"), "factory must be loaded by index");
 
 const rpcOrder = ["projectMeta", "lightCount", "cockpitTools", "headerTotal", "syncDot", "metricIcons", "cornerHeader"];
-const rpcOwner = read("js/nomenclature/040-aceil-rpc-cockpit-update.js");
+const rpcOwner = read("js/rooms/040-aceil-rpc-cockpit-update.js");
 assert.ok(rpcOwner.includes('order:' + JSON.stringify(rpcOrder)), "rpcUpdate stage order changed");
 assert.equal((rpcOwner.match(/pipeline\.define\("rpcUpdate"/g) || []).length, 1, "rpcUpdate must have one owner");
 
 const rpcStages = {
-  projectMeta: "js/reports/041-aceil-current-project-meta.js",
-  lightCount: "js/nomenclature/042-aceil-rpc-light-count-lines.js",
-  cockpitTools: "js/reports/044-aceil-cockpit-tools-wall-modal-normalize.js",
-  headerTotal: "js/reports/061-aceil-wall-marks-bridge-room-load.js",
+  projectMeta: "js/projects/041-aceil-current-project-meta.js",
+  lightCount: "js/rooms/042-aceil-rpc-light-count-lines.js",
+  cockpitTools: "js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js",
+  headerTotal: "js/canvas/061-aceil-wall-marks-bridge-room-load.js",
   syncDot: "js/nomenclature/062-aceil-nomenclature-cloud-merge.js",
-  metricIcons: "js/reports/065-aceil-cockpit-metric-icons.js",
-  cornerHeader: "js/nomenclature/167-aceil-color-picker-v3.js"
+  metricIcons: "js/rooms/065-aceil-cockpit-metric-icons.js",
+  cornerHeader: "js/nomenclature/167-aceil-color-picker.js"
 };
 for (const [stage, file] of Object.entries(rpcStages)) {
   assert.ok(read(file).includes('stage("' + stage + '"'), file + " must register " + stage);
 }
 
 const renderOrder = ["cloudLoading", "accessGate", "customRules", "offlineRestore", "desktopSidebar", "filmGroups"];
-const renderOwner = read("js/nomenclature/026-aceil-render-elem-list-pipeline-v1.js");
+const renderOwner = read("js/nomenclature/026-aceil-render-elem-list-pipeline.js");
 assert.ok(renderOwner.includes('order:' + JSON.stringify(renderOrder)), "renderElemList stage order changed");
 assert.equal((renderOwner.match(/pipeline\.define\("renderElemList"/g) || []).length, 1, "renderElemList must have one owner");
 const renderStages = {
   cloudLoading: "js/nomenclature/062-aceil-nomenclature-cloud-merge.js",
-  accessGate: "js/admin/159-aceil-access-clean-v2.js",
-  customRules: "js/nomenclature/170-aceil-autocount-menu-v1.js",
-  offlineRestore: "js/nomenclature/171-aceil-offline-nomenclature-v1.js",
-  desktopSidebar: "js/nomenclature/168-aceil-desktop-sidebar-v1.js",
-  filmGroups: "js/nomenclature/212-aceil-film-group-state-fix-v1.js"
+  accessGate: "js/admin/159-aceil-access-clean.js",
+  customRules: "js/nomenclature/170-aceil-autocount-menu.js",
+  offlineRestore: "js/nomenclature/171-aceil-offline-nomenclature.js",
+  desktopSidebar: "js/core/168-aceil-desktop-sidebar.js",
+  filmGroups: "js/nomenclature/212-aceil-film-group-state-fix.js"
 };
 for (const [stage, file] of Object.entries(renderStages)) {
   assert.ok(read(file).includes('stage("' + stage + '"'), file + " must register " + stage);
@@ -86,7 +86,7 @@ assert.ok(!read(rpcStages.cockpitTools).includes("_prevOpenWallModalForInit"), "
 
 const autofillOrder = ["linear", "universal", "colorFix", "cornices", "insertChoice", "filmFix"];
 assert.ok(
-  read("js/nomenclature/105-aceil-autofill-pipeline-v1.js").includes("order:" + JSON.stringify(autofillOrder)),
+  read("js/nomenclature/105-aceil-autofill-pipeline.js").includes("order:" + JSON.stringify(autofillOrder)),
   "autofill order changed"
 );
 

@@ -21,7 +21,7 @@ const window={
   __aceilWLRows:[]
 };
 const context=vm.createContext({window,document,console,closed:true,pts:[{},{},{}],lengths:[],wallTypes:[],setTimeout,clearTimeout,requestAnimationFrame(){return 1;},cancelAnimationFrame(){},innerWidth:390,innerHeight:844});
-vm.runInContext(fs.readFileSync(path.join(__dirname,'..','js','canvas','175-aceil-side-input-stepper-v1.js'),'utf8'),context);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','js','canvas','175-aceil-side-input-stepper.js'),'utf8'),context);
 
 assert.equal(typeof listeners.touchstart,'function','touch listener is installed');
 listeners.touchstart({target:modalButton,touches:[{clientX:10,clientY:10}],cancelable:true,preventDefault(){throw new Error('modal tap was captured');},stopImmediatePropagation(){throw new Error('modal tap was captured');}});

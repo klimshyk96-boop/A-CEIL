@@ -14,6 +14,13 @@ const files=walk(path.join(root,'js')).filter(f=>f.endsWith('.js')).map(f=>path.
 
 /* R1 meaningful names */
 files.filter(f=>/-inline\.js$/.test(f)).forEach(f=>errors.push('anonymous file name (rename by feature): '+f));
+/* R1b naming scheme: NNN-aceil-<purpose>.js, no version tags, in a known domain folder */
+const DOMAINS=['core','i18n','auth','admin','projects','rooms','canvas','nomenclature','reports'];
+files.forEach(f=>{const parts=f.split('/'),b=parts[parts.length-1];
+ if(parts.length!==3||!DOMAINS.includes(parts[1]))errors.push('file outside a domain folder ('+DOMAINS.join('/')+'): '+f);
+ if(/^\d{3}-/.test(b)){
+  if(!/^\d{3}-aceil-[a-z0-9]+(-[a-z0-9]+)*\.js$/.test(b))errors.push('name must be NNN-aceil-<purpose>.js: '+f);
+  if(/(^|-)v\d+(-|\.js$)/.test(b))errors.push('no version tags in file names (use VERSION/build id): '+f);}});
 /* R2 unique numeric prefixes */
 const nums={};files.forEach(f=>{const m=path.basename(f).match(/^(\d{3})-/);if(m)(nums[m[1]]=nums[m[1]]||[]).push(f);});
 Object.entries(nums).filter(([,v])=>v.length>1).forEach(([k,v])=>errors.push('duplicate number '+k+': '+v.join(', ')));
@@ -23,7 +30,7 @@ files.forEach(f=>{if(/(?<![\w.$])eval\s*\(|new\s+Function\s*\(/.test(read(f)))er
 const loaded=new Set(order);files.filter(f=>!loaded.has(f)).forEach(f=>errors.push('file is not loaded by index.html: '+f));
 order.filter(f=>!fs.existsSync(path.join(root,f))).forEach(f=>errors.push('missing file: '+f));
 /* R5 public API seam present */
-if(!order.includes('js/core/225-aceil-public-api-v1.js'))errors.push('public API facade is not loaded');
+if(!order.includes('js/core/225-aceil-public-api.js'))errors.push('public API facade is not loaded');
 
 /* wrapper chains: globals assigned a function (or a variable holding one, e.g. window.X=wrapped) in two or more files */
 const re=/window\s*(?:\.\s*([A-Za-z_$\u00b7][\w$\u00b7]*)|\[\s*["']([^"']+)["']\s*\])\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>|(?!(?:true|false|null|undefined|void|new|typeof|window)\b)[A-Za-z_$][\w$]*\s*(?:[;,)}]|\r?\n|$))/g;

@@ -9,7 +9,7 @@ const document={readyState:"loading",addEventListener(){},getElementById(){retur
 const window={document,addEventListener(){},__diagSilent(){}};
 window.window=window;
 vm.runInNewContext(
-  fs.readFileSync(path.resolve(__dirname,"../js/canvas/190-aceil-honest-geometry-v1.js"),"utf8"),
+  fs.readFileSync(path.resolve(__dirname,"../js/canvas/190-aceil-honest-geometry.js"),"utf8"),
   {window,document,console,Math,Number,WeakMap,Object,Array,String}
 );
 
@@ -49,7 +49,7 @@ assert(Math.abs(solved.closureCorrectionCm-1)<.01,
 const perimeter=entered.reduce((sum,value)=>sum+value,0);
 assert.strictEqual((perimeter/100).toFixed(2),"3.99","displayed perimeter must keep entered measurements");
 
-const source=fs.readFileSync(path.resolve(__dirname,"../js/canvas/190-aceil-honest-geometry-v1.js"),"utf8");
+const source=fs.readFileSync(path.resolve(__dirname,"../js/canvas/190-aceil-honest-geometry.js"),"utf8");
 assert.match(source,/position:absolute[^\n]+top:64px[^\n]+right:12px/,
   "geometry guidance must be a compact canvas overlay");
 assert.doesNotMatch(source,/class="aceil-geometry-warning-text"/,
