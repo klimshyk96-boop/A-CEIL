@@ -36,6 +36,17 @@
     var white=list.filter(function(item){return colorOf(item)==="white";});
     return white.length===1?white[0]:null;
   }
+  function rememberChoiceFromQty(item,qty){
+    var list=candidates();
+    if(list.indexOf(item)<0)return false;
+    if(Number(qty)>0){
+      list.forEach(function(candidate){candidate.insertSelected=candidate===item;});
+    }else if(item.insertSelected===true){
+      item.insertSelected=false;
+    }
+    return true;
+  }
+  window.A_CEIL_SetInsertChoiceFromQty=rememberChoiceFromQty;
   function refreshAndSave(){
     try{if(typeof renderElemList==="function")renderElemList();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     try{if(typeof updateElemBadge==="function")updateElemBadge();}catch(_){window.__diagSilent&&window.__diagSilent(_)}

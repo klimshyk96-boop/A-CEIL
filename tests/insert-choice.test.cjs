@@ -16,7 +16,7 @@ const source = fs.readFileSync(
   'utf8'
 );
 
-function run(items) {
+function run(items, chooseId) {
   const timers = [];
   const window = {
     elemItems: items,
@@ -43,9 +43,24 @@ function run(items) {
   vm.runInContext(factorySource, context, { filename: '007-aceil-pipeline-v1.js' });
   vm.runInContext(pipelineSource, context, { filename: '105-aceil-autofill-pipeline-v1.js' });
   vm.runInContext(source, context, { filename: '179-aceil-insert-choice-guard-v1.js' });
+  if (chooseId) {
+    const chosen = items.find(item => item.id === chooseId);
+    window.A_CEIL_SetInsertChoiceFromQty(chosen, chosen.qty);
+  }
   window.autoFillNomenclature({ silent: true });
   timers.forEach(callback => callback());
   return items;
+}
+
+{
+  const items = run([
+    { id: 'white', name: 'Вставка біла', source: 'white_insert', sourceVariant: 'white', insertSelected: true, qty: 0 },
+    { id: 'black', name: 'Вставка чорна', source: 'white_insert', sourceVariant: 'black', insertSelected: false, qty: 9 }
+  ], 'black');
+  assert.equal(items[0].qty, 0, 'zeroed white insert stays zero');
+  assert.equal(items[0].insertSelected, false);
+  assert.equal(items[1].qty, 9, 'manually substituted black insert survives recalculation');
+  assert.equal(items[1].insertSelected, true);
 }
 
 {
@@ -68,5 +83,15 @@ function run(items) {
   assert.equal(items[0].insertSelected, true);
   assert.equal(items[1].qty, 0);
 }
+
+const stateSource = fs.readFileSync(
+  path.join(__dirname, '..', 'js', 'nomenclature', '025-aceil-state-persistence-nomenclature.js'),
+  'utf8'
+);
+assert.equal(
+  (stateSource.match(/A_CEIL_SetInsertChoiceFromQty/g) || []).length,
+  4,
+  'manual quantity and perimeter button must both remember the insert colour'
+);
 
 console.log('Insert choice tests: OK');
