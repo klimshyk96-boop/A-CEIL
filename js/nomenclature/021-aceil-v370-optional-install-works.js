@@ -50,6 +50,12 @@ function applyOne(it){
   it.autoFilled=false; it.autoZero=!(Number(it.qty)>0);
   return true;
 }
+function enforce(){
+  var a=(typeof elemItems!=="undefined"&&Array.isArray(elemItems))?elemItems:(window.elemItems||[]);
+  var changed=false;
+  a.forEach(function(it){if(applyOne(it))changed=true});
+  return changed;
+}
 window.rmToggleOptionalEstimateV370=function(id,on){
   var a=(typeof elemItems!=="undefined"&&Array.isArray(elemItems))?elemItems:(window.elemItems||[]);
   var it=a.find(function(x){return x&&String(x.id)===String(id)});
@@ -96,9 +102,21 @@ if(typeof oldRender==="function"){
   try{renderItemRow=wrappedRender}catch(_){}
 }
 
-/* The old auto-fill wrapper in this early-loaded file never ran because the base function
-   did not exist yet. Keep the observed behaviour: optional work starts disabled and changes
-   only through its explicit checkbox. Auto-fill must not silently reset the user's choice. */
+/* Important: old AutoFill may still try to add these rows.
+   Always enforce the checkbox AFTER every automatic recalculation. */
+var oldAuto=window.autoFillNomenclature||(typeof autoFillNomenclature==="function"?autoFillNomenclature:null);
+if(typeof oldAuto==="function"){
+  var wrappedAuto=function(){
+    var r=oldAuto.apply(this,arguments);
+    enforce();
+    try{if(typeof renderElemList==="function")renderElemList()}catch(_){}
+    try{if(typeof updateElemBadge==="function")updateElemBadge()}catch(_){}
+    try{if(typeof recalcElemTotal==="function")recalcElemTotal()}catch(_){}
+    return r;
+  };
+  window.autoFillNomenclature=wrappedAuto;
+  try{autoFillNomenclature=wrappedAuto}catch(_){}
+}
 
 /* Migration: existing projects must NOT suddenly include optional work. */
 try{

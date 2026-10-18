@@ -250,7 +250,13 @@ function render(){
    патерн, що й в інших наших файлах) — панель оновлюється кожного разу,
    коли оновлюється сама номенклатура, без окремих таймерів/спостерігачів. */
 function installHook(){
-  (function(p){if(p)p.stage("desktopSidebar",{around:function(next,args){var r=next();render();return r}})})(window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].pipeline&&window["A\u00b7CEIL"].pipeline.get("renderElemList"));
+  var prev=window.renderElemList||((typeof renderElemList==="function")?renderElemList:null);
+  if(typeof prev==="function"&&!prev.__desktopSidebarV1){
+    var wrapped=function(){var r=prev.apply(this,arguments);render();return r};
+    wrapped.__desktopSidebarV1=true;
+    window.renderElemList=wrapped;
+    try{renderElemList=wrapped}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  }
 }
 
 function boot(){installDesktopCanvasZoom();installHook();render()}

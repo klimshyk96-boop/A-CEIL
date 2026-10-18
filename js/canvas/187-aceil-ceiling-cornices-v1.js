@@ -74,18 +74,16 @@
     try{if(typeof window.renderElemList==="function")window.renderElemList();}catch(e){}try{if(typeof window.updateElemBadge==="function")window.updateElemBadge();}catch(e){}try{if(typeof window.recalcElemTotal==="function")window.recalcElemTotal();}catch(e){}
   }
   function wrapFilmAutoFill(){
-    var AF=window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].autofill;if(!AF||AF.has("filmFix"))return;
-    AF.stage("filmFix",{
-      enabled:function(){return !(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==="function"&&!window.A_CEIL_AutoCount.isEnabled());},
-      skipValue:undefined,
-      around:function(next){
+    var previous=window.autoFillNomenclature;if(typeof previous!=="function"||previous.__ceilingFilmFix)return;
+    var wrapped=function(){
+      if(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==="function"&&!window.A_CEIL_AutoCount.isEnabled())return;
       repairFilmSelection();var oldWindowToast=window.showToast,oldLexicalToast=null;
       var filteredToast=function(message){if(/Кілька рулонів однакової ширини/i.test(String(message||"")))return;return typeof oldWindowToast==="function"?oldWindowToast.apply(this,arguments):undefined;};
       window.showToast=filteredToast;try{oldLexicalToast=showToast;showToast=filteredToast;}catch(e){}
-      var result;try{result=next();}finally{window.showToast=oldWindowToast;try{if(oldLexicalToast)showToast=oldLexicalToast;}catch(e){}}
+      var result;try{result=previous.apply(this,arguments);}finally{window.showToast=oldWindowToast;try{if(oldLexicalToast)showToast=oldLexicalToast;}catch(e){}}
       pinFilmGroupFirst();forceFilmQuantity();return result;
-      }
-    });
+    };
+    wrapped.__ceilingFilmFix=true;window.autoFillNomenclature=wrapped;try{autoFillNomenclature=wrapped;}catch(e){}
   }
   function projectList(){try{return typeof window.getProjects==="function"?window.getProjects():[];}catch(e){return [];}}
   function findProject(value){var wanted=String(value==null?"":value);return projectList().find(function(p){return p&&[p.id,p._dbId,p._localId].some(function(v){return String(v==null?"":v)===wanted;});})||null;}

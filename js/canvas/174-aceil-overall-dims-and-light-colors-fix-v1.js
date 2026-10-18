@@ -56,7 +56,7 @@ window.__A_CEIL_FinalFixes174=true;
    instead of: chandelier = filled yellow circle, spot light = yellow
    "donut" (white fill, yellow ring).
 
-   Root cause: js/nomenclature/063-aceil-wall-marks-persist.js's init() unconditionally
+   Root cause: js/nomenclature/063-inline.js's init() unconditionally
    re-assigns window.drawLightMarks to a plain white-circle+icon renderer,
    and it re-runs that init() via setTimeout(...,50) and setTimeout(...,500)
    — i.e. AFTER every synchronous <script> tag (including the earlier

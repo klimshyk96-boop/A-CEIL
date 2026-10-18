@@ -365,21 +365,7 @@ function wallControlAt(clientX,clientY){
   }
   return null;
 }
-function canvasGestureAllowed(e){
-  var c=document.getElementById("cv"),t=e&&e.target;
-  if(!c||!t||t!==c)return false;
-  /* The listeners below are intentionally installed in capture phase so the
-     canvas control wins over the canvas' own drawing handlers.  Without this
-     target guard, however, a tap inside a modal was interpreted only by its
-     screen coordinates and could activate a wall/dimensions control hidden
-     behind that modal (most visibly on the black-insert row on iPhone). */
-  try{
-    if(document.querySelector('.modal-overlay.open, [id$="Modal"].open'))return false;
-  }catch(_){}
-  return true;
-}
 function openWallListRow(e,point){
-  if(!canvasGestureAllowed(e))return;
   try{if(typeof closed!=="undefined"&&!closed)return;}catch(_){}
   var hit=wallControlAt(point.clientX,point.clientY);if(!hit)return;
   if(hit.action==="wall"){
