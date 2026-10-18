@@ -20,6 +20,7 @@
   "js/nomenclature/021-aceil-v370-optional-install-works.js",
   "js/projects/023-aceil-projects-store-and-list.js",
   "js/nomenclature/025-aceil-state-persistence-nomenclature.js",
+  "js/nomenclature/026-aceil-render-elem-list-pipeline-v1.js",
   "js/nomenclature/028-aceil-modern-groups-totals.js",
   "js/reports/029-aceil-report-hd-and-settings.js",
   "js/projects/030-aceil-project-edit-modal.js",

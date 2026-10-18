@@ -636,12 +636,7 @@
     try{saveElemEdit=window.saveElemEdit}catch(e){}
   }
 
-  var previousRender=window.renderElemList;
-  if(typeof previousRender==="function"&&!previousRender.__corniceRulesV2){
-    var wrappedRender=function(){loadRules();embedRules();applyCustomRules(false);correctCorniceRules(false);return previousRender.apply(this,arguments)};
-    wrappedRender.__corniceRulesV2=true;window.renderElemList=wrappedRender;
-    try{renderElemList=wrappedRender;}catch(e){window.__diagSilent&&window.__diagSilent(e)}
-  }
+  (function(p){if(p)p.stage("customRules",{around:function(next,args){loadRules();embedRules();applyCustomRules(false);correctCorniceRules(false);return next()}})})(window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].pipeline&&window["A\u00b7CEIL"].pipeline.get("renderElemList"));
 
   var previousQuick=window.openQuickSourceMenu;
   if(typeof previousQuick==="function"&&!previousQuick.__organizedV1){

@@ -278,14 +278,6 @@
    "js/admin/159-aceil-access-clean-v2.js",
    "js/nomenclature/171-aceil-offline-nomenclature-v1.js"
   ],
-  "renderElemList": [
-   "js/nomenclature/062-aceil-nomenclature-cloud-merge.js",
-   "js/admin/159-aceil-access-clean-v2.js",
-   "js/nomenclature/168-aceil-desktop-sidebar-v1.js",
-   "js/nomenclature/170-aceil-autocount-menu-v1.js",
-   "js/nomenclature/171-aceil-offline-nomenclature-v1.js",
-   "js/nomenclature/212-aceil-film-group-state-fix-v1.js"
-  ],
   "openElementsModal": [
    "js/nomenclature/062-aceil-nomenclature-cloud-merge.js",
    "js/admin/159-aceil-access-clean-v2.js",
@@ -563,6 +555,7 @@
  "dynamicAssigners": [
   "js/core/007-aceil-pipeline-v1.js",
   "js/projects/013-aceil-i18n-core.js",
+  "js/nomenclature/026-aceil-render-elem-list-pipeline-v1.js",
   "js/admin/033-aceil-supabase-auth-offline-access.js",
   "js/reports/061-aceil-wall-marks-bridge-room-load.js",
   "js/nomenclature/063-aceil-wall-marks-persist.js",

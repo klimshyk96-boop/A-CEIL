@@ -11,6 +11,7 @@ node tests/linear-autocount.test.cjs || exit 1
 node tests/insert-choice.test.cjs || exit 1
 node tests/canvas-hit-guard.test.cjs || exit 1
 node tests/pipeline-contract.test.cjs || exit 1
+node tests/render-pipeline.test.cjs || exit 1
 node tests/stability-regression.test.cjs || exit 1
 node scripts/check-architecture.cjs || exit 1
 

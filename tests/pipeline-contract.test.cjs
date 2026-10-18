@@ -66,6 +66,22 @@ const rpcStages = {
 for (const [stage, file] of Object.entries(rpcStages)) {
   assert.ok(read(file).includes('stage("' + stage + '"'), file + " must register " + stage);
 }
+
+const renderOrder = ["cloudLoading", "accessGate", "customRules", "offlineRestore", "desktopSidebar", "filmGroups"];
+const renderOwner = read("js/nomenclature/026-aceil-render-elem-list-pipeline-v1.js");
+assert.ok(renderOwner.includes('order:' + JSON.stringify(renderOrder)), "renderElemList stage order changed");
+assert.equal((renderOwner.match(/pipeline\.define\("renderElemList"/g) || []).length, 1, "renderElemList must have one owner");
+const renderStages = {
+  cloudLoading: "js/nomenclature/062-aceil-nomenclature-cloud-merge.js",
+  accessGate: "js/admin/159-aceil-access-clean-v2.js",
+  customRules: "js/nomenclature/170-aceil-autocount-menu-v1.js",
+  offlineRestore: "js/nomenclature/171-aceil-offline-nomenclature-v1.js",
+  desktopSidebar: "js/nomenclature/168-aceil-desktop-sidebar-v1.js",
+  filmGroups: "js/nomenclature/212-aceil-film-group-state-fix-v1.js"
+};
+for (const [stage, file] of Object.entries(renderStages)) {
+  assert.ok(read(file).includes('stage("' + stage + '"'), file + " must register " + stage);
+}
 assert.ok(!read(rpcStages.cockpitTools).includes("_prevOpenWallModalForInit"), "must not restore the extra wall-modal wrapper");
 
 const autofillOrder = ["linear", "universal", "colorFix", "cornices", "insertChoice", "filmFix"];

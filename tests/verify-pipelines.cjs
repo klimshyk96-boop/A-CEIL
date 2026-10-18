@@ -3,6 +3,7 @@ const assert=require('assert/strict');const {chromium}=require('playwright');con
 const checks=[];function check(n,v,i){assert.ok(v,n+': '+JSON.stringify(i));checks.push(n);}
 const EXPECT={
  autoFillNomenclature:["linear","universal","colorFix","cornices","insertChoice","filmFix"],
+ renderElemList:["cloudLoading","accessGate","customRules","offlineRestore","desktopSidebar","filmGroups"],
  rpcUpdate:["projectMeta","lightCount","cockpitTools","headerTotal","syncDot","metricIcons","cornerHeader"]
 };
 (async()=>{

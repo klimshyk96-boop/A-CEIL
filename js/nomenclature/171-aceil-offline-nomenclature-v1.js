@@ -74,11 +74,7 @@
   }
   function scheduleCapture(){clearTimeout(captureTimer);captureTimer=setTimeout(capture,700)}
 
-  var oldRender=window.renderElemList;
-  if(typeof oldRender==="function"&&!oldRender.__offlineNomV1){
-    var wrappedRender=function(){if(offline()&&!runtimeItems().length)restore();return oldRender.apply(this,arguments)};
-    wrappedRender.__offlineNomV1=true;window.renderElemList=wrappedRender;try{renderElemList=wrappedRender}catch(_){}
-  }
+  (function(p){if(p)p.stage("offlineRestore",{around:function(next,args){if(offline()&&!runtimeItems().length)restore();return next()}})})(window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].pipeline&&window["A\u00b7CEIL"].pipeline.get("renderElemList"));
   var oldOpen=window.openElementsModal;
   if(typeof oldOpen==="function"&&!oldOpen.__offlineNomV1){
     var wrappedOpen=function(){if(offline())restore();return oldOpen.apply(this,arguments)};
