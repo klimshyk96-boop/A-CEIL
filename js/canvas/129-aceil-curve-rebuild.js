@@ -212,22 +212,32 @@ function removeCurve(i){
   ensure();wallTypes[i]="straight";arcPoints[i]=null;window.arcPoints[i]=null;rerender(i);refresh(i);
 }
 
-/* One source of truth for draw, perimeter, report and nomenclature. */
-window._sideArcPts=function(i){return normalize(i).controls};
-window._isArcSide=active;
-window._sideArcCanvasPts=canvasPoints;
-window._sideCurveLenCm=effectiveLength;
-window._sideEffectiveLenCm=function(i){return active(i)?effectiveLength(i):num(lengths[i])||chord(i)};
-window._totalCurveLengthCm=totalCurve;
-window.totalCurveLength=function(){return Math.round(totalCurve())/100};
-window.getArcSidesCount=function(){var n=0;for(var i=0;i<(pts||[]).length;i++)if(active(i))n++;return n};
+/* Public geometry seam. The measured geometry service is loaded later, so
+   these owner functions delegate to it at call time instead of being wrapped
+   or overwritten by another module. */
+function measured(){return window.A·CEILCurveGeometryV306||null}
+window._sideArcPts=function(i){
+  var g=measured(),d=g&&g.dataFor(i,true);
+  return d&&Array.isArray(d.points)?d.points:normalize(i).controls;
+};
+window._isArcSide=function(i){var g=measured();return g?g.active(i):active(i)};
+window._sideArcCanvasPts=function(i){var g=measured();return g?g.canvasPoints(i):canvasPoints(i)};
+window._sideCurveLenCm=function(i){var g=measured();return g&&g.active(i)?g.effectiveLength(i):effectiveLength(i)};
+window._sideEffectiveLenCm=function(i){
+  var g=measured();
+  if(g)return g.active(i)?g.effectiveLength(i):num(lengths[i])||chord(i);
+  return active(i)?effectiveLength(i):num(lengths[i])||chord(i);
+};
+window._totalCurveLengthCm=function(){var g=measured();return g?g.totalCurve():totalCurve()};
+window.totalCurveLength=function(){return Math.round(window._totalCurveLengthCm())/100};
+window.getArcSidesCount=function(){var n=0;for(var i=0;i<(pts||[]).length;i++)if(window._isArcSide(i))n++;return n};
 try{
   _sideArcPts=window._sideArcPts;
-  _isArcSide=active;
-  _sideArcCanvasPts=canvasPoints;
-  _sideCurveLenCm=effectiveLength;
+  _isArcSide=window._isArcSide;
+  _sideArcCanvasPts=window._sideArcCanvasPts;
+  _sideCurveLenCm=window._sideCurveLenCm;
   _sideEffectiveLenCm=window._sideEffectiveLenCm;
-  _totalCurveLengthCm=totalCurve;
+  _totalCurveLengthCm=window._totalCurveLengthCm;
 }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 
 window.renderArcPointsEditor=editor;

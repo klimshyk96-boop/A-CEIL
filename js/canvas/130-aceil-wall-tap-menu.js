@@ -43,28 +43,18 @@ function addElement(){
 function openCurveEditorForSide(i){
   if(i<0)return;
   try{
-    if(!hasCurve(i)&&typeof window.toggleSideArcType==="function")window.toggleSideArcType(i);
-  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
-  try{
-    /* Редактор дуг живе у старому вікні розмірів; нова таблиця «Розміри» його не містить. */
-    if(typeof window.openSideInputModalLegacy==="function")window.openSideInputModalLegacy();
-    else if(typeof window.openSideInputModal==="function")window.openSideInputModal();
-    else if(typeof openSideInputModal==="function")openSideInputModal();
+    if(typeof window.rmCurveMeasureOpenV301==="function"){
+      window.rmCurveMeasureOpenV301(i);
+      return;
+    }
+    if(typeof window.rmCurveOpenV87==="function"){
+      window.rmCurveOpenV87(i);
+      return;
+    }
+    throw new Error("curve editor unavailable");
   }catch(e){
     try{showToast("Не вдалося відкрити редактор кривої")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-    return;
   }
-  setTimeout(function(){
-    try{
-      var card=document.getElementById("sideArcEditor_"+i);
-      if(card){
-        card.style.display="";
-        card.scrollIntoView({behavior:"smooth",block:"center"});
-        var input=card.querySelector("input");
-        if(input)input.focus();
-      }
-    }catch(_){window.__diagSilent&&window.__diagSilent(_)}
-  },180);
 }
 function curve(){
   var i=selectedSide;close();

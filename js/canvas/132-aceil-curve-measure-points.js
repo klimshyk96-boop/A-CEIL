@@ -22,8 +22,10 @@ function sideName(i){
 function defaultDraft(i){
   var L=wallLen(i);
   return {
+    version:2,
     startCorner:i,
     startOffset:+(L*.2).toFixed(1),
+    endOffset:0,
     points:[
       {arcLen:+(L*.2).toFixed(1),diagCorner:(i-1+pts.length)%pts.length,diag:0}
     ]
@@ -33,7 +35,14 @@ function readExisting(i){
   try{
     var raw=Array.isArray(arcPoints[i])?arcPoints[i]:null;
     if(raw&&raw.length&&raw[0]&&raw[0].model==="measure-points"){
-      return JSON.parse(JSON.stringify(raw[0].data));
+      var current=JSON.parse(JSON.stringify(raw[0].data));
+      if(current.endOffset==null)current.endOffset=0;
+      if(current.version==null)current.version=2;
+      return current;
+    }
+    if(window.A·CEILCurveGeometryV306&&typeof window.A·CEILCurveGeometryV306.legacyToMeasure==="function"){
+      var converted=window.A·CEILCurveGeometryV306.legacyToMeasure(i,raw);
+      if(converted)return JSON.parse(JSON.stringify(converted));
     }
   }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return defaultDraft(i);
@@ -50,6 +59,8 @@ function render(){
     startSel.appendChild(o);
   });
   document.getElementById("cmStartOffsetV301").value=draft.startOffset;
+  var endInput=document.getElementById("cmEndOffsetV306");
+  if(endInput)endInput.value=n(draft.endOffset);
 
   var box=document.getElementById("cmPointsV301");
   box.innerHTML=draft.points.map(function(p,k){
@@ -82,6 +93,7 @@ function updatePreview(){
   var complete=draft.points.filter(function(p){return n(p.arcLen)>0&&n(p.diag)>0}).length;
   document.getElementById("cmPreviewV301").textContent=
     "Початок від "+N(draft.startCorner)+": "+draft.startOffset+
+    " см · пряма ділянка в кінці: "+n(draft.endOffset)+
     " см · точок: "+draft.points.length+
     " · сума відрізків: "+total.toFixed(1)+" см"+
     " · заповнено діагоналей: "+complete+"/"+draft.points.length;
@@ -135,9 +147,11 @@ function save(){
   if(!draft||activeSide<0)return;
   draft.startCorner=Number(document.getElementById("cmStartCornerV301").value);
   draft.startOffset=n(document.getElementById("cmStartOffsetV301").value);
+  draft.endOffset=n((document.getElementById("cmEndOffsetV306")||{}).value);
+  draft.version=2;
 
-  if(draft.startOffset<0||draft.startOffset>wallLen(activeSide)){
-    try{showToast("Перевір відстань до початку кривої")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  if(draft.startOffset<0||draft.endOffset<0||draft.startOffset+draft.endOffset>=wallLen(activeSide)){
+    try{showToast("Прямі ділянки не можуть перекривати всю стіну")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     return;
   }
   if(!draft.points.length){
@@ -155,14 +169,29 @@ function save(){
     }
   }
 
+  var geometry=window.A·CEILCurveGeometryV306;
+  if(geometry&&typeof geometry.solveData==="function"){
+    var checked=geometry.solveData(activeSide,draft);
+    if(!checked.ok){
+      var point=Number.isInteger(checked.index)?" у точці "+pointLabel(checked.index):"";
+      var message=checked.error==="no_intersection"
+        ?"Проміри не перетинаються"+point+" — перевір довжину та діагональ"
+        :"Не вдалося побудувати криву"+point;
+      try{showToast(message,5200)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      return;
+    }
+  }
+
   if(!Array.isArray(wallTypes))wallTypes=[];
   if(!Array.isArray(arcPoints))arcPoints=[];
   wallTypes[activeSide]="arc";
   arcPoints[activeSide]=[{model:"measure-points",data:JSON.parse(JSON.stringify(draft))}];
   window.wallTypes=wallTypes;window.arcPoints=arcPoints;
+  if(geometry&&typeof geometry.stabilize==="function")geometry.stabilize(activeSide);
 
   if(typeof saveState==="function")saveState();
   if(typeof requestDraw==="function")requestDraw();else if(typeof draw==="function")draw();
+  if(geometry&&typeof geometry.updateStats==="function")geometry.updateStats();
   close();
   try{showToast("Криволінійну ділянку збережено")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
@@ -172,6 +201,7 @@ function remove(){
   arcPoints[activeSide]=null;
   if(typeof saveState==="function")saveState();
   if(typeof requestDraw==="function")requestDraw();else if(typeof draw==="function")draw();
+  if(window.A·CEILCurveGeometryV306&&typeof window.A·CEILCurveGeometryV306.updateStats==="function")window.A·CEILCurveGeometryV306.updateStats();
   close();
   try{showToast("Криволінійну ділянку видалено")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
@@ -206,6 +236,8 @@ window.rmWallTapOpenV84=function(side){
 
 var startSel=document.getElementById("cmStartCornerV301");
 var startInput=document.getElementById("cmStartOffsetV301");
+var endInput=document.getElementById("cmEndOffsetV306");
 if(startSel)startSel.addEventListener("change",function(){if(draft){draft.startCorner=Number(this.value);updatePreview()}});
 if(startInput)startInput.addEventListener("input",function(){if(draft){draft.startOffset=n(this.value);updatePreview()}});
+if(endInput)endInput.addEventListener("input",function(){if(draft){draft.endOffset=n(this.value);updatePreview()}});
 })();
