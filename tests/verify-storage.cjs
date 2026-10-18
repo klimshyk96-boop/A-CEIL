@@ -75,7 +75,9 @@ const checks=[];function check(name,value,info){assert.ok(value,name+': '+JSON.s
   check('warning shown once',r.warn.first===true&&r.warn.second===false,r.warn);
   check('warning names biggest key',/zz_big_test_key|КБ/.test(r.warn.toastText),r.warn);
   check('audit function works',r.auditFn===true,r);
-  /* dead cloud cache: never re-created by saving, removed if present; local project cache keeps only unsynced + active + 2 synced */
+  /* dead cloud cache: never re-created by saving, removed if present.
+     ProjectRepository.CACHE_LIMIT=8, so these 6 synced + 1 unsynced projects
+     all remain available offline. */
   const r2=await page.evaluate(async()=>{
    const N='A\u00b7CEIL',US=window.A_CEIL_UserStorage,nat=US.native,owner=US.primaryOwnerId,CC='A\u00b7CEIL_cloud_cache_v330';
    const wait=ms=>new Promise(r=>setTimeout(r,ms));
@@ -96,7 +98,7 @@ const checks=[];function check(name,value,info){assert.ok(value,name+': '+JSON.s
   });
   check('dead cache removed',r2.deadRemoved&&r2.deadFreed>0,r2);
   check('cache not re-created by saving',r2.notRecreated,r2);
-  check('local cache keeps unsynced + 2 synced',r2.stored.length===3&&r2.stored.includes('local_new1'),r2);
+  check('local cache keeps all projects within cache limit',r2.stored.length===7&&r2.stored.includes('local_new1'),r2);
   check('memory list still complete',r2.memory===7,r2);
   check('no page errors',errors.length===0,errors);
   console.log('PASS '+checks.length);

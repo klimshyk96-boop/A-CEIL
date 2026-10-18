@@ -100,42 +100,29 @@
     var n=source.length,quarter=Math.PI/2,base=Math.atan2(source[1].y-source[0].y,source[1].x-source[0].x),angles=[];
     for(var i=0;i<n;i++){
       var a=source[i],b=source[(i+1)%n],raw=Math.atan2(b.y-a.y,b.x-a.x),turn=Math.round(wrapAngle(raw-base)/quarter),snapped=base+turn*quarter;
-      if(Math.abs(wrapAngle(raw-snapped))>8*Math.PI/180)return null;
+      /* A finger sketch is only a topology hint.  Once wall measurements are
+         entered, small tap inaccuracies must not become room geometry. */
+      if(Math.abs(wrapAngle(raw-snapped))>15*Math.PI/180)return null;
       angles.push(snapped);
     }
     var endX=0,endY=0;
     for(var j=0;j<n;j++){endX+=target[j]*Math.cos(angles[j]);endY+=target[j]*Math.sin(angles[j])}
-    /* A difference up to 5 cm on EACH axis is normal measuring tolerance.
-       Do not combine horizontal and vertical mismatches with hypot(): e.g.
-       5 cm horizontally + 4 cm vertically is still within tolerance on both
-       axes, although the resulting vector is 6.4 cm. Keep the walls exactly
-       orthogonal and distribute the tiny corrections across parallel sides. */
     var closureCm=Math.hypot(endX,endY);
-    if(Math.max(Math.abs(endX),Math.abs(endY))>5.001)return null;
-    var m00=0,m01=0,m11=0;
-    for(var m=0;m<n;m++){
-      var ux=Math.cos(angles[m]),uy=Math.sin(angles[m]);
-      m00+=ux*ux;m01+=ux*uy;m11+=uy*uy;
-    }
-    var det=m00*m11-m01*m01;
-    if(Math.abs(det)<1e-9)return null;
-    var lambdaX=(-endX*m11+m01*endY)/det;
-    var lambdaY=(m01*endX-m00*endY)/det;
-    var adjusted=[],maxAdjustment=0;
-    for(var aIndex=0;aIndex<n;aIndex++){
-      var correction=Math.cos(angles[aIndex])*lambdaX+Math.sin(angles[aIndex])*lambdaY;
-      var adjustedLength=target[aIndex]+correction;
-      if(!(adjustedLength>0))return null;
-      adjusted.push(adjustedLength);maxAdjustment=Math.max(maxAdjustment,Math.abs(correction));
-    }
-    var result=[{x:0,y:0}];
-    for(var p=0;p<n-1;p++)result.push({
-      x:result[p].x+adjusted[p]*Math.cos(angles[p]),
-      y:result[p].y+adjusted[p]*Math.sin(angles[p])
+    var seed=[{x:0,y:0}];
+    for(var p=0;p<n-1;p++)seed.push({
+      x:seed[p].x+target[p]*Math.cos(angles[p]),
+      y:seed[p].y+target[p]*Math.sin(angles[p])
     });
-    var extraError=maxExtraConstraintError(result,extra);
-    if(extra&&extra.length&&extraError>.25)return null;
-    return{points:result,maxErrorCm:extraError,maxSideAdjustmentCm:maxAdjustment,closureCorrectionCm:closureCm,exactOrthogonal:true};
+
+    /* Never turn an entered 49 cm wall into 50 cm just to keep mathematical
+       right angles.  Preserve every measured length and close the contour by
+       the smallest possible angular change from its orthogonal topology. */
+    var solved=solveClosedPolygon(seed,target,extra||[]);
+    solved.closureCorrectionCm=closureCm;
+    solved.maxSideAdjustmentCm=0;
+    solved.exactOrthogonal=closureCm<.01&&(!extra||!extra.length||solved.maxErrorCm<.025);
+    solved.nearOrthogonal=true;
+    return solved;
   }
   function solveClosedPolygon(source,target,extra){
     var n=source.length,angles=[];
@@ -214,25 +201,24 @@
     var el=document.getElementById("aceilGeometryWarning");if(el)return el;
     var canvas=document.getElementById("cv"),host=canvas&&canvas.parentElement;if(!host)return null;
     el=document.createElement("button");el.id="aceilGeometryWarning";el.type="button";
-    el.style.cssText="display:none;position:relative;z-index:1;width:calc(100% - 24px);min-height:34px;margin:7px 12px 6px;padding:6px 34px 6px 10px;border:1px solid #f59e0b;border-radius:10px;background:#fffbeb;color:#92400e;box-shadow:none;font:800 10.5px/1.2 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
-    el.innerHTML='<span aria-hidden="true">⚠</span> <span class="aceil-geometry-warning-text"></span><span aria-hidden="true" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:15px">›</span>';
-    el.addEventListener("click",function(){try{window["A·CEILMeasureConfidence"]&&window["A·CEILMeasureConfidence"].open()}catch(_){}});
-    /* The room tabs are absolutely positioned inside the canvas host.  A
-       warning inserted there was covered by those tabs.  Keep the warning in
-       normal document flow immediately above the whole canvas card. */
-    var row=host.parentNode;
-    if(row&&row.parentNode)row.parentNode.insertBefore(el,row);else host.insertBefore(el,canvas);
+    el.style.cssText="display:none;position:absolute;z-index:24;top:64px;right:12px;width:36px;height:36px;padding:0;border:2px solid rgba(255,255,255,.96);border-radius:50%;background:#fbbf24;color:#78350f;box-shadow:0 5px 16px rgba(120,53,15,.25);font:900 22px/32px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;text-align:center";
+    el.innerHTML='<span aria-hidden="true">!</span>';
+    el.addEventListener("click",function(){
+      var opened=false;
+      try{var confidence=window["A·CEILMeasureConfidence"];if(confidence&&typeof confidence.open==="function"){confidence.open();opened=true}}catch(_){}
+      if(!opened&&el._aceilWarningResult){try{if(typeof showToast==="function")showToast(el._aceilWarningResult.warning,4800)}catch(_){}}
+    });
+    host.appendChild(el);
     return el;
   }
   function setWarning(result){
     var el=ensureWarning();if(!el)return;
     if(!result||!result.warning){el.style.display="none";el.removeAttribute("title");el.removeAttribute("aria-label");return}
-    var text=el.querySelector(".aceil-geometry-warning-text");
-    if(text)text.textContent=result.invalid?"Помилка розмірів — натисніть для деталей":result.unconfirmedGeometry?"Коса кімната — введіть діагональ":"Розміри потребують перевірки";
+    el._aceilWarningResult=result;
     el.title=result.warning;el.setAttribute("aria-label",result.warning);el.style.display="block";
-    el.style.borderColor=result.invalid?"#ef4444":"#f59e0b";
-    el.style.background=result.invalid?"rgba(254,242,242,.97)":"rgba(255,251,235,.97)";
-    el.style.color=result.invalid?"#991b1b":"#92400e";
+    el.style.borderColor=result.invalid?"#ef4444":"#fff";
+    el.style.background=result.invalid?"#fee2e2":"#fbbf24";
+    el.style.color=result.invalid?"#991b1b":"#78350f";
   }
   function notifyWarning(result){
     if(!result||!result.warning)return;
@@ -272,7 +258,9 @@
       /* Up to 5 cm is absorbed without skewing a right-angled contour. Above
          that limit the user gets a measurement warning. */
       var closureTolerance=5;
-      var changed=!solved.exactOrthogonal&&beforeClosure.diffCm>closureTolerance;
+      var changed=!solved.exactOrthogonal&&(
+        solved.nearOrthogonal?solved.closureCorrectionCm>closureTolerance:beforeClosure.diffCm>closureTolerance
+      );
       var result={
         invalid:solved.maxErrorCm>1.5,
         closureBefore:beforeClosure,
@@ -292,7 +280,9 @@
         result.warning="⚠️ Косі стіни не підтверджені діагоналлю — площа орієнтовна";
       }
       window.A_CEIL_HonestGeometry.lastResult=result;
-      setWarning(result);finishUi();if(result.warning)notifyWarning(result);
+      /* Guidance is available on tap from the canvas icon.  Only a truly
+         contradictory measurement interrupts the measurer with a toast. */
+      setWarning(result);finishUi();if(result.invalid)notifyWarning(result);
       return result;
     }catch(error){
       try{window.__diagSilent&&window.__diagSilent(error)}catch(_){}
@@ -320,7 +310,7 @@
   }
 
   window.A_CEIL_HonestGeometry={
-    version:"1.7",
+    version:"1.8",
     solve:solveClosedPolygon,
     solveExactOrthogonal:solveExactOrthogonal,
     closure:legacyClosure,
