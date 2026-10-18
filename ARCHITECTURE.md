@@ -10,7 +10,7 @@
 - CSS: app.css (base), theme.css (UI/theme/admin), layout.css (later layout sections).
   Keep their placement in index.html: runtime-injected styles depend on that cascade order.
 - `scripts/runtime-order.json` records the remaining legacy load order. Review dependencies before changing it.
-- Build id `20261018-renderpipe1` is shared by local asset queries, the service-worker cache,
+- Build id `20261018-insert-isolation1` is shared by local asset queries, the service-worker cache,
   the PWA reload key and service-worker registration. `scripts/check-before-deploy.sh` enforces this.
 - The service worker precaches only the essential shell. Versioned local JS/CSS use cache-first
   runtime caching; a build-id change is the only supported way to publish changed assets.

@@ -36,11 +36,21 @@
     var white=list.filter(function(item){return colorOf(item)==="white";});
     return white.length===1?white[0]:null;
   }
+  var choiceRevision=0;
   function rememberChoiceFromQty(item,qty){
     var list=candidates();
     if(list.indexOf(item)<0)return false;
+    choiceRevision++;
     if(Number(qty)>0){
-      list.forEach(function(candidate){candidate.insertSelected=candidate===item;});
+      list.forEach(function(candidate){
+        candidate.insertSelected=candidate===item;
+        if(candidate===item)return;
+        candidate.qty=0;candidate.autoZero=true;
+        var row=typeof document!=="undefined"&&document.getElementById("emrow_"+candidate.id);
+        var input=row&&row.querySelector(".em-qty-input");
+        if(input)input.value="";
+        if(typeof updateLineTotalDOM==="function")updateLineTotalDOM(candidate);
+      });
     }else if(item.insertSelected===true){
       item.insertSelected=false;
     }
@@ -60,23 +70,25 @@
     enabled:function(){return !(window.A_CEIL_AutoCount&&typeof window.A_CEIL_AutoCount.isEnabled==="function"&&!window.A_CEIL_AutoCount.isEnabled());},
     skipValue:undefined,
     around:function(next){
-    var before=candidates(),roomItems=items();
+    var before=candidates(),roomItems=items(),revision=choiceRevision;
     var preferred=preferredBeforeAutofill(before);
     var preferredId=preferred&&preferred.id;
     var result=next();
     if(!preferred)return result;
 
     function restorePreferredInsert(){
-      if(items()!==roomItems)return;
+      if(items()!==roomItems||revision!==choiceRevision)return;
       var after=candidates();
       var chosen=after.find(function(item){return item===preferred||String(item.id)===String(preferredId);});
       if(!chosen)return;
 
+      // Preview also checks selection, so establish it before asking for quantity.
+      var changed=false;
+      after.forEach(function(item){if(item.insertSelected!==(item===chosen))changed=true;item.insertSelected=item===chosen;});
       // Read the geometric remainder, never reuse a stale black/manual quantity.
       var preview=typeof window.previewNomenclatureSource==="function"?window.previewNomenclatureSource("white_insert",chosen):null;
       if(!preview)return;
       var calculatedQty=Math.max(0,Number(preview.qty)||0);
-      var changed=false;
       after.forEach(function(item){
         if(item.manualQtyOverride===true)return;
         var isChosen=item===chosen;

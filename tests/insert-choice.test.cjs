@@ -16,7 +16,7 @@ const source = fs.readFileSync(
   'utf8'
 );
 
-function run(items, chooseId) {
+function run(items, chooseId, afterAutofill) {
   const timers = [];
   const window = {
     elemItems: items,
@@ -27,7 +27,7 @@ function run(items, chooseId) {
         item.insertSelected = item.sourceVariant === 'black';
       });
     },
-    previewNomenclatureSource() { return { qty: 9, unit: 'м' }; },
+    previewNomenclatureSource(source,item) { return { qty: item.insertSelected ? 9 : 0, unit: 'м' }; },
     setTimeout(callback) { timers.push(callback); return timers.length; },
     __diagSilent() {}
   };
@@ -48,6 +48,7 @@ function run(items, chooseId) {
     window.A_CEIL_SetInsertChoiceFromQty(chosen, chosen.qty);
   }
   window.autoFillNomenclature({ silent: true });
+  if(afterAutofill)afterAutofill(window,items);
   timers.forEach(callback => callback());
   return items;
 }
@@ -84,6 +85,16 @@ function run(items, chooseId) {
   assert.equal(items[1].qty, 0);
 }
 
+{
+ const items=run([
+  {id:'white',name:'Вставка біла',source:'white_insert',sourceVariant:'white',insertSelected:true,qty:0},
+  {id:'black',name:'Вставка чорна',source:'white_insert',sourceVariant:'black',insertSelected:false,qty:0}
+ ],null,(window,items)=>{items[1].qty=7;window.A_CEIL_SetInsertChoiceFromQty(items[1],7);});
+ assert.equal(items[0].qty,0,'manual switch clears the previous quantity immediately');
+ assert.equal(items[1].qty,7,'old deferred autofill must not undo a more recent manual choice');
+ assert.equal(items[1].insertSelected,true);
+}
+
 const stateSource = fs.readFileSync(
   path.join(__dirname, '..', 'js', 'nomenclature', '025-aceil-state-persistence-nomenclature.js'),
   'utf8'
@@ -95,3 +106,35 @@ assert.equal(
 );
 
 console.log('Insert choice tests: OK');
+
+// Exercise every catalog merge, including old cloud rows with black selected.
+const defaultHelper=stateSource.slice(stateSource.indexOf('function aceilDefaultInsertSelection'),stateSource.indexOf('\n}',stateSource.indexOf('function aceilDefaultInsertSelection'))+2);
+const dirtyCatalog=[
+  {id:'white',name:'Вставка біла',source:'white_insert',sourceVariant:'white',insertSelected:false,qty:0},
+  {id:'black',name:'Вставка чорна',source:'white_insert',sourceVariant:'black',insertSelected:true,qty:9}
+];
+const currentRoom=JSON.parse(JSON.stringify(dirtyCatalog));
+const mergeCases=[
+ ['js/admin/033-aceil-supabase-auth-offline-access.js','function _nomenV339Clone','async function saveNomenclatureToCloud','_nomenV339MergeCatalogWithRoom'],
+ ['js/admin/159-aceil-access-clean-v2.js','function nomItemKey','function mergeCatalogGroupsWithRoom','mergeCatalogWithRoomResults'],
+ ['js/nomenclature/062-aceil-nomenclature-cloud-merge.js','function _nom3623Key','async function forceLoadNomenclature','_nom3623Merge'],
+ ['js/nomenclature/171-aceil-offline-nomenclature-v1.js','  function clone','  function mergeGroups','mergeItems']
+];
+for(const [file,start,end,name] of mergeCases){
+ const code=fs.readFileSync(path.join(__dirname,'..',file),'utf8');
+ const context={window:{},clone:x=>JSON.parse(JSON.stringify(x)),console};vm.createContext(context);
+ vm.runInContext(defaultHelper+'\n'+code.slice(code.indexOf(start),code.indexOf(end)),context);
+ const fresh=context[name](dirtyCatalog,[]);
+ assert.equal(fresh[0].insertSelected,true,file+': fresh room must default to white despite old cloud selection');
+ assert.equal(fresh[1].insertSelected,false);
+ const restored=context[name](dirtyCatalog,currentRoom);
+ assert.equal(restored[0].insertSelected,false,file+': sync must preserve this room\'s black choice');
+ assert.equal(restored[1].insertSelected,true);
+ if(context._nomenV339CatalogItems){
+  const cleaned=context._nomenV339CatalogItems(currentRoom);
+  assert.equal(cleaned[0].insertSelected,true,'cloud catalog must store white default');
+  assert.equal(cleaned[1].insertSelected,false);
+  assert.equal(currentRoom[1].insertSelected,true,'cleaning must not mutate room');
+ }
+}
+console.log('Insert catalog isolation (all four merge paths): OK');
