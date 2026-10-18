@@ -26,7 +26,7 @@ function mergeCatalogWithRoomResults(catalog,current){
   var cur=Array.isArray(current)?current:[],scoped=cur.filter(function(it){return it&&it.filmPickerManaged===true&&it.roomScoped===true}),scopedGroups={};
   scoped.forEach(function(it){scopedGroups[String(it.groupId)]=true});
   var by={};cur.forEach(function(it){var k=nomItemKey(it);if(k)by[k]=it});
-  var roomFields=['qty','manualQtyOverride','autoFilled','autoZero','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount','price'];
+  var roomFields=['qty','manualQtyOverride','autoFilled','autoZero','insertSelected','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount','price'];
   var out=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(scopedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0)}).map(function(src){
     var it=clone(src||{}),old=by[nomItemKey(src)];
     if(!it.unit)it.unit='шт';
@@ -34,7 +34,7 @@ function mergeCatalogWithRoomResults(catalog,current){
     if(it.price===undefined)it.price=0;
     if(!it.inputMode)it.inputMode='manual';
     if(!it.icon)it.icon='📦';
-    it.qty=0;it.manualQtyOverride=false;
+    it.qty=0;it.manualQtyOverride=false;it.insertSelected=aceilDefaultInsertSelection(it);
     if(old){
       roomFields.forEach(function(k){
         if(Object.prototype.hasOwnProperty.call(old,k))it[k]=clone(old[k]);
@@ -56,7 +56,7 @@ var oldElements=window.openElementsModal||(typeof openElementsModal==='function'
 /* Prevent room/project snapshots from resurrecting catalogue rows while access is OFF. */
 var oldRoomLoad=window._loadRoomToCanvas||(typeof _loadRoomToCanvas==='function'?_loadRoomToCanvas:null);if(typeof oldRoomLoad==='function'){var roomLoadGated=function(){var r=oldRoomLoad.apply(this,arguments);if(NOM_DENIED){clearNom();setTimeout(clearNom,0)}return r};window._loadRoomToCanvas=roomLoadGated;try{_loadRoomToCanvas=roomLoadGated}catch(e){}}
 /* If any older module adds an item later (lights, room restore, local state), purge it before nomenclature renders. */
-var oldRender=window.renderElemList||(typeof renderElemList==='function'?renderElemList:null);if(typeof oldRender==='function'){var renderGated=function(){if(NOM_DENIED){setGlobal('elemItems',[]);setGlobal('elemGroups',[])}return oldRender.apply(this,arguments)};window.renderElemList=renderGated;try{renderElemList=renderGated}catch(e){}}
+(function(p){if(p)p.stage("accessGate",{around:function(next,args){if(NOM_DENIED){setGlobal('elemItems',[]);setGlobal('elemGroups',[])}return next()}})})(window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].pipeline&&window["A\u00b7CEIL"].pipeline.get("renderElemList"));
 var oldProjects=window.openProjectsModal||(typeof openProjectsModal==='function'?openProjectsModal:null);if(typeof oldProjects==='function'){var openProjectsClean=async function(){if(navigator.onLine)try{var a=await rights();await loadProjects(a)}catch(e){if(!isTransientNetworkError(e))console.error('[A·CEIL projects]',e)}return oldProjects.apply(this,arguments)};window.openProjectsModal=openProjectsClean;try{openProjectsModal=openProjectsClean}catch(e){}}
 window.forceLoadNomenclature=async function(){if(!navigator.onLine)return false;var a=await rights();return a?loadNom(a):false};try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){};try{loadNomenclatureFromCloud=window.forceLoadNomenclature}catch(e){}
 window.A_CEIL_forceAccessRefresh=refresh;

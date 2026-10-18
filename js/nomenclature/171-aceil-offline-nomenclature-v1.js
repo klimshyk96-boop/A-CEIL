@@ -27,6 +27,7 @@
     var fields=["qty","manualQtyOverride","autoFilled","autoZero","price","filmSelected","insertSelected","optionalEstimateEnabled"];
     var out=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(scopedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0)}).map(function(src){
       var it=clone(src||{}),old=by[key(src)];
+      it.insertSelected=aceilDefaultInsertSelection(it);
       if(old)fields.forEach(function(f){if(Object.prototype.hasOwnProperty.call(old,f))it[f]=clone(old[f])});
       return it;
     });
@@ -55,7 +56,7 @@
     var u=user(),light=[];
     try{light=typeof lightTypes!=="undefined"&&Array.isArray(lightTypes)?lightTypes:(window.lightTypes||[])}catch(_){light=window.lightTypes||[]}
     try{
-      localStorage.setItem(CACHE_KEY,JSON.stringify({savedAt:Date.now(),userId:u&&u.id||null,items:clone(items),groups:clone(groups),lightTypes:clone(light)}));
+      localStorage.setItem(CACHE_KEY,JSON.stringify({savedAt:Date.now(),userId:u&&u.id||null,items:_nomenV339CatalogItems(items),groups:clone(groups),lightTypes:clone(light)}));
       return true;
     }catch(_){return false}
   }
@@ -74,11 +75,7 @@
   }
   function scheduleCapture(){clearTimeout(captureTimer);captureTimer=setTimeout(capture,700)}
 
-  var oldRender=window.renderElemList;
-  if(typeof oldRender==="function"&&!oldRender.__offlineNomV1){
-    var wrappedRender=function(){if(offline()&&!runtimeItems().length)restore();return oldRender.apply(this,arguments)};
-    wrappedRender.__offlineNomV1=true;window.renderElemList=wrappedRender;try{renderElemList=wrappedRender}catch(_){}
-  }
+  (function(p){if(p)p.stage("offlineRestore",{around:function(next,args){if(offline()&&!runtimeItems().length)restore();return next()}})})(window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].pipeline&&window["A\u00b7CEIL"].pipeline.get("renderElemList"));
   var oldOpen=window.openElementsModal;
   if(typeof oldOpen==="function"&&!oldOpen.__offlineNomV1){
     var wrappedOpen=function(){if(offline())restore();return oldOpen.apply(this,arguments)};

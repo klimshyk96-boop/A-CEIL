@@ -22,12 +22,7 @@ function zeroResult(it){
   /* Вставка рахується за замовчуванням завжди. Для НОВОЇ кімнати
      локальний дефолт — біла вставка. Вибір чорної зберігається лише
      у snapshot поточної кімнати і не змінює глобальний каталог/дефолт. */
-  var src=String(c.source||'').trim().toLowerCase();
-  var variant=String(c.sourceVariant||'').trim().toLowerCase();
-  var nm=String(c.name||'').trim().toLowerCase();
-  var isInsert=src==='white_insert'||/вставк|insert/.test(nm);
-  var isWhite=variant==='white'||/біл/.test(nm);
-  c.insertSelected=!!(isInsert&&isWhite);
+  c.insertSelected=aceilDefaultInsertSelection(c);
   ['calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount'].forEach(function(k){
     if(Object.prototype.hasOwnProperty.call(c,k))delete c[k];
   });

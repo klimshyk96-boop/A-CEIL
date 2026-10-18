@@ -202,19 +202,15 @@
   }
   window.A·CEILCorrectCorniceAutoCount=correctCorniceRules;
 
-  var previousAuto=window.autoFillNomenclature;
-  if(typeof previousAuto==="function"&&!previousAuto.__pvcCorniceFixed){
-    var wrappedAuto=function(){
-      if(!autoCountEnabled())return 0;
-      var result=previousAuto.apply(this,arguments);
+  var afCornices=window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].autofill;
+  if(afCornices)afCornices.stage("cornices",{
+    enabled:function(){return autoCountEnabled();},
+    skipValue:0,
+    after:function(){
       applyCustomRules(false);
       correctCorniceRules(true);
-      return result;
-    };
-    wrappedAuto.__pvcCorniceFixed=true;
-    window.autoFillNomenclature=wrappedAuto;
-    try{autoFillNomenclature=wrappedAuto;}catch(e){window.__diagSilent&&window.__diagSilent(e)}
-  }
+    }
+  });
 
   var LABELS={
     "":"Без окремого правила — визначати за назвою",
@@ -640,12 +636,7 @@
     try{saveElemEdit=window.saveElemEdit}catch(e){}
   }
 
-  var previousRender=window.renderElemList;
-  if(typeof previousRender==="function"&&!previousRender.__corniceRulesV2){
-    var wrappedRender=function(){loadRules();embedRules();applyCustomRules(false);correctCorniceRules(false);return previousRender.apply(this,arguments)};
-    wrappedRender.__corniceRulesV2=true;window.renderElemList=wrappedRender;
-    try{renderElemList=wrappedRender;}catch(e){window.__diagSilent&&window.__diagSilent(e)}
-  }
+  (function(p){if(p)p.stage("customRules",{around:function(next,args){loadRules();embedRules();applyCustomRules(false);correctCorniceRules(false);return next()}})})(window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].pipeline&&window["A\u00b7CEIL"].pipeline.get("renderElemList"));
 
   var previousQuick=window.openQuickSourceMenu;
   if(typeof previousQuick==="function"&&!previousQuick.__organizedV1){

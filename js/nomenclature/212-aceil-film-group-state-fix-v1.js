@@ -109,17 +109,11 @@
   }
 
   function install() {
-    var oldRender = window.renderElemList || (typeof renderElemList === "function" ? renderElemList : null);
-    if (typeof oldRender === "function" && !oldRender.__filmGroupStateFixV1) {
-      var renderWrapped = function () {
+    (function(p){if(p)p.stage("filmGroups",{around:function(next,args){
         normalizeFilmGroups();
         groups().forEach(applyUi);
-        return oldRender.apply(this, arguments);
-      };
-      renderWrapped.__filmGroupStateFixV1 = true;
-      window.renderElemList = renderWrapped;
-      try { renderElemList = renderWrapped; } catch (_) {}
-    }
+        return next();
+      }})})(window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].pipeline&&window["A\u00b7CEIL"].pipeline.get("renderElemList"));
 
     var oldToggle = window.toggleGroupCollapse ||
       (typeof toggleGroupCollapse === "function" ? toggleGroupCollapse : null);

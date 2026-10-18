@@ -53,6 +53,7 @@ function _nomenV339CatalogItems(source){
     it.manualQtyOverride=false;
     it.autoFilled=false;
     it.autoZero=true;
+    it.insertSelected=aceilDefaultInsertSelection(it);
     ["calculatedQty","autoQty","resultQty","computedQty","lineTotal","total","sum","amount"].forEach(function(k){
       if(Object.prototype.hasOwnProperty.call(it,k))delete it[k];
     });
@@ -66,9 +67,10 @@ function _nomenV339MergeCatalogWithRoom(catalog,current){
   var scoped=_nomenV339RoomFilmItems(current),scopedGroups={},by={};
   scoped.forEach(function(it){scopedGroups[String(it.groupId)]=true});
   (Array.isArray(current)?current:[]).forEach(function(it){by[_nomenV339Key(it)]=it});
-  var fields=["qty","manualQtyOverride","autoFilled","autoZero","calculatedQty","autoQty","resultQty","computedQty","lineTotal","total","sum","amount","price","optionalEstimateEnabled"];
+  var fields=["qty","manualQtyOverride","autoFilled","autoZero","insertSelected","calculatedQty","autoQty","resultQty","computedQty","lineTotal","total","sum","amount","price","optionalEstimateEnabled"];
   var out=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(scopedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0)}).map(function(src){
     var it=_nomenV339Clone(src||{}),old=by[_nomenV339Key(src)];
+    it.insertSelected=aceilDefaultInsertSelection(it);
     if(old)fields.forEach(function(f){if(Object.prototype.hasOwnProperty.call(old,f))it[f]=_nomenV339Clone(old[f])});
     return it;
   });
@@ -135,6 +137,7 @@ async function loadNomenclatureFromCloud(){
       });
       elemItems=data.items.map(function(src){
         var it=JSON.parse(JSON.stringify(src||{}));
+        it.insertSelected=aceilDefaultInsertSelection(it);
         if(!it.unit)it.unit="шт";
         if(it.groupId===undefined)it.groupId=null;
         if(it.price===undefined)it.price=0;
@@ -143,7 +146,7 @@ async function loadNomenclatureFromCloud(){
         var k=it.id!=null?"id:"+String(it.id):"n:"+String(it.name||"").trim().toLowerCase()+"|g:"+String(it.groupId==null?"":it.groupId)+"|u:"+String(it.unit||"");
         var old=_byRoom[k];
         if(old){
-          ["qty","manualQtyOverride","autoFilled","autoZero","calculatedQty","autoQty","resultQty","computedQty","lineTotal","total","sum","amount","price","optionalEstimateEnabled"].forEach(function(f){
+          ["qty","manualQtyOverride","autoFilled","autoZero","insertSelected","calculatedQty","autoQty","resultQty","computedQty","lineTotal","total","sum","amount","price","optionalEstimateEnabled"].forEach(function(f){
             if(Object.prototype.hasOwnProperty.call(old,f))it[f]=old[f];
           });
         }

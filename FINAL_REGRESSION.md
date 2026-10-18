@@ -40,3 +40,14 @@ Supabase замінений тестовим адаптером лише у test
 Не перевірено: реальний вхід/синхронізація Supabase, Google OAuth, Safari на фізичному iPhone,
 публікація звітів у хмару, оновлення встановленої PWA на реальному пристрої.
 Результати локальних тестів не означають перевірку цих зовнішніх сценаріїв.
+
+## Insert choice isolation — 2026-10-18
+
+- Catalog saves (automatic and manual sync) normalize insert selection to white without changing the room snapshot.
+- All four cloud/offline merge paths preserve the room's insert choice and ignore a stale black catalog default on a cold load.
+- New room/project resets restore white and clear manual quantity overrides. Existing black room snapshots remain black.
+- Delayed insert autofill cannot overwrite a newer manual quantity choice; previews establish the chosen insert before calculating its remainder.
+- Added `verify-insert-isolation.cjs` to the full test runner. Phone (390px) and desktop (1440px) scenarios pass, including cloud payloads, offline capture/restore, room switching and reload persistence.
+- The new regression test fails against the original `a11fe484` build (new project retains black selection/manual overrides).
+- Pre-deploy checks pass (162 JS files), as do verify-aceil (30), verify-state (18), verify-golden, verify-autofill (9), verify-pipelines (13), and verify-pwa (6).
+- The full runner stops at the existing verify-storage assertion `local cache keeps unsynced + 2 synced`: it stores 7 entries instead of 3. The exact same failure was reproduced on unmodified `a11fe484`; it is outside this insert fix. Remaining suites were run separately as listed above.

@@ -643,11 +643,8 @@
     });
   }
   window.scheduleLinearNomenclatureSync=scheduleLinearNomenclatureSync;
-  var _prevAutoFill=window.autoFillNomenclature||(typeof autoFillNomenclature==='function'?autoFillNomenclature:null);
-  if(typeof _prevAutoFill==='function'){
-    window.autoFillNomenclature=function(){var r=_prevAutoFill.apply(this,arguments);applyLinearNomenclature();return r;};
-    try{autoFillNomenclature=window.autoFillNomenclature;}catch(_){}
-  }
+  var _afLinear=window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].autofill;
+  if(_afLinear)_afLinear.stage('linear',{after:function(){applyLinearNomenclature();}});
 
   /* ── Звіт: форма, довжини сегментів, загальна довжина ── */
   window.getLinearElementLines=function(state){
