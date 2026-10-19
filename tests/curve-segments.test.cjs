@@ -17,7 +17,7 @@ const {open,reveal}=require('./browser-review.cjs');
     const data={version:3,startCorner:1,startOffset:0,endOffset:0,bulgeSign:1,points:items,endChordCm:dist(controls[2],realPts[2]),endCurveCm:dist(controls[2],realPts[2])*1.01};
     const solved=g.solveData(1,data);
     // Exercise real editor inputs, including the last segment to the base corner.
-    rmCurveMeasureOpenV301(1);rmCurveMeasureAddPointV301();rmCurveMeasureAddPointV301();
+    rmCurveMeasureOpenV301(1);rmCurveMeasureAddPointV301();rmCurveMeasureAddPointV301();rmCurveMeasureAddPointV301();
     const draftLabels=[...document.querySelectorAll('#cmPointsV301 .cm-point-name')].map(e=>e.textContent);
     for(let k=0;k<items.length;k++)for(const key of ['chordCm','curveCm','diagCorner','diag'])rmCurveMeasureUpdatePointV301(k,key,items[k][key]);
     rmCurveMeasureUpdatePointV301(-1,'endChordCm',data.endChordCm);rmCurveMeasureUpdatePointV301(-1,'endCurveCm',data.endCurveCm);

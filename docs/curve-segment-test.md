@@ -4,6 +4,9 @@ Test branch: `test/curve-segment-measurements`.
 
 1. Draw an ordinary rectangle A–B–C–D and enter its dimensions.
 2. Tap a wall and choose the curved-wall editor.
+   A new curve starts as one whole arc with no intermediate points: for a
+   200 cm side enter chord 200 and tape length 220 or 230, then Apply.
+   The known wall chord is prefilled; no diagonal or invented midpoint is needed.
 3. Add three intermediate points. On side BC these become C, D, E;
    the old corners C and D display as F and G.
 4. Enter the straight chord and tape length for each segment, including EF.

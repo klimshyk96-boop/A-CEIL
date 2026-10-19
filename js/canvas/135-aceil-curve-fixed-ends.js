@@ -280,7 +280,7 @@ function hasSegments(state){state=state||currentState();return(state.pts||[]).so
 function outwardSign(poly){var area=0;for(var i=0;i<poly.length;i++){var q=poly[(i+1)%poly.length];area+=poly[i].x*q.y-q.x*poly[i].y}return area>=0?-1:1}
 function solveSegments(i,data){
   var rp=sourceGeometry(i),a=rp[i],b=rp[(i+1)%rp.length],items=data.points||[],segments=items.concat([{chordCm:data.endChordCm,curveCm:data.endCurveCm}]);
-  if(!items.length||items.length>24)return{ok:false,error:"no_points"};
+  if(items.length>24)return{ok:false,error:"no_points"};
   for(var k=0;k<segments.length;k++){
     var chord=num(segments[k].chordCm),arc=num(segments[k].curveCm);
     if(!(chord>0))return{ok:false,error:"invalid_chord",index:k};
@@ -300,6 +300,7 @@ function solveSegments(i,data){
       path.push({x:a.x+(b.x-a.x)*t-uy*offset,y:a.y+(b.y-a.y)*t+ux*offset});
     });path.push({x:b.x,y:b.y});
     function project(p,q,target,movableP,movableQ){
+      if(!movableP&&!movableQ)return;
       var dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy)||1,weight=(d-target)/d/((movableP?1:0)+(movableQ?1:0));
       if(movableP){p.x+=dx*weight;p.y+=dy*weight}
       if(movableQ){q.x-=dx*weight;q.y-=dy*weight}

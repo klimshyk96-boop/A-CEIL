@@ -15,7 +15,7 @@ function sideName(){return maps().corners[activeSide]+endLabel()}
 function readExisting(i){
   var raw=arcPoints[i],data=raw&&raw[0]&&raw[0].model==="measure-points"&&raw[0].data;
   if(data&&Number(data.version)===3)return JSON.parse(JSON.stringify(data));
-  var out={version:3,startCorner:i,startOffset:0,endOffset:0,points:[freshPoint()],endChordCm:0,endCurveCm:0};
+  var out={version:3,startCorner:i,startOffset:0,endOffset:0,points:[],endChordCm:n(typeof _sideLenCm==="function"?_sideLenCm(i):lengths[i]),endCurveCm:0};
   // Old projects remain untouched until Apply. Old distances were chords;
   // never present spline-derived tape lengths as measurements.
   if(!data)data=geometry().legacyToMeasure(i,raw);
@@ -50,31 +50,37 @@ function render(){
       '<div class="cm-grid"><label><span>Діагональ до '+pointLabel(k)+' від кута</span><select onchange="rmCurveMeasureUpdatePointV301('+k+',\'diagCorner\',this.value)">'+options+'</select></label>'+
       '<label><span data-cm-diag-label="'+k+'">'+map.corners[Number(p.diagCorner)]+pointLabel(k)+', см · необов’язково</span>'+input(k,"diag",p.diag)+'</label></div></div>';
   }).join("")+
-    '<div class="cm-point"><div class="cm-point-name">Остання ділянка '+pointLabel(draft.points.length-1)+endLabel()+'</div><div class="cm-grid"><label><span>По прямій, см</span>'+input(-1,"endChordCm",draft.endChordCm)+'</label><label><span>По кривій, см</span>'+input(-1,"endCurveCm",draft.endCurveCm)+'</label></div></div>';
+    '<div class="cm-point"><div class="cm-point-name">'+(draft.points.length?'Остання ділянка '+pointLabel(draft.points.length-1)+endLabel():'Ділянка '+sideName())+'</div><div class="cm-grid"><label><span>По прямій, см</span>'+input(-1,"endChordCm",draft.endChordCm)+'</label><label><span>По кривій, см</span>'+input(-1,"endCurveCm",draft.endCurveCm)+'</label></div></div>';
   document.getElementById("cmRemoveV301").style.display=wallTypes[activeSide]==="arc"?"block":"none";
   updatePreview();
 }
 function updatePreview(){
   var chords=draft.points.reduce(function(s,p){return s+n(p.chordCm)},n(draft.endChordCm)),tape=draft.points.reduce(function(s,p){return s+n(p.curveCm)},n(draft.endCurveCm)),diags=draft.points.filter(function(p){return n(p.diag)>0}).length;
-  document.getElementById("cmPreviewV301").textContent="Хорди: "+chords.toFixed(1)+" см · по кривій введено: "+tape.toFixed(1)+" см · діагоналей: "+diags+"/"+draft.points.length+". Без усіх діагоналей або довжин кривої форма наближена.";
+  document.getElementById("cmPreviewV301").textContent=draft.points.length
+    ?"Хорди: "+chords.toFixed(1)+" см · по кривій введено: "+tape.toFixed(1)+" см · діагоналей: "+diags+"/"+draft.points.length+". Без усіх діагоналей або довжин кривої форма наближена."
+    :"Одна дуга · по прямій: "+chords.toFixed(1)+" см · по кривій: "+(tape>0?tape.toFixed(1)+" см":"не задано")+". Проміжні точки не потрібні для простої кругової дуги.";
 }
 function open(i){
   activeSide=Number(i);if(!(activeSide>=0&&activeSide<pts.length))return;
   draft=readExisting(activeSide);
-  if(!draft.points.length)draft.points=[freshPoint()];
   draft.points.forEach(function(p){if(!p.id)p.id=uid()});
   render();var m=document.getElementById("rmCurveMeasureModalV301");m.classList.add("open");m.setAttribute("aria-hidden","false");
 }
 function close(){var m=document.getElementById("rmCurveMeasureModalV301");m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 function addPoint(){
   if(!draft||draft.points.length>=24)return;
-  draft.points.push(freshPoint());render();
+  draft.points.push(freshPoint());draft.endChordCm=0;draft.endCurveCm=0;render();
   var cards=document.querySelectorAll("#cmPointsV301 .cm-point");
   if(cards.length)cards[cards.length-2].scrollIntoView({behavior:"smooth",block:"center"});
 }
 function deletePoint(k){
-  if(!draft||draft.points.length<=1){showToast("Залиш хоча б одну точку або видали всю криву");return}
-  draft.points.splice(k,1);render();
+  if(!draft||!draft.points[k])return;
+  var removed=draft.points[k],next=draft.points[k+1],last=k===draft.points.length-1;
+  var followingTape=last?n(draft.endCurveCm):n(next.curveCm),mergedTape=n(removed.curveCm)>0&&followingTape>0?n(removed.curveCm)+followingTape:0;
+  draft.points.splice(k,1);
+  if(last){draft.endChordCm=draft.points.length?0:n(typeof _sideLenCm==="function"?_sideLenCm(activeSide):lengths[activeSide]);draft.endCurveCm=mergedTape}
+  else{draft.points[k].chordCm=0;draft.points[k].curveCm=mergedTape}
+  render();
 }
 function updatePoint(k,key,value){
   if(!draft)return;
