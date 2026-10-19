@@ -30,5 +30,5 @@ var modal=g("lightFlowModal");
 if(modal)try{new MutationObserver(function(){if(modal.classList.contains("open"))setTimeout(decorate,0)}).observe(modal,{attributes:true,attributeFilter:["class"]})}catch(_){}
 document.addEventListener("click",function(e){if(e.target&&e.target.closest&&e.target.closest("#rmLfTabs"))setTimeout(decorate,0)},true);
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",decorate,{once:true});else setTimeout(decorate,0);
-window.A·CEIL_BUILD_LABEL="v3.56 LIGHT-REFERENCE-UI";
+/* window.A·CEIL_BUILD_LABEL superseded in 157-aceil-clean-modes.js */
 })();

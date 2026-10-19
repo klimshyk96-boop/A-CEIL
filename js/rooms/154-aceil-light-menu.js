@@ -41,5 +41,5 @@ function bindModalObserver(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){bindModalObserver();ensure()},{once:true});
 else{bindModalObserver();ensure()}
 setTimeout(bindModalObserver,700);
-window.A·CEIL_BUILD_LABEL='v3.52 LIGHT-MENU-V2-FREEZE-FIX';
+/* window.A·CEIL_BUILD_LABEL superseded in 155-aceil-light-clean.js */
 })();

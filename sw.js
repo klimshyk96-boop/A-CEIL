@@ -1,8 +1,8 @@
 /* A·CEIL offline shell — fast activation and versioned runtime cache, 2026-10-16 */
 "use strict";
 
-const BUILD_ID="20261018-curve-v306";
-const SHELL_CACHE="aceil-shell-20261018-curve-v306";
+const BUILD_ID="20261019-wrapper-cleanup";
+const SHELL_CACHE="aceil-shell-20261019-wrapper-cleanup";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
   "/index.html",

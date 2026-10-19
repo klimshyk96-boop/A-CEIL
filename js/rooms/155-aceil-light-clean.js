@@ -212,5 +212,5 @@ if(typeof oldSpotFlow==="function"&&!oldSpotFlow.__v353type){
 var m=g("lightFlowModal");
 if(m)try{new MutationObserver(function(){if(m.classList.contains("open"))setTimeout(ensure,0)}).observe(m,{attributes:true,attributeFilter:["class"]})}catch(_){}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",ensure,{once:true});else ensure();
-window.A·CEIL_BUILD_LABEL="v3.54 LIGHT-MENU-DIRECT-SKETCH";
+/* window.A·CEIL_BUILD_LABEL superseded in 156-aceil-light-ref.js */
 })();

@@ -16,6 +16,10 @@ node tests/pipeline-contract.test.cjs || exit 1
 node tests/render-pipeline.test.cjs || exit 1
 node tests/stability-regression.test.cjs || exit 1
 node scripts/check-architecture.cjs || exit 1
+node tests/global-surface.test.cjs || exit 1
+if [[ -n "${ACEIL_GLOBAL_BASELINE:-}" ]]; then
+  node scripts/diff-global-surface.cjs "$ACEIL_GLOBAL_BASELINE" "$ROOT_DIR" "--allow=${ACEIL_GLOBAL_ALLOW:-}" || exit 1
+fi
 
 errors=0
 checked=0

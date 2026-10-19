@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const {compare}=require('../scripts/diff-global-surface.cjs');
+const base={fns:{close:'old'},other:{marks:'object[]0'},errors:[],missing:[]};
+assert.deepEqual(compare(base,base),[]);
+assert.equal(compare(base,{...base,fns:{close:'new'}}).length,1);
+assert.deepEqual(compare(base,{...base,fns:{close:'new'}},['close']),[]);
+assert.equal(compare(base,{...base,fns:{}},['close']).length,1,'allowlist must not hide removed functions');
+assert.equal(compare(base,{...base,other:{marks:'undefined'}}).length,1);
+assert.equal(compare({...base,errors:['broken']},{...base,errors:['broken']}).length,2,'errors in both builds must still fail');
+assert.equal(compare(base,{...base,missing:['/js/missing.js']}).length,1);
+console.log('Global surface comparison guards: OK');

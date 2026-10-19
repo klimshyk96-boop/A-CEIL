@@ -33,5 +33,5 @@ document.addEventListener("click",function(e){
 var modal=g("lightFlowModal");
 if(modal)try{new MutationObserver(function(){if(modal.classList.contains("open"))setTimeout(refresh,0)}).observe(modal,{attributes:true,attributeFilter:["class"]})}catch(_){}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",refresh,{once:true});else setTimeout(refresh,0);
-window.A·CEIL_BUILD_LABEL="v3.58 CLEANUP-PASS-1";
+/* window.A·CEIL_BUILD_LABEL superseded in 158-aceil-sketch-only.js */
 })();

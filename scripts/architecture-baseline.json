@@ -1,13 +1,5 @@
 {
  "chains": {
-  "totalCurveLength": [
-   "js/core/019-aceil-core-ui-rooms-bulk-walls.js",
-   "js/canvas/129-aceil-curve-rebuild.js"
-  ],
-  "getArcSidesCount": [
-   "js/core/019-aceil-core-ui-rooms-bulk-walls.js",
-   "js/canvas/129-aceil-curve-rebuild.js"
-  ],
   "__A·CEILSelectedSideV89": [
    "js/core/019-aceil-core-ui-rooms-bulk-walls.js",
    "js/canvas/130-aceil-wall-tap-menu.js"
@@ -27,14 +19,6 @@
    "js/auth/033-aceil-supabase-auth-offline-access.js",
    "js/nomenclature/062-aceil-nomenclature-cloud-merge.js",
    "js/admin/159-aceil-access-clean.js"
-  ],
-  "signInWithGoogle": [
-   "js/auth/033-aceil-supabase-auth-offline-access.js",
-   "js/auth/178-aceil-google-oauth-canonical.js"
-  ],
-  "_loadRS": [
-   "js/reports/037-aceil-report-settings-generator.js",
-   "js/reports/053-aceil-report-settings-force-modern.js"
   ],
   "saveReportSettings": [
    "js/reports/037-aceil-report-settings-generator.js",
@@ -64,15 +48,6 @@
    "js/rooms/039-aceil-rp-continue-measure.js",
    "js/rooms/065-aceil-cockpit-metric-icons.js"
   ],
-  "rpContinueMeasure": [
-   "js/rooms/038-aceil-rp-home-rooms-render.js",
-   "js/rooms/039-aceil-rp-continue-measure.js"
-  ],
-  "setWallFullSide": [
-   "js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js",
-   "js/canvas/045-aceil-wall-full-side-color-presets.js",
-   "js/canvas/066-aceil-wall-anchor-sync.js"
-  ],
   "updateWallAnchorUI": [
    "js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js",
    "js/canvas/045-aceil-wall-full-side-color-presets.js"
@@ -99,48 +74,9 @@
    "js/canvas/169-aceil-wall-placement-restore.js",
    "js/canvas/185-aceil-wall-menu-simplify.js"
   ],
-  "applyWallPreset": [
-   "js/canvas/045-aceil-wall-full-side-color-presets.js",
-   "js/canvas/046-aceil-wall-presets.js",
-   "js/canvas/047-aceil-wall-preset-editor.js"
-  ],
-  "getWallPresets": [
-   "js/canvas/046-aceil-wall-presets.js",
-   "js/canvas/047-aceil-wall-preset-editor.js",
-   "js/canvas/052-aceil-wall-presets-cloud-sync.js",
-   "js/reports/084-aceil-report-capture-labels-settings-ui.js"
-  ],
-  "setWallPresets": [
-   "js/canvas/046-aceil-wall-presets.js",
-   "js/canvas/047-aceil-wall-preset-editor.js",
-   "js/canvas/052-aceil-wall-presets-cloud-sync.js",
-   "js/reports/084-aceil-report-capture-labels-settings-ui.js"
-  ],
-  "renderWallPresetSelect": [
-   "js/canvas/046-aceil-wall-presets.js",
-   "js/canvas/047-aceil-wall-preset-editor.js"
-  ],
-  "createWallMarkOnSide": [
-   "js/canvas/046-aceil-wall-presets.js",
-   "js/canvas/050-aceil-wall-edit-modal.js"
-  ],
   "handleWallTap": [
    "js/canvas/046-aceil-wall-presets.js",
    "js/canvas/130-aceil-wall-tap-menu.js"
-  ],
-  "rwe2ApplyPreset": [
-   "js/canvas/047-aceil-wall-preset-editor.js",
-   "js/canvas/051-aceil-wall-preset-storage.js",
-   "js/canvas/069-aceil-wall-preset-toolbar.js"
-  ],
-  "rwe2AnchorChanged": [
-   "js/canvas/047-aceil-wall-preset-editor.js",
-   "js/canvas/066-aceil-wall-anchor-sync.js",
-   "js/canvas/068-aceil-wall-position-preview.js"
-  ],
-  "rwe2Close": [
-   "js/canvas/047-aceil-wall-preset-editor.js",
-   "js/canvas/050-aceil-wall-edit-modal.js"
   ],
   "rwe2Delete": [
    "js/canvas/047-aceil-wall-preset-editor.js",
@@ -156,11 +92,15 @@
    "js/canvas/169-aceil-wall-placement-restore.js",
    "js/canvas/185-aceil-wall-menu-simplify.js"
   ],
-  "rwe2SavePreset": [
+  "getWallPresets": [
    "js/canvas/047-aceil-wall-preset-editor.js",
-   "js/canvas/051-aceil-wall-preset-storage.js",
    "js/canvas/052-aceil-wall-presets-cloud-sync.js",
-   "js/canvas/069-aceil-wall-preset-toolbar.js"
+   "js/reports/084-aceil-report-capture-labels-settings-ui.js"
+  ],
+  "setWallPresets": [
+   "js/canvas/047-aceil-wall-preset-editor.js",
+   "js/canvas/052-aceil-wall-presets-cloud-sync.js",
+   "js/reports/084-aceil-report-capture-labels-settings-ui.js"
   ],
   "wallMarks": [
    "js/canvas/050-aceil-wall-edit-modal.js",
@@ -174,13 +114,11 @@
   "rwe2WallPresetRead": [
    "js/canvas/051-aceil-wall-preset-storage.js",
    "js/canvas/052-aceil-wall-presets-cloud-sync.js",
-   "js/canvas/069-aceil-wall-preset-toolbar.js",
    "js/reports/084-aceil-report-capture-labels-settings-ui.js"
   ],
   "rwe2WallPresetWrite": [
    "js/canvas/051-aceil-wall-preset-storage.js",
    "js/canvas/052-aceil-wall-presets-cloud-sync.js",
-   "js/canvas/069-aceil-wall-preset-toolbar.js",
    "js/reports/084-aceil-report-capture-labels-settings-ui.js"
   ],
   "rwe2WallPresetUpsert": [
@@ -189,8 +127,16 @@
   ],
   "rwe2WallPresetRender": [
    "js/canvas/051-aceil-wall-preset-storage.js",
-   "js/canvas/069-aceil-wall-preset-toolbar.js",
    "js/reports/084-aceil-report-capture-labels-settings-ui.js"
+  ],
+  "rwe2ApplyPreset": [
+   "js/canvas/051-aceil-wall-preset-storage.js",
+   "js/canvas/069-aceil-wall-preset-toolbar.js"
+  ],
+  "rwe2SavePreset": [
+   "js/canvas/051-aceil-wall-preset-storage.js",
+   "js/canvas/052-aceil-wall-presets-cloud-sync.js",
+   "js/canvas/069-aceil-wall-preset-toolbar.js"
   ],
   "openLightEditModal": [
    "js/rooms/054-aceil-light-compact-editor.js",
@@ -208,19 +154,6 @@
    "js/canvas/139-aceil-ceiling-elements.js",
    "js/canvas/176-aceil-ceiling-elements-catalog-safety.js",
    "js/canvas/177-aceil-ceiling-elements-catalog-manager.js"
-  ],
-  "addLightTypeV2": [
-   "js/rooms/058-aceil-light-types-store-ui.js",
-   "js/rooms/076-aceil-light-types-smart-center.js"
-  ],
-  "deleteLightTypeV2": [
-   "js/rooms/058-aceil-light-types-store-ui.js",
-   "js/rooms/076-aceil-light-types-smart-center.js"
-  ],
-  "saveLightSettings": [
-   "js/rooms/058-aceil-light-types-store-ui.js",
-   "js/rooms/060-aceil-light-svg-icons.js",
-   "js/rooms/076-aceil-light-types-smart-center.js"
   ],
   "openLightSettings": [
    "js/rooms/058-aceil-light-types-store-ui.js",
@@ -305,14 +238,6 @@
    "js/canvas/069-aceil-wall-preset-toolbar.js",
    "js/canvas/153-aceil-wall-preset-order.js"
   ],
-  "rweSavePresetEdit": [
-   "js/canvas/069-aceil-wall-preset-toolbar.js",
-   "js/canvas/153-aceil-wall-preset-order.js"
-  ],
-  "rweDeletePreset": [
-   "js/canvas/069-aceil-wall-preset-toolbar.js",
-   "js/canvas/153-aceil-wall-preset-order.js"
-  ],
   "saveCurrentRoom": [
    "js/projects/072-aceil-object-room-save-cloud.js",
    "js/rooms/multiroom-lifecycle.js",
@@ -339,10 +264,6 @@
    "js/rooms/076-aceil-light-types-smart-center.js",
    "js/rooms/126-aceil-light-orientation-fix.js"
   ],
-  "toggleLightMenu": [
-   "js/rooms/074-aceil-light-grid-placement.js",
-   "js/rooms/076-aceil-light-types-smart-center.js"
-  ],
   "openRmLightStart": [
    "js/rooms/076-aceil-light-types-smart-center.js",
    "js/rooms/110-aceil-linear-element.js",
@@ -359,10 +280,6 @@
   "rmUseRealLightType": [
    "js/rooms/076-aceil-light-types-smart-center.js",
    "js/rooms/081-aceil-exhaust-types-modal.js"
-  ],
-  "rmIsExhaustLightType": [
-   "js/rooms/081-aceil-exhaust-types-modal.js",
-   "js/rooms/082-aceil-exhaust-marks-count.js"
   ],
   "setLightMode": [
    "js/rooms/081-aceil-exhaust-types-modal.js",
@@ -395,10 +312,6 @@
    "js/canvas/086-aceil-wall-labels-final-draw.js",
    "js/canvas/wall-elements-parallel.js"
   ],
-  "rpcSaveProject": [
-   "js/rooms/087-aceil-multiroom-simple-flow.js",
-   "js/rooms/088-aceil-multiroom-save-controller.js"
-  ],
   "openSaveProjectModal": [
    "js/rooms/088-aceil-multiroom-save-controller.js",
    "js/projects/090-aceil-geolocation.js",
@@ -419,10 +332,6 @@
   "A·CEILPublishReport": [
    "js/reports/091-aceil-pdf-cloud-report.js",
    "js/reports/201-aceil-report-links.js"
-  ],
-  "setProjects": [
-   "js/projects/094-aceil-project-schema-migrations.js",
-   "js/projects/project-repository.js"
   ],
   "A·CEILMergeCloudProjects": [
    "js/projects/094-aceil-project-schema-migrations.js",
@@ -473,25 +382,6 @@
    "js/reports/128-aceil-report-confidence-gate.js",
    "js/reports/184-aceil-estimate-variants-ui.js"
   ],
-  "_isArcSide": [
-   "js/canvas/129-aceil-curve-rebuild.js",
-   "js/canvas/133-aceil-curve-circle-geometry.js",
-   "js/canvas/135-aceil-curve-fixed-ends.js"
-  ],
-  "_sideArcCanvasPts": [
-   "js/canvas/129-aceil-curve-rebuild.js",
-   "js/canvas/133-aceil-curve-circle-geometry.js",
-   "js/canvas/135-aceil-curve-fixed-ends.js"
-  ],
-  "_sideCurveLenCm": [
-   "js/canvas/129-aceil-curve-rebuild.js",
-   "js/canvas/135-aceil-curve-fixed-ends.js"
-  ],
-  "_sideEffectiveLenCm": [
-   "js/canvas/129-aceil-curve-rebuild.js",
-   "js/canvas/133-aceil-curve-circle-geometry.js",
-   "js/canvas/135-aceil-curve-fixed-ends.js"
-  ],
   "openSideInputModal": [
    "js/canvas/129-aceil-curve-rebuild.js",
    "js/canvas/175-aceil-side-input-stepper.js"
@@ -500,14 +390,6 @@
    "js/canvas/130-aceil-wall-tap-menu.js",
    "js/canvas/132-aceil-curve-measure-points.js",
    "js/canvas/134-aceil-curve-hit-test.js"
-  ],
-  "A·CEILWallCurveV89": [
-   "js/canvas/131-aceil-wall-actions.js",
-   "js/canvas/132-aceil-curve-measure-points.js"
-  ],
-  "rmCurveOpenV87": [
-   "js/canvas/132-aceil-curve-measure-points.js",
-   "js/canvas/135-aceil-curve-fixed-ends.js"
   ],
   "lightMode": [
    "js/canvas/139-aceil-ceiling-elements.js",
@@ -548,7 +430,7 @@
   ]
  },
  "bigFiles": {
-  "js/core/019-aceil-core-ui-rooms-bulk-walls.js": 112827,
+  "js/core/019-aceil-core-ui-rooms-bulk-walls.js": 112806,
   "js/rooms/110-aceil-linear-element.js": 90482,
   "js/reports/184-aceil-estimate-variants-ui.js": 121208
  },

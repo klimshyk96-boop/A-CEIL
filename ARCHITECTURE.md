@@ -64,3 +64,19 @@ Older cleanup notes are historical, not a statement of the current file counts.
 - Необов'язкові «вусаті» роботи та захист підлоги залишаються вимкненими за замовчуванням
   і керуються власним чекбоксом. Автопрорахунок не скидає ручний вибір.
 - Подальші ланцюги зливаються лише по одному після окремого порівняння збірок.
+
+## Verified cleanup, 2026-10-19
+
+Removed superseded global assignments and moved empty fresh-wall cleanup into
+the owner of `rwe2Close` (047). The measured straight/curved geometry remains
+from current main. The architecture ratchet now records 79 chains.
+
+`node scripts/diff-global-surface.cjs <baseline-dir> [candidate-dir]`
+fails on unexpected function source/type differences, page errors in either
+build, or missing JS/CSS/HTML. Intentional function changes require an explicit
+`--allow=_loadRS,rwe2Close`; removed functions cannot be allowed. This is a
+loaded-global check, not proof of closure/data/event-handler equivalence.
+
+The deploy check always tests the comparison guards. To compare an actual
+baseline build as well, set `ACEIL_GLOBAL_BASELINE` and, only for reviewed
+merges, `ACEIL_GLOBAL_ALLOW` (comma-separated function names).

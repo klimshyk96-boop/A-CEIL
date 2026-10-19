@@ -38,5 +38,5 @@ if(typeof prevLegacy==="function"&&!prevLegacy.__wallColorAutosourceV333){
   try{saveWallEdit=wrappedLegacy}catch(_){}
 }
 
-window.A·CEIL_BUILD_LABEL="v3.50 WALL-PRESET-ORDER";
+/* window.A·CEIL_BUILD_LABEL superseded in 154-aceil-light-menu.js */
 })();

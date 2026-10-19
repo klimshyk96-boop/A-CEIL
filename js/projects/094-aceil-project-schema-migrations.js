@@ -184,12 +184,7 @@
     try { getProjects = window.getProjects; } catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
 
-  if(originalSetProjects){
-    window.setProjects = function(projects){
-      return originalSetProjects.call(this, migrateProjects(projects));
-    };
-    try { setProjects = window.setProjects; } catch(_){window.__diagSilent&&window.__diagSilent(_)}
-  }
+  /* window.setProjects: owned by project-repository.js (it replaces the setter outright); originalSetProjects is still used by the getProjects migration above. */
 
   const originalMerge = typeof window.A·CEILMergeCloudProjects === 'function' ? window.A·CEILMergeCloudProjects : null;
   if(originalMerge){
