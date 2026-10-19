@@ -837,6 +837,9 @@ body.rm-hybrid-only-active #cv{pointer-events:none!important;}
   grid-column:1/-1;background:#fff1f2;color:#be123c;border:1px solid #fecdd3;box-shadow:none
 ;}
 @media(max-width:430px){#rmCurveMeasureModalV301 .cm-grid{grid-template-columns:1fr;}}
+#rmCurveMeasureModalV301 .cm-point .cm-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:end;}
+#rmCurveMeasureModalV301 .cm-point label{min-width:0;}
+#rmCurveMeasureModalV301 .cm-point-name{font-weight:750;}
 
 
 /* ===== SOURCE 055: css/components/055-aceil-curve-actions-v303.css ===== */
@@ -890,7 +893,7 @@ body.rm-hybrid-only-active #cv{pointer-events:none!important;}
 /* ===== SOURCE 056: css/components/056-aceil-curve-fixed-ends-v305-style.css ===== */
 
 #rmCurveMeasureModalV301 .cm-note::after{
-  content:" Початок і кінець кривої зафіксовані у вершинах вибраної стіни. Остання точка — кінець стіни.";
+  content:none;
   font-weight:900;
 }
 

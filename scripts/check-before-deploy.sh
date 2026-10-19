@@ -12,6 +12,7 @@ node tests/insert-choice.test.cjs || exit 1
 node tests/canvas-hit-guard.test.cjs || exit 1
 node tests/honest-geometry.test.cjs || exit 1
 node tests/curve-geometry.test.cjs || exit 1
+node tests/curve-segments.test.cjs || exit 1
 node tests/pipeline-contract.test.cjs || exit 1
 node tests/render-pipeline.test.cjs || exit 1
 node tests/stability-regression.test.cjs || exit 1

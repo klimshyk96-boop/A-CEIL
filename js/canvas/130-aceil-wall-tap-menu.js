@@ -6,7 +6,7 @@ window.__A·CEILWallTapMenuV84=true;
 var selectedSide=-1;
 
 function sideName(i){
-  try{return N(i)+N((i+1)%pts.length)}catch(_){return "№"+(i+1)}
+  try{return NL(i)+NL((i+1)%pts.length)}catch(_){return "№"+(i+1)}
 }
 function sideLength(i){
   try{return Number(typeof _sideLenCm==="function"?_sideLenCm(i):lengths[i])||0}catch(_){return 0}
@@ -30,6 +30,7 @@ function open(i){
   if(sub)sub.textContent=(len>0?"Довжина "+window._formatReportCm(len)+" см · ":"")+"оберіть дію";
   if(label)label.textContent=hasCurve(selectedSide)?"Редагувати криволінійну ділянку":"Криволінійна ділянка";
   m.style.display="flex";
+  m.style.pointerEvents="auto";
   m.classList.add("open");
   m.setAttribute("aria-hidden","false");
 }
