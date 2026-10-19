@@ -21,7 +21,7 @@ var layer=null,view=null,pv=null,pctx=null,sheet=null,body=null,countEl=null,mod
 var isOpen=false,mode="all",activeIndex=0,draft=[],bound=false,layoutRaf=0,syncRaf=0;
 var voice={rec:null,on:false,seen:{},timer:0,btn:null,hint:null};
 
-function nm(i){try{return N(i);}catch(_){return String.fromCharCode(65+(i%26));}}
+function nm(i){try{return NL(i);}catch(_){return String.fromCharCode(65+(i%26));}}
 function sideName(i){return nm(i)+nm((i+1)%pts.length);}
 function num(v){var x=parseFloat(String(v==null?"":v).replace(",","."));return isFinite(x)&&x>0?x:0;}
 function fmt(v){return v?String(Math.round(v*100)/100):"";}

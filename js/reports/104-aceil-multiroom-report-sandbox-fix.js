@@ -121,7 +121,8 @@
         fitReportViewport(pts.length?pts:realPts,cv.width,cv.height);
       }
       draw();
-      return cv.toDataURL('image/png');
+      var geometry=window.A·CEILCurveGeometryV306;
+      return geometry&&geometry.hasSegments()?geometry.captureImage():cv.toDataURL('image/png');
     }catch(e){
       console.error('A·CEIL report render failed',e);
       return room.thumb||'';

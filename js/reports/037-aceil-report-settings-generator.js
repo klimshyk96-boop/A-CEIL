@@ -34,6 +34,21 @@ function infoCards(c,x,y,w,rows,titleText){
 }
 function info(c,x,y,w,rows,titleText){const h=56+42*rows.length;rr(c,x,y,w,h,18,"#fff","#e2e8f0"),section(c,x+18,y+32,titleText||"Основна інформація");let yy=y+62;return rows.forEach(r=>{c.strokeStyle="#e5e7eb",c.beginPath(),c.moveTo(x+16,yy+17),c.lineTo(x+w-16,yy+17),c.stroke(),c.fillStyle="#475569",c.font="15px Arial",c.fillText(r[0],x+20,yy),c.textAlign="right",c.fillStyle="#0f172a",c.font="bold 16px Arial",c.fillText(r[1],x+w-20,yy);if(r[2]){const tw=c.measureText(String(r[1]||"")).width,cx=x+w-31-tw;c.beginPath(),c.arc(cx,yy-5,8,0,Math.PI*2),c.fillStyle=r[2],c.fill(),c.strokeStyle="#64748b",c.lineWidth=1.5,c.stroke()}c.textAlign="left",yy+=42}),h}function lines(c,x,y,w,t,lines,empty){lines=Array.isArray(lines)?lines:[];const isWallBlock=/елемент/i.test(String(t||""));function wrap(txt,maxW,maxLines){if(!(txt=String(txt||"").replace(/^•\s*/,"").trim()))return[""];const words=txt.split(/\s+/).filter(Boolean),out=[];let line="";if(words.forEach(word=>{const test=line?line+" "+word:word;if(c.measureText(test).width<=maxW)line=test;else if(line&&out.push(line),c.measureText(word).width>maxW){let cut=word;for(;cut.length>4&&c.measureText(cut+"…").width>maxW;)cut=cut.slice(0,-1);out.push(cut+"…"),line=""}else line=word}),line&&out.push(line),maxLines&&out.length>maxLines){const clipped=out.slice(0,maxLines);let last=clipped[clipped.length-1]||"";for(;last.length>4&&c.measureText(last+"…").width>maxW;)last=last.slice(0,-1);return clipped[clipped.length-1]=last+"…",clipped}return out.length?out:[""]}function splitWallLine(line){const s=String(line||"").replace(/^•\s*/,"").trim(),m=s.match(/^(.*?):\s*([A-ZА-ЯІЇЄҐ]{1,3})\s*—\s*([^—]+)\s*—\s*(.*)$/i);return m?{name:m[1].trim(),meta:m[2].trim()+" • "+m[3].trim()+" • "+m[4].trim()}:{name:s,meta:""}}c.font="15px Arial";let h=58;lines.length?lines.forEach(line=>{if(isWallBlock){const p=splitWallLine(line),nameLines=wrap(p.name,w-98,2);h+=34+19*nameLines.length+(p.meta?20:0)}else{const arr=wrap(line,w-54,2);h+=Math.max(38,20*arr.length+16)}}):h+=38,rr(c,x,y,w,h,18,"#fff","#e2e8f0"),section(c,x+18,y+32,t);let yy=y+64;return lines.length?lines.forEach(line=>{if(isWallBlock){const p=splitWallLine(line),nameLines=wrap(p.name,w-98,2),rowH=34+19*nameLines.length+(p.meta?20:0);c.strokeStyle="#d7dee9",c.setLineDash([2,2]),c.beginPath(),c.moveTo(x+16,yy+rowH-7),c.lineTo(x+w-16,yy+rowH-7),c.stroke(),c.setLineDash([]),c.fillStyle="#003b91",c.font="bold 22px Arial",c.textAlign="center",c.fillText(function(line){const s=String(line||"").toLowerCase();return s.includes("карниз")?"▥":s.includes("парящ")?"━━":s.includes("профіль")||s.includes("профил")||s.includes("брус")?"▰":s.includes("трек")?"▭":"•"}(line),x+38,yy+22),c.textAlign="left",c.fillStyle="#0f172a",c.font="bold 15px Arial",nameLines.forEach((ln,i)=>c.fillText(ln,x+64,yy+14+19*i)),p.meta&&(c.fillStyle="#334155",c.font="bold 14px Arial",c.fillText(p.meta,x+64,yy+16+19*nameLines.length)),yy+=rowH}else{const arr=wrap(line,w-54,2),rowH=Math.max(38,20*arr.length+16);c.strokeStyle="#e5e7eb",c.beginPath(),c.moveTo(x+16,yy+rowH-8),c.lineTo(x+w-16,yy+rowH-8),c.stroke(),c.fillStyle="#0f172a",c.font="bold 15px Arial",arr.forEach((ln,i)=>c.fillText("• "+ln,x+22,yy+14+20*i)),yy+=rowH}}):(c.fillStyle="#94a3b8",c.font="15px Arial",c.fillText(empty||"Немає даних",x+22,yy)),h}function wallDimensionsList(c,x,y,w,items,empty,titleText){
   items=Array.isArray(items)?items:[];
+  if(items.some(v=>String(v).includes("по прямій /"))){
+    const h=78+items.length*27;
+    rr(c,x,y,w,h,18,"#fff","#e2e8f0");section(c,x+18,y+32,titleText||"Розміри стін");
+    const top=y+46,c1=x+18,c2=x+w*.36,c3=x+w*.69;
+    c.fillStyle="#f1f5f9";c.fillRect(x+14,top,w-28,26);c.fillStyle="#64748b";c.font="bold 12px Arial";
+    c.fillText("ДІЛЯНКА",c1,top+18);c.fillText("ПО ПРЯМІЙ, СМ",c2,top+18);c.fillText("ПО КРИВІЙ, СМ",c3,top+18);
+    items.forEach((line,i)=>{
+      const match=String(line).match(/^(.+?) — (.+?) см(?: по прямій \/ (.+))?$/),yy=top+26+i*27;
+      c.strokeStyle="#e2e8f0";c.beginPath();c.moveTo(x+14,yy+27);c.lineTo(x+w-14,yy+27);c.stroke();
+      c.fillStyle="#0f172a";c.font="bold 14px Arial";c.fillText(match?match[1]:"—",c1,yy+18);
+      c.font="14px Arial";c.fillText(match?match[2]:"—",c2,yy+18);
+      c.fillText(match&&match[3]?(match[3].includes("не виміряна")?"≈ не задано":match[3].replace(" см по кривій","")):"—",c3,yy+18);
+    });
+    return h;
+  }
   const rows=items.map(v=>{const t=String(v||"").replace(/^•\s*/,"").trim(),m=t.match(/^([^—-]+)\s*[—-]\s*(.+)$/);return m?[m[1].trim(),m[2].trim()]:[t,""];});
   const n=Math.ceil(rows.length/2),h=rows.length?78+n*27:90;
   rr(c,x,y,w,h,18,"#fff","#e2e8f0");
@@ -267,6 +282,8 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
   }
   return h;
 }function contractorPointLabels(c,state,sourceBounds,sx,sy,scale,dx,dy,x,y,w,h){
+  // Segmented curves already carry matching base/control labels in the capture.
+  if(window.A·CEILCurveGeometryV306&&window.A·CEILCurveGeometryV306.hasSegments(state))return;
   const points=state&&Array.isArray(state.pts)&&state.pts.length?state.pts:(state&&Array.isArray(state.realPts)?state.realPts:[]);
   if(points.length<2||!sourceBounds)return;
   const clean=points.filter(p=>p&&Number.isFinite(Number(p.x))&&Number.isFinite(Number(p.y)));
@@ -317,7 +334,22 @@ async function plan(c,x,y,w,h,imgSrc,titleText,labelState){
       const sc=Math.min(aw/sw,ah/sh),dw=sw*sc,dh=sh*sc;
       const dx=x+(w-dw)/2,dy=y+48+(ah-dh)/2;
       c.drawImage(img,sx,sy,sw,sh,dx,dy,dw,dh);
-      contractorPointLabels(c,labelState,sourceBounds,sx,sy,sc,dx,dy,x,y,w,h);
+      const geometry=window.A·CEILCurveGeometryV306,capture=geometry&&geometry.reportCapture(imgSrc);
+      if(capture){
+        const at=p=>({x:dx+(p.x-sx)*sc,y:dy+(p.y-sy)*sc});
+        c.save();c.textAlign="center";c.textBaseline="middle";
+        if(capture.showDiagonals)capture.diagonals.forEach(d=>{
+          const a=at(d.a),b=at(d.b),mx=(a.x+b.x)/2,my=(a.y+b.y)/2,text=d.label+" "+window._formatReportCm(d.value)+" см";
+          c.strokeStyle="#b45309";c.lineWidth=1.2;c.setLineDash([6,4]);c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);c.stroke();c.setLineDash([]);
+          c.font="13px Arial";const tw=c.measureText(text).width+10;c.fillStyle="#fffbeb";c.fillRect(mx-tw/2,my-10,tw,20);c.fillStyle="#92400e";c.fillText(text,mx,my);
+        });
+        const center={x:capture.points.reduce((s,p)=>s+p.x,0)/capture.points.length,y:capture.points.reduce((s,p)=>s+p.y,0)/capture.points.length};
+        capture.points.forEach(p=>{
+          const q=at(p),vx=p.x-center.x,vy=p.y-center.y,len=Math.hypot(vx,vy)||1,px=q.x+vx/len*22,py=q.y+vy/len*22;
+          c.beginPath();c.arc(px,py,14,0,Math.PI*2);c.fillStyle="#fff";c.fill();c.strokeStyle="#7c3aed";c.lineWidth=1.2;c.stroke();c.fillStyle="#3b0764";c.font="bold 17px Arial";c.fillText(p.label,px,py+.5);
+        });
+        c.restore();
+      }else contractorPointLabels(c,labelState,sourceBounds,sx,sy,sc,dx,dy,x,y,w,h);
       res();
     };
     img.onerror=res;img.src=imgSrc;
@@ -367,6 +399,8 @@ function footer(c,W,H,rs){c.fillStyle="#94a3b8",c.font="12px Arial",c.textAlign=
 function _allWallDimensionLines(st){
   try{
     st=st||{};
+    var geometry=window.A·CEILCurveGeometryV306;
+    if(geometry&&geometry.measurementRows(st).some(function(row){return row.curved}))return geometry.measurementRows(st).map(function(row){return row.label+" — "+window._formatReportCm(row.chordCm)+" см"+(row.curved?" по прямій / "+(row.curveCm?window._formatReportCm(row.curveCm)+" см по кривій":"крива ≈, не виміряна"):"")});
     var p=Array.isArray(st.pts)?st.pts:[];
     var rp=Array.isArray(st.realPts)?st.realPts:[];
     var ls=Array.isArray(st.lengths)?st.lengths:[];
@@ -454,7 +488,7 @@ function rmReportCreateHQCanvas(W,H){
 async function alphaSingle(rs){
   rs=rs||((typeof window._loadRS==="function"&&window._loadRS())||window.reportSettings||{});
   const W=1080,st=_modernRoomStatsFromCurrent();
-  const allDimLines=!1!==rs.dimensionsList?_allWallDimensionLines({pts:pts,lengths:lengths,realPts:realPts}):[];
+  const allDimLines=!1!==rs.dimensionsList?_allWallDimensionLines({pts:pts,lengths:lengths,realPts:realPts,wallTypes:wallTypes,arcPoints:arcPoints}):[];
   const groups=_modernGetNomenclatureGroupsFromState({elemItems:elemItems,elemGroups:elemGroups});
   const lightLines=!0===rs.showLightCoords&&Array.isArray(lightMarks)&&lightMarks.length?getLightCoordLines({pts:pts,lengths:lengths,realPts:realPts,circleMode:circleMode,circleDiamCm:circleDiamCm,lightMarks:lightMarks.filter(m=>window.rmIsFixtureMarkV326?window.rmIsFixtureMarkV326(m):true)}):[];
   const linearMountLines=_reportLinearMountingLines(); linearMountLines.forEach(v=>lightLines.push(v));
@@ -513,7 +547,7 @@ async function alphaContractorObject(obj,rs){
   let H=126;
   for(const r of rooms){
     let st={};try{st=r&&r.state?(typeof r.state==="string"?JSON.parse(r.state):r.state):{}}catch(_e){st={}}
-    const dimensions=_allWallDimensionLines(st||{}),tableH=dimensions.length?78+Math.ceil(dimensions.length/2)*27:90,bottomH=Math.max(246,tableH);
+    const dimensions=_allWallDimensionLines(st||{}),tableH=dimensions.length?78+(dimensions.some(v=>v.includes("по прямій /"))?dimensions.length:Math.ceil(dimensions.length/2))*27:90,bottomH=Math.max(246,tableH);
     prepared.push({r:r||{},st,dimensions,tableH,bottomH});
     H+=48+PLAN_H+12+bottomH+30;
   }
@@ -552,7 +586,7 @@ async function alphaObject(obj,rs){
     const diags=!0===rs.diagonals&&st?_getReportDiagLines(st,rs.diagMode||"manual"):[];
     const cornices=reportCornices(st),corniceLines=reportCorniceLines(cornices,st&&Array.isArray(st.pts)?st.pts.length:st&&Array.isArray(st.points)?st.points.length:0);
     data.push({r,st,groups,total,dimensions,lights,ceilings,exhausts,walls,diags,cornices,corniceLines});
-    const leftExtra=(dimensions.length?90+27*Math.ceil(dimensions.length/2):0)+(lights.length?70+34*lights.length:82)+(ceilings.length?60+34*ceilings.length:0)+(exhausts.length?60+34*exhausts.length:0)+(corniceLines.length?70+32*corniceLines.length:0)+(diags.length?60+34*diags.length:0);
+    const leftExtra=(dimensions.length?90+27*(dimensions.some(v=>v.includes("по прямій /"))?dimensions.length:Math.ceil(dimensions.length/2)):0)+(lights.length?70+34*lights.length:82)+(ceilings.length?60+34*ceilings.length:0)+(exhausts.length?60+34*exhausts.length:0)+(corniceLines.length?70+32*corniceLines.length:0)+(diags.length?60+34*diags.length:0);
     const rightExtra=150+(r.ceilingColor?42:0)+(rs.harpoonColor?42:0)+(walls.length?70+36*walls.length:96)+150+(showPrice?90+27*Math.max(1,_modernCountRows(groups)):0);
     H+=72+500+Math.max(leftExtra,rightExtra)+28;
   }

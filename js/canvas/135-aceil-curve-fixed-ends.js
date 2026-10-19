@@ -111,6 +111,7 @@ function choose(candidates,item,previous,previousPrevious,end,a,b){
   return candidates.slice().sort(function(x,y){return score(x)-score(y)})[0];
 }
 function solveWithData(i,data){
+  if(data&&Number(data.version)===3)return solveSegments(i,data);
   if(!data||!Array.isArray(data.points)||!data.points.length)return{ok:false,error:"no_points",points:[]};
   var n=pts.length,j=(i+1)%n,rp=sourceGeometry(i),startIndex=Number(data.startCorner);
   if(startIndex!==i&&startIndex!==j)startIndex=i;
@@ -136,7 +137,14 @@ function solveWithData(i,data){
     real:rp,sideStart:rp[i],sideEnd:rp[j],startOffset:startOffset,endOffset:endOffset
   };
 }
-function solve(i){return solveWithData(i,dataFor(i,true))}
+var solutionCache={};
+function solve(i){
+  var data=dataFor(i,true);
+  if(!data||Number(data.version)!==3)return solveWithData(i,data);
+  var key=JSON.stringify([data,pts,realPts,lengths]);
+  if(!solutionCache[i]||solutionCache[i].key!==key)solutionCache[i]={key:key,value:solveWithData(i,data)};
+  return solutionCache[i].value;
+}
 
 /* Centripetal Catmull-Rom passes through every measured point and avoids the
    large overshoot produced by the previous uniform spline. */
@@ -167,6 +175,7 @@ function sampleSpline(knots,steps){
 function curveRealPoints(i){
   var solution=solve(i);
   if(!solution.ok)return[];
+  if(solution.segments)return segmentPath(solution);
   var route=[solution.start].concat(solution.controls).concat([solution.end]);
   var sampled=sampleSpline(route,20);
   if(solution.startCorner!==i)sampled.reverse();
@@ -185,6 +194,8 @@ function toCanvas(i,p,real){
   var cdx=cb.x-ca.x,cdy=cb.y-ca.y,cd=Math.hypot(cdx,cdy)||1;
   var ux=rdx/rd,uy=rdy/rd,nx=-uy,ny=ux,cux=cdx/cd,cuy=cdy/cd,cnx=-cuy,cny=cux,scale=cd/rd;
   var along=(p.x-ra.x)*ux+(p.y-ra.y)*uy,offset=(p.x-ra.x)*nx+(p.y-ra.y)*ny;
+  // Real coordinates may use Y-up while the canvas uses Y-down.
+  if(outwardSign(real)!==outwardSign(pts))offset=-offset;
   return{x:ca.x+cux*along*scale+cnx*offset*scale,y:ca.y+cuy*along*scale+cny*offset*scale,_control:!!p._control};
 }
 function canvasPoints(i){
@@ -194,8 +205,14 @@ function canvasPoints(i){
 function pathLength(list){
   var total=0;for(var k=1;k<list.length;k++)total+=distance(list[k-1],list[k]);return total;
 }
-function curveLength(i){return pathLength(curveRealPoints(i))}
-function effectiveLength(i){return pathLength(fullRealSide(i))}
+function curveLength(i){
+  var solution=solve(i);
+  if(solution.ok&&solution.segments)return solution.segments.reduce(function(sum,item,k){
+    return sum+(num(item.curveCm)>0?num(item.curveCm):pathLength(segmentSamples(solution,k)));
+  },0);
+  return pathLength(curveRealPoints(i));
+}
+function effectiveLength(i){var data=dataFor(i,true);return data&&Number(data.version)===3?curveLength(i):pathLength(fullRealSide(i))}
 function active(i){
   try{return wallTypes[i]==="arc"&&!!dataFor(i,true)&&solve(i).ok}catch(_){return false}
 }
@@ -224,6 +241,7 @@ function areaCm2(){
 }
 function updateStats(){
   try{
+    updateCurveWarning();
     if(!closed||circleMode||!Array.isArray(pts)||pts.length<3)return;
     var per=document.getElementById("per"),area=document.getElementById("area");
     var perText=(_totalPerimeterCm()/100).toFixed(2);
@@ -236,11 +254,178 @@ function stabilize(i){
   var data=dataFor(i,true),solution=solveWithData(i,data);
   if(!data||!solution.ok)return solution;
   solution.controls.forEach(function(point,k){if(data.points[k])data.points[k].sideHint=point.sideHint});
-  data.version=2;
+  if(Number(data.version)!==3)data.version=2;
   return solution;
 }
 
+// Version 3 stores chords and tape lengths separately. Base corner indices and
+// existing diagonal keys never change when virtual contour points are added.
+function currentState(){return{pts:pts,realPts:realPts,lengths:lengths,wallTypes:wallTypes,arcPoints:arcPoints}}
+function letters(index){var out="";for(index++;index>0;index=Math.floor((index-1)/26))out=String.fromCharCode(65+(index-1)%26)+out;return out}
+function segmentData(state,i){
+  var raw=state.arcPoints&&state.arcPoints[i],data=raw&&raw[0]&&raw[0].data;
+  return state.wallTypes&&state.wallTypes[i]==="arc"&&data&&Number(data.version)===3?data:null;
+}
+function labels(state,draftSide,draftData){
+  state=state||currentState();var corners=[],controls=[],count=0;
+  for(var i=0;i<(state.pts||[]).length;i++){
+    corners[i]=letters(count++);
+    var data=i===draftSide?draftData:segmentData(state,i);
+    controls[i]=(data&&data.points||[]).map(function(){return letters(count++)});
+  }
+  return{corners:corners,controls:controls};
+}
+function cornerLabel(i,state){return labels(state).corners[i]||letters(i)}
+function hasSegments(state){state=state||currentState();return(state.pts||[]).some(function(_,i){return !!segmentData(state,i)})}
+function outwardSign(poly){var area=0;for(var i=0;i<poly.length;i++){var q=poly[(i+1)%poly.length];area+=poly[i].x*q.y-q.x*poly[i].y}return area>=0?-1:1}
+function solveSegments(i,data){
+  var rp=sourceGeometry(i),a=rp[i],b=rp[(i+1)%rp.length],items=data.points||[],segments=items.concat([{chordCm:data.endChordCm,curveCm:data.endCurveCm,bend:data.endBend}]);
+  if(items.length>24)return{ok:false,error:"no_points"};
+  for(var k=0;k<segments.length;k++){
+    var chord=num(segments[k].chordCm),arc=num(segments[k].curveCm);
+    if(!(chord>0))return{ok:false,error:"invalid_chord",index:k};
+    if(arc>0&&(arc<chord-.01||arc>chord*Math.PI/2+.01))return{ok:false,error:"invalid_arc",index:k};
+    if(k<items.length&&num(items[k].diag)>0&&(!rp[Number(items[k].diagCorner)]||num(items[k].diag)<0))return{ok:false,error:"invalid_diagonal",index:k};
+  }
+  var total=segments.reduce(function(sum,p){return sum+num(p.chordCm)},0),L=distance(a,b),longest=Math.max.apply(null,segments.map(function(p){return num(p.chordCm)}));
+  if(!(L>.01))return{ok:false,error:"invalid_chord"};
+  if(total<L-.01||longest>total-longest+L+.01)return{ok:false,error:"no_intersection"};
+  var outside=outwardSign(rp),sign=num(data.bulgeSign)||outside,ux=(b.x-a.x)/L,uy=(b.y-a.y)/L,best=null;
+  function wantedSide(item){return item.position==="outside"?outside:item.position==="inside"?-outside:item.position==="line"?0:null}
+  function signedOffset(p){return (p.y-a.y)*ux-(p.x-a.x)*uy}
+  // Several seeds disambiguate the two circle intersections without making
+  // an optional missing diagonal into a fabricated measurement.
+  [1,-1,.3,2].forEach(function(seed){
+    var walk=0,path=[{x:a.x,y:a.y}];
+    items.forEach(function(item,k){
+      walk+=num(item.chordCm);var t=walk/total,wanted=wantedSide(item),hint=num(item.sideHint)||sign;
+      var amplitude=Math.abs(total-L)<.001?0:Math.max(L*.025,Math.sqrt(Math.max(0,total*total-L*L))*.5);
+      var offset=amplitude*Math.sin(Math.PI*t)*(wanted===null?hint*seed:wanted*Math.abs(seed));
+      path.push({x:a.x+(b.x-a.x)*t-uy*offset,y:a.y+(b.y-a.y)*t+ux*offset});
+    });path.push({x:b.x,y:b.y});
+    function project(p,q,target,movableP,movableQ){
+      if(!movableP&&!movableQ)return;
+      var dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy)||1,weight=(d-target)/d/((movableP?1:0)+(movableQ?1:0));
+      if(movableP){p.x+=dx*weight;p.y+=dy*weight}
+      if(movableQ){q.x-=dx*weight;q.y-=dy*weight}
+    }
+    var error=Infinity;
+    for(var iter=0;iter<1800;iter++){
+      for(var s=0;s<segments.length;s++)project(path[s],path[s+1],num(segments[s].chordCm),s>0,s+1<path.length-1);
+      items.forEach(function(item,k){if(num(item.diag)>0)project(path[k+1],rp[Number(item.diagCorner)],num(item.diag),true,false)});
+      items.forEach(function(item,k){
+        var wanted=wantedSide(item),p=path[k+1],offset=signedOffset(p);
+        if(wanted!==null&&(wanted===0||offset*wanted<0)){p.x+=uy*offset;p.y-=ux*offset}
+      });
+      error=0;
+      segments.forEach(function(item,k){error=Math.max(error,Math.abs(distance(path[k],path[k+1])-num(item.chordCm)))});
+      items.forEach(function(item,k){if(num(item.diag)>0)error=Math.max(error,Math.abs(distance(path[k+1],rp[Number(item.diagCorner)])-num(item.diag)))});
+      if(error<.005)break;
+    }
+    var wrong=path.slice(1,-1).filter(function(p,k){var wanted=wantedSide(items[k]);return wanted===null&&sideSign(p,a,b)!==(num(items[k].sideHint)||sign)}).length;
+    var score=error+(wrong?100:0);
+    if(!best||score<best.score)best={score:score,error:error,path:path};
+  });
+  if(!best||best.error>.25)return{ok:false,error:"no_intersection",maxError:best&&best.error};
+  var controls=best.path.slice(1,-1).map(function(p,k){return{x:p.x,y:p.y,id:items[k].id,sideHint:sideSign(p,a,b)}});
+  return{ok:true,startCorner:i,endCorner:(i+1)%rp.length,start:a,end:b,controls:controls,real:rp,sideStart:a,sideEnd:b,startOffset:0,endOffset:0,segments:segments,path:best.path,bulgeSign:sign,outsideSign:outside,
+    approximate:(Math.abs(total-L)>.01&&items.filter(function(p){return num(p.diag)>0}).length<items.length)||segments.some(function(p){return !(num(p.curveCm)>0)}),maxError:best.error};
+}
+function segmentSamples(solution,k){
+  var a=solution.path[k],b=solution.path[k+1],chord=distance(a,b),arc=num(solution.segments[k].curveCm);
+  var bend=solution.segments[k].bend||"auto",forcedSign=bend==="outside"?solution.outsideSign:bend==="inside"?-solution.outsideSign:bend==="inherit"?solution.bulgeSign:0;
+  if(!(arc>0)){
+    var estimated=sampleSpline(solution.path,32).slice(k*32,k*32+33);
+    if(forcedSign)estimated.forEach(function(p){var dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,offset=((p.y-a.y)*dx-(p.x-a.x)*dy)/L;if(offset*forcedSign<0){p.x+=2*dy/L*offset;p.y-=2*dx/L*offset}});
+    return estimated;
+  }
+  if(arc<=chord+.001)return[a,b];
+  var lo=0,hi=Math.PI;
+  for(var j=0;j<45;j++){var mid=(lo+hi)/2;if(mid/(2*Math.sin(mid/2))<arc/chord)lo=mid;else hi=mid}
+  var theta=(lo+hi)/2,radius=chord/(2*Math.sin(theta/2)),ux=(b.x-a.x)/chord,uy=(b.y-a.y)/chord,sign=solution.bulgeSign;
+  var prev=solution.path[Math.max(0,k-1)],next=solution.path[Math.min(solution.path.length-1,k+2)],turn=(b.x-prev.x)*(next.y-a.y)-(b.y-prev.y)*(next.x-a.x);
+  if(Math.abs(turn)>.001)sign=turn>0?-1:1;
+  if(forcedSign)sign=forcedSign;
+  var result=[];
+  for(var s=0;s<=64;s++){var angle=theta*(s/64-.5),x=radius*Math.sin(angle),y=sign*radius*(Math.cos(angle)-Math.cos(theta/2));result.push({x:(a.x+b.x)/2+ux*x-uy*y,y:(a.y+b.y)/2+uy*x+ux*y,_control:s===0||s===64})}
+  result[0]={x:a.x,y:a.y,_control:true};result[64]={x:b.x,y:b.y,_control:true};return result;
+}
+function segmentPath(solution){var result=[];solution.segments.forEach(function(_,k){result=result.concat(segmentSamples(solution,k).slice(k?1:0))});return result}
+function measurementRows(state){
+  state=state||currentState();var map=labels(state),out=[];
+  for(var i=0;i<(state.pts||[]).length;i++){
+    var j=(i+1)%state.pts.length,data=segmentData(state,i);
+    if(data){
+      var names=[map.corners[i]].concat(map.controls[i],[map.corners[j]]);
+      data.points.concat([{chordCm:data.endChordCm,curveCm:data.endCurveCm}]).forEach(function(p,k){out.push({side:i,label:names[k]+names[k+1],chordCm:num(p.chordCm),curveCm:num(p.curveCm),curved:true})});
+    }else out.push({side:i,label:map.corners[i]+map.corners[j],chordCm:num((state.lengths||[])[i]),curved:false});
+  }
+  return out;
+}
+function diagonalRows(state){
+  state=state||currentState();var map=labels(state),out=[];
+  for(var i=0;i<(state.pts||[]).length;i++){var data=segmentData(state,i);if(data)data.points.forEach(function(p,k){if(num(p.diag)>0)out.push({label:map.corners[Number(p.diagCorner)]+map.controls[i][k],value:num(p.diag),side:i,id:p.id})})}
+  return out;
+}
+var lastCapture=null,reportCaptures=new Map();
+function captureImage(){
+  var src=cv.toDataURL('image/png');
+  if(lastCapture){reportCaptures.set(src,JSON.parse(JSON.stringify(lastCapture)));while(reportCaptures.size>8)reportCaptures.delete(reportCaptures.keys().next().value)}
+  return src;
+}
+function drawAnnotations(c){
+  var map=labels(),scale=1/Math.max(.65,Math.abs(Number(viewScale))||1);
+  var matrix=c.getTransform(),captured={points:[],diagonals:[],showDiagonals:!_reportMode||((typeof _loadRS==='function'?_loadRS():{}).diagonals===true)};
+  function pixel(p){return{x:matrix.a*p.x+matrix.c*p.y+matrix.e,y:matrix.b*p.x+matrix.d*p.y+matrix.f}}
+  pts.forEach(function(p,i){captured.points.push(Object.assign(pixel(p),{label:map.corners[i]}))});
+  c.save();c.textAlign="center";c.textBaseline="middle";
+  for(var i=0;i<pts.length;i++){
+    var data=segmentData(currentState(),i);if(!data)continue;var solution=solve(i);if(!solution.ok)continue;
+    solution.controls.forEach(function(p,k){
+      var q=toCanvas(i,p,solution.real),item=data.points[k];
+      captured.points.push(Object.assign(pixel(q),{label:map.controls[i][k]}));
+      if(num(item.diag)>0)captured.diagonals.push({a:pixel(pts[Number(item.diagCorner)]),b:pixel(q),label:map.corners[Number(item.diagCorner)]+map.controls[i][k],value:num(item.diag)});
+      if(_reportMode)return;
+      if(num(item.diag)>0&&(!_reportMode||((typeof _loadRS==='function'?_loadRS():{}).diagonals!==false))){
+        var anchor=pts[Number(item.diagCorner)];c.strokeStyle="#b45309";c.lineWidth=scale;c.setLineDash([5*scale,4*scale]);c.beginPath();c.moveTo(anchor.x,anchor.y);c.lineTo(q.x,q.y);c.stroke();c.setLineDash([]);
+        var text=map.corners[Number(item.diagCorner)]+map.controls[i][k]+" "+window._formatReportCm(item.diag)+" см",mx=(anchor.x+q.x)/2,my=(anchor.y+q.y)/2;
+        c.font=11*scale+"px Arial";var width=c.measureText(text).width+10*scale;c.fillStyle="rgba(255,251,235,.94)";c.fillRect(mx-width/2,my-9*scale,width,18*scale);c.fillStyle="#92400e";c.fillText(text,mx,my);
+      }
+      c.fillStyle="#7c3aed";c.beginPath();c.arc(q.x,q.y,4*scale,0,Math.PI*2);c.fill();
+      // Use the normal of the base side to keep labels clear of measured points.
+      var ca=pts[i],cb=pts[(i+1)%pts.length],len=distance(ca,cb)||1,sign=solution.bulgeSign*(outwardSign(solution.real)!==outwardSign(pts)?-1:1),nx=-(cb.y-ca.y)/len*sign,ny=(cb.x-ca.x)/len*sign;
+      c.font="700 "+16*scale+"px Arial";c.lineWidth=4*scale;c.strokeStyle="white";c.strokeText(map.controls[i][k],q.x+nx*19*scale,q.y+ny*19*scale);c.fillStyle="#5b21b6";c.fillText(map.controls[i][k],q.x+nx*19*scale,q.y+ny*19*scale);
+    });
+  }
+  c.restore();
+  lastCapture=hasSegments()?captured:null;
+  if(!_reportMode)updateCurveWarning();
+}
+function updateCurveWarning(){
+  var needs=false;
+  for(var i=0;i<(pts||[]).length;i++)if(segmentData(currentState(),i)){var result=solve(i);if(result.ok&&result.approximate)needs=true}
+  var el=document.getElementById("aceilCurveWarningV3");
+  if(!el){
+    var canvas=document.getElementById("cv");if(!canvas||!canvas.parentElement)return;
+    el=document.createElement("button");el.id="aceilCurveWarningV3";el.type="button";el.textContent="⚠";
+    el.title="Форма кривої наближена";el.setAttribute("aria-label",el.title);
+    el.style.cssText="position:absolute;right:16px;top:86px;width:36px;height:36px;border:1px solid #eab308;border-radius:50%;background:#fef9c3;color:#854d0e;z-index:5;font-size:21px";
+    el.onclick=function(){showToast("Форма кривої наближена: додай діагональ до кожної точки та довжини всіх ділянок по кривій. Хорди й введені довжини зберігаються окремо.",6500)};
+    canvas.parentElement.appendChild(el);
+  }
+  if(el.hidden===needs)el.hidden=!needs;
+}
+
 window.A·CEILCurveGeometryV306={
+  labels:labels,
+  cornerLabel:cornerLabel,
+  hasSegments:hasSegments,
+  outwardSign:function(){return outwardSign(sourceGeometry(0))},
+  measurementRows:measurementRows,
+  diagonalRows:diagonalRows,
+  drawAnnotations:drawAnnotations,
+  captureImage:captureImage,
+  reportCapture:function(src){return reportCaptures.get(src)},
   dataFor:dataFor,
   legacyToMeasure:legacyToMeasure,
   solve:solve,

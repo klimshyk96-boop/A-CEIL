@@ -388,7 +388,6 @@
   ],
   "rmWallTapOpenV84": [
    "js/canvas/130-aceil-wall-tap-menu.js",
-   "js/canvas/132-aceil-curve-measure-points.js",
    "js/canvas/134-aceil-curve-hit-test.js"
   ],
   "lightMode": [
@@ -430,7 +429,7 @@
   ]
  },
  "bigFiles": {
-  "js/core/019-aceil-core-ui-rooms-bulk-walls.js": 112806,
+  "js/core/019-aceil-core-ui-rooms-bulk-walls.js": 113178,
   "js/rooms/110-aceil-linear-element.js": 90482,
   "js/reports/184-aceil-estimate-variants-ui.js": 121208
  },
