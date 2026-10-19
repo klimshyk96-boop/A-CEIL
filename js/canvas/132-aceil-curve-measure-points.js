@@ -6,7 +6,7 @@ var activeSide=-1,draft=null;
 function n(v){v=Number(String(v==null?"":v).replace(",","."));return Number.isFinite(v)?v:0}
 function geometry(){return window.A·CEILCurveGeometryV306}
 function uid(){return "curve_"+(window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now()+"_"+Math.random().toString(36).slice(2))}
-function freshPoint(){return{id:uid(),chordCm:0,curveCm:0,diagCorner:(activeSide-1+pts.length)%pts.length,diag:0}}
+function freshPoint(){return{id:uid(),chordCm:0,curveCm:0,bend:"inherit",position:"auto",diagCorner:(activeSide-1+pts.length)%pts.length,diag:0}}
 function maps(){return geometry().labels(null,activeSide,draft)}
 function pointLabel(k){return maps().controls[activeSide][k]}
 function endLabel(){return maps().corners[(activeSide+1)%pts.length]}
@@ -15,7 +15,7 @@ function sideName(){return maps().corners[activeSide]+endLabel()}
 function readExisting(i){
   var raw=arcPoints[i],data=raw&&raw[0]&&raw[0].model==="measure-points"&&raw[0].data;
   if(data&&Number(data.version)===3)return JSON.parse(JSON.stringify(data));
-  var out={version:3,startCorner:i,startOffset:0,endOffset:0,points:[],endChordCm:n(typeof _sideLenCm==="function"?_sideLenCm(i):lengths[i]),endCurveCm:0};
+  var out={version:3,startCorner:i,startOffset:0,endOffset:0,points:[],endBend:"inherit",endChordCm:n(typeof _sideLenCm==="function"?_sideLenCm(i):lengths[i]),endCurveCm:0};
   // Old projects remain untouched until Apply. Old distances were chords;
   // never present spline-derived tape lengths as measurements.
   if(!data)data=geometry().legacyToMeasure(i,raw);
@@ -37,6 +37,10 @@ function readExisting(i){
   return out;
 }
 function input(k,key,value){return '<input type="number" min="0" inputmode="decimal" step="0.1" placeholder="Не задано" value="'+(Number(n(value).toFixed(2))||"")+'" oninput="rmCurveMeasureUpdatePointV301('+k+',\''+key+'\',this.value)">'}
+function choice(k,key,value,options,label){
+  return '<label><span>'+label+'</span><select data-cm-field="'+key+'" onchange="rmCurveMeasureUpdatePointV301('+k+',\''+key+'\',this.value)">'+options.map(function(o){return '<option value="'+o[0]+'" '+(o[0]===value?'selected':'')+'>'+o[1]+'</option>'}).join("")+'</select></label>';
+}
+function bendChoice(k,value){return choice(k,k<0?"endBend":"bend",value||"auto",[["inherit","Як для всієї стіни"],["outside","Назовні"],["inside","Всередину"],["auto","Автоматично за точками"]],"Вигин цієї ділянки")}
 function render(){
   var map=maps(),box=document.getElementById("cmPointsV301");
   document.getElementById("cmWallLabelV301").textContent="Стіна "+sideName()+" · точки вздовж контуру";
@@ -47,10 +51,12 @@ function render(){
     var options=map.corners.map(function(label,i){return '<option value="'+i+'" '+(i===Number(p.diagCorner)?'selected':'')+'>'+label+'</option>'}).join("");
     return '<div class="cm-point" data-curve-point="'+k+'"><div class="cm-point-head"><div class="cm-point-name">Ділянка '+previousLabel(k)+pointLabel(k)+'</div><button type="button" class="cm-del" aria-label="Видалити точку" onclick="rmCurveMeasureDeletePointV301('+k+')">×</button></div>'+
       '<div class="cm-grid"><label><span>По прямій, см</span>'+input(k,"chordCm",p.chordCm)+'</label><label><span>По кривій, см</span>'+input(k,"curveCm",p.curveCm)+'</label></div>'+
+      bendChoice(k,p.bend)+
+      choice(k,"position",p.position||"auto",[["auto","За хордами й діагоналями"],["outside","Назовні від базової стіни"],["inside","Всередині від базової стіни"],["line","На прямій базової стіни"]],"Положення точки "+pointLabel(k))+
       '<div class="cm-grid"><label><span>Діагональ до '+pointLabel(k)+' від кута</span><select onchange="rmCurveMeasureUpdatePointV301('+k+',\'diagCorner\',this.value)">'+options+'</select></label>'+
       '<label><span data-cm-diag-label="'+k+'">'+map.corners[Number(p.diagCorner)]+pointLabel(k)+', см · необов’язково</span>'+input(k,"diag",p.diag)+'</label></div></div>';
   }).join("")+
-    '<div class="cm-point"><div class="cm-point-name">'+(draft.points.length?'Остання ділянка '+pointLabel(draft.points.length-1)+endLabel():'Ділянка '+sideName())+'</div><div class="cm-grid"><label><span>По прямій, см</span>'+input(-1,"endChordCm",draft.endChordCm)+'</label><label><span>По кривій, см</span>'+input(-1,"endCurveCm",draft.endCurveCm)+'</label></div></div>';
+    '<div class="cm-point"><div class="cm-point-name">'+(draft.points.length?'Остання ділянка '+pointLabel(draft.points.length-1)+endLabel():'Ділянка '+sideName())+'</div><div class="cm-grid"><label><span>По прямій, см</span>'+input(-1,"endChordCm",draft.endChordCm)+'</label><label><span>По кривій, см</span>'+input(-1,"endCurveCm",draft.endCurveCm)+'</label></div>'+bendChoice(-1,draft.endBend)+'</div>';
   document.getElementById("cmRemoveV301").style.display=wallTypes[activeSide]==="arc"?"block":"none";
   updatePreview();
 }
@@ -69,7 +75,7 @@ function open(i){
 function close(){var m=document.getElementById("rmCurveMeasureModalV301");m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 function addPoint(){
   if(!draft||draft.points.length>=24)return;
-  draft.points.push(freshPoint());draft.endChordCm=0;draft.endCurveCm=0;render();
+  draft.points.push(freshPoint());draft.endChordCm=0;draft.endCurveCm=0;draft.endBend="inherit";render();
   var cards=document.querySelectorAll("#cmPointsV301 .cm-point");
   if(cards.length)cards[cards.length-2].scrollIntoView({behavior:"smooth",block:"center"});
 }
@@ -84,8 +90,11 @@ function deletePoint(k){
 }
 function updatePoint(k,key,value){
   if(!draft)return;
-  if(k<0)draft[key]=n(value);
-  else if(draft.points[k])draft.points[k][key]=n(value);
+  if(key==="bend"||key==="endBend")value=["inherit","outside","inside","auto"].includes(value)?value:"auto";
+  else if(key==="position")value=["auto","outside","inside","line"].includes(value)?value:"auto";
+  else value=n(value);
+  if(k<0)draft[key]=value;
+  else if(draft.points[k])draft.points[k][key]=value;
   if(key==="diagCorner"){
     var label=document.querySelector('[data-cm-diag-label="'+k+'"]');
     if(label)label.textContent=maps().corners[n(value)]+pointLabel(k)+", см · необов’язково";

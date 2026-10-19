@@ -15,7 +15,7 @@ const {open,reveal}=require('./browser-review.cjs');
    assert.equal(await page.locator('#cmPointsV301 .cm-point').count(),1,'one card for one whole arc');
    assert.equal(await page.locator('#cmPointsV301 .cm-point-name').textContent(),'Ділянка DA');
    assert.equal(await page.locator('#cmPointsV301 input').first().inputValue(),'200','prefill the actual straight wall measurement');
-   assert.equal(await page.locator('#cmPointsV301 select').count(),0,'no fabricated intermediate diagonal');
+   assert.equal(await page.locator('#cmPointsV301 select:not([data-cm-field])').count(),0,'no fabricated intermediate diagonal');
    await page.locator('#cmPointsV301 input').nth(1).fill(String(tape));
    await page.locator('#rmCurveMeasureModalV301 .cm-save').click();
    const result=await page.evaluate(()=>{

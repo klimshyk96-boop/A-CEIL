@@ -279,7 +279,7 @@ function cornerLabel(i,state){return labels(state).corners[i]||letters(i)}
 function hasSegments(state){state=state||currentState();return(state.pts||[]).some(function(_,i){return !!segmentData(state,i)})}
 function outwardSign(poly){var area=0;for(var i=0;i<poly.length;i++){var q=poly[(i+1)%poly.length];area+=poly[i].x*q.y-q.x*poly[i].y}return area>=0?-1:1}
 function solveSegments(i,data){
-  var rp=sourceGeometry(i),a=rp[i],b=rp[(i+1)%rp.length],items=data.points||[],segments=items.concat([{chordCm:data.endChordCm,curveCm:data.endCurveCm}]);
+  var rp=sourceGeometry(i),a=rp[i],b=rp[(i+1)%rp.length],items=data.points||[],segments=items.concat([{chordCm:data.endChordCm,curveCm:data.endCurveCm,bend:data.endBend}]);
   if(items.length>24)return{ok:false,error:"no_points"};
   for(var k=0;k<segments.length;k++){
     var chord=num(segments[k].chordCm),arc=num(segments[k].curveCm);
@@ -290,13 +290,17 @@ function solveSegments(i,data){
   var total=segments.reduce(function(sum,p){return sum+num(p.chordCm)},0),L=distance(a,b),longest=Math.max.apply(null,segments.map(function(p){return num(p.chordCm)}));
   if(!(L>.01))return{ok:false,error:"invalid_chord"};
   if(total<L-.01||longest>total-longest+L+.01)return{ok:false,error:"no_intersection"};
-  var sign=num(data.bulgeSign)||outwardSign(rp),ux=(b.x-a.x)/L,uy=(b.y-a.y)/L,best=null;
+  var outside=outwardSign(rp),sign=num(data.bulgeSign)||outside,ux=(b.x-a.x)/L,uy=(b.y-a.y)/L,best=null;
+  function wantedSide(item){return item.position==="outside"?outside:item.position==="inside"?-outside:item.position==="line"?0:null}
+  function signedOffset(p){return (p.y-a.y)*ux-(p.x-a.x)*uy}
   // Several seeds disambiguate the two circle intersections without making
   // an optional missing diagonal into a fabricated measurement.
   [1,-1,.3,2].forEach(function(seed){
     var walk=0,path=[{x:a.x,y:a.y}];
     items.forEach(function(item,k){
-      walk+=num(item.chordCm);var t=walk/total,offset=Math.max(L*.025,Math.sqrt(Math.max(0,total*total-L*L))*.5)*Math.sin(Math.PI*t)*sign*seed;
+      walk+=num(item.chordCm);var t=walk/total,wanted=wantedSide(item),hint=num(item.sideHint)||sign;
+      var amplitude=Math.abs(total-L)<.001?0:Math.max(L*.025,Math.sqrt(Math.max(0,total*total-L*L))*.5);
+      var offset=amplitude*Math.sin(Math.PI*t)*(wanted===null?hint*seed:wanted*Math.abs(seed));
       path.push({x:a.x+(b.x-a.x)*t-uy*offset,y:a.y+(b.y-a.y)*t+ux*offset});
     });path.push({x:b.x,y:b.y});
     function project(p,q,target,movableP,movableQ){
@@ -309,29 +313,39 @@ function solveSegments(i,data){
     for(var iter=0;iter<1800;iter++){
       for(var s=0;s<segments.length;s++)project(path[s],path[s+1],num(segments[s].chordCm),s>0,s+1<path.length-1);
       items.forEach(function(item,k){if(num(item.diag)>0)project(path[k+1],rp[Number(item.diagCorner)],num(item.diag),true,false)});
+      items.forEach(function(item,k){
+        var wanted=wantedSide(item),p=path[k+1],offset=signedOffset(p);
+        if(wanted!==null&&(wanted===0||offset*wanted<0)){p.x+=uy*offset;p.y-=ux*offset}
+      });
       error=0;
       segments.forEach(function(item,k){error=Math.max(error,Math.abs(distance(path[k],path[k+1])-num(item.chordCm)))});
       items.forEach(function(item,k){if(num(item.diag)>0)error=Math.max(error,Math.abs(distance(path[k+1],rp[Number(item.diagCorner)])-num(item.diag)))});
       if(error<.005)break;
     }
-    var wrong=path.slice(1,-1).filter(function(p){return sideSign(p,a,b)!==sign}).length;
+    var wrong=path.slice(1,-1).filter(function(p,k){var wanted=wantedSide(items[k]);return wanted===null&&sideSign(p,a,b)!==(num(items[k].sideHint)||sign)}).length;
     var score=error+(wrong?100:0);
     if(!best||score<best.score)best={score:score,error:error,path:path};
   });
   if(!best||best.error>.25)return{ok:false,error:"no_intersection",maxError:best&&best.error};
   var controls=best.path.slice(1,-1).map(function(p,k){return{x:p.x,y:p.y,id:items[k].id,sideHint:sideSign(p,a,b)}});
-  return{ok:true,startCorner:i,endCorner:(i+1)%rp.length,start:a,end:b,controls:controls,real:rp,sideStart:a,sideEnd:b,startOffset:0,endOffset:0,segments:segments,path:best.path,bulgeSign:sign,
-    approximate:items.filter(function(p){return num(p.diag)>0}).length<items.length||segments.some(function(p){return !(num(p.curveCm)>0)}),maxError:best.error};
+  return{ok:true,startCorner:i,endCorner:(i+1)%rp.length,start:a,end:b,controls:controls,real:rp,sideStart:a,sideEnd:b,startOffset:0,endOffset:0,segments:segments,path:best.path,bulgeSign:sign,outsideSign:outside,
+    approximate:(Math.abs(total-L)>.01&&items.filter(function(p){return num(p.diag)>0}).length<items.length)||segments.some(function(p){return !(num(p.curveCm)>0)}),maxError:best.error};
 }
 function segmentSamples(solution,k){
   var a=solution.path[k],b=solution.path[k+1],chord=distance(a,b),arc=num(solution.segments[k].curveCm);
-  if(!(arc>0))return sampleSpline(solution.path,32).slice(k*32,k*32+33);
+  var bend=solution.segments[k].bend||"auto",forcedSign=bend==="outside"?solution.outsideSign:bend==="inside"?-solution.outsideSign:bend==="inherit"?solution.bulgeSign:0;
+  if(!(arc>0)){
+    var estimated=sampleSpline(solution.path,32).slice(k*32,k*32+33);
+    if(forcedSign)estimated.forEach(function(p){var dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,offset=((p.y-a.y)*dx-(p.x-a.x)*dy)/L;if(offset*forcedSign<0){p.x+=2*dy/L*offset;p.y-=2*dx/L*offset}});
+    return estimated;
+  }
   if(arc<=chord+.001)return[a,b];
   var lo=0,hi=Math.PI;
   for(var j=0;j<45;j++){var mid=(lo+hi)/2;if(mid/(2*Math.sin(mid/2))<arc/chord)lo=mid;else hi=mid}
   var theta=(lo+hi)/2,radius=chord/(2*Math.sin(theta/2)),ux=(b.x-a.x)/chord,uy=(b.y-a.y)/chord,sign=solution.bulgeSign;
   var prev=solution.path[Math.max(0,k-1)],next=solution.path[Math.min(solution.path.length-1,k+2)],turn=(b.x-prev.x)*(next.y-a.y)-(b.y-prev.y)*(next.x-a.x);
   if(Math.abs(turn)>.001)sign=turn>0?-1:1;
+  if(forcedSign)sign=forcedSign;
   var result=[];
   for(var s=0;s<=64;s++){var angle=theta*(s/64-.5),x=radius*Math.sin(angle),y=sign*radius*(Math.cos(angle)-Math.cos(theta/2));result.push({x:(a.x+b.x)/2+ux*x-uy*y,y:(a.y+b.y)/2+uy*x+ux*y,_control:s===0||s===64})}
   result[0]={x:a.x,y:a.y,_control:true};result[64]={x:b.x,y:b.y,_control:true};return result;

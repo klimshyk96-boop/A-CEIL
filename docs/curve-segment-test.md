@@ -13,6 +13,14 @@ Test branch: `test/curve-segment-measurements`.
    Add optional diagonals from any base corner to the intermediate points.
 5. Apply, save/reopen the room, and generate the contractor sheet.
 
+Each segment has an independent bend selection: inherit the wall default,
+outside, inside, or automatically follow the control-point geometry. This
+supports an S-shaped boundary such as CD outside and DE inside with tape
+lengths 270/270 and chords 250/250. The intermediate point can remain on the
+base wall. Point position is a separate constraint (automatic, outside,
+inside, or on the base line); its side is enforced together with measured
+chords/diagonals, not inferred from the segment's bend direction.
+
 Chord and tape lengths are separate data. Tape lengths determine perimeter;
 missing tape lengths use an estimated curve. Missing diagonals leave the shape
 underconstrained and show a yellow canvas warning with an explanation on tap.
