@@ -367,6 +367,59 @@ function diagonalRows(state){
   for(var i=0;i<(state.pts||[]).length;i++){var data=segmentData(state,i);if(data)data.points.forEach(function(p,k){if(num(p.diag)>0)out.push({label:map.corners[Number(p.diagCorner)]+map.controls[i][k],value:num(p.diag),side:i,id:p.id})})}
   return out;
 }
+// Curve points keep stable IDs; never insert their display letters into the
+// numeric base-corner diagonal array used by the room solver.
+function controlTargets(){
+  var out=[],map=labels();
+  for(var i=0;i<pts.length;i++){
+    var data=segmentData(currentState(),i),s=data&&solve(i);
+    if(!s||!s.ok)continue;
+    s.controls.forEach(function(p,k){out.push({side:i,id:data.points[k].id,index:k,label:map.controls[i][k],canvas:toCanvas(i,p,s.real),real:p,geometry:s.real,item:data.points[k]})});
+  }
+  return out;
+}
+function controlToken(t){return 'curve:'+t.side+':'+encodeURIComponent(t.id)}
+function findControl(token){return controlTargets().find(function(t){return controlToken(t)===token})}
+function openControlDiagonal(token,corner){
+  var t=findControl(token);corner=Number(corner);
+  if(!t||!Number.isInteger(corner)||!pts[corner])return;
+  var estimate=distance(t.real,t.geometry[corner]),key=token+':'+corner;
+  editDiagonal(key,estimate);
+  document.getElementById('diagEditInput').value=num(t.item.diag)>0&&Number(t.item.diagCorner)===corner?t.item.diag:'';
+  document.getElementById('diagEditLabel').textContent=labels().corners[corner]+t.label+' · до точки кривої, см (розраховано ≈ '+Number(estimate.toFixed(1))+' см)';
+}
+function applyControlDiagonal(key,value){
+  if(!key.startsWith('curve:'))return false;
+  var parts=key.split(':'),corner=Number(parts.pop()),token=parts.join(':'),t=findControl(token);
+  if(!t){showToast('Точку кривої вже змінено. Вибери її знову.');return true}
+  if(!(value>0)){showToast('Введи діагональ у сантиметрах.');return true}
+  var data=JSON.parse(JSON.stringify(segmentData(currentState(),t.side)));
+  data.points[t.index].diagCorner=corner;data.points[t.index].diag=value;
+  var checked=solveWithData(t.side,data);
+  if(!checked.ok){showToast('Ця діагональ не узгоджується з хордами. Перевір заміри.',5000);return true}
+  arcPoints[t.side][0].data=data;
+  selectedPoint=null;closeModal('diagEditModal');stabilize(t.side);updateDiagList();updateChecks();updateStats();saveState();requestDraw();
+  return true;
+}
+function handleControlDiagonalTap(x,y){
+  var targets=controlTargets(),radius=30/Math.max(.65,Number(viewScale)||1),hit=null,best=radius;
+  targets.forEach(function(t){var d=Math.hypot(x-t.canvas.x,y-t.canvas.y);if(d<best){best=d;hit=controlToken(t)}});
+  var corner=-1;pts.forEach(function(p,i){var d=Math.hypot(x-p.x,y-p.y);if(d<best){best=d;hit=null;corner=i}});
+  var prior=typeof selectedPoint==='string'?findControl(selectedPoint):null;
+  if(!hit&&!prior)return false;
+  if(hit){
+    if(Number.isInteger(selectedPoint)){openControlDiagonal(hit,selectedPoint);selectedPoint=null}
+    else if(prior){selectedPoint=hit===selectedPoint?null:hit;if(selectedPoint)showToast('Тепер вибери основний кут приміщення.')}
+    else selectedPoint=hit;
+  }else if(corner>=0){openControlDiagonal(controlToken(prior),corner);selectedPoint=null}
+  requestDraw();return true;
+}
+function controlDiagonalMenu(){
+  var map=labels();return controlTargets().map(function(t){
+    var token=controlToken(t),options=map.corners.map(function(label,i){return '<option value="'+i+'" '+(i===Number(t.item.diagCorner)?'selected':'')+'>'+label+'</option>'}).join('');
+    return '<div style="margin:12px 0"><b>До точки '+t.label+'</b><div style="display:flex;gap:8px"><select aria-label="Кут для діагоналі до '+t.label+'" id="curveDiagCorner_'+t.side+'_'+t.index+'">'+options+'</select><button type="button" onclick="window.A·CEILCurveGeometryV306.openControlDiagonal(\''+token+'\',document.getElementById(\'curveDiagCorner_'+t.side+'_'+t.index+'\').value)">Ввести'+(num(t.item.diag)>0?' · '+num(t.item.diag)+' см':'')+'</button></div></div>';
+  }).join('');
+}
 var lastCapture=null,reportCaptures=new Map();
 function captureImage(){
   var src=cv.toDataURL('image/png');
@@ -391,7 +444,7 @@ function drawAnnotations(c){
         var text=map.corners[Number(item.diagCorner)]+map.controls[i][k]+" "+window._formatReportCm(item.diag)+" см",mx=(anchor.x+q.x)/2,my=(anchor.y+q.y)/2;
         c.font=11*scale+"px Arial";var width=c.measureText(text).width+10*scale;c.fillStyle="rgba(255,251,235,.94)";c.fillRect(mx-width/2,my-9*scale,width,18*scale);c.fillStyle="#92400e";c.fillText(text,mx,my);
       }
-      c.fillStyle="#7c3aed";c.beginPath();c.arc(q.x,q.y,4*scale,0,Math.PI*2);c.fill();
+      c.fillStyle=diagonalMode&&selectedPoint===controlToken({side:i,id:item.id})?"#22c55e":"#7c3aed";c.beginPath();c.arc(q.x,q.y,(diagonalMode?8:4)*scale,0,Math.PI*2);c.fill();
       // Use the normal of the base side to keep labels clear of measured points.
       var ca=pts[i],cb=pts[(i+1)%pts.length],len=distance(ca,cb)||1,sign=solution.bulgeSign*(outwardSign(solution.real)!==outwardSign(pts)?-1:1),nx=-(cb.y-ca.y)/len*sign,ny=(cb.x-ca.x)/len*sign;
       c.font="700 "+16*scale+"px Arial";c.lineWidth=4*scale;c.strokeStyle="white";c.strokeText(map.controls[i][k],q.x+nx*19*scale,q.y+ny*19*scale);c.fillStyle="#5b21b6";c.fillText(map.controls[i][k],q.x+nx*19*scale,q.y+ny*19*scale);
@@ -423,6 +476,11 @@ window.A·CEILCurveGeometryV306={
   outwardSign:function(){return outwardSign(sourceGeometry(0))},
   measurementRows:measurementRows,
   diagonalRows:diagonalRows,
+  controlTargets:controlTargets,
+  handleControlDiagonalTap:handleControlDiagonalTap,
+  openControlDiagonal:openControlDiagonal,
+  applyControlDiagonal:applyControlDiagonal,
+  controlDiagonalMenu:controlDiagonalMenu,
   drawAnnotations:drawAnnotations,
   captureImage:captureImage,
   reportCapture:function(src){return reportCaptures.get(src)},
