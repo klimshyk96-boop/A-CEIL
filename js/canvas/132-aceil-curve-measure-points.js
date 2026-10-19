@@ -38,33 +38,40 @@ function readExisting(i){
 }
 function input(k,key,value){return '<input type="number" min="0" inputmode="decimal" step="0.1" placeholder="Не задано" value="'+(Number(n(value).toFixed(2))||"")+'" oninput="rmCurveMeasureUpdatePointV301('+k+',\''+key+'\',this.value)">'}
 function choice(k,key,value,options,label){
-  return '<label><span>'+label+'</span><select data-cm-field="'+key+'" onchange="rmCurveMeasureUpdatePointV301('+k+',\''+key+'\',this.value)">'+options.map(function(o){return '<option value="'+o[0]+'" '+(o[0]===value?'selected':'')+'>'+o[1]+'</option>'}).join("")+'</select></label>';
+  return '<label><span>'+label+'</span><select aria-label="'+label+'" data-cm-field="'+key+'" onchange="rmCurveMeasureUpdatePointV301('+k+',\''+key+'\',this.value)">'+options.map(function(o){return '<option value="'+o[0]+'" '+(o[0]===value?'selected':'')+'>'+o[1]+'</option>'}).join("")+'</select></label>';
 }
-function bendChoice(k,value){return choice(k,k<0?"endBend":"bend",value||"auto",[["inherit","Як для всієї стіни"],["outside","Назовні"],["inside","Всередину"],["auto","Автоматично за точками"]],"Вигин цієї ділянки")}
+function bendChoice(k,value){
+  var direction=(n(draft.bulgeSign)||geometry().outwardSign())===geometry().outwardSign()?"назовні":"всередину";
+  return '<div class="cm-bend">'+choice(k,k<0?"endBend":"bend",value||"auto",[["inherit","Типово: "+direction],["outside","Назовні"],["inside","Всередину"],["auto","Авто"]],"Вигин ділянки")+'</div>';
+}
+function pointSummary(k){
+  var p=draft.points[k],position={outside:"назовні",inside:"всередині",line:"на прямій"},text="Точка "+pointLabel(k);
+  if(position[p.position])text+=" · "+position[p.position];
+  return text+(n(p.diag)>0?" · "+maps().corners[Number(p.diagCorner)]+pointLabel(k)+" "+Number(n(p.diag).toFixed(2))+" см":" · діагональ / положення");
+}
 function render(){
   var map=maps(),box=document.getElementById("cmPointsV301");
-  document.getElementById("cmWallLabelV301").textContent="Стіна "+sideName()+" · точки вздовж контуру";
+  document.getElementById("cmWallLabelV301").textContent="Стіна "+sideName();
   var outside=geometry().outwardSign(),direction=document.getElementById("cmDirectionV3");
   direction.innerHTML='<option value="'+outside+'">Назовні приміщення</option><option value="'+(-outside)+'">Усередину приміщення</option>';
   direction.value=String(n(draft.bulgeSign)||outside);
   box.innerHTML=draft.points.map(function(p,k){
     var options=map.corners.map(function(label,i){return '<option value="'+i+'" '+(i===Number(p.diagCorner)?'selected':'')+'>'+label+'</option>'}).join("");
-    return '<div class="cm-point" data-curve-point="'+k+'"><div class="cm-point-head"><div class="cm-point-name">Ділянка '+previousLabel(k)+pointLabel(k)+'</div><button type="button" class="cm-del" aria-label="Видалити точку" onclick="rmCurveMeasureDeletePointV301('+k+')">×</button></div>'+
+    return '<div class="cm-point" data-curve-point="'+k+'"><div class="cm-point-head"><div class="cm-point-name">Ділянка '+previousLabel(k)+pointLabel(k)+'</div>'+bendChoice(k,p.bend)+'<button type="button" class="cm-del" aria-label="Видалити точку" onclick="rmCurveMeasureDeletePointV301('+k+')">×</button></div>'+
       '<div class="cm-grid"><label><span>По прямій, см</span>'+input(k,"chordCm",p.chordCm)+'</label><label><span>По кривій, см</span>'+input(k,"curveCm",p.curveCm)+'</label></div>'+
-      bendChoice(k,p.bend)+
+      '<details class="cm-point-details" data-cm-details="'+k+'"><summary>'+pointSummary(k)+'</summary>'+
       choice(k,"position",p.position||"auto",[["auto","За хордами й діагоналями"],["outside","Назовні від базової стіни"],["inside","Всередині від базової стіни"],["line","На прямій базової стіни"]],"Положення точки "+pointLabel(k))+
       '<div class="cm-grid"><label><span>Діагональ до '+pointLabel(k)+' від кута</span><select onchange="rmCurveMeasureUpdatePointV301('+k+',\'diagCorner\',this.value)">'+options+'</select></label>'+
-      '<label><span data-cm-diag-label="'+k+'">'+map.corners[Number(p.diagCorner)]+pointLabel(k)+', см · необов’язково</span>'+input(k,"diag",p.diag)+'</label></div></div>';
+      '<label><span data-cm-diag-label="'+k+'">'+map.corners[Number(p.diagCorner)]+pointLabel(k)+', см · необов’язково</span>'+input(k,"diag",p.diag)+'</label></div></details></div>';
   }).join("")+
-    '<div class="cm-point"><div class="cm-point-name">'+(draft.points.length?'Остання ділянка '+pointLabel(draft.points.length-1)+endLabel():'Ділянка '+sideName())+'</div><div class="cm-grid"><label><span>По прямій, см</span>'+input(-1,"endChordCm",draft.endChordCm)+'</label><label><span>По кривій, см</span>'+input(-1,"endCurveCm",draft.endCurveCm)+'</label></div>'+bendChoice(-1,draft.endBend)+'</div>';
-  document.getElementById("cmRemoveV301").style.display=wallTypes[activeSide]==="arc"?"block":"none";
+    '<div class="cm-point"><div class="cm-point-head"><div class="cm-point-name">Ділянка '+(draft.points.length?pointLabel(draft.points.length-1)+endLabel():sideName())+'</div>'+bendChoice(-1,draft.endBend)+'</div><div class="cm-grid"><label><span>По прямій, см</span>'+input(-1,"endChordCm",draft.endChordCm)+'</label><label><span>По кривій, см</span>'+input(-1,"endCurveCm",draft.endCurveCm)+'</label></div></div>';
+  var removeButton=document.getElementById("cmRemoveV301");removeButton.hidden=wallTypes[activeSide]!=="arc";
   updatePreview();
 }
 function updatePreview(){
-  var chords=draft.points.reduce(function(s,p){return s+n(p.chordCm)},n(draft.endChordCm)),tape=draft.points.reduce(function(s,p){return s+n(p.curveCm)},n(draft.endCurveCm)),diags=draft.points.filter(function(p){return n(p.diag)>0}).length;
-  document.getElementById("cmPreviewV301").textContent=draft.points.length
-    ?"Хорди: "+chords.toFixed(1)+" см · по кривій введено: "+tape.toFixed(1)+" см · діагоналей: "+diags+"/"+draft.points.length+". Без усіх діагоналей або довжин кривої форма наближена."
-    :"Одна дуга · по прямій: "+chords.toFixed(1)+" см · по кривій: "+(tape>0?tape.toFixed(1)+" см":"не задано")+". Проміжні точки не потрібні для простої кругової дуги.";
+  var chords=draft.points.reduce(function(s,p){return s+n(p.chordCm)},n(draft.endChordCm)),tape=draft.points.reduce(function(s,p){return s+n(p.curveCm)},n(draft.endCurveCm));
+  document.getElementById("cmPreviewV301").textContent="Разом: пряма "+Number(chords.toFixed(2))+" / крива "+(tape>0?Number(tape.toFixed(2)):"—")+" см";
+  document.querySelectorAll('[data-cm-details]').forEach(function(el){var k=Number(el.dataset.cmDetails);if(draft.points[k])el.querySelector('summary').textContent=pointSummary(k)});
 }
 function open(i){
   activeSide=Number(i);if(!(activeSide>=0&&activeSide<pts.length))return;

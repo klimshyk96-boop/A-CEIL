@@ -30,7 +30,10 @@ const {open,reveal}=require('./browser-review.cjs');
    await page.evaluate(()=>rmCurveMeasureOpenV301(3));
    assert.equal(await page.locator('#cmPointsV301 .cm-point').count(),1,'reopening must preserve zero controls');
    assert.equal(await page.locator('#cmPointsV301 input').nth(1).inputValue(),String(tape));
-   await page.evaluate(()=>{rmCurveMeasureAddPointV301();rmCurveMeasureDeletePointV301(0)});
+   assert.equal(await page.locator('#rmCurveMeasureModalV301 .cm-footer button').count(),2,'only cancel and apply stay in the footer');
+   await page.locator('#rmCurveMeasureModalV301 .cm-add').click();
+   assert.equal(await page.locator('#cmPointsV301 .cm-point-details[open]').count(),0,'advanced point fields start collapsed');
+   await page.locator('#rmCurveMeasureModalV301 .cm-del').click();
    assert.equal(await page.locator('#cmPointsV301 .cm-point-name').textContent(),'Ділянка DA','last control point can be removed');
    await page.evaluate(()=>rmCurveMeasureCloseV301());
   }

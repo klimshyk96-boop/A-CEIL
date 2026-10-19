@@ -14,6 +14,7 @@ const {open,reveal}=require('./browser-review.cjs');
   });
   await page.locator('#cmPointsV301 [data-cm-field="bend"]').selectOption('outside');
   await page.locator('#cmPointsV301 [data-cm-field="endBend"]').selectOption('inside');
+  await page.locator('#cmPointsV301 .cm-point-details>summary').click();
   await page.locator('#cmPointsV301 [data-cm-field="position"]').selectOption('line');
   await page.locator('#rmCurveMeasureModalV301 .cm-save').click();
   const result=await page.evaluate(()=>{
