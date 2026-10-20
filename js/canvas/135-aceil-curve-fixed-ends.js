@@ -277,15 +277,29 @@ function labels(state,draftSide,draftData){
 }
 function cornerLabel(i,state){return labels(state).corners[i]||letters(i)}
 function hasSegments(state){state=state||currentState();return(state.pts||[]).some(function(_,i){return !!segmentData(state,i)})}
+function pointDiagonals(item){
+  var out=[],seen={};
+  [{corner:item.diagCorner,value:item.diag}].concat(item.diagonals||[]).forEach(function(d){
+    var corner=Number(d.corner),value=num(d.value);
+    if(Number.isInteger(corner)&&corner>=0&&value>0&&!seen[corner]){seen[corner]=true;out.push({corner:corner,value:value})}
+  });
+  return out;
+}
+function setPointDiagonal(item,corner,value){
+  var all=pointDiagonals(item).filter(function(d){return d.corner!==corner});
+  if(value>0)all.unshift({corner:corner,value:value});
+  var primary=all.shift();item.diagCorner=primary?primary.corner:corner;item.diag=primary?primary.value:0;item.diagonals=all;
+}
 function outwardSign(poly){var area=0;for(var i=0;i<poly.length;i++){var q=poly[(i+1)%poly.length];area+=poly[i].x*q.y-q.x*poly[i].y}return area>=0?-1:1}
 function solveSegments(i,data){
   var rp=sourceGeometry(i),a=rp[i],b=rp[(i+1)%rp.length],items=data.points||[],segments=items.concat([{chordCm:data.endChordCm,curveCm:data.endCurveCm,bend:data.endBend}]);
+  var constraints=items.map(pointDiagonals);
   if(items.length>24)return{ok:false,error:"no_points"};
   for(var k=0;k<segments.length;k++){
     var chord=num(segments[k].chordCm),arc=num(segments[k].curveCm);
     if(!(chord>0))return{ok:false,error:"invalid_chord",index:k};
     if(arc>0&&(arc<chord-.01||arc>chord*Math.PI/2+.01))return{ok:false,error:"invalid_arc",index:k};
-    if(k<items.length&&num(items[k].diag)>0&&(!rp[Number(items[k].diagCorner)]||num(items[k].diag)<0))return{ok:false,error:"invalid_diagonal",index:k};
+    if(k<items.length&&constraints[k].some(function(d){return !rp[d.corner]}))return{ok:false,error:"invalid_diagonal",index:k};
   }
   var total=segments.reduce(function(sum,p){return sum+num(p.chordCm)},0),L=distance(a,b),longest=Math.max.apply(null,segments.map(function(p){return num(p.chordCm)}));
   if(!(L>.01))return{ok:false,error:"invalid_chord"};
@@ -312,14 +326,14 @@ function solveSegments(i,data){
     var error=Infinity;
     for(var iter=0;iter<1800;iter++){
       for(var s=0;s<segments.length;s++)project(path[s],path[s+1],num(segments[s].chordCm),s>0,s+1<path.length-1);
-      items.forEach(function(item,k){if(num(item.diag)>0)project(path[k+1],rp[Number(item.diagCorner)],num(item.diag),true,false)});
+      constraints.forEach(function(list,k){list.forEach(function(d){project(path[k+1],rp[d.corner],d.value,true,false)})});
       items.forEach(function(item,k){
         var wanted=wantedSide(item),p=path[k+1],offset=signedOffset(p);
         if(wanted!==null&&(wanted===0||offset*wanted<0)){p.x+=uy*offset;p.y-=ux*offset}
       });
       error=0;
       segments.forEach(function(item,k){error=Math.max(error,Math.abs(distance(path[k],path[k+1])-num(item.chordCm)))});
-      items.forEach(function(item,k){if(num(item.diag)>0)error=Math.max(error,Math.abs(distance(path[k+1],rp[Number(item.diagCorner)])-num(item.diag)))});
+      constraints.forEach(function(list,k){list.forEach(function(d){error=Math.max(error,Math.abs(distance(path[k+1],rp[d.corner])-d.value))})});
       if(error<.005)break;
     }
     var wrong=path.slice(1,-1).filter(function(p,k){var wanted=wantedSide(items[k]);return wanted===null&&sideSign(p,a,b)!==(num(items[k].sideHint)||sign)}).length;
@@ -329,7 +343,7 @@ function solveSegments(i,data){
   if(!best||best.error>.25)return{ok:false,error:"no_intersection",maxError:best&&best.error};
   var controls=best.path.slice(1,-1).map(function(p,k){return{x:p.x,y:p.y,id:items[k].id,sideHint:sideSign(p,a,b)}});
   return{ok:true,startCorner:i,endCorner:(i+1)%rp.length,start:a,end:b,controls:controls,real:rp,sideStart:a,sideEnd:b,startOffset:0,endOffset:0,segments:segments,path:best.path,bulgeSign:sign,outsideSign:outside,
-    approximate:(Math.abs(total-L)>.01&&items.filter(function(p){return num(p.diag)>0}).length<items.length)||segments.some(function(p){return !(num(p.curveCm)>0)}),maxError:best.error};
+    approximate:(Math.abs(total-L)>.01&&constraints.filter(function(list){return list.length>0}).length<items.length)||segments.some(function(p){return !(num(p.curveCm)>0)}),maxError:best.error};
 }
 function segmentSamples(solution,k){
   var a=solution.path[k],b=solution.path[k+1],chord=distance(a,b),arc=num(solution.segments[k].curveCm);
@@ -364,7 +378,7 @@ function measurementRows(state){
 }
 function diagonalRows(state){
   state=state||currentState();var map=labels(state),out=[];
-  for(var i=0;i<(state.pts||[]).length;i++){var data=segmentData(state,i);if(data)data.points.forEach(function(p,k){if(num(p.diag)>0)out.push({label:map.corners[Number(p.diagCorner)]+map.controls[i][k],value:num(p.diag),side:i,id:p.id})})}
+  for(var i=0;i<(state.pts||[]).length;i++){var data=segmentData(state,i);if(data)data.points.forEach(function(p,k){pointDiagonals(p).forEach(function(d){out.push({label:map.corners[d.corner]+map.controls[i][k],value:d.value,corner:d.corner,side:i,id:p.id})})})}
   return out;
 }
 // Curve points keep stable IDs; never insert their display letters into the
@@ -385,7 +399,7 @@ function openControlDiagonal(token,corner){
   if(!t||!Number.isInteger(corner)||!pts[corner])return;
   var estimate=distance(t.real,t.geometry[corner]),key=token+':'+corner;
   editDiagonal(key,estimate);
-  document.getElementById('diagEditInput').value=num(t.item.diag)>0&&Number(t.item.diagCorner)===corner?t.item.diag:'';
+  var existing=pointDiagonals(t.item).find(function(d){return d.corner===corner});document.getElementById('diagEditInput').value=existing?existing.value:'';
   document.getElementById('diagEditLabel').textContent=labels().corners[corner]+t.label+' · до точки кривої, см';
 }
 function diagonalHint(key,currentValue,a,b){
@@ -409,7 +423,7 @@ function diagonalHint(key,currentValue,a,b){
   for(var side=0;side<pts.length;side++){
     edge(base(side),base((side+1)%pts.length),lengths[side]);
     var data=segmentData(currentState(),side),prior=base(side);
-    if(data){data.points.forEach(function(p){var id=control(side,p.id);edge(prior,id,p.chordCm);edge(base(Number(p.diagCorner)),id,p.diag,true);prior=id});edge(prior,base((side+1)%pts.length),data.endChordCm)}
+    if(data){data.points.forEach(function(p){var id=control(side,p.id);edge(prior,id,p.chordCm);pointDiagonals(p).forEach(function(d){edge(base(d.corner),id,d.value,true)});prior=id});edge(prior,base((side+1)%pts.length),data.endChordCm)}
   }
   for(var x=0;x<pts.length;x++)for(var y=x+1;y<pts.length;y++){
     var measured=num(diagonalOverrides[N(x)+N(y)])||num(diagonalOverrides[N(y)+N(x)]);edge(base(x),base(y),measured,true);
@@ -456,12 +470,17 @@ function applyControlDiagonal(key,value){
   if(!t){showToast('Точку кривої вже змінено. Вибери її знову.');return true}
   if(!(value>0)){showToast('Введи діагональ у сантиметрах.');return true}
   var data=JSON.parse(JSON.stringify(segmentData(currentState(),t.side)));
-  data.points[t.index].diagCorner=corner;data.points[t.index].diag=value;
+  setPointDiagonal(data.points[t.index],corner,value);
   var checked=solveWithData(t.side,data);
   if(!checked.ok){showToast('Ця діагональ не узгоджується з хордами. Перевір заміри.',5000);return true}
   arcPoints[t.side][0].data=data;
   selectedPoint=null;closeModal('diagEditModal');stabilize(t.side);updateDiagList();updateChecks();updateStats();saveState();requestDraw();
   return true;
+}
+function removeControlDiagonal(token,corner){
+  var t=findControl(token);if(!t)return;
+  setPointDiagonal(t.item,Number(corner),0);updateDiagList();updateChecks();updateStats();saveState();requestDraw();
+  autoDiagonals();
 }
 function handleControlDiagonalTap(x,y){
   var targets=controlTargets(),radius=30/Math.max(.65,Number(viewScale)||1),hit=null,best=radius;
@@ -479,7 +498,8 @@ function handleControlDiagonalTap(x,y){
 function controlDiagonalMenu(){
   var map=labels();return controlTargets().map(function(t){
     var token=controlToken(t),options=map.corners.map(function(label,i){return '<option value="'+i+'" '+(i===Number(t.item.diagCorner)?'selected':'')+'>'+label+'</option>'}).join('');
-    return '<div style="margin:12px 0"><b>До точки '+t.label+'</b><div style="display:flex;gap:8px"><select aria-label="Кут для діагоналі до '+t.label+'" id="curveDiagCorner_'+t.side+'_'+t.index+'">'+options+'</select><button type="button" onclick="window.A·CEILCurveGeometryV306.openControlDiagonal(\''+token+'\',document.getElementById(\'curveDiagCorner_'+t.side+'_'+t.index+'\').value)">Ввести'+(num(t.item.diag)>0?' · '+num(t.item.diag)+' см':'')+'</button></div></div>';
+    var saved=pointDiagonals(t.item).map(function(d){return '<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="flex:1">'+map.corners[d.corner]+t.label+' · '+window._formatReportCm(d.value)+' см</span><button type="button" aria-label="Редагувати '+map.corners[d.corner]+t.label+'" onclick="window.A·CEILCurveGeometryV306.openControlDiagonal(\''+token+'\','+d.corner+')">✎</button><button type="button" aria-label="Видалити '+map.corners[d.corner]+t.label+'" onclick="window.A·CEILCurveGeometryV306.removeControlDiagonal(\''+token+'\','+d.corner+')">×</button></div>'}).join('');
+    return '<div style="margin:12px 0"><b>До точки '+t.label+'</b><div style="display:flex;gap:8px"><select aria-label="Кут для діагоналі до '+t.label+'" id="curveDiagCorner_'+t.side+'_'+t.index+'">'+options+'</select><button type="button" data-curve-diag-add onclick="window.A·CEILCurveGeometryV306.openControlDiagonal(\''+token+'\',document.getElementById(\'curveDiagCorner_'+t.side+'_'+t.index+'\').value)">Ввести</button></div>'+saved+'</div>';
   }).join('');
 }
 var lastCapture=null,reportCaptures=new Map();
@@ -499,13 +519,13 @@ function drawAnnotations(c){
     solution.controls.forEach(function(p,k){
       var q=toCanvas(i,p,solution.real),item=data.points[k];
       captured.points.push(Object.assign(pixel(q),{label:map.controls[i][k]}));
-      if(num(item.diag)>0)captured.diagonals.push({a:pixel(pts[Number(item.diagCorner)]),b:pixel(q),label:map.corners[Number(item.diagCorner)]+map.controls[i][k],value:num(item.diag)});
+      var measurements=pointDiagonals(item);measurements.forEach(function(d){captured.diagonals.push({a:pixel(pts[d.corner]),b:pixel(q),label:map.corners[d.corner]+map.controls[i][k],value:d.value})});
       if(_reportMode)return;
-      if(num(item.diag)>0&&(!_reportMode||((typeof _loadRS==='function'?_loadRS():{}).diagonals!==false))){
-        var anchor=pts[Number(item.diagCorner)];c.strokeStyle="#b45309";c.lineWidth=scale;c.setLineDash([5*scale,4*scale]);c.beginPath();c.moveTo(anchor.x,anchor.y);c.lineTo(q.x,q.y);c.stroke();c.setLineDash([]);
-        var text=map.corners[Number(item.diagCorner)]+map.controls[i][k]+" "+window._formatReportCm(item.diag)+" см",mx=(anchor.x+q.x)/2,my=(anchor.y+q.y)/2;
+      measurements.forEach(function(d){
+        var anchor=pts[d.corner];c.strokeStyle="#b45309";c.lineWidth=scale;c.setLineDash([5*scale,4*scale]);c.beginPath();c.moveTo(anchor.x,anchor.y);c.lineTo(q.x,q.y);c.stroke();c.setLineDash([]);
+        var text=map.corners[d.corner]+map.controls[i][k]+" "+window._formatReportCm(d.value)+" см",mx=(anchor.x+q.x)/2,my=(anchor.y+q.y)/2;
         c.font=11*scale+"px Arial";var width=c.measureText(text).width+10*scale;c.fillStyle="rgba(255,251,235,.94)";c.fillRect(mx-width/2,my-9*scale,width,18*scale);c.fillStyle="#92400e";c.fillText(text,mx,my);
-      }
+      });
       c.fillStyle=diagonalMode&&selectedPoint===controlToken({side:i,id:item.id})?"#22c55e":"#7c3aed";c.beginPath();c.arc(q.x,q.y,(diagonalMode?8:4)*scale,0,Math.PI*2);c.fill();
       // Use the normal of the base side to keep labels clear of measured points.
       var ca=pts[i],cb=pts[(i+1)%pts.length],len=distance(ca,cb)||1,sign=solution.bulgeSign*(outwardSign(solution.real)!==outwardSign(pts)?-1:1),nx=-(cb.y-ca.y)/len*sign,ny=(cb.x-ca.x)/len*sign;
@@ -538,10 +558,13 @@ window.A·CEILCurveGeometryV306={
   outwardSign:function(){return outwardSign(sourceGeometry(0))},
   measurementRows:measurementRows,
   diagonalRows:diagonalRows,
+  pointDiagonals:pointDiagonals,
+  setPointDiagonal:setPointDiagonal,
   controlTargets:controlTargets,
   handleControlDiagonalTap:handleControlDiagonalTap,
   openControlDiagonal:openControlDiagonal,
   applyControlDiagonal:applyControlDiagonal,
+  removeControlDiagonal:removeControlDiagonal,
   diagonalHint:diagonalHint,
   showDiagonalHint:showDiagonalHint,
   controlDiagonalMenu:controlDiagonalMenu,

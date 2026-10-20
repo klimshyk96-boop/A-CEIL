@@ -44,7 +44,7 @@ const {open,reveal}=require('./browser-review.cjs');
    await page.locator('#diagEditModal button').first().click();
    await page.evaluate(()=>autoDiagonals());
    assert.equal(await page.locator('#diagSelector select').count(),1,'curve point is offered in diagonal menu');
-   await page.locator('#diagSelector button').click();
+   await page.locator('#diagSelector [data-curve-diag-add]').click();
    assert.match(await page.locator('#diagEditLabel').textContent(),/EB/);
    await page.locator('#diagEditModal button').first().click();
    const normalized=await page.evaluate(()=>window.A·CEIL.StateManager.normalize({pts,realPts,lengths,wallTypes,arcPoints}).arcPoints[0][0].data.points[0]);

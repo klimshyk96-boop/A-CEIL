@@ -16,7 +16,12 @@ const {open,reveal}=require('./browser-review.cjs');
   await page.evaluate(()=>{closeShape();saveState()});await page.evaluate(()=>A·CEIL.History.undo());assert.equal((await state()).closed,false);
   await page.evaluate(()=>A·CEIL.History.redo());assert.equal((await state()).closed,true);
   await page.evaluate(()=>{
-   resetAllSilent();pts=[{x:100,y:100},{x:500,y:100},{x:500,y:300},{x:100,y:300}];realPts=pts.map(p=>({...p}));lengths=[400,200,400,200];closed=true;saveState();A·CEIL.History.reset();
+   resetAllSilent();pts=[{x:100,y:100},{x:500,y:100},{x:500,y:300},{x:100,y:300}];realPts=pts.map(p=>({...p}));lengths=[400,200,400,200];closed=true;saveState();
+  });
+  // Finish the fixture's area/catalog initialization before the next user action.
+  await page.waitForTimeout(400);
+  await page.evaluate(()=>{
+   A·CEIL.History.reset();
    // One handler saving twice must create one action, including late fields.
    lightMarks=[{id:'one-light',x:200,y:150,type:'spot'}];saveState();
    window.ceilingCornices=[{id:'one-cornice',shape:'I',lengthA:100,baseIndex:0}];saveState();
