@@ -675,7 +675,7 @@ function handleInputEvent(clientX,clientY){
       if(angle<22.5)y=p.y;else if(angle>67.5)x=p.x;else{let dist=Math.min(Math.abs(dx),Math.abs(dy));x=p.x+Math.sign(dx)*dist,y=p.y+Math.sign(dy)*dist}
     }
     pts.push({x:x,y:y});
-    updateCornerCount();requestDraw();
+    updateCornerCount();requestDraw();saveState();
     return;
   }
   if(closed&&diagonalMode&&window.A·CEILCurveGeometryV306&&window.A·CEILCurveGeometryV306.handleControlDiagonalTap(x,y))return;

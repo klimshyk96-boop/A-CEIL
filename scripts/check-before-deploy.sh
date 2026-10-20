@@ -16,6 +16,7 @@ node tests/curve-segments.test.cjs || exit 1
 node tests/single-arc.test.cjs || exit 1
 node tests/mixed-curve.test.cjs || exit 1
 node tests/curve-diagonal-input.test.cjs || exit 1
+node tests/history-actions.test.cjs || exit 1
 node tests/pipeline-contract.test.cjs || exit 1
 node tests/render-pipeline.test.cjs || exit 1
 node tests/stability-regression.test.cjs || exit 1
