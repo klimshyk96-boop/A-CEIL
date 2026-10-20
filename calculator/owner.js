@@ -2,6 +2,7 @@
  'use strict';
  const fields=[['film','Плівка, грн/м²','area','area'],['classic','Класичний профіль, грн/м','main_profile','meter'],['classicCorners','Кути класичного профілю, грн/шт','corners','piece'],['shadow','Тіньовий профіль, грн/м','shadow_profile','meter'],['shadowCorners','Кути тіньового профілю, грн/шт','shadow_corners','piece'],['floating','Парящий профіль, грн/м','floating_profile','meter'],['floatingCorners','Кути парящого профілю, грн/шт','floating_corners','piece'],['led','LED для парящого профілю, грн/м','','meter'],['white','Біла вставка, грн/м','white_insert','meter'],['black','Чорна вставка, грн/м','white_insert','meter'],['chandelier','Люстра, грн/шт','chandelier','piece'],['spot','Точковий світильник, грн/шт','spot','piece'],['cornice','Прихований карниз, грн/м','','meter']];
  function items(){try{return Array.isArray(elemItems)?elemItems:[];}catch(_){return [];}}
+ fields.push(['linear','Світлові лінії, грн/м','','meter']);
  function storageKey(){let uid='local';try{uid=_sbUser&&_sbUser.id||uid;}catch(_){}return 'aceil-client-preset:'+uid;}
  function unitOf(item){const unit=String(item.unit||'').toLowerCase();return /²|2|кв/.test(unit)?'area':/^(м|м\.|м\/п|м.п.|м.п|пог.м|пог\. м|м.пог|м.пог.)$/.test(unit)?'meter':/шт|од/.test(unit)?'piece':'unknown';}
  function text(tag,value){const node=document.createElement(tag);node.textContent=value;return node;}
@@ -17,6 +18,8 @@
    const url=window.ACEILClientCalc.link('https://a-ceil.pp.ua/',catalog),previewUrl=window.ACEILClientCalc.link(location.href,catalog);
    quick.append(text('p','Готовий калькулятор · '+catalog.company));
    const summary=text('p',fields.filter(([key])=>catalog.items[key]).map(([key,label])=>label.split(',')[0]).join(' · '));quick.append(summary);
+   const assortment=document.createElement('details');assortment.append(text('summary','Збережений асортимент і ціни'));
+   fields.forEach(([key,label])=>{const rows=catalog.options[key]?.length?catalog.options[key]:(catalog.items[key]?[catalog.items[key]]:[]);if(!rows.length)return;assortment.append(text('h4',label));rows.forEach(item=>assortment.append(text('p',item.name+' · '+item.price+' грн')));});quick.append(assortment);
    quick.append(text('p','Прайс збережено '+catalog.date+'. Для нового клієнта повторно налаштовувати нічого не потрібно. Після зміни цін відкрийте «Змінити прайс» і збережіть їх.'));
    const label=text('label','Посилання для клієнта · без Vercel'),input=document.createElement('input');input.value=url;input.readOnly=true;label.append(input);quick.append(label);
    const copy=text('button','Скопіювати посилання');copy.type='button';copy.dataset.clientCopy='';copy.style.background='#2563eb';copy.style.color='white';copy.onclick=async()=>{try{await navigator.clipboard.writeText(url);output.textContent='Посилання скопійовано.';}catch(_){input.focus();input.select();output.textContent='Скопіюйте виділене посилання.';}};
@@ -30,25 +33,38 @@
   const company=text('label','Назва компанії'),companyInput=document.createElement('input');companyInput.name='company';companyInput.maxLength=80;companyInput.value=saved.company||rs.companyName||'A·CEIL';company.append(companyInput);form.append(company);
   const list=items().filter(it=>it&&Number.isFinite(Number(it.price))&&Number(it.price)>=0);
   fields.forEach(([key,label,source,unit])=>{
-   const wrap=text('label',label),select=document.createElement('select');select.name=key;const empty=text('option','Не пропонувати');empty.value='';select.append(empty);
+   const wrap=text('label',label),select=document.createElement('select');select.name=key;const empty=text('option',key.endsWith('Corners')?'Не пропонувати':'Без основної позиції');empty.value='';select.append(empty);
    const pool=list.filter(it=>unitOf(it)===unit);pool.forEach((it)=>{const option=text('option',it.name+' · '+Number(it.price)+' грн');option.value=String(it.id);select.append(option);});
    let candidates=source?pool.filter(it=>it.source===source&&(key!=='white'&&key!=='black'||(it.sourceVariant||'white')===key)):[];
    if(key==='film'){const selected=pool.filter(it=>it.filmSelected===true);if(selected.length===1)candidates=selected;}
-   if(!source){const pattern=key==='led'?/^LED монохром$|^LED підсвічування$|^LED стрічка$/i:/^Карниз прихований(?: 1)?$/i;candidates=pool.filter(it=>pattern.test(String(it.name||'').trim()));}
+   if(!source){const pattern=key==='led'?/^LED монохром$|^LED підсвічування$|^LED стрічка$/i:key==='linear'?/^Світлова лінія$/i:/^Карниз прихований(?: 1)?$/i;candidates=pool.filter(it=>pattern.test(String(it.name||'').trim()));}
    // An ambiguous price selection always requires the owner to choose.
    const chosen=pool.find(it=>String(it.id)===String(saved[key]))||(candidates.length===1?candidates[0]:null);
    if(chosen)select.value=String(chosen.id);if(['film','classic','classicCorners'].includes(key)){select.required=true;empty.textContent='Оберіть обов’язкову позицію';}
    wrap.append(select);form.append(wrap);
+   if(!key.endsWith('Corners')){
+    const extra=document.createElement('details'),summary=text('summary','Додаткові варіанти для клієнта'),search=document.createElement('input'),options=document.createElement('div');extra.dataset.assortment=key;summary.style.cursor='pointer';search.type='search';search.placeholder='Знайти позицію у номенклатурі';search.setAttribute('aria-label','Пошук: '+label);extra.append(summary,search,options);
+    const selected=new Set(Array.isArray(saved[key+'Options'])?saved[key+'Options'].map(String):[]);
+    pool.forEach(item=>{const row=text('label',''),checkbox=document.createElement('input');row.style.display='flex';row.style.alignItems='center';row.style.gap='8px';checkbox.type='checkbox';checkbox.name=key+'Options';checkbox.value=String(item.id);checkbox.checked=selected.has(String(item.id));checkbox.style.width='20px';checkbox.style.margin='0';row.append(checkbox,text('span',item.name+' · '+Number(item.price)+' грн'));options.append(row);});
+    search.oninput=()=>{const q=search.value.toLocaleLowerCase('uk');Array.from(options.children).forEach(row=>row.style.display=row.textContent.toLocaleLowerCase('uk').includes(q)?'flex':'none');};
+    form.append(extra);
+   }
   });
+  form.append(text('p','Позиція у верхньому списку — варіант за замовчуванням. Позначте додаткові плівки, карнизи, світильники та світлові лінії, які клієнт зможе обирати. Якщо основну позицію не обрано, першою буде перша позначена; якщо не обрано нічого — категорія недоступна клієнту. Ціни беруться з номенклатури; редагуйте ціну у самій позиції й збережіть прайс тут повторно. Для всіх варіантів одного типу профілю використовується спільна обрана ставка кутів.'));
   const minLabel=text('label','Мінімальне замовлення, грн (0 — без обмеження)'),minimum=document.createElement('input');minimum.name='minimum';minimum.type='number';minimum.min=0;minimum.max=100000;minimum.value=saved.minimum||0;minLabel.append(minimum);form.append(minLabel);
   form.append(text('p','Тіньовий і парящий профілі доступні клієнту лише з ціною їхніх кутів; для парящого також потрібна LED. Якщо кути включені в профіль, виберіть окрему позицію кутів із ціною 0. Карниз у цій версії додається окремо, без автоматичного віднімання від периметра профілю.'));
   const submit=text('button','Зберегти прайс');submit.type='submit';form.append(submit);settings.append(form);
   const close=text('button','Закрити');close.type='button';close.onclick=()=>dialog.close();dialog.append(quick,settings,output,close);document.body.append(dialog);
   form.onsubmit=async e=>{
-   e.preventDefault();output.textContent='';const data=Object.fromEntries(new FormData(form)),catalog={version:1,company:data.company,date:new Date().toISOString().slice(0,10),minimum:Number(data.minimum),items:{}};
+   e.preventDefault();output.textContent='';const fd=new FormData(form),data=Object.fromEntries(fd),catalog={version:1,company:data.company,date:new Date().toISOString().slice(0,10),minimum:Number(data.minimum),items:{},options:{}};
    for(const [key] of fields){const item=list.find(it=>String(it.id)===data[key]);if(item)catalog.items[key]={name:item.name,price:Number(item.price)};}
+   for(const [key] of fields){
+    if(key.endsWith('Corners'))continue;data[key+'Options']=fd.getAll(key+'Options');
+    const ids=Array.from(new Set([data[key],...data[key+'Options']].filter(Boolean))),chosen=ids.map(id=>list.find(it=>String(it.id)===id)).filter(Boolean);
+    if(chosen.length)catalog.options[key]=chosen.map((it,i)=>({id:key+'-'+i,name:it.name,price:Number(it.price)}));
+   }
    try{
-    const clean=window.ACEILClientCalc.config(catalog);localStorage.setItem(storageKey(),JSON.stringify({...data,__catalog:clean}));ready(clean);output.textContent='Прайс збережено. Готове посилання буде доступне при наступному відкритті.';
+    const clean=window.ACEILClientCalc.config(catalog);window.ACEILClientCalc.link('https://a-ceil.pp.ua/',clean);localStorage.setItem(storageKey(),JSON.stringify({...data,__catalog:clean}));ready(clean);output.textContent='Прайс і доступні варіанти збережено. Готове посилання буде доступне при наступному відкритті.';
    }catch(err){output.textContent=err.message;}
   };dialog.showModal();
  }

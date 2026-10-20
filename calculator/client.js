@@ -2,10 +2,19 @@
  'use strict';const M=window.ACEILClientCalc,$=s=>document.getElementById(s),form=$('form');
  window.addEventListener('hashchange',()=>location.reload());
  let catalog,mode='rectangle';const initial={width:'4',length:'5',area:'',perimeter:'',corners:'4',profile:'classic',insert:'white',chandelier:'1',spot:'0',cornice:false,corniceLength:'3',mode:'rectangle'};
+ initial.linearEnabled=false;initial.linearLength='3';M.slots.forEach(key=>initial[key+'Option']='');
  const demo={version:1,demo:true,company:'A·CEIL · тестовий калькулятор',date:'2026-10-20',minimum:0,items:Object.fromEntries(Object.entries({film:['Плівка MSD Premium',380],classic:['Алюмінієвий профіль',200],shadow:['Тіньовий профіль',550],floating:['Парящий профіль',750],white:['Біла вставка',60],black:['Чорна вставка',60],chandelier:['Монтаж люстри',350],spot:['Монтаж точкового світильника',200],cornice:['Прихований карниз',1000],classicCorners:['Кути базового профілю',100],shadowCorners:['Кути тіньового профілю',200],floatingCorners:['Кути парящого профілю',250],led:['LED підсвічування',500]}).map(([key,[name,price]])=>[key,{name,price}]))};
  function status(text){$('status').textContent=text;}
- function values(){const d=Object.fromEntries(new FormData(form));return{...d,mode,cornice:form.elements.cornice.checked};}
- function restore(state){if(!state||typeof state!=='object')return;for(const key of Object.keys(initial)){const v=state[key],el=form.elements.namedItem(key);if(v==null||!el)continue;if(key==='cornice')el.checked=v===true;else el.value=String(v).slice(0,30);}mode=state.mode==='manual'?'manual':'rectangle';}
+ function values(){const d=Object.fromEntries(new FormData(form));return{...d,mode,cornice:form.elements.cornice.checked,linearEnabled:form.elements.linearEnabled.checked};}
+ function restore(state){if(!state||typeof state!=='object')return;for(const key of Object.keys(initial)){const v=state[key],el=form.elements.namedItem(key);if(v==null||!el)continue;if(key.endsWith('Option')){if(v==='')continue;if(!Array.from(el.options).some(o=>o.value===String(v))){const missing=document.createElement('option');missing.value=String(v);missing.textContent='Варіант недоступний';el.append(missing);}}if(key==='cornice'||key==='linearEnabled')el.checked=v===true;else el.value=String(v).slice(0,80);}mode=state.mode==='manual'?'manual':'rectangle';}
+ function productFields(){
+  const targets={film:['filmChoices','Плівка'],classic:['profileChoices','Базовий профіль'],shadow:['profileChoices','Тіньовий профіль'],floating:['profileChoices','Парящий профіль'],white:['insertChoices','Біла вставка'],black:['insertChoices','Чорна вставка'],led:['profileChoices','Підсвічування парящого профілю'],chandelier:['lightChoices','Люстра / монтаж'],spot:['lightChoices','Точковий світильник / монтаж'],cornice:['corniceChoices','Карниз'],linear:['linearChoices','Світлова лінія']};
+  for(const [key,[target,title]] of Object.entries(targets)){
+   const choices=catalog.options[key]?.length?catalog.options[key]:(catalog.items[key]?[{id:'',...catalog.items[key]}]:[]);if(!choices.length)continue;
+   const label=document.createElement('label'),select=document.createElement('select');label.textContent=title;label.dataset.productSlot=key;select.name=key+'Option';
+   for(const item of choices){const option=document.createElement('option');option.value=item.id;option.textContent=item.name+' · '+money(item.price)+'/'+(key==='film'?'м²':['chandelier','spot'].includes(key)?'шт':'м');select.append(option);}label.append(select);$(target).append(label);
+  }
+ }
  function currentLink(){return M.link(location.href,catalog,values());}
  function showLink(){const url=currentLink();$('savedLink').value=url;$('linkFallback').hidden=false;return url;}
  async function copy(text){if(navigator.clipboard&&navigator.clipboard.writeText){try{await navigator.clipboard.writeText(text);return true;}catch(_){}}return false;}
@@ -15,6 +24,8 @@
   $('rectangleFields').hidden=mode!=='rectangle';$('manualFields').hidden=mode!=='manual';
   document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===mode));
   $('insertField').hidden=s.profile!=='classic';$('specialHint').hidden=s.profile==='classic';$('corniceField').hidden=!s.cornice;
+  $('corniceChoices').hidden=!s.cornice;$('linearFields').hidden=!s.linearEnabled;
+  form.querySelectorAll('[data-product-slot]').forEach(el=>{const key=el.dataset.productSlot;el.hidden=['classic','shadow','floating'].includes(key)?s.profile!==key:key==='led'?s.profile!=='floating':['white','black'].includes(key)?s.profile!=='classic'||s.insert!==key:false;});
   for(const el of form.querySelectorAll('input'))el.setAttribute('aria-invalid',r.errors.includes(el.name)?'true':'false');
   $('areaMetric').textContent=r.area>0?r.area.toLocaleString('uk-UA')+' м²':'—';$('perimeterMetric').textContent=r.perimeter>0?r.perimeter.toLocaleString('uk-UA')+' м':'—';
   $('total').textContent=r.valid?money(r.total):'Уточніть дані';$('error').hidden=r.valid;
@@ -33,7 +44,8 @@
  try{
   const payload=location.hash?M.decode(location.hash.slice(1)):null;
   if(!payload&&new URLSearchParams(location.search).get('demo')!=='1')throw Error('Відкрийте посилання від менеджера — у ньому вже будуть ціни та доступні рішення.');
-  catalog=M.config(payload?payload.config:demo);restore(initial);
+  if(!payload){demo.items.linear={name:'Світлова лінія з LED',price:1500};demo.options={film:[{id:'matte',name:'Біла матова MSD Premium',price:380},{id:'satin',name:'Біла сатинова MSD Premium',price:400}],cornice:[{id:'hidden',name:'Карниз прихований',price:1000},{id:'uno',name:'Карниз UNO',price:1750}]};}
+  catalog=M.config(payload?payload.config:demo);productFields();restore(initial);
   let draft;try{draft=JSON.parse(sessionStorage.getItem('aceil-client-draft:'+M.encode(catalog))||'null');}catch(_){}
   restore(payload&&payload.state||draft);$('company').textContent=catalog.company;$('demoNotice').hidden=!catalog.demo;$('priceDate').textContent='Прайс у посиланні: '+(catalog.date||'дата не вказана')+'. Оновлення цін — за новим посиланням від менеджера.';
   for(const p of ['classic','shadow','floating']){const el=form.querySelector('[name=profile][value='+p+']');el.disabled=!catalog.items[p]||!catalog.items[p+'Corners']||(p==='floating'&&!catalog.items.led);}
@@ -41,6 +53,7 @@
   if(!catalog.items[values().insert])form.elements.insert.value=catalog.items.white?'white':'none';
   if(!form.querySelector('[name=profile]:checked')||form.querySelector('[name=profile]:checked').disabled)form.elements.profile.value='classic';
   for(const key of ['spot','chandelier','cornice'])if(!catalog.items[key]){form.elements[key].disabled=true;if(key==='cornice')form.elements[key].checked=false;else form.elements[key].value='0';}
+  form.elements.linearEnabled.disabled=!catalog.items.linear;if(!catalog.items.linear)form.elements.linearEnabled.checked=false;
   $('missingExtras').textContent=['spot','chandelier','cornice'].some(k=>!catalog.items[k])?'Недоступні позиції ще не додані менеджером до цього прайсу.':'';
   $('calculator').hidden=false;calculate();
  }catch(e){$('unavailable').hidden=false;$('unavailableText').textContent=e.message;return;}

@@ -13,28 +13,47 @@ assert.equal(M.estimate(state,{...catalog,minimum:15000}).total,15000);
 const config=M.config({...catalog,secret:'do-not-export',items:{...catalog.items,internal:{price:1,name:'Wholesale'}}});assert.equal(config.secret,undefined);assert.equal(config.items.internal,undefined);
 assert.deepEqual(M.decode(M.encode({config,state})),{config,state});assert.equal(new URL(M.link('https://example.com/calculator/',config,state)).pathname,'/calculator/');
 assert.throws(()=>M.decode('!bad'));assert.throws(()=>M.config({...catalog,items:{...catalog.items,film:{price:-1}}}));
+const assortment={...catalog,options:{film:[{id:'f1',name:'Матова',price:380},{id:'f2',name:'Сатин',price:500}],linear:[{id:'line',name:'Світлова лінія',price:2000}]}};
+assert.equal(M.estimate({...state,filmOption:'f2'},assortment).total,15430);
+assert.equal(M.estimate({...state,filmOption:'unknown'},assortment).valid,false);
+assert.equal(M.estimate({...state,linearEnabled:true,linearLength:2.5,linearOption:'line'},assortment).total,18030);
+assert.equal(M.estimate({...state,linearEnabled:true,linearLength:-1},assortment).valid,false);
+assert.equal(M.estimate(state,assortment).total,13030,'old client state uses the default option');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.ACEIL_CHROMIUM_PATH||undefined});
  try{for(const width of [390,1440]){
   const {page,errors}=await open(browser,width);await reveal(page);await page.waitForTimeout(400);
   const url=await page.evaluate(()=>{
    elemItems=[{id:'f',name:'Плівка Premium',source:'area',unit:'м²',price:380,costPrice:1},{id:'p',name:'Профіль H',source:'main_profile',unit:'м',price:200,costPrice:2},{id:'c',name:'Кути',source:'corners',unit:'шт',price:100},{id:'i',name:'Вставка біла',source:'white_insert',sourceVariant:'white',unit:'м',price:60},{id:'l',name:'Люстра',source:'chandelier',unit:'шт',price:350},{id:'private',name:'PRIVATE CATALOG',source:'other',unit:'шт',price:12345}];
+   elemItems.push({id:'f2',name:'Плівка сатин',source:'area',unit:'м²',price:500},{id:'corn1',name:'Карниз прихований 1',unit:'м',price:1000},{id:'corn2',name:'Карниз UNO',unit:'м',price:1800},{id:'line1',name:'Світлова лінія',unit:'м',price:1500},{id:'line2',name:'Світлова лінія Premium',unit:'м',price:2000});
    document.getElementById('aceilClientSetupButton').click();
   });
+  await page.locator('#aceilClientSetup select[name=film]').selectOption('f');
+  for(const [key,value] of [['film','f2'],['cornice','corn2'],['linear','line2']]){
+   await page.locator('[data-assortment='+key+'] summary').click();await page.locator('[name='+key+'Options][value='+value+']').check();
+  }
   await page.locator('#aceilClientSetup [type=submit]').click();
   const generated=await page.locator('#aceilClientSetup input[readonly]').inputValue();
   assert.equal(new URL(generated).hostname,'a-ceil.pp.ua','client link must use the company domain');
   const payload=M.decode(new URL(generated).hash.slice(1));assert.equal(payload.config.items.film.price,380);assert.ok(!JSON.stringify(payload).includes('costPrice'));assert.ok(!JSON.stringify(payload).includes('PRIVATE CATALOG'));
+  assert.equal(payload.config.options.film.length,2);assert.equal(payload.config.options.cornice.length,2);assert.equal(payload.config.options.linear.length,2);
   const preview=await page.locator('#aceilClientSetup a').last().getAttribute('href');
   await page.locator('#aceilClientSetup>button').click();
   await page.evaluate(()=>document.getElementById('aceilClientSetupButton').click());
-  assert.equal(await page.locator('#aceilClientSetup details').getAttribute('open'),null,'price settings stay closed on next visit');
+  assert.equal(await page.locator('#aceilClientSetup>details').getAttribute('open'),null,'price settings stay closed on next visit');
   assert.equal(await page.locator('#aceilClientSetup [data-client-copy]').isVisible(),true);
   assert.equal(await page.locator('#aceilClientSetup input[readonly]').inputValue(),generated,'ready client link is reused without rebuilding the catalogue');
+  await page.locator('#aceilClientSetup>details>summary').click();
+  assert.equal(await page.locator('[name=filmOptions][value=f2]').isChecked(),true,'saved assortment is restored');
   await page.goto(preview,{waitUntil:'load'});
   assert.equal(await page.locator('#total').textContent(),'13 030 грн');
   assert.equal(await page.locator('input[name=spot]').isDisabled(),true);
   assert.equal(await page.locator('[value=shadow]').isDisabled(),true);
+  await page.locator('[name=filmOption]').selectOption('film-1');assert.equal(await page.locator('#total').textContent(),'15 430 грн');
+  await page.locator('[name=cornice]').check();await page.locator('[name=corniceOption]').selectOption('cornice-1');
+  assert.ok((await page.locator('#rows').textContent()).includes('Карниз UNO'));
+  await page.locator('[name=linearEnabled]').check();await page.locator('[name=linearOption]').selectOption('linear-1');await page.locator('[name=linearLength]').fill('2.5');
+  assert.ok((await page.locator('#rows').textContent()).includes('Світлова лінія Premium'));assert.equal(await page.locator('#total').textContent(),'25 830 грн');
   await page.locator('[name=width]').fill('4,5');assert.equal(await page.locator('#areaMetric').textContent(),'22,5 м²');
   await page.locator('[data-mode=manual]').click();assert.equal(await page.locator('[name=area]').inputValue(),'22.5');
   await page.locator('[name=perimeter]').fill('1');assert.equal(await page.locator('#save').isDisabled(),true);assert.ok((await page.locator('#error').textContent()).includes('не узгоджується'));
@@ -43,6 +62,7 @@ assert.throws(()=>M.decode('!bad'));assert.throws(()=>M.config({...catalog,items
   await page.locator('#save').click();const saved=await page.locator('#savedLink').inputValue();assert.ok(!JSON.stringify(M.decode(new URL(saved).hash.slice(1))).includes('380671234567'));
   await page.locator('#copyRequest').click();assert.ok((await page.locator('#requestFallback').inputValue()).includes('+380671234567'));
   await page.goto(saved);await page.waitForFunction(()=>document.getElementById('name')?.value==='');assert.equal(await page.locator('[name=perimeter]').inputValue(),'19');assert.equal(await page.locator('#name').inputValue(),'');
+  assert.equal(await page.locator('[name=filmOption]').inputValue(),'film-1');assert.equal(await page.locator('[name=corniceOption]').inputValue(),'cornice-1');assert.equal(await page.locator('[name=linearOption]').inputValue(),'linear-1');
   await page.goto('http://aceil.test/calculator/?demo=1');assert.equal(await page.locator('#demoNotice').isVisible(),true);
   await page.locator('[value=floating]').check();assert.equal(await page.locator('#insertField').isVisible(),false);assert.ok((await page.locator('#rows').textContent()).includes('LED'));
   await page.locator('[name=cornice]').check();assert.equal(await page.locator('#corniceField').isVisible(),true);
