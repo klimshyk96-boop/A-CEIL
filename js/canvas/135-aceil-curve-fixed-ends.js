@@ -386,7 +386,69 @@ function openControlDiagonal(token,corner){
   var estimate=distance(t.real,t.geometry[corner]),key=token+':'+corner;
   editDiagonal(key,estimate);
   document.getElementById('diagEditInput').value=num(t.item.diag)>0&&Number(t.item.diagCorner)===corner?t.item.diag:'';
-  document.getElementById('diagEditLabel').textContent=labels().corners[corner]+t.label+' · до точки кривої, см (розраховано ≈ '+Number(estimate.toFixed(1))+' см)';
+  document.getElementById('diagEditLabel').textContent=labels().corners[corner]+t.label+' · до точки кривої, см';
+}
+function diagonalHint(key,currentValue,a,b){
+  var map=labels(),edges=[],nodes=[],targetA,targetB,estimate=null,label='Діагональ';
+  function base(i){return 'b'+i}
+  function control(i,id){return 'c'+i+':'+id}
+  function edge(u,v,value,diagonal){value=Number(value);if(!(value>0)||!Number.isFinite(value)||u===v)return;edges.push({u:u,v:v,value:value,diagonal:!!diagonal});if(!nodes.includes(u))nodes.push(u);if(!nodes.includes(v))nodes.push(v)}
+  if(key.startsWith('curve:')){
+    var parts=key.split(':'),corner=Number(parts.pop()),curveSide=Number(parts[1]),pointId=decodeURIComponent(parts[2]),curveData=segmentData(currentState(),curveSide),pointIndex=curveData?curveData.points.findIndex(function(p){return p.id===pointId}):-1;
+    if(pointIndex>=0&&pts[corner]){
+      targetA=base(corner);targetB=control(curveSide,pointId);label=map.corners[corner]+map.controls[curveSide][pointIndex];
+      var solution=solve(curveSide);if(solution.ok)estimate=distance(solution.controls[pointIndex],solution.real[corner]);
+    }
+  }else{
+    if(!Number.isInteger(a)||!Number.isInteger(b)){
+      for(var i=0;i<pts.length;i++)for(var j=i+1;j<pts.length;j++)if(N(i)+N(j)===key||N(j)+N(i)===key){a=i;b=j}
+    }
+    if(pts[a]&&pts[b]){targetA=base(a);targetB=base(b);label=map.corners[a]+map.corners[b];if(realPts[a]&&realPts[b])estimate=distance(realPts[a],realPts[b])}
+  }
+  if(!targetA||!targetB)return null;
+  for(var side=0;side<pts.length;side++){
+    edge(base(side),base((side+1)%pts.length),lengths[side]);
+    var data=segmentData(currentState(),side),prior=base(side);
+    if(data){data.points.forEach(function(p){var id=control(side,p.id);edge(prior,id,p.chordCm);edge(base(Number(p.diagCorner)),id,p.diag,true);prior=id});edge(prior,base((side+1)%pts.length),data.endChordCm)}
+  }
+  for(var x=0;x<pts.length;x++)for(var y=x+1;y<pts.length;y++){
+    var measured=num(diagonalOverrides[N(x)+N(y)])||num(diagonalOverrides[N(y)+N(x)]);edge(base(x),base(y),measured,true);
+  }
+  // Never use the value being edited as a constraint on its own hint. Tape
+  // lengths are not straight distances and are deliberately absent here.
+  edges=edges.filter(function(e){return !(e.diagonal&&(e.u===targetA&&e.v===targetB||e.u===targetB&&e.v===targetA))});
+  [targetA,targetB].forEach(function(id){if(!nodes.includes(id))nodes.push(id)});
+  function distances(start){
+    var dist={},visited={};nodes.forEach(function(id){dist[id]=Infinity});dist[start]=0;
+    for(var step=0;step<nodes.length;step++){
+      var node=null;nodes.forEach(function(id){if(!visited[id]&&(node===null||dist[id]<dist[node]))node=id});
+      if(node===null||!Number.isFinite(dist[node]))break;visited[node]=true;
+      edges.forEach(function(e){var to=e.u===node?e.v:e.v===node?e.u:null;if(to!==null)dist[to]=Math.min(dist[to],dist[node]+e.value)});
+    }
+    return dist;
+  }
+  // A measured path bounds the straight distance from above. Each exact
+  // edge L also gives AB >= L - path(A,u) - path(B,v), in both orientations.
+  // These are necessary metric bounds, not proof of a unique room shape.
+  var da=distances(targetA),db=distances(targetB),lower=0,upper=da[targetB];
+  edges.forEach(function(e){lower=Math.max(lower,e.value-da[e.u]-db[e.v],e.value-da[e.v]-db[e.u])});
+  return{label:label,estimate:Number.isFinite(estimate)&&estimate>0?estimate:null,lower:lower,upper:Number.isFinite(upper)?upper:null,conflict:Number.isFinite(upper)&&lower>upper+.001};
+}
+function showDiagonalHint(key,currentValue,a,b){
+  var hint=diagonalHint(key,currentValue,a,b),box=document.getElementById('diagMeasureHint');
+  if(!box){box=document.createElement('div');box.id='diagMeasureHint';box.style.cssText='margin-top:10px;padding:10px 12px;border:1px solid #bfdbfe;border-radius:10px;background:#eff6ff;color:#1e40af;font-size:13px;line-height:1.45';document.getElementById('diagEditInput').insertAdjacentElement('afterend',box)}
+  box.hidden=!hint;if(!hint)return;
+  function cm(value){return Number(value.toFixed(1)).toLocaleString('uk-UA',{maximumFractionDigits:1})}
+  document.getElementById('diagEditLabel').textContent='Діагональ '+hint.label+', см';
+  var lines=[];
+  if(hint.conflict)lines.push('Введені заміри суперечать один одному. Перевір розміри.');
+  else{
+    if(hint.estimate!==null)lines.push('За поточною формою ≈ '+cm(hint.estimate)+' см.');
+    if(hint.upper!==null)lines.push('Межі за замірами: '+cm(Math.floor(hint.lower*10)/10)+'–'+cm(Math.ceil(hint.upper*10)/10)+' см.');
+    else lines.push('Для визначення меж бракує введених розмірів.');
+    lines.push('Введи фактичний замір діагоналі.');
+  }
+  box.textContent=lines.join(' ');
 }
 function applyControlDiagonal(key,value){
   if(!key.startsWith('curve:'))return false;
@@ -480,6 +542,8 @@ window.A·CEILCurveGeometryV306={
   handleControlDiagonalTap:handleControlDiagonalTap,
   openControlDiagonal:openControlDiagonal,
   applyControlDiagonal:applyControlDiagonal,
+  diagonalHint:diagonalHint,
+  showDiagonalHint:showDiagonalHint,
   controlDiagonalMenu:controlDiagonalMenu,
   drawAnnotations:drawAnnotations,
   captureImage:captureImage,
