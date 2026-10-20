@@ -23,8 +23,15 @@ assert.throws(()=>M.decode('!bad'));assert.throws(()=>M.config({...catalog,items
   });
   await page.locator('#aceilClientSetup [type=submit]').click();
   const generated=await page.locator('#aceilClientSetup input[readonly]').inputValue();
+  assert.equal(new URL(generated).hostname,'a-ceil.pp.ua','client link must use the company domain');
   const payload=M.decode(new URL(generated).hash.slice(1));assert.equal(payload.config.items.film.price,380);assert.ok(!JSON.stringify(payload).includes('costPrice'));assert.ok(!JSON.stringify(payload).includes('PRIVATE CATALOG'));
-  await page.goto(generated,{waitUntil:'load'});
+  const preview=await page.locator('#aceilClientSetup a').last().getAttribute('href');
+  await page.locator('#aceilClientSetup>button').click();
+  await page.evaluate(()=>document.getElementById('aceilClientSetupButton').click());
+  assert.equal(await page.locator('#aceilClientSetup details').getAttribute('open'),null,'price settings stay closed on next visit');
+  assert.equal(await page.locator('#aceilClientSetup [data-client-copy]').isVisible(),true);
+  assert.equal(await page.locator('#aceilClientSetup input[readonly]').inputValue(),generated,'ready client link is reused without rebuilding the catalogue');
+  await page.goto(preview,{waitUntil:'load'});
   assert.equal(await page.locator('#total').textContent(),'13 030 грн');
   assert.equal(await page.locator('input[name=spot]').isDisabled(),true);
   assert.equal(await page.locator('[value=shadow]').isDisabled(),true);
