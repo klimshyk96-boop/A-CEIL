@@ -88,6 +88,8 @@
       type='circle';const r=data.diameterCm/2;rawArea=Math.PI*r*r;rawPerimeter=Math.PI*data.diameterCm;b={minX:0,maxX:data.diameterCm,minY:0,maxY:data.diameterCm,width:data.diameterCm,height:data.diameterCm};cornerCount=0;
     }else if(data.points.length){
       type='polygon';rawArea=area(data.points);sides=data.explicitLengths.length===data.points.length?data.explicitLengths.slice():sideLengths(data.points);rawPerimeter=sides.reduce((sum,v)=>sum+v,0);b=bounds(data.points);cornerCount=data.points.length;
+      const curve=data.state&&window.A·CEILCurveGeometryV306&&window.A·CEILCurveGeometryV306.measureState(data.state);
+      if(curve){rawArea=curve.areaCm2;rawPerimeter=curve.perimeterCm;sides=curve.sideLengthsCm;b=curve.boundsCm;}
     }
     const divisor=unitScale>0?unitScale:100;
     return Object.freeze({type,points:data.points.slice(),sideLengthsCm:sides,perimeterCm:rawPerimeter,perimeterM:rawPerimeter/divisor,areaCm2:rawArea,areaM2:rawArea/(divisor*divisor),boundsCm:b,boundsM:b?{minX:b.minX/divisor,maxX:b.maxX/divisor,minY:b.minY/divisor,maxY:b.maxY/divisor,width:b.width/divisor,height:b.height/divisor}:null,cornerCount,centroidCm:type==='polygon'?centroid(data.points):type==='circle'?{x:data.diameterCm/2,y:data.diameterCm/2}:null,issues:type==='polygon'?validate(data.points):[]});

@@ -8,17 +8,19 @@ function num(v){
   return Number.isFinite(v)?v:0;
 }
 function distance(a,b){return Math.hypot(b.x-a.x,b.y-a.y)}
-function sideLen(i){
+function sideLen(i,state){
+  if(state)return Math.max(1,num((state.lengths||[])[i]));
   try{return Math.max(1,num(typeof _sideLenCm==="function"?_sideLenCm(i):lengths[i]))}
   catch(_){return 1}
 }
-function sourceGeometry(i){
-  var n=pts.length,j=(i+1)%n;
-  if(Array.isArray(realPts)&&realPts.length===n&&realPts.every(function(p){
+function sourceGeometry(i,state){
+  var poly=state?(state.pts||state.realPts||state.points||[]):pts,real=state?(state.realPts||state.points||[]):realPts;
+  var n=poly.length,j=(i+1)%n;
+  if(Array.isArray(real)&&real.length===n&&real.every(function(p){
     return p&&Number.isFinite(Number(p.x))&&Number.isFinite(Number(p.y));
-  }))return realPts.map(function(p){return{x:num(p.x),y:num(p.y)}});
-  var a=pts[i],b=pts[j],px=distance(a,b)||1,scale=sideLen(i)/px;
-  return pts.map(function(p){return{x:(p.x-a.x)*scale,y:(p.y-a.y)*scale}});
+  }))return real.map(function(p){return{x:num(p.x),y:num(p.y)}});
+  var a=poly[i],b=poly[j],px=distance(a,b)||1,scale=sideLen(i,state)/px;
+  return poly.map(function(p){return{x:(p.x-a.x)*scale,y:(p.y-a.y)*scale}});
 }
 function rawFor(i){
   try{return Array.isArray(arcPoints[i])?arcPoints[i]:null}catch(_){return null}
@@ -34,9 +36,9 @@ function sideSign(p,a,b){
   var cross=(b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x);
   return Math.abs(cross)<1e-6?0:(cross>0?1:-1);
 }
-function legacyToMeasure(i,raw){
+function legacyToMeasure(i,raw,state){
   if(!Array.isArray(raw)||!raw.length)return null;
-  var L=sideLen(i),start=0,end=L,controls=[];
+  var L=sideLen(i,state),start=0,end=L,controls=[];
   raw.forEach(function(p){
     if(!p)return;
     if(p.role==="start")start=Math.max(0,Math.min(L,num(p.d)));
@@ -46,7 +48,7 @@ function legacyToMeasure(i,raw){
   if(end<start){var swap=start;start=end;end=swap}
   controls=controls.filter(function(p){return p.d>=start&&p.d<=end}).sort(function(a,b){return a.d-b.d});
   if(!controls.length)return null;
-  var rp=sourceGeometry(i),a=rp[i],b=rp[(i+1)%rp.length],anchorIndex=(i-1+rp.length)%rp.length;
+  var rp=sourceGeometry(i,state),a=rp[i],b=rp[(i+1)%rp.length],anchorIndex=(i-1+rp.length)%rp.length;
   var previous=localPoint(a,b,start,0),points=controls.map(function(control){
     var p=localPoint(a,b,control.d,control.o),item={
       arcLen:+distance(previous,p).toFixed(2),
@@ -110,10 +112,10 @@ function choose(candidates,item,previous,previousPrevious,end,a,b){
   }
   return candidates.slice().sort(function(x,y){return score(x)-score(y)})[0];
 }
-function solveWithData(i,data){
-  if(data&&Number(data.version)===3)return solveSegments(i,data);
+function solveWithData(i,data,state){
+  if(data&&Number(data.version)===3)return solveSegments(i,data,state);
   if(!data||!Array.isArray(data.points)||!data.points.length)return{ok:false,error:"no_points",points:[]};
-  var n=pts.length,j=(i+1)%n,rp=sourceGeometry(i),startIndex=Number(data.startCorner);
+  var rp=sourceGeometry(i,state),n=rp.length,j=(i+1)%n,startIndex=Number(data.startCorner);
   if(startIndex!==i&&startIndex!==j)startIndex=i;
   var endIndex=startIndex===i?j:i,startVertex=rp[startIndex],endVertex=rp[endIndex];
   var dx=endVertex.x-startVertex.x,dy=endVertex.y-startVertex.y,L=Math.hypot(dx,dy)||1;
@@ -291,8 +293,8 @@ function setPointDiagonal(item,corner,value){
   var primary=all.shift();item.diagCorner=primary?primary.corner:corner;item.diag=primary?primary.value:0;item.diagonals=all;
 }
 function outwardSign(poly){var area=0;for(var i=0;i<poly.length;i++){var q=poly[(i+1)%poly.length];area+=poly[i].x*q.y-q.x*poly[i].y}return area>=0?-1:1}
-function solveSegments(i,data){
-  var rp=sourceGeometry(i),a=rp[i],b=rp[(i+1)%rp.length],items=data.points||[],segments=items.concat([{chordCm:data.endChordCm,curveCm:data.endCurveCm,bend:data.endBend}]);
+function solveSegments(i,data,state){
+  var rp=sourceGeometry(i,state),a=rp[i],b=rp[(i+1)%rp.length],items=data.points||[],segments=items.concat([{chordCm:data.endChordCm,curveCm:data.endCurveCm,bend:data.endBend}]);
   var constraints=items.map(pointDiagonals);
   if(items.length>24)return{ok:false,error:"no_points"};
   for(var k=0;k<segments.length;k++){
@@ -365,6 +367,34 @@ function segmentSamples(solution,k){
   result[0]={x:a.x,y:a.y,_control:true};result[64]={x:b.x,y:b.y,_control:true};return result;
 }
 function segmentPath(solution){var result=[];solution.segments.forEach(function(_,k){result=result.concat(segmentSamples(solution,k).slice(k?1:0))});return result}
+// Read-only measurements for either the live canvas or a stored report room.
+// Never swap global rooms to calculate a saved room's perimeter and bounds.
+function measureState(state){
+  var live=!state;state=state||currentState();
+  var poly=state.pts||state.realPts||state.points||[];
+  if(state.circleMode||poly.length<3)return null;
+  var rp=sourceGeometry(0,state),measurementState=Object.assign({},state,{realPts:rp}),boundary=[rp[0]],sides=[],hasCurves=false;
+  var cachedLive=live&&Array.isArray(realPts)&&realPts.length===rp.length&&realPts.every(function(p){return p&&Number.isFinite(Number(p.x))&&Number.isFinite(Number(p.y))});
+  for(var i=0;i<rp.length;i++){
+    var end=rp[(i+1)%rp.length],path=[rp[i],end],length=num((state.lengths||[])[i])||distance(rp[i],end),raw=state.arcPoints&&state.arcPoints[i];
+    if(state.wallTypes&&state.wallTypes[i]==='arc'&&raw){
+      var data=isMeasure(raw)?raw[0].data:legacyToMeasure(i,raw,measurementState),solution=data&&(cachedLive?solve(i):solveWithData(i,data,measurementState));
+      if(solution&&solution.ok){
+        hasCurves=true;
+        if(solution.segments){path=segmentPath(solution);length=solution.segments.reduce(function(sum,s,k){return sum+(num(s.curveCm)>0?num(s.curveCm):pathLength(segmentSamples(solution,k)))},0)}
+        else{
+          var curve=sampleSpline([solution.start].concat(solution.controls,[solution.end]),20);if(solution.startCorner!==i)curve.reverse();
+          path=[rp[i]].concat(curve,[end]);length=pathLength(path);
+        }
+      }
+    }
+    sides.push(length);for(var k=1;k<path.length;k++)boundary.push(path[k]);
+  }
+  if(!hasCurves)return null;
+  var xs=boundary.map(function(p){return p.x}),ys=boundary.map(function(p){return p.y}),minX=Math.min.apply(null,xs),maxX=Math.max.apply(null,xs),minY=Math.min.apply(null,ys),maxY=Math.max.apply(null,ys),area=0;
+  boundary.forEach(function(p,k){var q=boundary[(k+1)%boundary.length];area+=p.x*q.y-q.x*p.y});
+  return{sideLengthsCm:sides,perimeterCm:sides.reduce(function(s,v){return s+v},0),areaCm2:Math.abs(area)/2,boundsCm:{minX:minX,maxX:maxX,minY:minY,maxY:maxY,width:maxX-minX,height:maxY-minY}};
+}
 function measurementRows(state){
   state=state||currentState();var map=labels(state),out=[];
   for(var i=0;i<(state.pts||[]).length;i++){
@@ -552,6 +582,7 @@ function updateCurveWarning(){
 }
 
 window.A·CEILCurveGeometryV306={
+  measureState:measureState,
   labels:labels,
   cornerLabel:cornerLabel,
   hasSegments:hasSegments,
