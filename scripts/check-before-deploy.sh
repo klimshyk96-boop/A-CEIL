@@ -22,6 +22,7 @@ node tests/multiple-curve-diagonals.test.cjs || exit 1
 node tests/curve-report-consistency.test.cjs || exit 1
 node tests/report-plan-layout.test.cjs || exit 1
 node tests/client-calculator.test.cjs || exit 1
+node tests/client-film-width.test.cjs || exit 1
 node --check calculator/model.js || exit 1
 node --check calculator/client.js || exit 1
 node --check calculator/owner.js || exit 1
