@@ -20,6 +20,7 @@ node tests/history-actions.test.cjs || exit 1
 node tests/diagonal-hints.test.cjs || exit 1
 node tests/multiple-curve-diagonals.test.cjs || exit 1
 node tests/curve-report-consistency.test.cjs || exit 1
+node tests/report-plan-layout.test.cjs || exit 1
 node tests/pipeline-contract.test.cjs || exit 1
 node tests/render-pipeline.test.cjs || exit 1
 node tests/stability-regression.test.cjs || exit 1

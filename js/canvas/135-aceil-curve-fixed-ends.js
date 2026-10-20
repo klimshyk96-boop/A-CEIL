@@ -543,6 +543,11 @@ function drawAnnotations(c){
   var matrix=c.getTransform(),captured={points:[],diagonals:[],showDiagonals:!_reportMode||((typeof _loadRS==='function'?_loadRS():{}).diagonals===true)};
   function pixel(p){return{x:matrix.a*p.x+matrix.c*p.y+matrix.e,y:matrix.b*p.x+matrix.d*p.y+matrix.f}}
   pts.forEach(function(p,i){captured.points.push(Object.assign(pixel(p),{label:map.corners[i]}))});
+  if(_reportMode&&hasSegments()&&captured.showDiagonals){
+    _getReportDiagPairs(Object.assign({},currentState(),{diagonals:_diagonalsForCurrentDraw(),diagonalOverrides:diagonalOverrides}),'manual').forEach(function(d){
+      if(pts[d.a]&&pts[d.b]&&d.value>0)captured.diagonals.push({a:pixel(pts[d.a]),b:pixel(pts[d.b]),label:map.corners[d.a]+map.corners[d.b],value:d.value});
+    });
+  }
   c.save();c.textAlign="center";c.textBaseline="middle";
   for(var i=0;i<pts.length;i++){
     var data=segmentData(currentState(),i);if(!data)continue;var solution=solve(i);if(!solution.ok)continue;
