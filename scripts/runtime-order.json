@@ -160,5 +160,7 @@
   "js/canvas/193-aceil-finger-draw.js",
   "js/reports/223-aceil-installer-share.js",
   "js/reports/224-aceil-report-diagonals-menu-fix.js",
-  "js/core/225-aceil-public-api.js"
+  "js/core/225-aceil-public-api.js",
+  "calculator/model.js",
+  "calculator/owner.js"
 ]

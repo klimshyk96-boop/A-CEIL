@@ -10,6 +10,7 @@ async function open(browser,width=1440,dpr=1,sourceRoot=root,beforeGoto){
   if(u.hostname==='cdn.jsdelivr.net')return route.fulfill({contentType:'application/javascript',body:stub});
   if(u.hostname!=='aceil.test')return route.fulfill({status:403,body:'Offline test: external requests disabled'});
   let f=path.join(sourceRoot,u.pathname==='/'?'index.html':decodeURIComponent(u.pathname));
+  if(fs.existsSync(f)&&fs.statSync(f).isDirectory())f=path.join(f,'index.html');
   if(!fs.existsSync(f)){missing.push(u.pathname);return route.fulfill({status:404,body:'Not found'});}
   const types={'.js':'application/javascript','.html':'text/html','.css':'text/css'};
   return route.fulfill({contentType:types[path.extname(f)]||'application/octet-stream',body:fs.readFileSync(f)});

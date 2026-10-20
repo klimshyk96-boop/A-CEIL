@@ -1,0 +1,48 @@
+const assert=require('node:assert/strict');
+const M=require('../calculator/model.js');
+const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.cjs');
+const catalog={version:1,date:'2026-10-20',company:'Стеля <img src=x onerror=alert(1)>',minimum:0,items:Object.fromEntries(Object.entries({film:380,classic:200,classicCorners:100,shadow:550,shadowCorners:200,floating:750,floatingCorners:250,led:500,white:60,black:70,chandelier:350,spot:200,cornice:1000}).map(([key,price])=>[key,{name:'Назва '+key,price}]))};
+const state={mode:'rectangle',width:4,length:5,profile:'classic',insert:'white',chandelier:1,spot:0,cornice:false,corniceLength:3};
+assert.equal(M.estimate(state,catalog).total,13030);
+const shadow=M.estimate({...state,profile:'shadow'},catalog);assert.equal(shadow.rows.some(r=>r.key==='white'),false);assert.equal(shadow.rows.find(r=>r.key==='shadowCorners').qty,4);
+const floating=M.estimate({...state,profile:'floating'},catalog);assert.equal(floating.rows.find(r=>r.key==='led').qty,18);
+assert.equal(M.estimate({...state,width:'4,5'},catalog).area,22.5);
+for(const change of [{width:'abc'},{length:-1},{spot:1.5},{chandelier:NaN},{mode:'manual',area:100,perimeter:5,corners:4},{cornice:true,corniceLength:0}])assert.equal(M.estimate({...state,...change},catalog).valid,false);
+assert.equal(M.estimate({...state,spot:1},{...catalog,items:{...catalog.items,spot:undefined}}).valid,false);
+assert.equal(M.estimate(state,{...catalog,minimum:15000}).total,15000);
+const config=M.config({...catalog,secret:'do-not-export',items:{...catalog.items,internal:{price:1,name:'Wholesale'}}});assert.equal(config.secret,undefined);assert.equal(config.items.internal,undefined);
+assert.deepEqual(M.decode(M.encode({config,state})),{config,state});assert.equal(new URL(M.link('https://example.com/calculator/',config,state)).pathname,'/calculator/');
+assert.throws(()=>M.decode('!bad'));assert.throws(()=>M.config({...catalog,items:{...catalog.items,film:{price:-1}}}));
+(async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:process.env.ACEIL_CHROMIUM_PATH||undefined});
+ try{for(const width of [390,1440]){
+  const {page,errors}=await open(browser,width);await reveal(page);await page.waitForTimeout(400);
+  const url=await page.evaluate(()=>{
+   elemItems=[{id:'f',name:'Плівка Premium',source:'area',unit:'м²',price:380,costPrice:1},{id:'p',name:'Профіль H',source:'main_profile',unit:'м',price:200,costPrice:2},{id:'c',name:'Кути',source:'corners',unit:'шт',price:100},{id:'i',name:'Вставка біла',source:'white_insert',sourceVariant:'white',unit:'м',price:60},{id:'l',name:'Люстра',source:'chandelier',unit:'шт',price:350},{id:'private',name:'PRIVATE CATALOG',source:'other',unit:'шт',price:12345}];
+   document.getElementById('aceilClientSetupButton').click();
+  });
+  await page.locator('#aceilClientSetup [type=submit]').click();
+  const generated=await page.locator('#aceilClientSetup input[readonly]').inputValue();
+  const payload=M.decode(new URL(generated).hash.slice(1));assert.equal(payload.config.items.film.price,380);assert.ok(!JSON.stringify(payload).includes('costPrice'));assert.ok(!JSON.stringify(payload).includes('PRIVATE CATALOG'));
+  await page.goto(generated,{waitUntil:'load'});
+  assert.equal(await page.locator('#total').textContent(),'13 030 грн');
+  assert.equal(await page.locator('input[name=spot]').isDisabled(),true);
+  assert.equal(await page.locator('[value=shadow]').isDisabled(),true);
+  await page.locator('[name=width]').fill('4,5');assert.equal(await page.locator('#areaMetric').textContent(),'22,5 м²');
+  await page.locator('[data-mode=manual]').click();assert.equal(await page.locator('[name=area]').inputValue(),'22.5');
+  await page.locator('[name=perimeter]').fill('1');assert.equal(await page.locator('#save').isDisabled(),true);assert.ok((await page.locator('#error').textContent()).includes('не узгоджується'));
+  await page.locator('[name=perimeter]').fill('19');
+  await page.locator('.contact summary').click();await page.locator('#name').fill('Тест Клієнт');await page.locator('#phone').fill('+380671234567');
+  await page.locator('#save').click();const saved=await page.locator('#savedLink').inputValue();assert.ok(!JSON.stringify(M.decode(new URL(saved).hash.slice(1))).includes('380671234567'));
+  await page.locator('#copyRequest').click();assert.ok((await page.locator('#requestFallback').inputValue()).includes('+380671234567'));
+  await page.goto(saved);await page.waitForFunction(()=>document.getElementById('name')?.value==='');assert.equal(await page.locator('[name=perimeter]').inputValue(),'19');assert.equal(await page.locator('#name').inputValue(),'');
+  await page.goto('http://aceil.test/calculator/?demo=1');assert.equal(await page.locator('#demoNotice').isVisible(),true);
+  await page.locator('[value=floating]').check();assert.equal(await page.locator('#insertField').isVisible(),false);assert.ok((await page.locator('#rows').textContent()).includes('LED'));
+  await page.locator('[name=cornice]').check();assert.equal(await page.locator('#corniceField').isVisible(),true);
+  await page.screenshot({path:'/tmp/aceil-client-calculator-'+width+'.png',fullPage:true});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no horizontal overflow');
+  await page.goto(M.link('http://aceil.test/',catalog,state));assert.equal(await page.locator('#company').textContent(),catalog.company);assert.equal(await page.locator('#company img').count(),0,'untrusted labels are plain text');
+  await page.goto('http://aceil.test/calculator/#broken');await page.locator('#unavailable').waitFor({state:'visible'});
+  assert.deepEqual(errors,[]);await page.close();console.log('PASS client calculator owner pricing, formulas, links, privacy and mobile UI '+width+'px');
+ }}finally{await browser.close()}
+})().catch(e=>{console.error(e);process.exitCode=1});
