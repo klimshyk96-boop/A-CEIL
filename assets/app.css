@@ -587,13 +587,13 @@ n#aceilAdminModal .aceil-svg,n#aceilAdminModal .aceil-title-icon,n#aceilAdminMod
 
 
 #A·CEILHistoryControls{position:absolute;top:14px;right:14px;z-index:26;display:flex;gap:8px;pointer-events:auto;}
-.rm-history-btn{width:42px;height:42px;min-width:42px;padding:0!important;border-radius:14px!important;display:flex!important;align-items:center!important;justify-content:center!important;background:rgba(255,255,255,.94)!important;color:#6d28d9!important;border:1px solid rgba(124,58,237,.12)!important;box-shadow:0 7px 20px rgba(15,23,42,.12)!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);touch-action:manipulation;}
-.rm-history-btn svg{width:21px;height:21px;pointer-events:none;}
+.rm-history-btn{width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;box-sizing:border-box;padding:0!important;margin:0!important;border-radius:12px!important;display:grid!important;place-items:center;background:rgba(255,255,255,.96)!important;color:#2563eb!important;border:1px solid #e2e8f0!important;box-shadow:0 2px 8px rgba(15,23,42,.08)!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);touch-action:manipulation;}
+.rm-history-btn svg{display:block;width:22px;height:22px;flex:none;pointer-events:none;}
 .rm-history-btn:disabled{opacity:.32!important;color:#64748b!important;box-shadow:0 4px 12px rgba(15,23,42,.06)!important;cursor:default!important;transform:none!important;}
 .rm-history-btn:not(:disabled):active{transform:scale(.92)!important;}
 .rm-history-btn-mirror svg{transform:scaleX(-1);}
 .rm-history-btn-mirror:not(:disabled):active{transform:scale(.92)!important;}
-@media(max-width:600px){#A·CEILHistoryControls{top:10px;right:10px;gap:6px;}.rm-history-btn{width:38px;height:38px;min-width:38px;border-radius:13px!important;}.rm-history-btn svg{width:20px;height:20px;}}
+@media(max-width:600px){#A·CEILHistoryControls{top:10px;right:10px;gap:6px;}.rm-history-btn{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;border-radius:12px!important;}.rm-history-btn svg{width:20px;height:20px;}}
 
 
 /* ===== SOURCE 044: css/canvas/044-aceil-free-light-pro-style.css ===== */

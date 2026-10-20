@@ -328,7 +328,7 @@
     try{_activeRoomIdx=null;_activeObjectId=null;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     try{resetAllSilent();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
-  function endSwitch(){window.__A·CEILSessionSwitching=false;}
+  function endSwitch(){window.__A·CEILSessionSwitching=false;if(window.A·CEIL.History)window.A·CEIL.History.resetAfterLoad();}
 
   var oldOpenObject=window.openObjectRooms||((typeof openObjectRooms==='function')?openObjectRooms:null);
   if(typeof oldOpenObject==='function'){
@@ -401,7 +401,7 @@
     var rid=ensureRoomId(room);
     try{_activeRoomIdx=index;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     window._activeRoomId=rid;
-    if(typeof _loadRoomToCanvas==='function'){_loadRoomToCanvas(obj,index);return true;}
+    if(typeof _loadRoomToCanvas==='function'){_loadRoomToCanvas(obj,index);if(window.A·CEIL.History)window.A·CEIL.History.resetAfterLoad();return true;}
     return false;
   }
   function saveCurrentBeforeSwitch(){

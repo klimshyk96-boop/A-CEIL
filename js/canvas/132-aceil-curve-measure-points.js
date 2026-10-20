@@ -36,7 +36,7 @@ function readExisting(i){
   }
   return out;
 }
-function input(k,key,value){return '<input type="number" min="0" inputmode="decimal" step="0.1" placeholder="Не задано" value="'+(Number(n(value).toFixed(2))||"")+'" oninput="rmCurveMeasureUpdatePointV301('+k+',\''+key+'\',this.value)">'}
+function input(k,key,value){return '<input type="number" data-cm-measure="'+key+'" min="0" inputmode="decimal" step="0.1" placeholder="Не задано" value="'+(Number(n(value).toFixed(2))||"")+'" oninput="rmCurveMeasureUpdatePointV301('+k+',\''+key+'\',this.value)">'}
 function choice(k,key,value,options,label){
   return '<label><span>'+label+'</span><select aria-label="'+label+'" data-cm-field="'+key+'" onchange="rmCurveMeasureUpdatePointV301('+k+',\''+key+'\',this.value)">'+options.map(function(o){return '<option value="'+o[0]+'" '+(o[0]===value?'selected':'')+'>'+o[1]+'</option>'}).join("")+'</select></label>';
 }
@@ -47,8 +47,10 @@ function bendChoice(k,value){
 function pointSummary(k){
   var p=draft.points[k],position={outside:"назовні",inside:"всередині",line:"на прямій"},text="Точка "+pointLabel(k);
   if(position[p.position])text+=" · "+position[p.position];
+  var measurements=geometry().pointDiagonals(p);if(measurements.length>1)return text+' · діагоналей: '+measurements.length;
   return text+(n(p.diag)>0?" · "+maps().corners[Number(p.diagCorner)]+pointLabel(k)+" "+Number(n(p.diag).toFixed(2))+" см":" · діагональ / положення");
 }
+function otherDiagonals(k){return geometry().pointDiagonals(draft.points[k]).filter(function(d){return d.corner!==Number(draft.points[k].diagCorner)}).map(function(d){return maps().corners[d.corner]+pointLabel(k)+' '+Number(d.value.toFixed(2))+' см'}).join(' · ')}
 function render(){
   var map=maps(),box=document.getElementById("cmPointsV301");
   document.getElementById("cmWallLabelV301").textContent="Стіна "+sideName();
@@ -62,7 +64,7 @@ function render(){
       '<details class="cm-point-details" data-cm-details="'+k+'"><summary>'+pointSummary(k)+'</summary>'+
       choice(k,"position",p.position||"auto",[["auto","За хордами й діагоналями"],["outside","Назовні від базової стіни"],["inside","Всередині від базової стіни"],["line","На прямій базової стіни"]],"Положення точки "+pointLabel(k))+
       '<div class="cm-grid"><label><span>Діагональ до '+pointLabel(k)+' від кута</span><select onchange="rmCurveMeasureUpdatePointV301('+k+',\'diagCorner\',this.value)">'+options+'</select></label>'+
-      '<label><span data-cm-diag-label="'+k+'">'+map.corners[Number(p.diagCorner)]+pointLabel(k)+', см · необов’язково</span>'+input(k,"diag",p.diag)+'</label></div></details></div>';
+      '<label><span data-cm-diag-label="'+k+'">'+map.corners[Number(p.diagCorner)]+pointLabel(k)+', см · необов’язково</span>'+input(k,"diag",p.diag)+'</label></div><small data-cm-other="'+k+'">'+otherDiagonals(k)+'</small></details></div>';
   }).join("")+
     '<div class="cm-point"><div class="cm-point-head"><div class="cm-point-name">Ділянка '+(draft.points.length?pointLabel(draft.points.length-1)+endLabel():sideName())+'</div>'+bendChoice(-1,draft.endBend)+'</div><div class="cm-grid"><label><span>По прямій, см</span>'+input(-1,"endChordCm",draft.endChordCm)+'</label><label><span>По кривій, см</span>'+input(-1,"endCurveCm",draft.endCurveCm)+'</label></div></div>';
   var removeButton=document.getElementById("cmRemoveV301");removeButton.hidden=wallTypes[activeSide]!=="arc";
@@ -71,7 +73,7 @@ function render(){
 function updatePreview(){
   var chords=draft.points.reduce(function(s,p){return s+n(p.chordCm)},n(draft.endChordCm)),tape=draft.points.reduce(function(s,p){return s+n(p.curveCm)},n(draft.endCurveCm));
   document.getElementById("cmPreviewV301").textContent="Разом: пряма "+Number(chords.toFixed(2))+" / крива "+(tape>0?Number(tape.toFixed(2)):"—")+" см";
-  document.querySelectorAll('[data-cm-details]').forEach(function(el){var k=Number(el.dataset.cmDetails);if(draft.points[k])el.querySelector('summary').textContent=pointSummary(k)});
+  document.querySelectorAll('[data-cm-details]').forEach(function(el){var k=Number(el.dataset.cmDetails);if(draft.points[k]){el.querySelector('summary').textContent=pointSummary(k);el.querySelector('[data-cm-other]').textContent=otherDiagonals(k)}});
 }
 function open(i){
   activeSide=Number(i);if(!(activeSide>=0&&activeSide<pts.length))return;
@@ -100,6 +102,11 @@ function updatePoint(k,key,value){
   if(key==="bend"||key==="endBend")value=["inherit","outside","inside","auto"].includes(value)?value:"auto";
   else if(key==="position")value=["auto","outside","inside","line"].includes(value)?value:"auto";
   else value=n(value);
+  if(k>=0&&key==='diagCorner'&&draft.points[k]){
+    var item=draft.points[k],all=geometry().pointDiagonals(item),match=all.find(function(d){return d.corner===value});
+    item.diagonals=all.filter(function(d){return d.corner!==value});item.diag=match?match.value:0;
+    var field=document.querySelector('[data-curve-point="'+k+'"] [data-cm-measure="diag"]');if(field)field.value=item.diag||'';
+  }
   if(k<0)draft[key]=value;
   else if(draft.points[k])draft.points[k][key]=value;
   if(key==="diagCorner"){
