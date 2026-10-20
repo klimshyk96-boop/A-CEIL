@@ -1,16 +1,19 @@
 (function(root){
  'use strict';
- const slots=['film','classic','shadow','floating','white','black','chandelier','spot','cornice','classicCorners','shadowCorners','floatingCorners','led','linear'];
+ const slots=['film','classic','shadow','floating','white','black','chandelier','spot','doubleSpot','cornice','classicCorners','shadowCorners','floatingCorners','led','linear'];
  const number=v=>Number(String(v??'').trim().replace(',','.'));
  const round=v=>Math.round((v+Number.EPSILON)*100)/100;
  function product(item,key){
   if(!item||typeof item!=='object')throw Error('Некоректна позиція у прайсі.');
   const price=number(item.price);if(!Number.isFinite(price)||price<0||price>1000000)throw Error('Некоректний прайс у посиланні.');
   const out={name:String(item.name||key).slice(0,100),price};
+  if(item.requiresQuote===true)out.requiresQuote=true;
+  if(key==='film'&&['premium','classic','kralton'].includes(item.series))out.series=item.series;
   if(key==='film'&&Array.isArray(item.widths)&&item.widths.length){
    if(item.widths.length>10)throw Error('Забагато ширин полотна.');
-   out.widths=item.widths.map(w=>{const nominal=number(w.nominal),max=number(w.max),price=number(w.price);if(!(nominal>0&&nominal<=15&&max>0&&max<=15&&Number.isFinite(price)&&price>=0&&price<=1000000))throw Error('Некоректна ширина або ціна полотна.');return{nominal,max,price};}).sort((a,b)=>a.nominal-b.nominal);
+   out.widths=item.widths.map(w=>{const nominal=number(w.nominal),max=number(w.max),price=number(w.price);if(!(nominal>0&&nominal<=15&&max>0&&max<=15&&Number.isFinite(price)&&price>=0&&price<=1000000))throw Error('Некоректна ширина або ціна полотна.');return{nominal,max,price,...(w.requiresQuote===true?{requiresQuote:true}:{})};}).sort((a,b)=>a.nominal-b.nominal);
   }
+  if(key==='cornice'){if(['surface','hidden','wide','single'].includes(item.corniceType))out.corniceType=item.corniceType;if(['white','black'].includes(item.color))out.color=item.color;}
   if(['classic','shadow','floating'].includes(key)){
    if(['pvc','aluminium'].includes(item.material))out.material=item.material;
    if(['white','black'].includes(item.color))out.color=item.color;
@@ -22,6 +25,8 @@
   const name=String(item&&item.name||'');if(key==='classic')return item.material||(/пвх|pvc/i.test(name)?'pvc':'aluminium');if(item.color)return item.color;
   const white=/біл|white/i.test(name),black=/чорн|black/i.test(name);return white!==black?(white?'white':'black'):'standard';
  }
+ function filmSeries(item){if(item.series)return item.series;const name=String(item.name||'');return /kralton|кралтон/i.test(name)?'kralton':/classic|класік|класик/i.test(name)?'classic':/premium|преміум/i.test(name)?'premium':'other';}
+ function corniceKind(item){if(item.corniceType)return item.corniceType;const name=String(item.name||'');return /одноряд|single/i.test(name)?'single':/широк|wide/i.test(name)?'wide':/наклад|surface/i.test(name)?'surface':/прихов|hidden|uno|ніша/i.test(name)?'hidden':'other';}
  function config(raw){
   if(!raw||raw.version!==1)throw Error('Посилання має невідомий формат. Попросіть менеджера створити нове.');
   const out={version:1,company:String(raw.company||'A·CEIL').slice(0,80),date:String(raw.date||'').slice(0,10),minimum:Math.max(0,Math.min(100000,number(raw.minimum)||0)),demo:raw.demo===true,items:{}};
@@ -46,13 +51,13 @@
   const insert=profile==='classic'&&['white','black'].includes(s.insert)?s.insert:'none';
   const cornice=s.cornice===true?value('corniceLength',.1,50):0;
   function selected(key){const options=c.options[key]||[],choice=String(s[key+'Option']||'');return options.length?(choice?options.find(it=>it.id===choice):options[0]):c.items[key];}
-  function row(key,qty,unit,label,override){if(qty<=0)return;const item=override||selected(key);if(!item){errors.push('price:'+key);return;}rows.push({key,name:label||item.name,qty:round(qty),unit,price:item.price,total:round(qty*item.price)});}
+  function row(key,qty,unit,label,override){if(qty<=0)return;const item=override||selected(key);if(!item){errors.push('price:'+key);return;}rows.push({key,name:label||item.name,qty:round(qty),unit,price:item.requiresQuote?null:item.price,total:item.requiresQuote?null:round(qty*item.price)});}
   let film=null;const filmItem=selected('film');
   if(filmItem&&filmItem.widths?.length){
    const required=mode==='rectangle'?Math.min(number(s.width),number(s.length)):value('roomWidth',.3,50);
    const roll=required>0&&Number.isFinite(required)?filmItem.widths.find(w=>w.max+1e-9>=required):null;film={required,roll:roll||null,legacy:false};
-   if(!roll)errors.push('filmSpan');else row('film',area,'м²',filmItem.name+' · полотно '+roll.nominal+' м',{...filmItem,price:roll.price});
-  }else{film={legacy:true};row('film',area,'м²');}
+   if(!roll)errors.push('filmSpan');else row('film',area,'м²',filmItem.name+' · полотно '+roll.nominal+' м',{...filmItem,price:roll.price,requiresQuote:roll.requiresQuote===true});
+  }else{film={legacy:true,quote:filmItem?.requiresQuote===true};row('film',area,'м²');}
   row(profile,perimeter,'м');
   if(insert!=='none')row(insert,perimeter,'м');
   // Match A·CEIL: all profile corners are counted. A free first four can be
@@ -60,15 +65,17 @@
   const chosenProfile=selected(profile),cornerItem=c.items[profile+'Corners'];
   if(cornerItem)row(profile+'Corners',corners,'шт',null,chosenProfile?.cornerPrice!=null?{...cornerItem,price:chosenProfile.cornerPrice}:null);
   row('chandelier',chandelier,'шт');row('spot',spot,'шт');row('cornice',cornice,'м');
+  if(s.doubleSpot!=null&&s.doubleSpot!=='')row('doubleSpot',value('doubleSpot',0,100,true),'шт');
   if(s.linearEnabled===true)row('linear',value('linearLength',.1,100),'м');
   if(profile==='floating')row('led',perimeter,'м');
-  const subtotal=round(rows.reduce((a,r)=>a+r.total,0)),minimum=round(Math.max(0,c.minimum-subtotal));
+  const quoteRequired=rows.filter(r=>r.price===null).map(r=>r.name),complete=quoteRequired.length===0;
+  const subtotal=round(rows.reduce((a,r)=>a+(r.total||0),0)),minimum=complete?round(Math.max(0,c.minimum-subtotal)):0;
   if(minimum)rows.push({key:'minimum',name:'Доплата до мінімального замовлення',qty:1,unit:'посл.',price:minimum,total:minimum});
-  return{valid:errors.length===0,errors,area,perimeter,corners,rows,total:round(subtotal+minimum),profile,insert,film};
+  return{valid:errors.length===0,complete,quoteRequired,errors,area,perimeter,corners,rows,total:round(subtotal+minimum),profile,insert,film};
  }
  function encode(value){const bytes=new TextEncoder().encode(JSON.stringify(value));return btoa(Array.from(bytes,b=>String.fromCharCode(b)).join('')).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
  function decode(value){if(typeof value!=='string'||value.length>24000||!/^[\w-]+$/.test(value))throw Error('Посилання пошкоджено або завелике.');const text=atob(value.replace(/-/g,'+').replace(/_/g,'/'));return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(text,c=>c.charCodeAt(0))));}
  function link(base,c,state){const url=new URL('/calculator/',base),payload=encode({config:config(c),state:state||null});if(payload.length>24000)throw Error('Посилання завелике. Зменште кількість варіантів у прайсі.');url.hash=payload;return url.href;}
- const api={slots,number,config,estimate,encode,decode,link,profileVariant};
+ const api={slots,number,config,estimate,encode,decode,link,profileVariant,filmSeries,corniceKind};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ACEILClientCalc=Object.freeze(api);
 })(typeof window!=='undefined'?window:globalThis);

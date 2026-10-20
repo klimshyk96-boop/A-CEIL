@@ -36,7 +36,7 @@ assert.equal(M.estimate(state,assortment).total,13030,'old client state uses the
   const generated=await page.locator('#aceilClientSetup input[readonly]').inputValue();
   assert.equal(new URL(generated).hostname,'a-ceil.pp.ua','client link must use the company domain');
   const payload=M.decode(new URL(generated).hash.slice(1));assert.equal(payload.config.items.film.price,380);assert.ok(!JSON.stringify(payload).includes('costPrice'));assert.ok(!JSON.stringify(payload).includes('PRIVATE CATALOG'));
-  assert.equal(payload.config.options.film.length,2);assert.equal(payload.config.options.cornice.length,2);assert.equal(payload.config.options.linear.length,2);
+  assert.ok(payload.config.options.film.length>=3);assert.ok(payload.config.options.cornice.length>=7);assert.equal(payload.config.options.linear.length,2);
   const preview=await page.locator('#aceilClientSetup a').last().getAttribute('href');
   await page.locator('#aceilClientSetup>button').click();
   await page.evaluate(()=>document.getElementById('aceilClientSetupButton').click());
@@ -47,7 +47,7 @@ assert.equal(M.estimate(state,assortment).total,13030,'old client state uses the
   assert.equal(await page.locator('[name=filmOptions][value=f2]').isChecked(),true,'saved assortment is restored');
   await page.goto(preview,{waitUntil:'load'});
   assert.equal(await page.locator('#total').textContent(),'13 030 грн');
-  assert.equal(await page.locator('input[name=spot]').isDisabled(),true);
+  assert.equal(await page.locator('input[name=spot]').isDisabled(),false);
   assert.equal(await page.locator('[value=shadow]').isDisabled(),true);
   await page.locator('[name=filmOption]').selectOption('film-1');assert.equal(await page.locator('#total').textContent(),'15 430 грн');
   await page.locator('[name=cornice]').check();await page.locator('[name=corniceOption]').selectOption('cornice-1');
@@ -68,6 +68,16 @@ assert.equal(M.estimate(state,assortment).total,13030,'old client state uses the
   await page.locator('[name=cornice]').check();assert.equal(await page.locator('#corniceField').isVisible(),true);
   await page.screenshot({path:'/tmp/aceil-client-calculator-'+width+'.png',fullPage:true});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no horizontal overflow');
+
+  for(const series of ['premium','classic','kralton'])assert.equal(await page.locator('[data-film-series='+series+']').isDisabled(),false);
+  await page.locator('[data-film-series=classic]').click();assert.equal(await page.locator('#total').textContent(),'Потрібне уточнення');assert.ok((await page.locator('#quoteNote').textContent()).includes('не повна вартість'));
+  assert.equal(await page.locator('#save').isDisabled(),false);
+  await page.locator('[data-film-series=kralton]').click();assert.ok((await page.locator('#filmRule').textContent()).includes('550 грн'));
+  await page.locator('[name=doubleSpot]').fill('2');assert.ok((await page.locator('#rows').textContent()).includes('Подвійний'));assert.equal(await page.locator('#total').textContent(),'Потрібне уточнення');
+  for(const kind of ['surface','hidden','wide','single']){await page.locator('[data-cornice-kind='+kind+']').click();if(kind!=='surface')for(const color of ['white','black']){await page.locator('[data-cornice-color='+color+']').click();assert.equal(await page.locator('[data-cornice-color='+color+']').getAttribute('aria-pressed'),'true');}}
+  await page.locator('[name=linearEnabled]').check();await page.locator('[name=linearDetails]').fill('Зигзаг, біла, 3 см');await page.locator('#save').click();const quoteLink=await page.locator('#savedLink').inputValue();
+  await page.goto('about:blank');await page.goto(quoteLink);assert.equal(await page.locator('[name=linearDetails]').inputValue(),'Зигзаг, біла, 3 см');assert.equal(await page.locator('[name=doubleSpot]').inputValue(),'2');assert.equal(await page.locator('#total').textContent(),'Потрібне уточнення');
+  await page.locator('.contact summary').click();await page.locator('#copyRequest').click();const quoteText=await page.locator('#requestFallback').inputValue();assert.ok(quoteText.includes('Повну вартість потрібно уточнити'));assert.ok(quoteText.includes('Зигзаг'));
   await page.goto(M.link('http://aceil.test/',catalog,state));assert.equal(await page.locator('#company').textContent(),catalog.company);assert.equal(await page.locator('#company img').count(),0,'untrusted labels are plain text');
   await page.goto('http://aceil.test/calculator/#broken');await page.locator('#unavailable').waitFor({state:'visible'});
   assert.deepEqual(errors,[]);await page.close();console.log('PASS client calculator owner pricing, formulas, links, privacy and mobile UI '+width+'px');

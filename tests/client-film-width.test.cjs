@@ -12,6 +12,9 @@ assert.equal(M.estimate({...base,mode:'manual',area:20,perimeter:18,corners:4,ro
 assert.equal(M.config(cfg).items.film.widths.length,3,'width metadata survives public sanitization');
 assert.equal(M.profileVariant({name:'Тіньовий білий / чорний'},'shadow'),'standard','an ambiguous colour name must not invent a white variant');
 assert.throws(()=>M.config({...cfg,items:{...cfg.items,film:{name:'bad',price:380,widths:[{nominal:3.6,max:-1,price:380}]}}}));
+const quoted=M.estimate(base,{...cfg,minimum:20000,items:{...cfg.items,film:{name:'Classic',series:'classic',price:0,widths:[{nominal:5.1,max:5.6,price:0,requiresQuote:true}]}}});
+assert.equal(quoted.valid,true);assert.equal(quoted.complete,false);assert.equal(quoted.rows.find(r=>r.key==='film').price,null);assert.ok(!quoted.rows.some(r=>r.key==='minimum'),'do not apply a minimum to an incomplete estimate');
+assert.equal(M.estimate(base,{...cfg,items:{...cfg.items,film:{name:'Free explicit tariff',price:0}}}).complete,true,'an explicit zero rate remains different from an unknown price');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.ACEIL_CHROMIUM_PATH||undefined});
  try{for(const width of [390,1440]){
@@ -24,8 +27,9 @@ assert.throws(()=>M.config({...cfg,items:{...cfg.items,film:{name:'bad',price:38
   await page.locator('#aceilClientSetup [name=classic]').selectOption('al');await page.locator('#aceilClientSetup [type=submit]').click();
   const url=await page.locator('#aceilClientSetup a').last().getAttribute('href'),payload=M.decode(new URL(url).hash.slice(1));
   assert.deepEqual(payload.config.options.film[0].widths.map(w=>[w.nominal,w.max,w.price]),[[3.6,3.6,380],[5.1,5.6,420],[5.8,6.2,420]]);
+  assert.deepEqual(new Set(payload.config.options.film.map(it=>it.series)),new Set(['premium','classic','kralton']));assert.equal(payload.config.options.film.find(it=>it.series==='classic').widths[0].requiresQuote,true);
   assert.equal(payload.config.options.classic.length,2);assert.equal(payload.config.options.shadow.length,2);
-  await page.goto(url);assert.equal(await page.locator('[name=filmOption]').isVisible(),true);assert.ok((await page.locator('#filmRule').textContent()).includes('420 грн/м²'));
+  await page.goto(url);assert.equal(await page.locator('[name=filmOption]').isVisible(),false);assert.ok((await page.locator('#filmRule').textContent()).includes('420 грн/м²'));
   if(width===390){const before=page.url();await page.locator('#viewEstimate').click();assert.equal(page.url(),before,'mobile total must scroll without changing the encoded calculation hash');}
   const initial=Number((await page.locator('#total').textContent()).replace(/[^0-9]/g,''));
   await page.locator('[data-profile-family=classic][data-profile-variant=pvc]').click();
