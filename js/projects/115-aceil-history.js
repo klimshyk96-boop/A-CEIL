@@ -110,7 +110,7 @@ function redo(){
 function button(id,title,path){
   var b=document.createElement("button");
   b.type="button";b.id=id;b.className="rm-history-btn";b.title=title;b.setAttribute("aria-label",title);
-  b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="'+path+'"></path></svg>';
+  b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="'+path+'"></path></svg>';
   b.addEventListener("pointerdown",function(e){e.stopPropagation();});
   b.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();if(id==="A·CEILUndoBtn")undo();else redo();});
   return b;
@@ -119,8 +119,8 @@ function mount(){
   var host=document.querySelector(".canvas-container");
   if(!host||document.getElementById("A·CEILHistoryControls"))return;
   var wrap=document.createElement("div");wrap.id="A·CEILHistoryControls";
-  undoButton=button("A·CEILUndoBtn","Назад","M9 14 4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 0 11H11");
-  redoButton=button("A·CEILRedoBtn","Вперед","M9 14 4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 0 11H11");
+  undoButton=button("A·CEILUndoBtn","Скасувати дію","M9 14 4 9l5-5 M4 9h9a7 7 0 0 1 7 7v4");
+  redoButton=button("A·CEILRedoBtn","Повторити дію","M9 14 4 9l5-5 M4 9h9a7 7 0 0 1 7 7v4");
   redoButton.classList.add("rm-history-btn-mirror");
   wrap.appendChild(undoButton);wrap.appendChild(redoButton);host.appendChild(wrap);
   reset(readSnapshot());
