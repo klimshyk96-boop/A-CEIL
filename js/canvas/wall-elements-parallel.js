@@ -68,11 +68,11 @@
     var sx=-g.nx*dist,sy=-g.ny*dist;
     return {i:g.i,x1:g.x1+sx,y1:g.y1+sy,x2:g.x2+sx,y2:g.y2+sy,mx:g.mx+sx,my:g.my+sy,nx:g.nx,ny:g.ny,dx:g.dx,dy:g.dy,len:g.len,pxPerCm:g.pxPerCm,lane:lane};
   }
-  function drawLabel(c,g,m,col,lane){
+  function drawLabel(c,g,m,col,lane,report){
     var title=String(m.type||'Елемент').replace(/\s+/g,' ').trim()||'Елемент';
     c.save();
     c.font='800 10px -apple-system,BlinkMacSystemFont,Arial';
-    var rawW=Math.min(Math.max(74,c.measureText(title).width+22),142), rawH=24;
+    var rawW=Math.min(Math.max(74,c.measureText(title).width+22),184), rawH=report?40:24;
     var vertical=Math.abs(g.dy)>1.15*Math.abs(g.dx);
     // Put labels in separate rows too: 24px, 52px, 80px... from the wall.
     var labelDist=24 + lane*28;
@@ -89,13 +89,15 @@
     rr(c,-rawW/2,-rawH/2,rawW,rawH,8); c.stroke();
     c.fillStyle=col; c.textAlign='center'; c.textBaseline='middle';
     c.font='800 10px -apple-system,BlinkMacSystemFont,Arial';
-    c.fillText(title,0,0);
+    c.fillText(title,0,report?-7:0);
+    if(report){c.font='700 10px Arial';c.fillStyle='#0f172a';c.fillText(window._formatReportCm(g.len)+' см',0,9);}
     c.restore();
   }
 
   window.drawWallMarks=function(c){
     try{
-      if(typeof _reportMode!=='undefined' && _reportMode)return;
+      var report=typeof _reportMode!=='undefined'&&!!_reportMode;
+      if(report&&typeof _loadRS==='function'&&_loadRS().showWallMarks===false)return;
       var list=getMarks(), p=getPts();
       if(!Array.isArray(list)||!list.length||p.length<2)return;
       c.save();
@@ -106,7 +108,7 @@
         var col=color(m.color,i);
         c.strokeStyle=col; c.lineWidth=5.8;
         c.beginPath(); c.moveTo(g.x1,g.y1); c.lineTo(g.x2,g.y2); c.stroke();
-        drawLabel(c,g,m,col,lane);
+        drawLabel(c,g,m,col,lane,report);
       });
       c.restore();
     }catch(e){
@@ -134,39 +136,10 @@
   };
   try{findWallMarkHit=window.findWallMarkHit;}catch(_){ }
 
-  /* The older report renderer clips every wall element to 0..100% of the
-     selected side. Repaint only the permitted cornice overhangs afterwards,
-     so the normal report and the canvas use the same actual length. */
-  var previousReportBindings=window.drawLightBindings;
-  if(typeof previousReportBindings==='function'&&!previousReportBindings.__corniceOverhangV1){
-    var reportBindingsWithOverhang=function(c){
-      /* drawLightBindings is a report-only layer.  Some older wrappers use
-         their own `_reportMode` lookup and can still paint the selected wall
-         on the live canvas.  That produced the hollow green duplicate next
-         to the real parallel cornice.  Stop the whole legacy chain here when
-         this is an ordinary canvas redraw. */
-      var inReport=false;
-      try{inReport=typeof _reportMode!=='undefined'&&!!_reportMode;}catch(_){inReport=false;}
-      if(!inReport)return;
-      var result=previousReportBindings.apply(this,arguments);
-      try{
-        var list=getMarks();
-        c.save();c.lineCap='round';c.lineJoin='round';c.setLineDash([]);
-        list.forEach(function(m,i){
-          if(!/карниз/i.test(String(m&&m.type||'')))return;
-          var g=geometry(m);if(!g)return;
-          var sideLen=g.pxPerCm>0?Math.hypot(g.dx,g.dy)/g.pxPerCm:0;
-          if(!(Number(m.lenCm)>sideLen+.5))return;
-          var col=color(m.color,i);
-          c.strokeStyle=col;c.lineWidth=7;c.beginPath();c.moveTo(g.x1,g.y1);c.lineTo(g.x2,g.y2);c.stroke();
-          c.strokeStyle='rgba(255,255,255,.72)';c.lineWidth=2.4;c.beginPath();c.moveTo(g.x1,g.y1);c.lineTo(g.x2,g.y2);c.stroke();
-        });
-        c.restore();
-      }catch(e){try{c.restore()}catch(_){ }try{window.__diagSilent&&window.__diagSilent(e)}catch(_){ }}
-      return result;
-    };
-    reportBindingsWithOverhang.__corniceOverhangV1=true;
-    window.drawLightBindings=reportBindingsWithOverhang;
-    try{drawLightBindings=reportBindingsWithOverhang;}catch(_){ }
-  }
+  /* Wall elements now share the same placement in the canvas and report.
+     The old report-only bindings redrew the whole curved wall in the mark's
+     colour, and painted a second element without its wallDistanceCm. Light
+     marks themselves are rendered separately by drawLightMarks. */
+  window.drawLightBindings=function(){};
+  try{drawLightBindings=window.drawLightBindings;}catch(_){ }
 })();

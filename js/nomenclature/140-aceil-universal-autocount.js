@@ -198,6 +198,8 @@ function dynamicSources(){
 // normal default. A full shadow/floating contour is also inferred after
 // AutoFill when it replaces the full perimeter and the base row becomes zero.
 function contourPerimeterM(state){
+  var curve=window.A·CEILCurveGeometryV306&&window.A·CEILCurveGeometryV306.measureState(state);
+  if(curve)return curve.perimeterCm/100;
   if(state&&typeof state==="object"){
     if(state.circleMode&&Number(state.circleDiamCm)>0)return Math.PI*Number(state.circleDiamCm)/100;
     if(Array.isArray(state.lengths)&&state.lengths.length)return state.lengths.reduce(function(sum,value){return sum+(Number(value)||0)},0)/100;

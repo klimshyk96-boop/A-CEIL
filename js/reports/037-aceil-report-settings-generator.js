@@ -338,11 +338,27 @@ async function plan(c,x,y,w,h,imgSrc,titleText,labelState){
       if(capture){
         const at=p=>({x:dx+(p.x-sx)*sc,y:dy+(p.y-sy)*sc});
         c.save();c.textAlign="center";c.textBaseline="middle";
-        if(capture.showDiagonals)capture.diagonals.forEach(d=>{
-          const a=at(d.a),b=at(d.b),mx=(a.x+b.x)/2,my=(a.y+b.y)/2,text=d.label+" "+window._formatReportCm(d.value)+" см";
+        const usedLabels=[],vertices=capture.points.map(at);
+        const overlaps=(a,b)=>a.x<b.x+b.w+6&&a.x+a.w+6>b.x&&a.y<b.y+b.h+6&&a.y+a.h+6>b.y;
+        function diagonalLabel(a,b,text){
+          c.font="13px Arial";const tw=c.measureText(text).width+12,bh=22,candidates=[];
+          const vx=b.x-a.x,vy=b.y-a.y,len=Math.hypot(vx,vy)||1,nx=-vy/len,ny=vx/len;
+          for(const t of [.5,.38,.62,.26,.74])for(const offset of [0,24,-24,48,-48,72,-72]){
+            const anchor={x:a.x+vx*t,y:a.y+vy*t};
+            const box={x:Math.max(x+12,Math.min(x+w-12-tw,anchor.x+nx*offset-tw/2)),y:Math.max(y+48,Math.min(y+h-12-bh,anchor.y+ny*offset-bh/2)),w:tw,h:bh};
+            const collisions=usedLabels.filter(q=>overlaps(box,q)).length;
+            const points=vertices.filter(p=>p.x>box.x-18&&p.x<box.x+tw+18&&p.y>box.y-18&&p.y<box.y+bh+18).length;
+            candidates.push({box,anchor,score:collisions*100000+points*10000+Math.abs(offset)+Math.abs(t-.5)*80});
+          }
+          candidates.sort((a,b)=>a.score-b.score);const {box,anchor}=candidates[0];usedLabels.push(box);
+          const mx=box.x+tw/2,my=box.y+bh/2;
+          if(Math.hypot(mx-anchor.x,my-anchor.y)>12){c.strokeStyle="#b45309";c.lineWidth=.8;c.beginPath();c.moveTo(anchor.x,anchor.y);c.lineTo(mx,my);c.stroke();}
+          c.fillStyle="#fffbeb";c.fillRect(box.x,box.y,tw,bh);c.fillStyle="#92400e";c.fillText(text,mx,my);
+        }
+        if(capture.showDiagonals){capture.diagonals.forEach(d=>{
+          const a=at(d.a),b=at(d.b);
           c.strokeStyle="#b45309";c.lineWidth=1.2;c.setLineDash([6,4]);c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);c.stroke();c.setLineDash([]);
-          c.font="13px Arial";const tw=c.measureText(text).width+10;c.fillStyle="#fffbeb";c.fillRect(mx-tw/2,my-10,tw,20);c.fillStyle="#92400e";c.fillText(text,mx,my);
-        });
+        });capture.diagonals.forEach(d=>diagonalLabel(at(d.a),at(d.b),d.label+" "+window._formatReportCm(d.value)+" см"));}
         const center={x:capture.points.reduce((s,p)=>s+p.x,0)/capture.points.length,y:capture.points.reduce((s,p)=>s+p.y,0)/capture.points.length};
         capture.points.forEach(p=>{
           const q=at(p),vx=p.x-center.x,vy=p.y-center.y,len=Math.hypot(vx,vy)||1,px=q.x+vx/len*22,py=q.y+vy/len*22;
@@ -395,7 +411,7 @@ async function plan(c,x,y,w,h,imgSrc,titleText,labelState){
   footer(cc,W,H,rs);
   return cropped;
 }
-function footer(c,W,H,rs){c.fillStyle="#94a3b8",c.font="12px Arial",c.textAlign="center",c.fillText((rs.companyName||"A·CEIL PRO")+" • "+[rs.companyPhone,rs.companySite].filter(Boolean).join(" • "),W/2,H-26),c.textAlign="left"}function _overallDims(st,rs){try{if(!0!==(rs||{}).overall)return"";if(!window.A·CEILGeometry||"function"!=typeof window.A·CEILGeometry.calculate)return"";var data=null;if(st&&(st.realPts||st.points||st.pts))data=st;if(!data)try{if(typeof realPts!=="undefined"&&Array.isArray(realPts)&&realPts.length>1)data={points:realPts}}catch(_e){}if(!data)try{if(typeof pts!=="undefined"&&Array.isArray(pts)&&pts.length>1)data={points:pts}}catch(_e){}if(!data)return"";const b=window.A·CEILGeometry.calculate(data).boundsM;if(!b||!(b.width>0)||!(b.height>0))return"";const a=Math.max(b.width,b.height),s=Math.min(b.width,b.height);return a.toFixed(2)+" × "+s.toFixed(2)+" м"}catch(e){return""}}
+function footer(c,W,H,rs){c.fillStyle="#94a3b8",c.font="12px Arial",c.textAlign="center",c.fillText((rs.companyName||"A·CEIL PRO")+" • "+[rs.companyPhone,rs.companySite].filter(Boolean).join(" • "),W/2,H-26),c.textAlign="left"}function _overallDims(st,rs){try{if(!0!==(rs||{}).overall)return"";if(!window.A·CEILGeometry||"function"!=typeof window.A·CEILGeometry.calculate)return"";var data=null;if(st&&(st.realPts||st.points||st.pts))data=st;if(!data)try{if(typeof realPts!=="undefined"&&Array.isArray(realPts)&&realPts.length>1)data={pts:pts,realPts:realPts,lengths:lengths,wallTypes:wallTypes,arcPoints:arcPoints}}catch(_e){}if(!data)try{if(typeof pts!=="undefined"&&Array.isArray(pts)&&pts.length>1)data={points:pts}}catch(_e){}if(!data)return"";const b=window.A·CEILGeometry.calculate(data).boundsM;if(!b||!(b.width>0)||!(b.height>0))return"";const a=Math.max(b.width,b.height),s=Math.min(b.width,b.height);return a.toFixed(2)+" × "+s.toFixed(2)+" м"}catch(e){return""}}
 function _allWallDimensionLines(st){
   try{
     st=st||{};

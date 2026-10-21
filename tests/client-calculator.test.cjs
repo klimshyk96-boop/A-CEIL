@@ -1,0 +1,89 @@
+const assert=require('node:assert/strict');
+const M=require('../calculator/model.js');
+const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.cjs');
+const catalog={version:1,date:'2026-10-20',company:'Стеля <img src=x onerror=alert(1)>',minimum:0,items:Object.fromEntries(Object.entries({film:380,classic:200,classicCorners:100,shadow:550,shadowCorners:200,floating:750,floatingCorners:250,led:500,white:60,black:70,chandelier:350,spot:200,cornice:1000}).map(([key,price])=>[key,{name:'Назва '+key,price}]))};
+const state={mode:'rectangle',width:4,length:5,profile:'classic',insert:'white',chandelier:1,spot:0,cornice:false,corniceLength:3};
+assert.equal(M.estimate(state,catalog).total,13030);
+const shadow=M.estimate({...state,profile:'shadow'},catalog);assert.equal(shadow.rows.some(r=>r.key==='white'),false);assert.equal(shadow.rows.find(r=>r.key==='shadowCorners').qty,4);
+const floating=M.estimate({...state,profile:'floating'},catalog);assert.equal(floating.rows.find(r=>r.key==='led').qty,18);
+assert.equal(M.estimate({...state,width:'4,5'},catalog).area,22.5);
+for(const change of [{width:'abc'},{length:-1},{spot:1.5},{chandelier:NaN},{mode:'manual',area:100,perimeter:5,corners:4},{cornice:true,corniceLength:0}])assert.equal(M.estimate({...state,...change},catalog).valid,false);
+assert.equal(M.estimate({...state,spot:1},{...catalog,items:{...catalog.items,spot:undefined}}).valid,false);
+assert.equal(M.estimate(state,{...catalog,minimum:15000}).total,15000);
+const config=M.config({...catalog,secret:'do-not-export',items:{...catalog.items,internal:{price:1,name:'Wholesale'}}});assert.equal(config.secret,undefined);assert.equal(config.items.internal,undefined);
+assert.deepEqual(M.decode(M.encode({config,state})),{config,state});assert.equal(new URL(M.link('https://example.com/calculator/',config,state)).pathname,'/calculator/');
+assert.throws(()=>M.decode('!bad'));assert.throws(()=>M.config({...catalog,items:{...catalog.items,film:{price:-1}}}));
+const assortment={...catalog,options:{film:[{id:'f1',name:'Матова',price:380},{id:'f2',name:'Сатин',price:500}],linear:[{id:'line',name:'Світлова лінія',price:2000}]}};
+assert.equal(M.estimate({...state,filmOption:'f2'},assortment).total,15430);
+assert.equal(M.estimate({...state,filmOption:'unknown'},assortment).valid,false);
+assert.equal(M.estimate({...state,linearEnabled:true,linearLength:2.5,linearOption:'line'},assortment).total,18030);
+assert.equal(M.estimate({...state,linearEnabled:true,linearLength:-1},assortment).valid,false);
+assert.equal(M.estimate(state,assortment).total,13030,'old client state uses the default option');
+(async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:process.env.ACEIL_CHROMIUM_PATH||undefined});
+ try{for(const width of [390,1440]){
+  const {page,errors}=await open(browser,width);await reveal(page);await page.waitForTimeout(400);
+  const url=await page.evaluate(()=>{
+   elemItems=[{id:'f',name:'Плівка Premium',source:'area',unit:'м²',price:380,costPrice:1},{id:'p',name:'Профіль H',source:'main_profile',unit:'м',price:200,costPrice:2},{id:'c',name:'Кути',source:'corners',unit:'шт',price:100},{id:'i',name:'Вставка біла',source:'white_insert',sourceVariant:'white',unit:'м',price:60},{id:'l',name:'Люстра',source:'chandelier',unit:'шт',price:350},{id:'private',name:'PRIVATE CATALOG',source:'other',unit:'шт',price:12345}];
+   elemItems.push({id:'f2',name:'Плівка сатин',source:'area',unit:'м²',price:500},{id:'corn1',name:'Карниз прихований 1',unit:'м',price:1000},{id:'corn2',name:'Карниз UNO',unit:'м',price:1800},{id:'line1',name:'Світлова лінія',unit:'м',price:1500},{id:'line2',name:'Світлова лінія Premium',unit:'м',price:2000});
+   document.getElementById('aceilClientSetupButton').click();
+  });
+  await page.evaluate(()=>document.querySelectorAll('#aceilClientSetup details').forEach(el=>el.open=true));
+  await page.locator('#aceilClientSetup select[name=film]').selectOption('f');
+  for(const [key,value] of [['film','f2'],['cornice','corn2'],['linear','line2']]){
+   await page.locator('[data-assortment='+key+']').evaluate(el=>el.open=true);await page.locator('[name='+key+'Options][value='+value+']').check();
+  }
+  await page.locator('#aceilClientSetup [type=submit]').click();
+  const generated=await page.locator('#aceilClientSetup input[readonly]').inputValue();
+  assert.equal(new URL(generated).hostname,'a-ceil.pp.ua','client link must use the company domain');
+  const payload=M.decode(new URL(generated).hash.slice(1));assert.equal(payload.config.items.film.price,380);assert.ok(!JSON.stringify(payload).includes('costPrice'));assert.ok(!JSON.stringify(payload).includes('PRIVATE CATALOG'));
+  assert.ok(payload.config.options.film.length>=3);assert.ok(payload.config.options.cornice.length>=7);assert.equal(payload.config.options.linear.length,2);
+  const filmAlt=payload.config.options.film.find(it=>it.name==='Плівка сатин').id,cornAlt=payload.config.options.cornice.find(it=>it.name==='Карниз UNO').id,lineAlt=payload.config.options.linear.find(it=>it.name==='Світлова лінія Premium').id;
+  const preview=await page.locator('#aceilClientSetup a').last().getAttribute('href');
+  await page.locator('#aceilClientSetup>button').click();
+  await page.evaluate(()=>document.getElementById('aceilClientSetupButton').click());
+  assert.equal(await page.locator('#aceilClientSetup>details').getAttribute('open'),null,'price settings stay closed on next visit');
+  assert.equal(await page.locator('#aceilClientSetup [data-client-copy]').isVisible(),true);
+  assert.equal(await page.locator('#aceilClientSetup input[readonly]').inputValue(),generated,'ready client link is reused without rebuilding the catalogue');
+  await page.locator('#aceilClientSetup>details>summary').click();
+  assert.equal(await page.locator('[name=filmOptions][value=f2]').isChecked(),true,'saved assortment is restored');
+  await page.goto(preview,{waitUntil:'load'});
+  await page.locator('[data-step="2"]').click();await page.locator('[data-extra=chandelier]').click();await page.locator('[data-step="1"]').click();
+  assert.equal(await page.locator('#total').textContent(),'13 030 грн');
+  assert.equal(await page.locator('input[name=spot]').isDisabled(),false);
+  assert.equal(await page.locator('[value=shadow]').isDisabled(),true);
+  await page.locator('[name=filmOption]').selectOption(filmAlt);assert.equal(await page.locator('#total').textContent(),'15 430 грн');
+  await page.locator('[data-step="2"]').click();await page.locator('[data-extra=cornice]').click();await page.locator('[data-cornice-kind=single]').click();assert.equal(await page.locator('[name=corniceOption]').inputValue(),cornAlt);
+  assert.ok((await page.locator('#rows').textContent()).includes('Карниз UNO'));
+  await page.locator('[data-extra=linearEnabled]').click();await page.locator('[name=linearOption]').selectOption(lineAlt);await page.locator('[name=linearLength]').fill('2.5');
+  assert.ok((await page.locator('#rows').textContent()).includes('Світлова лінія Premium'));assert.equal(await page.locator('#total').textContent(),'25 830 грн');
+  await page.locator('[data-step="0"]').click();await page.locator('[name=width]').fill('4,5');assert.equal(await page.locator('#areaMetric').textContent(),'22,5 м²');
+  await page.locator('[data-mode=manual]').click();assert.equal(await page.locator('[name=area]').inputValue(),'22.5');
+  await page.locator('[name=perimeter]').fill('1');assert.equal(await page.locator('#save').isDisabled(),true);assert.ok((await page.locator('#error').textContent()).includes('не узгоджується'));
+  await page.locator('[name=perimeter]').fill('19');
+  await page.locator(width===390?'#viewEstimate':'#viewEstimateDesktop').click();await page.locator('.contact summary').click();await page.locator('#name').fill('Тест Клієнт');await page.locator('#phone').fill('+380671234567');
+  await page.locator('#save').click();const saved=await page.locator('#savedLink').inputValue();assert.ok(!JSON.stringify(M.decode(new URL(saved).hash.slice(1))).includes('380671234567'));
+  await page.locator('#copyRequest').click();assert.ok((await page.locator('#requestFallback').inputValue()).includes('+380671234567'));
+  await page.goto(saved);await page.waitForFunction(()=>document.getElementById('name')?.value==='');assert.equal(await page.locator('[name=perimeter]').inputValue(),'19');assert.equal(await page.locator('#name').inputValue(),'');
+  assert.equal(await page.locator('[name=filmOption]').inputValue(),filmAlt);assert.equal(await page.locator('[name=corniceOption]').inputValue(),cornAlt);assert.equal(await page.locator('[name=linearOption]').inputValue(),lineAlt);
+  await page.goto('http://aceil.test/calculator/?demo=1');assert.equal(await page.locator('#demoNotice').isVisible(),true);
+  await page.locator('[data-step="1"]').click();await page.locator('[value=floating]').check();assert.equal(await page.locator('#insertField').isVisible(),false);assert.ok((await page.locator('#rows').textContent()).includes('LED'));
+  await page.locator('[data-step="2"]').click();await page.locator('[data-extra=cornice]').click();assert.equal(await page.locator('#corniceField').isVisible(),true);
+  await page.screenshot({path:'/tmp/aceil-client-calculator-'+width+'.png',fullPage:true});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no horizontal overflow');
+
+  await page.locator('[data-step="1"]').click();
+  for(const series of ['premium','classic','kralton'])assert.equal(await page.locator('[data-film-series='+series+']').isDisabled(),false);
+  await page.locator('[data-film-series=classic]').click();assert.equal(await page.locator('#total').textContent(),'Потрібне уточнення');assert.ok((await page.locator('#quoteNote').textContent()).includes('не повна вартість'));
+  assert.equal(await page.locator('#save').isDisabled(),false);
+  await page.locator('[data-film-series=kralton]').click();assert.ok((await page.locator('#filmRule').textContent()).includes('550 грн'));
+  await page.locator('[data-step="2"]').click();await page.locator('[data-extra=doubleSpot]').click();await page.locator('[name=doubleSpot]').fill('2');assert.ok((await page.locator('#rows').textContent()).includes('Подвійний'));assert.equal(await page.locator('#total').textContent(),'Потрібне уточнення');
+  for(const kind of ['surface','hidden','wide','single']){await page.locator('[data-cornice-kind='+kind+']').click();if(kind!=='surface')for(const color of ['white','black']){await page.locator('[data-cornice-color='+color+']').click();assert.equal(await page.locator('[data-cornice-color='+color+']').getAttribute('aria-pressed'),'true');}}
+  await page.locator('[data-extra=linearEnabled]').click();await page.locator('[name=linearDetails]').fill('Зигзаг, біла, 3 см');await page.locator(width===390?'#viewEstimate':'#viewEstimateDesktop').click();await page.locator('#save').click();const quoteLink=await page.locator('#savedLink').inputValue();
+  await page.goto('about:blank');await page.goto(quoteLink);assert.equal(await page.locator('[name=linearDetails]').inputValue(),'Зигзаг, біла, 3 см');assert.equal(await page.locator('[name=doubleSpot]').inputValue(),'2');assert.equal(await page.locator('#total').textContent(),'Потрібне уточнення');
+  await page.locator(width===390?'#viewEstimate':'#viewEstimateDesktop').click();await page.locator('.contact summary').click();await page.locator('#copyRequest').click();const quoteText=await page.locator('#requestFallback').inputValue();assert.ok(quoteText.includes('Повну вартість потрібно уточнити'));assert.ok(quoteText.includes('Зигзаг'));
+  await page.goto(M.link('http://aceil.test/',catalog,state));await page.waitForFunction(company=>document.getElementById('company')?.textContent===company,catalog.company);assert.equal(await page.locator('#company').textContent(),catalog.company);assert.equal(await page.locator('#company img').count(),0,'untrusted labels are plain text');
+  await page.goto('http://aceil.test/calculator/#broken');await page.locator('#unavailable').waitFor({state:'visible'});
+  assert.deepEqual(errors,[]);await page.close();console.log('PASS client calculator owner pricing, formulas, links, privacy and mobile UI '+width+'px');
+ }}finally{await browser.close()}
+})().catch(e=>{console.error(e);process.exitCode=1});
