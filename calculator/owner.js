@@ -275,14 +275,18 @@
    for(const [band,width] of [['narrow','3,6 м'],['wide','5,1 м']]){const label=text('label',width),input=document.createElement('input');input.type='number';input.min=0;input.max=1000000;input.step='0.01';input.inputMode='decimal';input.name='classicPrice:'+texture+':'+band;input.setAttribute('aria-label','Classic '+title+' '+width);input.value=Number(classicRates[texture]?.[band])||'';label.append(input);row.append(label);}classicPrices.append(row);
   }
   form.insertBefore(classicPrices,submit);
+  function classicPriceValues(){
+   const rates={};for(const input of classicPrices.querySelectorAll('input')){const [,texture,band]=input.name.split(':'),price=Number(input.value||0);if(input.validity.badInput||!Number.isFinite(price)||price<0||price>1000000)throw Error('Перевірте ціни Classic.');(rates[texture]||(rates[texture]={}))[band]=price;}return rates;
+  }
+  classicPrices.addEventListener('input',()=>{
+   try{assertOwner();window.ACEILSetFilmPricing('classic',classicPriceValues());output.textContent='Ціни Classic збережено.';}catch(error){output.textContent=error.message;}
+  });
   const close=text('button','Закрити');close.type='button';close.onclick=()=>dialog.close();dialog.append(quick,settings,output,close);document.body.append(dialog);
   form.onsubmit=async e=>{
    e.preventDefault();output.textContent='';
    const data={company:companyInput.value,minimum:minimum.value,__selection:Object.fromEntries(selection)};
    try{
-    assertOwner();const rates={};let pricesChanged=false;
-    for(const input of classicPrices.querySelectorAll('input')){const [,texture,band]=input.name.split(':'),price=Number(input.value||0);if(!Number.isFinite(price)||price<0||price>1000000)throw Error('Перевірте ціни Classic.');(rates[texture]||(rates[texture]={}))[band]=price;if(price!==(Number(classicRates[texture]?.[band])||0))pricesChanged=true;}
-    if(pricesChanged)window.ACEILSetFilmPricing('classic',rates);
+    assertOwner();window.ACEILSetFilmPricing('classic',classicPriceValues());
     const clean=buildCatalogue(data,saved);window.ACEILClientCalc.link('https://a-ceil.pp.ua/',clean);saved={...data,__catalog:clean,__productRules:5,...(saved.__cloudToken?{__cloudToken:saved.__cloudToken}:{})};localStorage.setItem(storageKey(),JSON.stringify(saved));
     if(saved.__cloudToken){output.textContent='Оновлюю прайс…';await syncSavedCatalogue(true);assertOwner();saved=JSON.parse(localStorage.getItem(storageKey()));}
     ready(clean,true);output.textContent=saved.__cloudToken?'Вибір і ціни оновлено у постійному посиланні.':'Вибір збережено. Клієнту доступні лише позначені позиції.';

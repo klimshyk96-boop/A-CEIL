@@ -14,6 +14,12 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
   await page.locator('[data-client-item="film:classic:M303"] input[type=checkbox]').check();
   await page.getByLabel('Classic Мат 3,6 м',{exact:true}).fill('321');
   await page.getByLabel('Classic Мат 5,1 м',{exact:true}).fill('432');
+  // Prices persist immediately, even without saving the assortment form.
+  await page.reload();await reveal(page);
+  await page.evaluate(()=>{document.getElementById('aceilClientSetupButton').click();document.querySelectorAll('#aceilClientSetup details').forEach(e=>e.open=true);});
+  assert.equal(await page.getByLabel('Classic Мат 3,6 м',{exact:true}).inputValue(),'321');
+  assert.equal(await page.getByLabel('Classic Мат 5,1 м',{exact:true}).inputValue(),'432');
+  await page.locator('[data-client-item="film:classic:M303"] input[type=checkbox]').check();
   await page.locator('#aceilClientSetup [type=submit]').click();
   const link=await page.locator('#aceilClientSetup input[readonly]').inputValue(),cfg=M.decode(new URL(link).hash.slice(1)).config;
   assert.equal(cfg.filmCatalog.classic.mat.narrow,321);assert.equal(cfg.filmCatalog.classic.mat.wide,432);
@@ -23,6 +29,15 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
   assert.ok((await page.locator('#total').textContent()).includes('8 640'),'20 m² × 432');
   await page.locator('[data-step="0"]').click();await page.locator('[name=width]').fill('3');await page.locator('[data-step="1"]').click();
   assert.ok((await page.locator('#total').textContent()).includes('4 815'),'15 m² × 321');
+  await page.goto('http://aceil.test/');await reveal(page);
+  await page.evaluate(()=>{
+   A_CEILColorPicker.select('M303','classic');
+   const item=elemItems.find(i=>i.seriesId==='classic'&&i.filmWidth===5.1);updateElemPrice(item.id,'567');
+   A_CEILColorPicker.select('M303','classic');
+  });
+  assert.equal(await page.evaluate(()=>elemItems.find(i=>i.seriesId==='classic'&&i.filmWidth===5.1).price),567);
+  await page.reload();await reveal(page);await page.evaluate(()=>A_CEILColorPicker.select('M303','classic'));
+  assert.equal(await page.evaluate(()=>elemItems.find(i=>i.seriesId==='classic'&&i.filmWidth===5.1).price),567,'editing a real film row survives a full reload and colour recreation');
   assert.deepEqual(errors,[]);console.log('PASS owner Classic tariff inputs → saved palette → correct narrow/wide client totals; stale zero ignored');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});

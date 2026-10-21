@@ -233,5 +233,17 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     window.dispatchEvent(new CustomEvent("aceil:film-pricing-saved"));
     return window.ACEILGetFilmPricing(seriesId);
   };
+  window.ACEILSaveFilmItemPrice=function(item,price){
+    if(!item||!(Number(item.filmWidth)>0)||!Number.isFinite(price)||price<0)return;
+    var series=item.seriesId||item.filmSeriesId,code=String(item.colorCode||item.name||"").toUpperCase().match(/\b[MLS]\d{3}\b/);
+    if(!series||!code)return;
+    var entry=(window.ACEIL_COLOR_CATALOG_BY_SERIES[series]||[]).find(function(c){return c.code===code[0]});
+    if(!entry)return;
+    var band=(entry.filmWidths||[]).find(function(w){return Math.abs(Number(w.nominal)-Number(item.filmWidth))<1e-6});
+    if(!band)return;
+    var rates=window.ACEILGetFilmPricing(series);
+    rates[entry.texture]=Object.assign({},rates[entry.texture]||{});rates[entry.texture][band.priceKey]=price;
+    window.ACEILSetFilmPricing(series,rates);
+  };
 })();
 })();
