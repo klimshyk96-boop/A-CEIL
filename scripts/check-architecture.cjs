@@ -37,7 +37,7 @@ const re=/window\s*(?:\.\s*([A-Za-z_$\u00b7][\w$\u00b7]*)|\[\s*["']([^"']+)["']\
 const chains={};
 for(const f of order){const s=read(f);const seen=new Set();let m;re.lastIndex=0;while((m=re.exec(s))){const n=m[1]||m[2];if(seen.has(n))continue;seen.add(n);(chains[n]=chains[n]||[]).push(f);}}
 const multi=Object.fromEntries(Object.entries(chains).filter(([,v])=>v.length>=2));
-const big=Object.fromEntries(order.filter(f=>fs.statSync(path.join(root,f)).size>BIG).map(f=>[f,fs.statSync(path.join(root,f)).size]));
+const big=Object.fromEntries(order.filter(f=>!f.startsWith('vendor/')&&fs.statSync(path.join(root,f)).size>BIG).map(f=>[f,fs.statSync(path.join(root,f)).size]));
 /* dynamic wrappers: window[name] = ... (e.g. a forEach over several function names) are invisible to the chain scan above */
 const dynRe=/window\s*\[\s*[A-Za-z_$][\w$]*\s*\]\s*=(?!=)/;
 const dynamic=order.filter(f=>dynRe.test(read(f)));

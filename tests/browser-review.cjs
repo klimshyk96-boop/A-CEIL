@@ -7,7 +7,7 @@ async function open(browser,width=1440,dpr=1,sourceRoot=root,beforeGoto){
  const errors=[],missing=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('**/*',async route=>{
   const u=new URL(route.request().url());
-  if(u.hostname==='cdn.jsdelivr.net')return route.fulfill({contentType:'application/javascript',body:stub});
+  if(u.hostname==='cdn.jsdelivr.net'||u.pathname.startsWith('/vendor/supabase-js-'))return route.fulfill({contentType:'application/javascript',body:stub});
   if(u.hostname!=='aceil.test')return route.fulfill({status:403,body:'Offline test: external requests disabled'});
   let f=path.join(sourceRoot,u.pathname==='/'?'index.html':decodeURIComponent(u.pathname));
   if(fs.existsSync(f)&&fs.statSync(f).isDirectory())f=path.join(f,'index.html');

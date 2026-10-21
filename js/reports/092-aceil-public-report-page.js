@@ -36,7 +36,11 @@
   }
   function route(loc) {
     if (!loc) return "";
-    var direct = String(loc.mapUrl || "").trim(); if (direct) return direct;
+    var direct = String(loc.mapUrl || "").trim();
+    if (direct) {
+      try { var url = new URL(direct); if (url.protocol === "https:" || url.protocol === "http:") return url.href; } catch (_) {}
+    }
+    if ((loc.latitude == null ? loc.lat : loc.latitude) == null || (loc.longitude == null ? loc.lng : loc.longitude) == null) return "";
     var lat = Number(loc.latitude == null ? loc.lat : loc.latitude), lng = Number(loc.longitude == null ? loc.lng : loc.longitude);
     return Number.isFinite(lat) && Number.isFinite(lng) ? "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(lat + "," + lng) : "";
   }
@@ -248,7 +252,48 @@
   window.__A·CEILReportZoomReset = function () { applyReportZoom(1); };
 
   function render(overlay, data) {
-    if (data && data.reportType === "manager" && data.managerHtml) { document.open(); document.write(data.managerHtml); document.close(); return; }
+    if (data && data.reportType === "manager" && data.managerHtml) {
+      // Cloud HTML must never reach the editor's storage or session. Keep
+      // navigation and sharing in the trusted parent of the opaque frame.
+      overlay.textContent = "";
+      var bar = document.createElement("div");
+      bar.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;padding:8px;background:#fff";
+      function button(label, action) {
+        var btn = document.createElement("button");
+        btn.type = "button"; btn.textContent = label;
+        btn.style.cssText = "min-height:44px;padding:8px 12px;border:1px solid #dbe3ee;border-radius:12px;background:#eff6ff;color:#1e40af;font:700 14px system-ui";
+        btn.onclick = action; bar.appendChild(btn); return btn;
+      }
+      button("← Назад", function () { location.href = "/"; });
+      var link = document.createElement("input");
+      link.readOnly = true; link.value = location.origin + "/r/" + value;
+      link.setAttribute("aria-label", "Хмарне посилання");
+      link.style.cssText = "display:none;box-sizing:border-box;width:100%;min-height:44px;font:16px system-ui";
+      function showLink() { link.style.display = "block"; link.focus(); link.select(); return link.value; }
+      button("🔗 Посилання", async function () {
+        var url = showLink();
+        try { await navigator.clipboard.writeText(url); } catch (_) {}
+      });
+      button("↗ Поділитися", async function () {
+        try {
+          if (navigator.share) await navigator.share({ title: "Менеджерський звіт A·CEIL", url: link.value });
+          else { showLink(); try { await navigator.clipboard.writeText(link.value); } catch (_) {} }
+        } catch (error) { if (error.name !== "AbortError") showLink(); }
+      });
+      bar.appendChild(link); overlay.appendChild(bar);
+      var frame = document.createElement("iframe");
+      frame.title = "Менеджерський звіт";
+      frame.setAttribute("sandbox", "allow-scripts allow-modals allow-downloads");
+      frame.setAttribute("referrerpolicy", "no-referrer");
+      frame.style.cssText = "flex:1;min-height:0;width:100%;border:0;background:#f7f9fc";
+      overlay.style.cssText += ";display:flex;flex-direction:column;padding:0;overflow:hidden";
+      overlay.appendChild(frame);
+      // Preserve inline print/zoom in old reports, hide route-dependent controls.
+      var hiddenControls = "<style>#mdBack,#mdCloud,#mdShare,#mdCloudBox{display:none!important}</style>";
+      var html = String(data.managerHtml);
+      frame.srcdoc = /<\/head\s*>/i.test(html) ? html.replace(/<\/head\s*>/i, hiddenControls + "</head>") : hiddenControls + html;
+      return;
+    }
     if (data && data.structured && typeof window.A_CEIL_renderStructuredCloudReport === "function") {
       window.A_CEIL_renderStructuredCloudReport(overlay, data);
       return;

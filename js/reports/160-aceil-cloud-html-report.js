@@ -216,6 +216,8 @@ function routeUrl(loc){
 window.A_CEIL_renderStructuredCloudReport=function(overlay,data){
   var s=data.structured||{}, meta=Object.assign({},data.meta||{},s.meta||{}), rooms=s.rooms||[];
   var phone=String(meta.phone||"").replace(/[^+\d]/g,""), route=routeUrl(data.location);
+  // Escape HTML and validate the URL scheme separately, including helper output.
+  try { var parsedRoute=new URL(route); route=/^https?:$/.test(parsedRoute.protocol)?parsedRoute.href:""; } catch (_) { route=""; }
   var roomHtml=rooms.map(function(r,idx){
     var summary='<div class="chr-stats chr-stats-compact">'+
       '<div><small>ПЛОЩА</small><b>'+esc(r.area)+' м²</b></div>'+

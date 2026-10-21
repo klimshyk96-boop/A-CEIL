@@ -27,7 +27,7 @@ const checks=[];function check(n,v,i){assert.ok(v,n+': '+JSON.stringify(i));chec
  try{
   const ctx=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:3,serviceWorkers:'allow',ignoreHTTPSErrors:true});
   await ctx.addInitScript(stub);
-  await ctx.route(/cdn\.jsdelivr\.net/,r=>r.fulfill({contentType:'application/javascript',body:stub}));
+  await ctx.route(/cdn\.jsdelivr\.net|\/vendor\/supabase-js-/,r=>r.fulfill({contentType:'application/javascript',body:stub}));
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'/',{waitUntil:'load'});
   /* the app reloads itself once when the worker takes control, so every probe retries across that reload */

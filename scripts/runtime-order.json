@@ -4,6 +4,7 @@
   "js/projects/008-aceil-integrity-rules.js",
   "js/core/011-aceil-utils.js",
   "js/core/debug-log.js",
+  "vendor/supabase-js-2.117.3.js",
   "js/core/006-aceil-user-storage.js",
   "js/core/007-aceil-pipeline.js",
   "js/nomenclature/189-aceil-autocount-toggle.js",
