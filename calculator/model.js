@@ -9,6 +9,8 @@
   const out={name:String(item.name||key).slice(0,100),price};
   if(item.requiresQuote===true)out.requiresQuote=true;
   if(key==='film'&&['premium','classic','kralton'].includes(item.series))out.series=item.series;
+  if(key==='film'&&/^[MLS]\d{3}$/.test(String(item.code||'')))out.code=item.code;
+  if(key==='film'&&['mat','lak','satin'].includes(item.texture))out.texture=item.texture;
   if(key==='film'&&Array.isArray(item.widths)&&item.widths.length){
    if(item.widths.length>10)throw Error('Забагато ширин полотна.');
    out.widths=item.widths.map(w=>{const nominal=number(w.nominal),max=number(w.max),price=number(w.price);if(!(nominal>0&&nominal<=15&&max>0&&max<=15&&Number.isFinite(price)&&price>=0&&price<=1000000))throw Error('Некоректна ширина або ціна полотна.');return{nominal,max,price,...(w.requiresQuote===true?{requiresQuote:true}:{})};}).sort((a,b)=>a.nominal-b.nominal);
@@ -93,9 +95,14 @@
     const enteredQty=choice.qty==null?({area,perimeter,corners})[item.basis]??1:number(choice.qty),qty=round(enteredQty);
     if(!Number.isFinite(qty)||qty<=0||qty>100000||(/шт|од/.test(item.unit)&&!Number.isInteger(enteredQty))){errors.push('quantity:'+id);continue;}
     let price=item.price,quote=item.requiresQuote===true,name=item.name;
-    if(item.widths?.length){
+    let filmItem=item;
+    if(choice.filmCode&&item.series&&c.filmCatalog){
+     filmItem=filmSelection({filmCode:choice.filmCode,filmSeriesId:item.series},c,palette);
+     if(!filmItem||(item.texture&&filmItem.texture!==item.texture)){errors.push('product:'+id);continue;}name=filmItem.name;
+    }
+    if(filmItem.widths?.length){
      const span=mode==='rectangle'?Math.min(number(s.width),number(s.length)):mode==='contour'?shape?.span||0:value('roomWidth',.3,50);
-     const roll=item.widths.find(w=>w.max+1e-9>=span);if(!roll){errors.push('filmSpan');continue;}price=roll.price;quote=roll.requiresQuote===true;name+=' · полотно '+roll.nominal+' м';
+     const roll=filmItem.widths.find(w=>w.max+1e-9>=span);if(!roll){errors.push('filmSpan');continue;}price=roll.price;quote=roll.requiresQuote===true;name+=' · полотно '+roll.nominal+' м';
     }
     rows.push({key:'product:'+id,id,name,qty:round(qty),unit:item.unit,price:quote?null:price,total:quote?null:round(qty*price)});
    }

@@ -21,10 +21,12 @@
     const bands=e.filmWidths?.length?e.filmWidths:[{nominal:3.6,max:3.6,priceKey:'narrow'},...(e.wide510?[{nominal:5.1,max:5.6,priceKey:'wide'}]:[])];
     const widths=bands.map(w=>{const live=current.find(it=>Math.abs(Number(it.filmWidth)-w.nominal)<1e-6),price=live?Number(live.price):Number(prices[e.texture]?.[w.priceKey]);return{nominal:Number(w.nominal),max:Number(w.max)||Number(w.nominal),price:price>0?price:0,...(!(price>0)?{requiresQuote:true}:{})};}).filter(w=>w.nominal>0&&w.max>0);
     if(!widths.length)return;
-    const groupId=current[0]?.groupId??savedGroups.find(g=>(g.filmSeriesId||g.seriesId)===s.id)?.id;
-    if(savedGroups.length&&groupId==null)return;
+    const named=savedGroups.filter(g=>/плівк|полотн|film|premium|classic|kralton|класік|класик|кралтон/i.test(String(g.name||'')));
+    const specific=savedGroups.find(g=>(g.filmSeriesId||g.seriesId)===s.id)||named.find(g=>new RegExp(s.id==='premium'?'premium|преміум':s.id==='classic'?'classic|класік|класик':'kralton|кралтон','i').test(String(g.name||'')));
+    const common=named.find(g=>!g.filmSeriesId&&!g.seriesId&&/плівк|полотн|film/i.test(String(g.name||''))&&!/premium|classic|kralton|преміум|класік|класик|кралтон/i.test(String(g.name||'')));
+    const groupId=current[0]?.groupId??specific?.id??common?.id??'__owner_film_catalog__';
     const texture=window.ACEIL_TEXTURE_LABELS?.[e.texture]||e.label||e.texture;
-    out.push({id:'film:'+s.id+':'+e.code,groupId,name:[s.manufacturer,s.name,texture,e.colorName||e.code].filter(Boolean).join(' · '),series:s.id,unit:'м²',price:widths[0].price,requiresQuote:widths.every(w=>w.requiresQuote),source:'area',widths,filmFamily:true,filmSelected:current.some(it=>it.filmSelected),originalIds:current.map(it=>String(it.id))});
+    out.push({id:'film:'+s.id+':'+e.code,groupId,name:[s.manufacturer,s.name,texture,e.colorName||e.code].filter(Boolean).join(' · '),series:s.id,code:e.code,texture:e.texture,unit:'м²',price:widths[0].price,requiresQuote:widths.every(w=>w.requiresQuote),source:'area',widths,filmFamily:true,filmSelected:current.some(it=>it.filmSelected),originalIds:current.map(it=>String(it.id))});
    });
   });
   const M=window.ACEILClientCalc;
@@ -43,6 +45,7 @@
   const out={name:it.name,price:Number(it.price)};
   if(it.requiresQuote)out.requiresQuote=true;
   if(key==='film'&&it.series)out.series=it.series;
+  if(key==='film'&&it.code){out.code=it.code;out.texture=it.texture;}
   if(key==='cornice'){out.corniceType=window.ACEILClientCalc.corniceKind(it);const color=window.ACEILClientCalc.corniceColor(it);if(['white','black'].includes(color))out.color=color;}
   if(key==='film'&&it.widths)out.widths=it.widths;
   if(['classic','shadow','floating'].includes(key)){
@@ -168,6 +171,9 @@
    const key=String(definition.id);if(groups.has(key))continue;
    const group=document.createElement('details');group.className='owner-category';group.dataset.group=key;group.open=!definition.collapsed;group.append(text('summary',definition.name||'Група'));groups.set(key,group);groupNames.set(key,definition.name||'Група');form.append(group);
   }
+  if(list.some(it=>it.groupId==='__owner_film_catalog__')){
+   const key='__owner_film_catalog__',group=document.createElement('details');group.className='owner-category';group.dataset.group=key;group.open=true;group.append(text('summary','Плівка'));groups.set(key,group);groupNames.set(key,'Плівка');form.append(group);
+  }
   function groupKey(item){return item.groupId!=null&&groups.has(String(item.groupId))?String(item.groupId):ungrouped;}
   if(list.some(it=>groupKey(it)===ungrouped)){
    const group=document.createElement('details');group.className='owner-category';group.dataset.group=ungrouped;group.open=true;group.append(text('summary','Без групи'));groups.set(ungrouped,group);groupNames.set(ungrouped,'Без групи');form.append(group);
@@ -206,6 +212,7 @@
     return{id:optionId('item',it),...exportProduct(it,role||'manual',list),unit:it.unit||'шт',groupId:String(it.groupId??''),basis};
    });
    catalog.groups=nomenGroups().filter(g=>catalog.products.some(it=>it.groupId===String(g.id))).map(g=>({id:String(g.id),name:g.name}));
+   if(catalog.products.some(it=>it.groupId==='__owner_film_catalog__'))catalog.groups.push({id:'__owner_film_catalog__',name:'Плівка'});
    if(catalog.products.some(it=>!catalog.groups.some(g=>g.id===it.groupId)))catalog.groups.push({id:'',name:'Без групи'});
    for(const [key] of fields){
     const selected=list.filter(it=>selection.get(String(it.id))===key),previous=selected.find(it=>String(it.id)===String(saved[key]));
