@@ -26,7 +26,16 @@
   const white=/біл|white/i.test(name),black=/чорн|black/i.test(name);return white!==black?(white?'white':'black'):'standard';
  }
  function filmSeries(item){if(item.series)return item.series;const name=String(item.name||'');return /kralton|кралтон/i.test(name)?'kralton':/classic|класік|класик/i.test(name)?'classic':/premium|преміум/i.test(name)?'premium':'other';}
- function corniceKind(item){if(item.corniceType)return item.corniceType;const name=String(item.name||'');return /одноряд|single/i.test(name)?'single':/широк|wide/i.test(name)?'wide':/наклад|surface/i.test(name)?'surface':/прихов|hidden|uno|ніша/i.test(name)?'hidden':'other';}
+ function corniceKind(item){if(item.corniceType)return item.corniceType;const name=String(item.name||'')+' '+String(item.source||'');return /широк|wide/i.test(name)?'wide':/одноряд|single|uno|уно/i.test(name)?'single':/наклад|surface/i.test(name)?'surface':/прихов|hidden|ніша/i.test(name)?'hidden':'other';}
+ function corniceColor(item){const explicit=String(item.color||item.sourceVariant||'').trim().toLowerCase();if(/^(white|білий|біла|#fff|#ffffff)$/.test(explicit))return 'white';if(/^(black|чорний|чорна|#000|#000000)$/.test(explicit))return 'black';const suffix=String(item.source||'').toLowerCase().match(/:(white|black)$/);return suffix?suffix[1]:profileVariant({name:String(item.name||'')+' '+String(item.source||'')+' '+String(item.sourceVariant||'')},'cornice');}
+ const seriesIds=['premium','classic','kralton'],textures=['mat','lak','satin'],rateKeys=['narrow','mid','wide','extraWide'];
+ function filmSelection(s,c,palette=root.ACEIL_COLOR_CATALOG_BY_SERIES){
+  if(!s.filmCode||!c.filmCatalog)return null;
+  const series=s.filmSeriesId,entry=palette?.[series]?.find(e=>e.code===s.filmCode),rates=c.filmCatalog[series]?.[entry?.texture];if(!entry||!rates)return null;
+  const bands=entry.filmWidths?.length?entry.filmWidths:[{nominal:3.6,max:3.6,priceKey:'narrow'},...(entry.wide510?[{nominal:5.1,max:5.6,priceKey:'wide'}]:[])];
+  const widths=bands.map(w=>{const key=series+':'+entry.code+':'+w.nominal,price=c.filmOverrides?.[key]??rates[w.priceKey]??0;return{nominal:w.nominal,max:w.max,price,requiresQuote:!(price>0)};});
+  return{name:({premium:'MSD Premium',classic:'MSD Classic',kralton:'Kralton'})[series]+' · '+entry.code+' · '+({mat:'Мат',lak:'Глянець',satin:'Сатин'})[entry.texture]+(entry.colorName?' · '+entry.colorName:''),series,code:entry.code,texture:entry.texture,price:widths[0].price,widths};
+ }
  function contour(raw){
   if(!Array.isArray(raw)||raw.length<3||raw.length>24)return null;
   const p=raw.map(v=>({x:number(v?.x),y:number(v?.y)}));if(p.some(v=>!Number.isFinite(v.x)||!Number.isFinite(v.y)||v.x<0||v.y<0||v.x>50||v.y>50))return null;
@@ -44,6 +53,12 @@
  function config(raw){
   if(!raw||raw.version!==1)throw Error('Посилання має невідомий формат. Попросіть менеджера створити нове.');
   const out={version:1,company:String(raw.company||'A·CEIL').slice(0,80),date:String(raw.date||'').slice(0,10),minimum:Math.max(0,Math.min(100000,number(raw.minimum)||0)),demo:raw.demo===true,items:{}};
+  if(raw.filmCatalog){
+   out.filmCatalog={};
+   for(const series of seriesIds){if(!raw.filmCatalog[series])continue;out.filmCatalog[series]={};for(const texture of textures){if(!raw.filmCatalog[series][texture])continue;const rates={};for(const key of rateKeys){const v=raw.filmCatalog[series][texture][key];if(v==null)continue;const n=number(v);if(!Number.isFinite(n)||n<0||n>1000000)throw Error('Некоректний тариф плівки.');rates[key]=n;}out.filmCatalog[series][texture]=rates;}}
+   out.filmOverrides={};const overrides=Object.entries(raw.filmOverrides||{});if(overrides.length>400)throw Error('Забагато індивідуальних тарифів плівки.');
+   for(const [key,v] of overrides){if(!/^(premium|classic|kralton):[MLS]\d{3}:\d{1,2}(\.\d{1,2})?$/.test(key))throw Error('Некоректний код тарифу плівки.');const n=number(v);if(!Number.isFinite(n)||n<0||n>1000000)throw Error('Некоректний тариф плівки.');out.filmOverrides[key]=n;}
+  }
   for(const key of slots){const item=raw.items&&raw.items[key];if(item)out.items[key]=product(item,key);}
   out.options={};let optionCount=0;
   for(const key of slots){const list=raw.options&&raw.options[key];if(!list)continue;if(!Array.isArray(list)||list.length>12)throw Error('Оберіть не більше 12 варіантів в одній категорії.');
@@ -54,7 +69,7 @@
   if(!out.items.film||!out.items.classic||!out.items.classicCorners)throw Error('У посиланні немає ціни плівки, базового профілю або його кутів.');
   return out;
  }
- function estimate(raw,catalog){
+ function estimate(raw,catalog,palette){
   const c=config(catalog),s=raw||{},errors=[],rows=[];
   function value(key,min,max,integer){const n=number(s[key]);if(!Number.isFinite(n)||n<min||n>max||(integer&&!Number.isInteger(n))){errors.push(key);return 0;}return n;}
   const mode=['manual','contour'].includes(s.mode)?s.mode:'rectangle';let area,perimeter,shape;
@@ -67,7 +82,8 @@
   const cornice=s.cornice===true?value('corniceLength',.1,50):0;
   function selected(key){const options=c.options[key]||[],choice=String(s[key+'Option']||'');return options.length?(choice?options.find(it=>it.id===choice):options[0]):c.items[key];}
   function row(key,qty,unit,label,override){if(qty<=0)return;const item=override||selected(key);if(!item){errors.push('price:'+key);return;}rows.push({key,name:label||item.name,qty:round(qty),unit,price:item.requiresQuote?null:item.price,total:item.requiresQuote?null:round(qty*item.price)});}
-  let film=null;const filmItem=selected('film');
+  let film=null;const filmItem=s.filmCode&&c.filmCatalog?filmSelection(s,c,palette):selected('film');
+  if(s.filmCode&&c.filmCatalog&&!filmItem)errors.push('price:film');
   if(filmItem&&filmItem.widths?.length){
    const required=mode==='rectangle'?Math.min(number(s.width),number(s.length)):mode==='contour'?shape?.span||0:value('roomWidth',.3,50);
    const roll=required>0&&Number.isFinite(required)?filmItem.widths.find(w=>w.max+1e-9>=required):null;film={required,roll:roll||null,legacy:false};
@@ -91,6 +107,6 @@
  function encode(value){const bytes=new TextEncoder().encode(JSON.stringify(value));return btoa(Array.from(bytes,b=>String.fromCharCode(b)).join('')).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
  function decode(value){if(typeof value!=='string'||value.length>24000||!/^[\w-]+$/.test(value))throw Error('Посилання пошкоджено або завелике.');const text=atob(value.replace(/-/g,'+').replace(/_/g,'/'));return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(text,c=>c.charCodeAt(0))));}
  function link(base,c,state){const url=new URL('/calculator/',base),payload=encode({config:config(c),state:state||null});if(payload.length>24000)throw Error('Посилання завелике. Зменште кількість варіантів у прайсі.');url.hash=payload;return url.href;}
- const api={slots,number,config,estimate,encode,decode,link,profileVariant,filmSeries,corniceKind,contour};
+ const api={slots,number,config,estimate,encode,decode,link,profileVariant,filmSeries,corniceKind,corniceColor,filmSelection,contour};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ACEILClientCalc=Object.freeze(api);
 })(typeof window!=='undefined'?window:globalThis);

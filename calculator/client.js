@@ -1,8 +1,8 @@
 (async function(){
- 'use strict';const M=window.ACEILClientCalc,U=window.ACEILClientUI,$=s=>document.getElementById(s),form=$('form');
+ 'use strict';const M=window.ACEILClientCalc,U=window.ACEILClientUI,P=window.ACEILClientPalette,$=s=>document.getElementById(s),form=$('form');
  window.addEventListener('hashchange',()=>location.reload());
  const cloudId=new URLSearchParams(location.search).get('c');let catalog,mode='rectangle';const initial={width:'4',length:'5',area:'',perimeter:'',corners:'4',profile:'classic',insert:'white',chandelier:'0',spot:'0',cornice:false,corniceLength:'3',mode:'rectangle'};
- initial.doubleSpot='0';initial.linearDetails='';initial.linearEnabled=false;initial.linearLength='3';initial.roomWidth='';M.slots.forEach(key=>initial[key+'Option']='');
+ initial.filmCode='';initial.filmSeriesId='';initial.doubleSpot='0';initial.linearDetails='';initial.linearEnabled=false;initial.linearLength='3';initial.roomWidth='';M.slots.forEach(key=>initial[key+'Option']='');
  const demo={version:1,demo:true,company:'A·CEIL · тестовий калькулятор',date:'2026-10-20',minimum:0,items:Object.fromEntries(Object.entries({film:['Плівка MSD Premium',380],classic:['Алюмінієвий профіль',200],shadow:['Тіньовий профіль',550],floating:['Парящий профіль',750],white:['Біла вставка',60],black:['Чорна вставка',60],chandelier:['Монтаж люстри',350],spot:['Монтаж точкового світильника',200],cornice:['Прихований карниз',1000],classicCorners:['Кути базового профілю',100],shadowCorners:['Кути тіньового профілю',200],floatingCorners:['Кути парящого профілю',250],led:['LED підсвічування',500]}).map(([key,[name,price]])=>[key,{name,price}]))};
  function status(text){$('status').textContent=text;}
  function values(){const d=Object.fromEntries(new FormData(form));return{...d,mode,...(mode==='contour'?U.state():{}),cornice:form.elements.cornice.checked,linearEnabled:form.elements.linearEnabled.checked};}
@@ -81,7 +81,7 @@
   $('total').textContent=r.valid?(r.complete?money(r.total):'Потрібне уточнення'):'Уточніть дані';$('error').hidden=r.valid;
   $('quoteNote').hidden=!r.valid||r.complete;$('quoteNote').textContent='Ціну потрібно уточнити: '+r.quoteRequired.join(', ')+'. Відома частина: '+money(r.total)+'. Це не повна вартість замовлення.';
   $('miniTotal').textContent=r.valid?(r.complete?money(r.total):'Потрібне уточнення'):'Уточніть дані';
-  const selectedFilm=(catalog.options.film||[]).find(it=>it.id===s.filmOption)||catalog.items.film;$('filmName').textContent=selectedFilm?.name||'Оберіть плівку';
+  const selectedFilm=M.filmSelection(s,catalog)||(catalog.options.film||[]).find(it=>it.id===s.filmOption)||catalog.items.film;$('filmName').textContent=selectedFilm?.name||'Оберіть плівку';
   $('error').textContent=r.errors.includes('contour')?'Замкніть контур без перетинів і перевірте розміри.':r.errors.includes('geometry')?'Площа не узгоджується з периметром. Перевірте заміри.':r.errors.includes('roomWidth')?'Вкажіть ширину кімнати для підбору полотна.':r.errors.includes('filmSpan')?'Для такої ширини немає придатного полотна у вибраній плівці. Потрібна перевірка менеджера.':r.errors.some(e=>e.startsWith('price:'))?'Для обраної позиції немає ціни. Зверніться до менеджера.':'Перевірте поля: потрібні додатні розміри та цілі кількості від 0.';
   $('filmRule').textContent=r.film?.legacy&&r.film.quote?'Ціну цієї плівки уточнить менеджер.':r.film?.legacy?'У цьому посиланні немає тарифів за шириною. Показана фіксована ціна; попросіть менеджера оновити прайс.':r.film?.roll?'Для ширини '+r.film.required.toLocaleString('uk-UA')+' м підібрано полотно '+r.film.roll.nominal.toLocaleString('uk-UA')+' м · '+(r.film.roll.requiresQuote?'ціну уточнить менеджер':money(r.film.roll.price)+'/м²')+'.':'Немає придатної ширини полотна — уточніть розміри або зверніться до менеджера.';
   $('filmRule').classList.toggle('warning',!!r.film?.legacy||!r.film?.roll);
@@ -94,7 +94,7 @@
   }else{$('plan').replaceChildren();$('plan').textContent=mode==='manual'?'Розрахунок за площею та периметром':'Введіть розміри кімнати';}
   try{sessionStorage.setItem('aceil-client-draft:'+M.encode(catalog),JSON.stringify(s));}catch(_){}
   // A changed draft is no longer the previously copied calculation.
-  $('linkFallback').hidden=true;U.sync(s);return r;
+  $('linkFallback').hidden=true;P.sync(s);U.sync(s);return r;
  }
  $('loading').hidden=!cloudId;
  try{
@@ -107,9 +107,10 @@
    demo.options.cornice=[];
    for(const [kind,title] of [['surface','Накладний'],['hidden','Прихований'],['wide','Широкий'],['single','Однорядний']])for(const color of kind==='surface'?['']:['white','black'])demo.options.cornice.push({id:kind+'-'+color,name:'Карниз '+title.toLowerCase()+(color?' · '+(color==='white'?'білий':'чорний'):''),corniceType:kind,color,price:0,requiresQuote:true});
   }
-  catalog=M.config(payload?payload.config:demo);productFields();rangeControls();restore(initial);
+  if(!payload)demo.filmCatalog=Object.fromEntries((window.ACEIL_FILM_SERIES||[]).filter(s=>s.active!==false).map(s=>[s.id,window.ACEILGetFilmPricing(s.id)]));
+  catalog=M.config(payload?payload.config:demo);productFields();rangeControls();P.init({catalog,form,calculate});restore(initial);
   let draft;try{draft=JSON.parse(sessionStorage.getItem('aceil-client-draft:'+M.encode(catalog))||'null');}catch(_){}
-  const restored=payload&&payload.state||draft;restore(restored);for(const key of ['chandelier','spot','doubleSpot'])if(restored?.[key]==null&&catalog.items[key]?.requiresQuote)form.elements.namedItem(key).value='0';$('company').textContent=catalog.company;$('demoNotice').hidden=!catalog.demo;$('priceDate').textContent=(cloudId?'Актуальний прайс: ':'Збережений прайс: ')+(catalog.date||'дата не вказана')+'.';
+  const restored=payload&&payload.state||draft;restore(restored);P.defaultSelection(restored);for(const key of ['chandelier','spot','doubleSpot'])if(restored?.[key]==null&&catalog.items[key]?.requiresQuote)form.elements.namedItem(key).value='0';$('company').textContent=catalog.company;$('demoNotice').hidden=!catalog.demo;$('priceDate').textContent=(cloudId?'Актуальний прайс: ':'Збережений прайс: ')+(catalog.date||'дата не вказана')+'.';
   for(const p of ['classic','shadow','floating']){const el=form.querySelector('[name=profile][value='+p+']');el.disabled=!catalog.items[p]||!catalog.items[p+'Corners']||(p==='floating'&&!catalog.items.led);}
   for(const key of ['white','black'])form.elements.insert.querySelector('[value='+key+']').disabled=!catalog.items[key];
   if(!catalog.items[values().insert])form.elements.insert.value=catalog.items.white?'white':'none';

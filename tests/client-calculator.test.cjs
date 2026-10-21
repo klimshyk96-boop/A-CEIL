@@ -53,7 +53,7 @@ assert.equal(M.estimate(state,assortment).total,13030,'old client state uses the
   assert.equal(await page.locator('input[name=spot]').isDisabled(),false);
   assert.equal(await page.locator('[value=shadow]').isDisabled(),true);
   await page.locator('[name=filmOption]').selectOption(filmAlt);assert.equal(await page.locator('#total').textContent(),'15 430 грн');
-  await page.locator('[data-step="2"]').click();await page.locator('[data-extra=cornice]').click();await page.locator('[name=corniceOption]').selectOption(cornAlt);
+  await page.locator('[data-step="2"]').click();await page.locator('[data-extra=cornice]').click();await page.locator('[data-cornice-kind=single]').click();assert.equal(await page.locator('[name=corniceOption]').inputValue(),cornAlt);
   assert.ok((await page.locator('#rows').textContent()).includes('Карниз UNO'));
   await page.locator('[data-extra=linearEnabled]').click();await page.locator('[name=linearOption]').selectOption(lineAlt);await page.locator('[name=linearLength]').fill('2.5');
   assert.ok((await page.locator('#rows').textContent()).includes('Світлова лінія Premium'));assert.equal(await page.locator('#total').textContent(),'25 830 грн');
