@@ -46,8 +46,8 @@
    syncFilmControls=()=>{const active=filmRows.find(row=>selected[row.item.id]),choice=active&&selected[active.item.id];enabled.checked=!!active;if(active){series.value=choice.filmSeriesId||active.item.series;lastCode=choice.filmCode||active.item.code;const entry=window.ACEIL_COLOR_CATALOG_BY_SERIES?.[series.value]?.find(e=>e.code===lastCode);textures(entry?.texture||active.item.texture,lastCode);}for(const row of filmRows)row.box.hidden=row!==active;};
    textures(initial.texture,lastCode);
   }
-  function values(){return{...Object.fromEntries(new FormData(form)),mode,...(mode==='contour'?U.state():{}),selectedProducts:selected};}
-  function restore(state){if(!state||typeof state!=='object')return;mode=['manual','contour'].includes(state.mode)?state.mode:'rectangle';U.restore(state);for(const key of ['width','length','area','perimeter','corners','roomWidth'])if(state[key]!=null)form.elements.namedItem(key).value=String(state[key]).slice(0,30);if(state.selectedProducts&&typeof state.selectedProducts==='object')selected=state.selectedProducts;}
+  function values(){return{...Object.fromEntries(new FormData(form)),mode,selectedProducts:selected};}
+  function restore(state){if(!state||typeof state!=='object')return;state=U.restore(state);mode=state.mode==='manual'?'manual':'rectangle';for(const key of ['width','length','area','perimeter','corners','roomWidth'])if(state[key]!=null)form.elements.namedItem(key).value=String(state[key]).slice(0,30);if(state.selectedProducts&&typeof state.selectedProducts==='object')selected=state.selectedProducts;}
   function currentLink(){return cloudId?window.ACEILClientCloud.link(location.href,cloudId,values()):M.link(location.href,catalog,values());}
   function calculate(){
    const s=values(),r=M.estimate(s,catalog);$('rectangleFields').hidden=mode!=='rectangle';$('manualFields').hidden=mode!=='manual';
@@ -62,6 +62,7 @@
    $('rows').replaceChildren();for(const item of r.rows){const div=document.createElement('div');div.className='row';div.append(node('span',item.name+' · '+item.qty+' '+item.unit),node('b',item.total===null?'Уточнити':money(item.total)));$('rows').append(div);}
    $('save').disabled=$('share').disabled=$('copyRequest').disabled=!r.valid||!Object.keys(selected).length;
    if(mode==='rectangle'){const w=M.number(s.width),h=M.number(s.length);if(w>0&&h>0){const scale=Math.min(230/w,110/h),x=(330-w*scale)/2,y=(190-h*scale)/2;$('plan').innerHTML='<svg viewBox="0 0 330 190" aria-label="План у масштабі"><rect x="'+x+'" y="'+y+'" width="'+w*scale+'" height="'+h*scale+'" fill="#f0f5ff" stroke="#2563eb" stroke-width="2"/></svg>';}}
+   if(mode==='manual')$('plan').textContent='Розрахунок за площею та периметром';
    try{sessionStorage.setItem('aceil-client-draft:'+M.encode(catalog),JSON.stringify(s));}catch(_){}$('linkFallback').hidden=true;U.sync(s);return r;
   }
   let draft;try{draft=JSON.parse(sessionStorage.getItem('aceil-client-draft:'+M.encode(catalog))||'null');}catch(_){}restore(payload?.state||draft);

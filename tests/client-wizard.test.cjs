@@ -20,14 +20,15 @@ assert.equal(M.estimate(state,catalog).total,9800);assert.equal(M.estimate({...s
   await page.locator('[name=spot]').fill('4');await page.locator('[data-extra=spot]').click();assert.equal(await page.locator('[name=spot]').inputValue(),'0');assert.equal(await page.locator('[data-extra-panel=spot]').isVisible(),false);
   await page.locator('[data-extra=cornice]').click();await page.locator('[data-cornice-kind=hidden]').click();await page.locator('[data-cornice-color=black]').click();
   await page.screenshot({path:'/tmp/aceil-wizard-extras-'+width+'.png',fullPage:true});
-  await page.locator('[data-extra=cornice]').click();await page.locator('[data-step="0"]').click();await page.locator('[data-mode=contour]').click();
-  const canvas=page.locator('#contourCanvas'),bounds=await canvas.boundingBox();
-  for(const p of [{x:.5,y:.5},{x:4.5,y:.5},{x:4.5,y:2.5},{x:2.5,y:2.5},{x:2.5,y:5.5},{x:.5,y:5.5}])await canvas.click({position:{x:p.x/6*bounds.width,y:p.y/6*bounds.height}});
-  await page.locator('#contourClose').click();assert.equal(await page.locator('#areaMetric').textContent(),'14 м²');assert.equal(await page.locator('#perimeterMetric').textContent(),'18 м');
-  await page.screenshot({path:'/tmp/aceil-wizard-contour-'+width+'.png',fullPage:true});
+  await page.locator('[data-extra=cornice]').click();await page.locator('[data-step="0"]').click();
+  assert.deepEqual(await page.locator('[data-mode]').evaluateAll(nodes=>nodes.map(n=>n.dataset.mode)),['rectangle','manual']);
+  assert.equal(await page.locator('#contourCanvas').count(),0);
+  await page.locator('[data-mode=manual]').click();
+  for(const [name,value] of [['area','14'],['perimeter','18'],['corners','6'],['roomWidth','4']])await page.locator('[name='+name+']').fill(value);
+  assert.equal(await page.locator('#areaMetric').textContent(),'14 м²');assert.equal(await page.locator('#perimeterMetric').textContent(),'18 м');
   await page.locator('#stepNext').click();await review();assert.equal(await page.locator('#estimateDialog').evaluate(el=>el.open),true);
-  await page.locator('#save').click();const saved=await page.locator('#savedLink').inputValue();assert.equal(M.decode(new URL(saved).hash.slice(1)).state.points.length,6);
-  await page.goto('about:blank');await page.goto(saved);assert.equal(await page.locator('#areaMetric').textContent(),'14 м²');assert.equal(await page.locator('#contourFields').isVisible(),true);
+  await page.locator('#save').click();const saved=await page.locator('#savedLink').inputValue();assert.equal(M.decode(new URL(saved).hash.slice(1)).state.mode,'manual');
+  await page.goto('about:blank');await page.goto(saved);assert.equal(await page.locator('#areaMetric').textContent(),'14 м²');assert.equal(await page.locator('#manualFields').isVisible(),true);
   await review();await page.locator('#reviewRequest').click();assert.equal(await page.locator('#name').isVisible(),true);await page.keyboard.press('Escape');
   const token='a'.repeat(32);let price=400;
   await page.route('**/rest/v1/rpc/aceil_get_client_calculator',route=>route.fulfill({contentType:'application/json',body:JSON.stringify({...catalog,items:{...catalog.items,film:{...catalog.items.film,price,widths:[{nominal:5,max:5,price}]}}})}));
@@ -35,7 +36,8 @@ assert.equal(M.estimate(state,catalog).total,9800);assert.equal(M.estimate({...s
   price=500;await page.reload();assert.equal(await page.locator('#total').textContent(),'14 000 грн','same public link reads current prices');
   await review();await page.locator('#save').click();const cloudSaved=await page.locator('#savedLink').inputValue();assert.equal(new URL(cloudSaved).searchParams.get('c'),token);assert.equal(M.decode(new URL(cloudSaved).hash.slice(1)).config,undefined);
   await page.route('**/rest/v1/rpc/aceil_get_client_calculator',route=>route.fulfill({status:503,body:'offline'}));await page.reload();assert.equal(await page.locator('#unavailable').isVisible(),true,'never silently substitute demo/stale prices when cloud read fails');
-  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);assert.deepEqual(errors,[]);await page.close();console.log('PASS wizard, optional extras, contour, restore and current cloud prices '+width+'px');
+  await page.goto(M.link('http://aceil.test/calculator/',catalog,state));assert.equal(await page.locator('#oldContourNotice').isVisible(),true);assert.equal(await page.locator('[name=area]').inputValue(),'');assert.equal(await page.locator('#total').textContent(),'Уточніть дані');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);assert.deepEqual(errors,[]);await page.close();console.log('PASS wizard, optional extras, measured manual input, restore and current cloud prices '+width+'px');
  }
  // Publish contract uses a controlled RPC fixture, not a live database write.
  const {page,errors}=await open(browser,390);await reveal(page);
