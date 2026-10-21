@@ -24,8 +24,8 @@ assert.equal(M.estimate(base,{...cfg,items:{...cfg.items,film:{name:'Free explic
    document.getElementById('aceilClientSetupButton').click();
   });
   await page.evaluate(()=>document.querySelectorAll('#aceilClientSetup details').forEach(el=>el.open=true));
-  assert.equal(await page.locator('#aceilClientSetup [name=film]').inputValue(),'film:premium:M303','film registry supplies the picker even without any live film item');
-  await page.locator('#aceilClientSetup [name=classic]').selectOption('al');await page.locator('#aceilClientSetup [type=submit]').click();
+  assert.equal(await page.locator('[data-client-item="film:premium:M303"] input[type=checkbox]').isChecked(),true,'film registry supplies the checklist even without any live film item');
+  await page.locator('[data-client-item="al"] input[type=checkbox]').check();await page.locator('#aceilClientSetup [type=submit]').click();
   const url=await page.locator('#aceilClientSetup a').last().getAttribute('href'),payload=M.decode(new URL(url).hash.slice(1));
   assert.deepEqual(payload.config.options.film[0].widths.map(w=>[w.nominal,w.max,w.price]),[[3.6,3.6,380],[5.1,5.6,420],[5.8,6.2,420]]);
   assert.deepEqual(new Set(payload.config.options.film.map(it=>it.series)),new Set(['premium','classic','kralton']));assert.equal(payload.config.options.film.find(it=>it.series==='classic').widths[0].requiresQuote,true);

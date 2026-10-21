@@ -29,9 +29,9 @@ assert.equal(M.estimate(state,assortment).total,13030,'old client state uses the
    document.getElementById('aceilClientSetupButton').click();
   });
   await page.evaluate(()=>document.querySelectorAll('#aceilClientSetup details').forEach(el=>el.open=true));
-  await page.locator('#aceilClientSetup select[name=film]').selectOption('f');
+  await page.locator('[data-client-item="f"] input[type=checkbox]').check();
   for(const [key,value] of [['film','f2'],['cornice','corn2'],['linear','line2']]){
-   await page.locator('[data-assortment='+key+']').evaluate(el=>el.open=true);await page.locator('[name='+key+'Options][value='+value+']').check();
+   await page.locator('[data-client-item="'+value+'"] input[type=checkbox]').check();
   }
   await page.locator('#aceilClientSetup [type=submit]').click();
   const generated=await page.locator('#aceilClientSetup input[readonly]').inputValue();
@@ -42,10 +42,9 @@ assert.equal(M.estimate(state,assortment).total,13030,'old client state uses the
   const preview=await page.locator('#aceilClientSetup a').last().getAttribute('href');
   await page.locator('#aceilClientSetup>button').click();
   await page.evaluate(()=>document.getElementById('aceilClientSetupButton').click());
-  assert.equal(await page.locator('#aceilClientSetup>details').getAttribute('open'),null,'price settings stay closed on next visit');
-  assert.equal(await page.locator('#aceilClientSetup [data-client-copy]').isVisible(),true);
+  assert.equal(await page.locator('#aceilClientSetup [data-owner-links]').getAttribute('open'),null,'link details stay closed on next visit');
+  await page.locator('#aceilClientSetup [data-owner-links]>summary').click();assert.equal(await page.locator('#aceilClientSetup [data-client-copy]').isVisible(),true);
   assert.equal(await page.locator('#aceilClientSetup input[readonly]').inputValue(),generated,'ready client link is reused without rebuilding the catalogue');
-  await page.locator('#aceilClientSetup>details>summary').click();
   assert.equal(await page.locator('[name=filmOptions][value=f2]').isChecked(),true,'saved assortment is restored');
   await page.goto(preview,{waitUntil:'load'});
   await page.locator('[data-step="2"]').click();await page.locator('[data-extra=chandelier]').click();await page.locator('[data-step="1"]').click();

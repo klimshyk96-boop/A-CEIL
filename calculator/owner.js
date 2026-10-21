@@ -70,18 +70,18 @@
  function open(){
   document.getElementById('aceilClientSetup')?.remove();const dialog=document.createElement('dialog');dialog.id='aceilClientSetup';
   const style=text('style','#aceilClientSetup{border:1px solid #dbe4f0;border-radius:20px;padding:22px;width:min(560px,94vw);max-height:88dvh;overflow:auto;color:#17263d;background:#fff}#aceilClientSetup::backdrop{background:#0f172a88}#aceilClientSetup h2{font-size:20px;margin:0 0 12px}#aceilClientSetup p{font-size:13px;color:#64748b;line-height:1.5}#aceilClientSetup label{display:block;font-size:13px;font-weight:700;margin:14px 0}#aceilClientSetup input,#aceilClientSetup select{width:100%;padding:11px;font-size:16px;margin-top:7px;border:1px solid #dbe4f0;border-radius:10px;background:white;color:#17263d}#aceilClientSetup button,#aceilClientSetup a{display:inline-block;padding:12px;margin:6px 6px 0 0;border-radius:10px;border:0;background:#eff5ff;color:#1d4ed8;font-weight:700;font-size:13px;text-decoration:none}#aceilClientSetup button[type=submit]{background:#2563eb;color:white}#aceilClientSetup output{display:block;font-size:13px;margin-top:14px;color:#854d0e}');
-  dialog.append(style,text('h2','Калькулятор для клієнта'),text('p','Клієнт сам обирає профіль, вставку, світло та карниз у готовому калькуляторі. Налаштуйте прайс один раз, далі просто копіюйте посилання.'));
+  dialog.append(style,text('h2','Калькулятор для клієнта'),text('p','Позначте, що пропонувати клієнтам. Ціни — з вашої номенклатури.'));
   const form=document.createElement('form');let saved={};try{saved=JSON.parse(localStorage.getItem(storageKey())||'{}');}catch(_){}
-  const quick=document.createElement('section'),settings=document.createElement('details'),settingsTitle=text('summary','Налаштувати прайс');settings.append(settingsTitle);settings.style.marginTop='18px';settingsTitle.style.cursor='pointer';settingsTitle.style.fontWeight='700';
+  const quick=document.createElement('details'),settings=document.createElement('details'),settingsTitle=text('summary','Що бачить клієнт');quick.dataset.ownerLinks='';settings.dataset.ownerSettings='';settings.append(settingsTitle);settings.style.marginTop='18px';settingsTitle.style.cursor='pointer';settingsTitle.style.fontWeight='700';
   const output=document.createElement('output');output.setAttribute('aria-live','polite');
-  function ready(catalog){
-   catalog=window.ACEILClientCalc.config(catalog);quick.replaceChildren();
+  function ready(catalog,showLink=false){
+   catalog=window.ACEILClientCalc.config(catalog);quick.hidden=false;quick.replaceChildren(text('summary','Посилання для клієнта'));quick.open=showLink;
    const url=saved.__cloudToken?window.ACEILClientCloud.link('https://a-ceil.pp.ua/',saved.__cloudToken):window.ACEILClientCalc.link('https://a-ceil.pp.ua/',catalog),previewUrl=window.ACEILClientCalc.link(location.href,catalog);
    quick.append(text('p','Готовий калькулятор · '+catalog.company));
    const summary=text('p',fields.filter(([key])=>catalog.items[key]).map(([key,label])=>label.split(',')[0]).join(' · '));quick.append(summary);
    const assortment=document.createElement('details');assortment.append(text('summary','Збережений асортимент і ціни'));
    fields.forEach(([key,label])=>{const rows=catalog.options[key]?.length?catalog.options[key]:(catalog.items[key]?[catalog.items[key]]:[]);if(!rows.length)return;assortment.append(text('h4',label));rows.forEach(item=>assortment.append(text('p',item.name+' · '+(item.requiresQuote?'Уточнити':item.price+' грн'))));});quick.append(assortment);
-   quick.append(text('p','Прайс збережено '+catalog.date+'. Для нового клієнта повторно налаштовувати нічого не потрібно. Після зміни цін відкрийте «Змінити прайс» і збережіть їх.'));
+   quick.append(text('p','Прайс збережено '+catalog.date+'. Після зміни цін відкрийте «Що бачить клієнт» і збережіть вибір.'));
    const label=text('label',saved.__cloudToken?'Постійне посилання для клієнтів':'Тестове посилання · збережений прайс'),input=document.createElement('input');input.value=url;input.readOnly=true;label.append(input);quick.append(label);
    const copy=text('button','Скопіювати посилання');copy.type='button';copy.dataset.clientCopy='';copy.style.background='#2563eb';copy.style.color='white';copy.onclick=async()=>{try{await navigator.clipboard.writeText(url);output.textContent='Посилання скопійовано.';}catch(_){input.focus();input.select();output.textContent='Скопіюйте виділене посилання.';}};
    const view=text('a','Відкрити калькулятор');view.href=url;view.target='_blank';view.rel='noopener';quick.append(copy,view);
@@ -89,62 +89,109 @@
 
    const publish=text('button',saved.__cloudToken?'Оновити прайс у постійному посиланні':'Увімкнути постійне посилання');publish.type='button';publish.dataset.publishCalculator='';publish.onclick=async()=>{
     publish.disabled=true;output.textContent='Публікую прайс…';
-    try{const token=await window.ACEILClientCloud.publish(backend(),catalog);saved={...saved,__cloudToken:token};localStorage.setItem(storageKey(),JSON.stringify(saved));ready(catalog);output.textContent='Актуальний прайс опубліковано. Посилання залишається тим самим.';}catch(error){output.textContent=error.message;}finally{publish.disabled=false;}
+    try{const token=await window.ACEILClientCloud.publish(backend(),catalog);saved={...saved,__cloudToken:token};localStorage.setItem(storageKey(),JSON.stringify(saved));ready(catalog,true);output.textContent='Актуальний прайс опубліковано. Посилання залишається тим самим.';}catch(error){output.textContent=error.message;}finally{publish.disabled=false;}
    };quick.append(publish);
    quick.append(text('p',saved.__cloudToken?'Збережіть зміни та натисніть «Оновити прайс у постійному посиланні». Клієнтам повторно надсилати посилання не потрібно.':'Тестове посилання фіксує ціни. Постійне посилання потребує ввімкнення хмарного збереження на сервері.'));
-   settings.open=false;settingsTitle.textContent='Асортимент і ціни';
+   settings.open=!showLink;settingsTitle.textContent='Що бачить клієнт';
   }
   let configured=false;try{if(saved.__catalog){ready(saved.__catalog);configured=true;}}catch(_){}
-  if(!configured){settings.open=true;quick.append(text('p','Одноразове налаштування: перевірте зіставлення з номенклатурою нижче. Надалі тут буде кнопка копіювання готового посилання.'));}
+  if(!configured){settings.open=true;quick.hidden=true;}
   let rs={};try{rs=_loadRS();}catch(_){}
   const company=text('label','Назва компанії'),companyInput=document.createElement('input');companyInput.name='company';companyInput.maxLength=80;companyInput.value=saved.company||rs.companyName||'A·CEIL';company.append(companyInput);form.append(company);
-  const list=catalogueItems().filter(it=>it&&Number.isFinite(Number(it.price))&&Number(it.price)>=0);
+  const list=catalogueItems().filter(Boolean).map(it=>it.price!=null&&String(it.price).trim()!==''&&Number.isFinite(Number(it.price))&&Number(it.price)>=0?it:{...it,price:0,requiresQuote:true});
   const filmId=id=>list.find(it=>String(it.id)===String(id)||it.originalIds?.includes(String(id)))?.id||id;
   if(saved.film)saved.film=filmId(saved.film);if(Array.isArray(saved.filmOptions))saved.filmOptions=saved.filmOptions.map(filmId);
-  if(saved.__catalog&&saved.__productRules!==4){settings.open=true;settingsTitle.textContent='Оновити прайс із підбором ширини';output.textContent='Збережіть прайс ще раз, щоб додати Premium, Classic, Kralton, освітлення та варіанти карнизів. Усі кольори доступні з загальної бази; карнизи — за цінами номенклатури.';}
-  fields.forEach(([key,label,source,unit])=>{
-   const wrap=text('label',label),select=document.createElement('select');select.name=key;const empty=text('option',key.endsWith('Corners')?'Не пропонувати':'Без основної позиції');empty.value='';select.append(empty);
-   const pool=list.filter(it=>unitOf(it)===unit&&(eligible(it,key,source)||String(it.id)===String(saved[key])||saved[key+'Options']?.includes(String(it.id))));pool.forEach((it)=>{const option=text('option',it.name+' · '+(it.requiresQuote?'Уточнити':Number(it.price)+' грн'));option.value=String(it.id);select.append(option);});
-   let candidates=source?pool.filter(it=>it.source===source&&(key!=='white'&&key!=='black'||(it.sourceVariant||'white')===key)):[];
-   if(key==='film'){const selected=pool.filter(it=>it.filmSelected===true);if(selected.length===1)candidates=selected;else if(!saved.film){const white=pool.find(it=>it.id==='film:premium:M303');if(white)candidates=[white];}}
-   if(!source){const pattern=key==='led'?/^LED монохром$|^LED підсвічування$|^LED стрічка$/i:key==='linear'?/^Світлова лінія$/i:/^Карниз прихований(?: 1)?$/i;candidates=pool.filter(it=>pattern.test(String(it.name||'').trim()));}
-   if(key==='doubleSpot')candidates=pool.filter(it=>['double_spot','lighttype:double_spot'].includes(it.source)||/подвійн|double.spot/i.test(it.name));
-   // An ambiguous price selection always requires the owner to choose.
-   const chosen=pool.find(it=>String(it.id)===String(saved[key]))||(candidates.length===1?candidates[0]:null);
-   if(chosen)select.value=String(chosen.id);if(['film','classic','classicCorners'].includes(key)){select.required=true;empty.textContent='Оберіть обов’язкову позицію';}
-   wrap.append(select);form.append(wrap);
-   if(!key.endsWith('Corners')){
-    const extra=document.createElement('details'),summary=text('summary','Додаткові варіанти для клієнта'),search=document.createElement('input'),options=document.createElement('div');extra.dataset.assortment=key;summary.style.cursor='pointer';search.type='search';search.placeholder='Знайти позицію у номенклатурі';search.setAttribute('aria-label','Пошук: '+label);extra.append(summary,search,options);
-    const selected=new Set(Array.isArray(saved[key+'Options'])?saved[key+'Options'].map(String):[]);
-    if(['classic','shadow','floating'].includes(key)&&saved.__productRules!==4){const family=pool.filter(it=>it.source===source);for(const variant of key==='classic'?['aluminium','pvc']:['white','black']){const matches=family.filter(it=>window.ACEILClientCalc.profileVariant({...it,color:it.sourceVariant},key)===variant);if(matches.length===1)selected.add(String(matches[0].id));}}
-    if(saved.__productRules!==4){if(key==='film')pool.filter(it=>['film:premium:M303','film:classic:M303','film:kralton:M303'].includes(it.id)).forEach(it=>selected.add(String(it.id)));if(key==='cornice')pool.filter(it=>isCornice(it)&&window.ACEILClientCalc.corniceKind(it)!=='other').forEach(it=>selected.add(String(it.id)));if(['chandelier','spot','doubleSpot','linear'].includes(key))pool.filter(it=>it.id==='quote:'+key).forEach(it=>selected.add(String(it.id)));}
-    pool.forEach(item=>{const row=text('label',''),checkbox=document.createElement('input');row.style.display='flex';row.style.alignItems='center';row.style.gap='8px';checkbox.type='checkbox';checkbox.name=key+'Options';checkbox.value=String(item.id);checkbox.checked=selected.has(String(item.id));checkbox.style.width='20px';checkbox.style.margin='0';row.append(checkbox,text('span',item.name+' · '+(item.requiresQuote?'Уточнити':Number(item.price)+' грн')));options.append(row);});
-    search.oninput=()=>{const q=search.value.toLocaleLowerCase('uk');Array.from(options.children).forEach(row=>row.style.display=row.textContent.toLocaleLowerCase('uk').includes(q)?'flex':'none');};
-    form.append(extra);
+  if(saved.__catalog&&![4,5].includes(saved.__productRules)){settings.open=true;settingsTitle.textContent='Оновити прайс із підбором ширини';output.textContent='Збережіть прайс ще раз, щоб додати Premium, Classic, Kralton, освітлення та варіанти карнизів. Усі кольори доступні з загальної бази; карнизи — за цінами номенклатури.';}
+  const selection=new Map(),roles=new Map(),rows=new Map();
+  const roleTitle=key=>fields.find(f=>f[0]===key)?.[1].split(',')[0]||'Оберіть категорію';
+  function guess(item){return fields.find(([key,,source,unit])=>unitOf(item)===unit&&eligible(item,key,source))?.[0]||'';}
+  list.forEach(item=>roles.set(String(item.id),guess(item)));
+  if(saved.__productRules===5&&saved.__selection){
+   for(const [id,key] of Object.entries(saved.__selection)){const real=String(filmId(id));if(list.some(it=>String(it.id)===real)&&fields.some(f=>f[0]===key)){selection.set(real,key);roles.set(real,key);}}
+  }else{
+   // Preserve the previous primary and additional selections when upgrading.
+   fields.forEach(([key,,source,unit])=>{
+    const pool=list.filter(it=>unitOf(it)===unit&&eligible(it,key,source));
+    const ids=new Set([saved[key],...(saved[key+'Options']||[])].filter(Boolean).map(String));
+    if(!saved.__catalog&&!saved[key]){
+     let candidates=source?pool.filter(it=>it.source===source):[];
+     if(key==='film'){const active=pool.filter(it=>it.filmSelected);candidates=active.length===1?active:pool.filter(it=>it.id==='film:premium:M303');}
+     if(!source)candidates=pool.filter(it=>(key==='led'?/^LED монохром$|^LED підсвічування$|^LED стрічка$/i:key==='linear'?/^Світлова лінія$/i:/^Карниз прихований(?: 1)?$/i).test(it.name));
+     if(candidates.length===1)ids.add(String(candidates[0].id));
+    }
+    if(saved.__productRules!==4){
+     if(key==='film')pool.filter(it=>['film:premium:M303','film:classic:M303','film:kralton:M303'].includes(it.id)).forEach(it=>ids.add(String(it.id)));
+     if(key==='cornice')pool.filter(it=>window.ACEILClientCalc.corniceKind(it)!=='other').forEach(it=>ids.add(String(it.id)));
+     if(['classic','shadow','floating'].includes(key))for(const variant of key==='classic'?['aluminium','pvc']:['white','black']){
+      const matches=pool.filter(it=>window.ACEILClientCalc.profileVariant({...it,color:it.sourceVariant},key)===variant);if(matches.length===1)ids.add(String(matches[0].id));
+     }
+     if(['chandelier','spot','doubleSpot','linear'].includes(key))pool.filter(it=>it.id==='quote:'+key).forEach(it=>ids.add(String(it.id)));
+    }
+    for(const id of ids)if(list.some(it=>String(it.id)===id)){selection.set(id,key);roles.set(id,key);}
+   });
+  }
+  const toolbar=document.createElement('div');toolbar.className='owner-toolbar';
+  const search=document.createElement('input');search.type='search';search.id='clientAssortmentSearch';search.placeholder='Пошук у всій номенклатурі';search.setAttribute('aria-label','Пошук у всій номенклатурі');
+  const tabs=document.createElement('div');tabs.className='owner-tabs';let onlySelected=false;
+  const all=text('button','Усі'),chosenTab=text('button','Обрані');all.type=chosenTab.type='button';all.dataset.ownerFilter='all';chosenTab.dataset.ownerFilter='selected';tabs.append(all,chosenTab);
+  const count=text('p','');count.id='clientAssortmentCount';count.setAttribute('aria-live','polite');toolbar.append(search,tabs,count);form.append(toolbar);
+  const groups=new Map(),groupsDef=[['film','Плівки'],['profile','Профілі та кути'],['insert','Вставки'],['light','Освітлення'],['cornice','Карнизи'],['other','Інші позиції']];
+  function groupKey(key){return key==='film'?'film':['classic','shadow','floating','classicCorners','shadowCorners','floatingCorners','led'].includes(key)?'profile':['white','black'].includes(key)?'insert':['chandelier','spot','doubleSpot','linear'].includes(key)?'light':key==='cornice'?'cornice':'other';}
+  for(const [key,title] of groupsDef){const group=document.createElement('details');group.className='owner-category';group.open=true;group.append(text('summary',title));groups.set(key,group);form.append(group);}
+  function refresh(){
+   const query=search.value.trim().toLocaleLowerCase('uk');let visible=0;
+   rows.forEach(({row,checkbox,category,meta,item},id)=>{
+    const key=roles.get(id)||'',checked=selection.has(id);checkbox.checked=checked;checkbox.name=key?key+'Options':'unassigned';category.value=key;
+    category.hidden=!checked||!!guess(item);row.classList.toggle('is-selected',checked);meta.textContent=roleTitle(key)+(key==='film'&&item.filmFamily?' · повна палітра серії':'');
+    row.hidden=(onlySelected&&!checked)||!(item.name+' '+roleTitle(key)).toLocaleLowerCase('uk').includes(query);if(!row.hidden)visible++;
+   });
+   groups.forEach(group=>{const matching=[...group.querySelectorAll('.owner-item')].filter(row=>!row.hidden);group.hidden=!matching.length;group.querySelector('summary').textContent=groupsDef.find(g=>g[0]===group.dataset.group)[1]+' · '+matching.length;});
+   count.textContent='Обрано '+selection.size+' · показано '+visible+' із '+list.length;all.setAttribute('aria-pressed',String(!onlySelected));chosenTab.setAttribute('aria-pressed',String(onlySelected));
+  }
+  groups.forEach((group,key)=>group.dataset.group=key);
+  for(const item of list){
+   const id=String(item.id),key=roles.get(id),row=document.createElement('div');row.className='owner-item';row.dataset.clientItem=id;
+   const label=document.createElement('label'),checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=id;
+   const info=document.createElement('span'),name=text('strong',item.name),rate=text('span',item.requiresQuote?'Ціну уточнити':new Intl.NumberFormat('uk-UA').format(Number(item.price))+' грн/'+(item.unit||'од.')),meta=text('small','');rate.className='owner-rate';info.append(name,rate,meta);label.append(checkbox,info);
+   const category=document.createElement('select');category.setAttribute('aria-label','Категорія: '+item.name);const empty=text('option','Оберіть категорію');empty.value='';category.append(empty);
+   for(const [slot,title,,unit] of fields)if(unitOf(item)===unit){const option=text('option',title.split(',')[0]);option.value=slot;category.append(option);}
+   function assign(next){
+    roles.set(id,next);if(next.endsWith('Corners'))for(const [other,role] of selection)if(other!==id&&role===next)selection.delete(other);
+    selection.set(id,next);groups.get(groupKey(next)).append(row);refresh();
    }
-  });
-  form.append(text('p','Оберіть товари, які пропонуєте клієнтам. Верхня позиція — за замовчуванням, позначені нижче — додаткові варіанти. Ціни редагуються в номенклатурі; збереження прайсу тут підтягує їх знову.'));
+   checkbox.onchange=()=>{if(checkbox.checked)assign(roles.get(id)||'');else{selection.delete(id);refresh();}};
+   category.onchange=()=>assign(category.value);
+   row.append(label,category);groups.get(groupKey(key)).append(row);rows.set(id,{row,checkbox,category,meta,item});
+  }
+  all.onclick=()=>{onlySelected=false;refresh();};chosenTab.onclick=()=>{onlySelected=true;refresh();};search.oninput=refresh;refresh();
+  form.append(text('p','Галочка — позиція доступна клієнту. Ціни підтягуються з номенклатури. Для невпізнаної позиції оберіть категорію. Кути та LED рахуються автоматично з відповідним профілем; для кожного типу кутів оберіть одну позицію.'));
   const minLabel=text('label','Мінімальне замовлення, грн (0 — без обмеження)'),minimum=document.createElement('input');minimum.name='minimum';minimum.type='number';minimum.min=0;minimum.max=100000;minimum.value=saved.minimum||0;minLabel.append(minimum);form.append(minLabel);
   form.append(text('p','Для тіньового і парящого профілів оберіть кути; для парящого — також підсвічування. Карнизи рахуються як доповнення до стелі.'));
-  const submit=text('button','Зберегти прайс');submit.type='submit';form.append(submit);settings.append(form);
+  const submit=text('button','Зберегти вибір');submit.type='submit';form.append(submit);settings.append(form);
   const close=text('button','Закрити');close.type='button';close.onclick=()=>dialog.close();dialog.append(quick,settings,output,close);document.body.append(dialog);
   form.onsubmit=async e=>{
-   e.preventDefault();output.textContent='';const fd=new FormData(form),data=Object.fromEntries(fd),catalog={version:1,company:data.company,date:new Date().toISOString().slice(0,10),minimum:Number(data.minimum),...filmTariffs(),items:{},options:{}};
-   for(const [key] of fields){const item=list.find(it=>String(it.id)===data[key]);if(item)catalog.items[key]=exportProduct(item,key,list);}
-   for(const [key] of fields){
-    if(key.endsWith('Corners'))continue;data[key+'Options']=fd.getAll(key+'Options');
-    const ids=Array.from(new Set([data[key],...data[key+'Options']].filter(Boolean))),chosen=ids.map(id=>list.find(it=>String(it.id)===id)).filter(Boolean);
-    if(chosen.length)catalog.options[key]=chosen.map(it=>({id:optionId(key,it),...exportProduct(it,key,list)}));
+   e.preventDefault();output.textContent='';
+   const data={company:companyInput.value,minimum:minimum.value,__selection:Object.fromEntries(selection)},catalog={version:1,company:data.company,date:new Date().toISOString().slice(0,10),minimum:Number(data.minimum),...filmTariffs(),items:{},options:{}};
+   for(const [id,key] of selection){
+    const item=list.find(it=>String(it.id)===id),field=fields.find(f=>f[0]===key);
+    if(!field||unitOf(item)!==field[3]){output.textContent='Оберіть відповідну категорію для «'+item.name+'».';return;}
    }
+   for(const [key] of fields){
+    const selected=list.filter(it=>selection.get(String(it.id))===key),previous=selected.find(it=>String(it.id)===String(saved[key]));
+    if(previous)selected.splice(selected.indexOf(previous),1),selected.unshift(previous);
+    data[key]=selected[0]?String(selected[0].id):'';data[key+'Options']=selected.map(it=>String(it.id));
+    if(selected.length)catalog.items[key]=exportProduct(selected[0],key,list);
+    if(!key.endsWith('Corners')&&selected.length)catalog.options[key]=selected.map(it=>({id:optionId(key,it),...exportProduct(it,key,list)}));
+   }
+   // An unchecked series must not reappear through the shared colour palette.
+   const series=new Set((catalog.options.film||[]).map(it=>window.ACEILClientCalc.filmSeries(it)));
+   for(const key of Object.keys(catalog.filmCatalog))if(!series.has(key))delete catalog.filmCatalog[key];
    try{
-    const clean=window.ACEILClientCalc.config(catalog);window.ACEILClientCalc.link('https://a-ceil.pp.ua/',clean);saved={...data,__catalog:clean,__productRules:4,...(saved.__cloudToken?{__cloudToken:saved.__cloudToken}:{})};localStorage.setItem(storageKey(),JSON.stringify(saved));ready(clean);output.textContent='Прайс, ширини плівки й доступні варіанти збережено.';
+    const clean=window.ACEILClientCalc.config(catalog);window.ACEILClientCalc.link('https://a-ceil.pp.ua/',clean);saved={...data,__catalog:clean,__productRules:5,...(saved.__cloudToken?{__cloudToken:saved.__cloudToken}:{})};localStorage.setItem(storageKey(),JSON.stringify(saved));ready(clean,true);output.textContent='Вибір збережено. Клієнту доступні лише позначені позиції.';
    }catch(err){output.textContent=err.message;}
 
   };
-  for(const [title,keys] of [['Плівки',['film']],['Профілі та кути',['classic','classicCorners','shadow','shadowCorners','floating','floatingCorners','led']],['Вставки',['white','black']],['Освітлення',['chandelier','spot','doubleSpot','linear']],['Карнизи',['cornice']]]){
-   const group=document.createElement('details');group.className='owner-category';group.append(text('summary',title));for(const key of keys){const select=form.elements.namedItem(key),label=select?.closest('label'),extra=form.querySelector('[data-assortment="'+key+'"]');if(label)group.append(label);if(extra){const search=extra.querySelector('input[type=search]');if(search)search.hidden=extra.querySelectorAll('input[type=checkbox]').length<7;group.append(extra);}}form.insertBefore(group,minLabel);
-  }
-  dialog.append(text('style','#aceilClientSetup .owner-category{border:1px solid #e0e6f0;border-radius:12px;margin:10px 0;padding:4px 14px}#aceilClientSetup .owner-category>summary{padding:13px 0;cursor:pointer;font-size:15px;font-weight:750;color:#263d68}#aceilClientSetup details[data-assortment]{padding-bottom:14px}#aceilClientSetup details[data-assortment]>summary{font-size:12px;color:#62799b;padding:8px 0}'));
+  dialog.append(text('style','#aceilClientSetup .owner-toolbar{position:sticky;top:-22px;background:white;z-index:2;padding:10px 0;border-bottom:1px solid #e0e6f0}#aceilClientSetup .owner-tabs{display:flex;gap:8px}#aceilClientSetup .owner-tabs [aria-pressed=true]{background:#2563eb;color:white}#aceilClientSetup .owner-category{border:1px solid #e0e6f0;border-radius:12px;margin:10px 0;padding:0 12px}#aceilClientSetup .owner-category>summary{padding:14px 0;cursor:pointer;font-size:15px;font-weight:750;color:#263d68}#aceilClientSetup .owner-item{border-top:1px solid #edf1f7;padding:10px 0}#aceilClientSetup .owner-item label{display:flex;align-items:flex-start;gap:10px;margin:0;cursor:pointer}#aceilClientSetup .owner-item input[type=checkbox]{appearance:auto;flex:0 0 22px;width:22px;height:22px;margin:2px 0;accent-color:#2563eb}#aceilClientSetup .owner-item label>span{min-width:0;flex:1}#aceilClientSetup .owner-item strong,#aceilClientSetup .owner-rate,#aceilClientSetup .owner-item small{display:block;overflow-wrap:anywhere;line-height:1.4}#aceilClientSetup .owner-rate{color:#264b9b;margin-top:3px}#aceilClientSetup .owner-item small{color:#64748b;font-size:11px;font-weight:400;margin-top:3px}#aceilClientSetup .owner-item select{font-size:13px;padding:8px;margin:8px 0 0 32px;width:calc(100% - 32px)}#aceilClientSetup [hidden]{display:none!important}'));
   dialog.showModal();
  }
  function install(){const menu=document.getElementById('elemMenu');if(!menu||document.getElementById('aceilClientSetupButton'))return;const button=text('button','Калькулятор для клієнта');button.type='button';button.id='aceilClientSetupButton';button.onclick=()=>{if(typeof closeElemMenu==='function')closeElemMenu();open();};menu.prepend(button);}

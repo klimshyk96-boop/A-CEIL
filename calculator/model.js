@@ -61,11 +61,11 @@
   }
   for(const key of slots){const item=raw.items&&raw.items[key];if(item)out.items[key]=product(item,key);}
   out.options={};let optionCount=0;
-  for(const key of slots){const list=raw.options&&raw.options[key];if(!list)continue;if(!Array.isArray(list)||list.length>12)throw Error('Оберіть не більше 12 варіантів в одній категорії.');
+  for(const key of slots){const list=raw.options&&raw.options[key];if(!list)continue;if(!Array.isArray(list)||list.length>60)throw Error('Оберіть не більше 60 варіантів в одній категорії.');
    const seen=new Set();out.options[key]=list.map((item,i)=>{const id=String((item&&item.id)??i).slice(0,80);if(seen.has(id))throw Error('Повторний варіант у прайсі.');seen.add(id);return{id,...product(item,key)};});
    optionCount+=list.length;if(list.length&&!out.items[key])out.items[key]=product(out.options[key][0],key);
   }
-  if(optionCount>60)throw Error('Оберіть до 60 позицій загалом для клієнтського калькулятора.');
+  if(optionCount>120)throw Error('Оберіть до 120 позицій загалом для клієнтського калькулятора.');
   if(!out.items.film||!out.items.classic||!out.items.classicCorners)throw Error('У посиланні немає ціни плівки, базового профілю або його кутів.');
   return out;
  }
