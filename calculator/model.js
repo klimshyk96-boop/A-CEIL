@@ -97,8 +97,8 @@
     let price=item.price,quote=item.requiresQuote===true,name=item.name;
     let filmItem=item;
     if(choice.filmCode&&item.series&&c.filmCatalog){
-     filmItem=filmSelection({filmCode:choice.filmCode,filmSeriesId:item.series},c,palette);
-     if(!filmItem||(item.texture&&filmItem.texture!==item.texture)){errors.push('product:'+id);continue;}name=filmItem.name;
+     filmItem=filmSelection({filmCode:choice.filmCode,filmSeriesId:choice.filmSeriesId||item.series},c,palette);
+     if(!filmItem||(!choice.filmSeriesId&&item.texture&&filmItem.texture!==item.texture)){errors.push('product:'+id);continue;}name=filmItem.name;
     }
     if(filmItem.widths?.length){
      const span=mode==='rectangle'?Math.min(number(s.width),number(s.length)):mode==='contour'?shape?.span||0:value('roomWidth',.3,50);

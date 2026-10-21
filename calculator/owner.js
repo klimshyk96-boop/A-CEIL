@@ -115,9 +115,9 @@
     if(selected.length)catalog.items[key]=exportProduct(selected[0],key,list);
     if(!key.endsWith('Corners')&&selected.length)catalog.options[key]=selected.map(it=>({id:optionId(key,it),...exportProduct(it,key,list)}));
    }
-   // An unchecked series must not reappear through the shared colour palette.
+   // A film is one client choice: offer all three series with their real tariffs.
    const series=new Set((catalog.options.film||[]).map(it=>window.ACEILClientCalc.filmSeries(it)));
-   for(const key of Object.keys(catalog.filmCatalog))if(!series.has(key))delete catalog.filmCatalog[key];
+   if(!series.size)catalog.filmCatalog={};
   return window.ACEILClientCalc.config(catalog);
  }
  const syncQueues=new Map();let syncTimer;

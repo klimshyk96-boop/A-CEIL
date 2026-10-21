@@ -26,6 +26,26 @@
    input.oninput=()=>{selected[item.id]={...selected[item.id],qty:input.value};calculate();};reset.onclick=()=>{if(check.checked){selected[item.id]={...selected[item.id],qty:null};calculate();}};
    const group=groups.get(item.groupId)||groups.get('')||panel;group.append(box);rows.set(item.id,{item,box,title,check,rate,input,quantity,reset,total,filmControls,filmSelect});
   }
+  const filmRows=[...rows.values()].filter(row=>row.item.series&&catalog.filmCatalog?.[row.item.series]);
+  let syncFilmControls=()=>{};
+  if(filmRows.length){
+   const box=node('section','');box.className='nomen-group compact-film';box.dataset.filmChooser='';
+   const label=node('label',''),enabled=document.createElement('input');enabled.type='checkbox';enabled.setAttribute('aria-label','Плівка');label.append(enabled,node('strong','Плівка'));box.append(label);
+   const fields=node('div','');fields.className='film-choice-fields';box.append(fields);
+   function select(labelText){const label=node('label',labelText),input=document.createElement('select');input.setAttribute('aria-label',labelText);label.append(input);fields.append(label);return input;}
+   const series=select('Серія'),texture=select('Фактура'),color=select('Колір');
+   for(const [id,name] of [['premium','Premium'],['classic','Classic'],['kralton','Kralton']]){const option=node('option',name);option.value=id;option.disabled=!catalog.filmCatalog?.[id];series.append(option);}
+   const initial=filmRows[0].item;series.value=initial.series;let lastCode=initial.code;
+   function colors(code){code=code||({mat:'M303',lak:'L303',satin:'S303'})[texture.value];color.replaceChildren();for(const entry of window.ACEIL_COLOR_CATALOG_BY_SERIES?.[series.value]||[])if(entry.texture===texture.value){const option=node('option',entry.code+' · '+(entry.colorName||entry.label||''));option.value=entry.code;color.append(option);}if([...color.options].some(o=>o.value===code))color.value=code;}
+   function textures(value,code){texture.replaceChildren();for(const [id,name] of [['lak','Глянець'],['mat','Мат'],['satin','Сатин']]){const option=node('option',name);option.value=id;option.disabled=!catalog.filmCatalog?.[series.value]?.[id];texture.append(option);}texture.value=[...texture.options].some(o=>o.value===value&&!o.disabled)?value:[...texture.options].find(o=>!o.disabled)?.value||'mat';colors(code);}
+   function apply(){const previous=filmRows.find(row=>selected[row.item.id]),qty=previous?selected[previous.item.id].qty:null;for(const row of filmRows)delete selected[row.item.id];if(enabled.checked){const target=filmRows.find(row=>row.item.series===series.value&&row.item.texture===texture.value)||filmRows[0];selected[target.item.id]={qty,filmSeriesId:series.value,filmCode:color.value};}calculate();}
+   enabled.oninput=enabled.onchange=apply;series.oninput=series.onchange=()=>{enabled.checked=true;textures(texture.value);apply();};texture.oninput=texture.onchange=()=>{enabled.checked=true;colors();apply();};color.oninput=color.onchange=()=>{enabled.checked=true;apply();};
+   for(const row of filmRows)box.append(row.box);
+   panel.insertBefore(box,[...groups.values()][0]||unavailable.nextSibling);
+   for(const group of groups.values())if(!group.querySelector('.nomen-product'))group.hidden=true;
+   syncFilmControls=()=>{const active=filmRows.find(row=>selected[row.item.id]),choice=active&&selected[active.item.id];enabled.checked=!!active;if(active){series.value=choice.filmSeriesId||active.item.series;lastCode=choice.filmCode||active.item.code;const entry=window.ACEIL_COLOR_CATALOG_BY_SERIES?.[series.value]?.find(e=>e.code===lastCode);textures(entry?.texture||active.item.texture,lastCode);}for(const row of filmRows)row.box.hidden=row!==active;};
+   textures(initial.texture,lastCode);
+  }
   function values(){return{...Object.fromEntries(new FormData(form)),mode,...(mode==='contour'?U.state():{}),selectedProducts:selected};}
   function restore(state){if(!state||typeof state!=='object')return;mode=['manual','contour'].includes(state.mode)?state.mode:'rectangle';U.restore(state);for(const key of ['width','length','area','perimeter','corners','roomWidth'])if(state[key]!=null)form.elements.namedItem(key).value=String(state[key]).slice(0,30);if(state.selectedProducts&&typeof state.selectedProducts==='object')selected=state.selectedProducts;}
   function currentLink(){return cloudId?window.ACEILClientCloud.link(location.href,cloudId,values()):M.link(location.href,catalog,values());}
@@ -38,6 +58,7 @@
    $('quoteNote').hidden=r.complete;$('quoteNote').textContent='Ціну потрібно уточнити: '+r.quoteRequired.join(', ')+'. Відома частина: '+money(r.total)+'.';
    unavailable.hidden=!r.errors.some(e=>e.startsWith('product:'));unavailable.textContent='У збереженому розрахунку є недоступна позиція. Зверніться до майстра для оновлення посилання.';
    for(const [id,row] of rows){const choice=selected[id],result=r.rows.find(it=>it.id===id);row.title.textContent=result?.name||row.item.name;row.check.setAttribute('aria-label',row.title.textContent);row.check.checked=!!choice;row.quantity.hidden=!choice;if(row.filmControls){row.filmControls.hidden=!choice;row.filmSelect.value=choice?.filmCode||row.item.code||row.filmSelect.value;}row.input.disabled=!choice;row.input.value=choice?.qty??({area:r.area,perimeter:r.perimeter,corners:r.corners})[row.item.basis]??1;row.input.setAttribute('aria-invalid',String(r.errors.includes('quantity:'+id)));row.reset.hidden=!choice||row.item.basis==='manual';row.rate.textContent=result?.price!=null?money(result.price)+'/'+row.item.unit:row.item.requiresQuote?'Ціну уточнити':money(row.item.price)+'/'+row.item.unit;row.total.textContent=!choice?'':result?result.total===null?'Уточнити':money(result.total):'Перевірте дані';}
+   syncFilmControls();
    $('rows').replaceChildren();for(const item of r.rows){const div=document.createElement('div');div.className='row';div.append(node('span',item.name+' · '+item.qty+' '+item.unit),node('b',item.total===null?'Уточнити':money(item.total)));$('rows').append(div);}
    $('save').disabled=$('share').disabled=$('copyRequest').disabled=!r.valid||!Object.keys(selected).length;
    if(mode==='rectangle'){const w=M.number(s.width),h=M.number(s.length);if(w>0&&h>0){const scale=Math.min(230/w,110/h),x=(330-w*scale)/2,y=(190-h*scale)/2;$('plan').innerHTML='<svg viewBox="0 0 330 190" aria-label="План у масштабі"><rect x="'+x+'" y="'+y+'" width="'+w*scale+'" height="'+h*scale+'" fill="#f0f5ff" stroke="#2563eb" stroke-width="2"/></svg>';}}
