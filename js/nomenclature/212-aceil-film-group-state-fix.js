@@ -112,9 +112,7 @@
     (function(p){if(p)p.stage("filmGroups",{around:function(next,args){
         normalizeFilmGroups();
         groups().forEach(applyUi);
-        var result=next();
-        if(window.A_CEILColorPicker&&window.A_CEILColorPicker.renderNomenclature)window.A_CEILColorPicker.renderNomenclature();
-        return result;
+        return next();
       }})})(window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].pipeline&&window["A\u00b7CEIL"].pipeline.get("renderElemList"));
 
     var oldToggle = window.toggleGroupCollapse ||
