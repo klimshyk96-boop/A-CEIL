@@ -35,7 +35,7 @@ assert.equal(M.estimate(state,assortment).total,13030,'old client state uses the
   }
   await page.locator('#aceilClientSetup [type=submit]').click();
   const generated=await page.locator('#aceilClientSetup input[readonly]').inputValue();
-  assert.equal(new URL(generated).hostname,'a-ceil.pp.ua','client link must use the company domain');
+  assert.equal(new URL(generated).hostname,'aceil.test','unreleased catalogue links must use the preview that supports their format');
   const payload=M.decode(new URL(generated).hash.slice(1));assert.equal(payload.config.items.film.price,380);assert.ok(!JSON.stringify(payload).includes('costPrice'));assert.ok(!JSON.stringify(payload).includes('PRIVATE CATALOG'));
   assert.ok(payload.config.options.film.length>=3);assert.ok(payload.config.options.cornice.length>=7);assert.equal(payload.config.options.linear.length,2);
   const filmAlt=payload.config.options.film.find(it=>it.name==='Плівка сатин').id,cornAlt=payload.config.options.cornice.find(it=>it.name==='Карниз UNO').id,lineAlt=payload.config.options.linear.find(it=>it.name==='Світлова лінія Premium').id;

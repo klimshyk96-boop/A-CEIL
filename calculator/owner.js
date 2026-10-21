@@ -103,7 +103,8 @@
   const output=document.createElement('output');output.setAttribute('aria-live','polite');
   function ready(catalog,showLink=false){
    catalog=window.ACEILClientCalc.config(catalog);quick.hidden=false;quick.replaceChildren(text('summary','Посилання для клієнта'));quick.open=showLink;
-   const url=saved.__cloudToken?window.ACEILClientCloud.link('https://a-ceil.pp.ua/',saved.__cloudToken):window.ACEILClientCalc.link('https://a-ceil.pp.ua/',catalog),previewUrl=window.ACEILClientCalc.link(location.href,catalog);
+   const base=catalog.catalogue&&location.hostname!=='a-ceil.pp.ua'?location.href:'https://a-ceil.pp.ua/';
+   const url=saved.__cloudToken?window.ACEILClientCloud.link(base,saved.__cloudToken):window.ACEILClientCalc.link(base,catalog),previewUrl=window.ACEILClientCalc.link(location.href,catalog);
    quick.append(text('p','Готовий калькулятор · '+catalog.company));
    const summary=text('p',catalog.catalogue?'Доступно клієнту: '+catalog.products.length+' позицій':fields.filter(([key])=>catalog.items[key]).map(([key,label])=>label.split(',')[0]).join(' · '));quick.append(summary);
    const assortment=document.createElement('details');assortment.append(text('summary','Збережений асортимент і ціни'));
