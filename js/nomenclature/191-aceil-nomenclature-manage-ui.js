@@ -112,6 +112,9 @@
     {key:"box",label:"Інше",color:"#2563eb",shape:'<circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/>'}
   ];
 
+  // Lucide icons, ISC license: assets/vendor/lucide/LICENSE.txt
+  NOMENCLATURE_ICONS=NOMENCLATURE_ICONS.concat([{"key":"laconic-film","set":"laconic","label":"Плівка","color":"#3159c9","shape":"<path d=\"M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z\" />\n  <path d=\"M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12\" />\n  <path d=\"M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17\" />"},{"key":"laconic-profile","set":"laconic","label":"Профілі","color":"#3159c9","shape":"<line x1=\"22\" x2=\"2\" y1=\"6\" y2=\"6\" />\n  <line x1=\"22\" x2=\"2\" y1=\"18\" y2=\"18\" />\n  <line x1=\"6\" x2=\"6\" y1=\"2\" y2=\"22\" />\n  <line x1=\"18\" x2=\"18\" y1=\"2\" y2=\"22\" />"},{"key":"laconic-insert","set":"laconic","label":"Вставка","color":"#3159c9","shape":"<path d=\"M5 12h14\" />"},{"key":"laconic-corner","set":"laconic","label":"Кути","color":"#3159c9","shape":"<path d=\"m15 10 5 5-5 5\" />\n  <path d=\"M4 4v7a4 4 0 0 0 4 4h12\" />"},{"key":"laconic-light","set":"laconic","label":"Освітлення","color":"#3159c9","shape":"<path d=\"M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5\" />\n  <path d=\"M9 18h6\" />\n  <path d=\"M10 22h4\" />"},{"key":"laconic-cornice","set":"laconic","label":"Карнизи","color":"#3159c9","shape":"<path d=\"M3 3h18\" />\n  <path d=\"M20 7H8\" />\n  <path d=\"M20 11H8\" />\n  <path d=\"M10 19h10\" />\n  <path d=\"M8 15h12\" />\n  <path d=\"M4 3v14\" />\n  <circle cx=\"4\" cy=\"19\" r=\"2\" />"},{"key":"laconic-complexity","set":"laconic","label":"Елементи складності","color":"#3159c9","shape":"<path d=\"m10.586 5.414-5.172 5.172\" />\n  <path d=\"m18.586 13.414-5.172 5.172\" />\n  <path d=\"M6 12h12\" />\n  <circle cx=\"12\" cy=\"20\" r=\"2\" />\n  <circle cx=\"12\" cy=\"4\" r=\"2\" />\n  <circle cx=\"20\" cy=\"12\" r=\"2\" />\n  <circle cx=\"4\" cy=\"12\" r=\"2\" />"},{"key":"laconic-led","set":"laconic","label":"LED","color":"#3159c9","shape":"<path d=\"M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z\" />"},{"key":"technical-film","set":"technical","label":"Плівка","color":"#3159c9","shape":"<path d=\"M12 17v4\" />\n  <path d=\"M8 21h8\" />\n  <path d=\"m9 17 6.1-6.1a2 2 0 0 1 2.81.01L22 15\" />\n  <circle cx=\"8\" cy=\"9\" r=\"2\" />\n  <rect x=\"2\" y=\"3\" width=\"20\" height=\"14\" rx=\"2\" />"},{"key":"technical-profile","set":"technical","label":"Профілі","color":"#3159c9","shape":"<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" />\n  <path d=\"M3 9h18\" />"},{"key":"technical-insert","set":"technical","label":"Вставка","color":"#3159c9","shape":"<circle cx=\"12\" cy=\"9\" r=\"1\" />\n  <circle cx=\"19\" cy=\"9\" r=\"1\" />\n  <circle cx=\"5\" cy=\"9\" r=\"1\" />\n  <circle cx=\"12\" cy=\"15\" r=\"1\" />\n  <circle cx=\"19\" cy=\"15\" r=\"1\" />\n  <circle cx=\"5\" cy=\"15\" r=\"1\" />"},{"key":"technical-corner","set":"technical","label":"Кути","color":"#3159c9","shape":"<path d=\"M21 11a8 8 0 0 0-8-8\" />\n  <path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\" />"},{"key":"technical-light","set":"technical","label":"Освітлення","color":"#3159c9","shape":"<path d=\"M12 2v5\" />\n  <path d=\"M14.829 15.998a3 3 0 1 1-5.658 0\" />\n  <path d=\"M20.92 14.606A1 1 0 0 1 20 16H4a1 1 0 0 1-.92-1.394l3-7A1 1 0 0 1 7 7h10a1 1 0 0 1 .92.606z\" />"},{"key":"technical-cornice","set":"technical","label":"Карнизи","color":"#3159c9","shape":"<path d=\"M2 7v10\" />\n  <path d=\"M6 5v14\" />\n  <rect width=\"12\" height=\"18\" x=\"10\" y=\"3\" rx=\"2\" />"},{"key":"technical-complexity","set":"technical","label":"Елементи складності","color":"#3159c9","shape":"<circle cx=\"19\" cy=\"5\" r=\"2\" />\n  <circle cx=\"5\" cy=\"19\" r=\"2\" />\n  <path d=\"M5 17A12 12 0 0 1 17 5\" />"},{"key":"technical-led","set":"technical","label":"LED","color":"#3159c9","shape":"<path d=\"M17 19a1 1 0 0 1-1-1v-2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2a1 1 0 0 1-1 1z\" />\n  <path d=\"M17 21v-2\" />\n  <path d=\"M19 14V6.5a1 1 0 0 0-7 0v11a1 1 0 0 1-7 0V10\" />\n  <path d=\"M21 21v-2\" />\n  <path d=\"M3 5V3\" />\n  <path d=\"M4 10a2 2 0 0 1-2-2V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2a2 2 0 0 1-2 2z\" />\n  <path d=\"M7 5V3\" />"}]);
+
   function escapeText(value){
     return String(value==null?"":value).replace(/[&<>"']/g,function(ch){
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
@@ -179,18 +182,26 @@
   function enhancedIconGrid(currentIcon){
     var grid=byId("emojiGrid");
     if(!grid)return;
-    var svgButtons=NOMENCLATURE_ICONS.map(function(icon){
-      var value="svg:"+icon.key;
-      return '<button type="button" class="nom-icon-option'+(value===currentIcon?' selected':'')+'" onclick="selectNomenclatureSvgIcon(\''+icon.key+'\')">'
-        +iconMarkup(value,true)+'</button>';
-    }).join("");
+    var current=iconRecord(currentIcon),activeSet=current&&current.set||'laconic';
+    var sets=[['laconic','Лаконічний'],['technical','Технічний'],['existing','Інші SVG']];
+    var tabs=sets.map(function(set){return '<button type="button" data-nom-icon-set="'+set[0]+'" aria-pressed="'+(set[0]===activeSet)+'">'+set[1]+'</button>'}).join('');
+    var svgButtons=sets.map(function(set){
+      return '<div class="nom-svg-grid" data-nom-icon-panel="'+set[0]+'"'+(set[0]===activeSet?'':' hidden')+'>'+NOMENCLATURE_ICONS.filter(function(icon){return (icon.set||'existing')===set[0]}).map(function(icon){
+        var value='svg:'+icon.key;
+        return '<button type="button" class="nom-icon-option'+(value===currentIcon?' selected':'')+'" aria-label="'+escapeText(icon.label)+'" onclick="selectNomenclatureSvgIcon(\''+icon.key+'\')">'+iconMarkup(value,true)+'</button>';
+      }).join('')+'</div>';
+    }).join('');
     var emojiButtons=(window.EMOJI_LIST||typeof EMOJI_LIST!=="undefined"&&EMOJI_LIST||[]).map(function(emoji){
       return '<button type="button" class="emoji-opt '+(emoji===currentIcon?'selected':'')+'" onclick="selectEmoji(\''+emoji+'\')">'+escapeText(emoji)+'</button>';
     }).join("");
     grid.innerHTML='<button type="button" class="nom-icon-auto" onclick="autoSelectNomenclatureIcon()"><span>✦</span><strong>Підібрати автоматично</strong></button>'
-      +'<div class="nom-icon-section-title">SVG для номенклатури</div>'
-      +'<div class="nom-svg-grid">'+svgButtons+'</div>'
+      +'<div class="nom-icon-section-title">Набір іконок</div><div class="nom-icon-sets">'+tabs+'</div>'+svgButtons
       +'<details class="nom-emoji-more"><summary>Emoji</summary><div class="nom-emoji-grid">'+emojiButtons+'</div></details>';
+    grid.querySelectorAll('[data-nom-icon-set]').forEach(function(button){button.onclick=function(){
+      grid.querySelectorAll('[data-nom-icon-set]').forEach(function(tab){tab.setAttribute('aria-pressed',String(tab===button))});
+      grid.querySelectorAll('[data-nom-icon-panel]').forEach(function(panel){panel.hidden=panel.dataset.nomIconPanel!==button.dataset.nomIconSet});
+    }});
+
   }
   function installIconLibrary(){
     if(window.__aceilNomenclatureIconsV1)return true;

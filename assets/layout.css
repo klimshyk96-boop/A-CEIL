@@ -1243,3 +1243,11 @@ body.rp-home-pro #A·CEILToolPanel #lightBadge,body.rp-home-pro #A·CEILToolPane
 #aceilCatalogEditModal .aceil-catalog-save{background:#315ff4;color:#fff;border-color:#315ff4;}
 #aceilCatalogEditModal .aceil-catalog-delete{background:#fff1f2;color:#b91c1c;border-color:#fecdd3;}
 #aceilCatalogEditModal .aceil-catalog-delete[hidden]{display:none!important;}
+
+/* Nomenclature icon sets */
+.nom-icon-sets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.nom-icon-sets button{padding:10px 12px;font-size:13px;background:#eff5ff;color:#3159c9;border:1px solid #dce5f4;border-radius:10px;box-shadow:none}
+.nom-icon-sets button[aria-pressed="true"]{background:#3159c9;color:#fff;border-color:#3159c9}
+.nom-svg-grid[hidden]{display:none}
+
+[data-nom-icon-panel] .nom-icon-option .nom-svg-icon span{white-space:normal;font-size:11px;line-height:1.25}
