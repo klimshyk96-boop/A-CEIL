@@ -18,7 +18,7 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
   assert.equal(await row('corn0').locator('input').isChecked(),true,'legacy extra retained');
   assert.equal(await row('corn1').locator('input').isChecked(),false,'saved owner assortment is not expanded');
   assert.equal(await row('custom').isVisible(),true,'unknown items are included');
-  assert.deepEqual(await page.locator('.owner-category').evaluateAll(groups=>groups.map(g=>g.querySelector('summary').textContent.replace(/ · \d+$/,''))),['Моє світло','Профіль та монтаж','Ніші / карнизи (прайс)','Моя плівка','Порожня група','Без групи']);
+  assert.deepEqual(await page.locator('.owner-category').evaluateAll(groups=>groups.map(g=>g.querySelector('summary').textContent.replace(/ · \d+$/,''))),['Плівка','Моє світло','Профіль та монтаж','Ніші / карнизи (прайс)','Порожня група','Без групи']);
   assert.equal(await page.locator('.owner-item select').count(),0,'no duplicate category assignment');
   assert.equal(await page.locator('[data-group=empty]').evaluate(el=>el.open),false,'saved collapse state is retained');
   assert.equal(await row('corn0').evaluate(el=>el.closest('details').dataset.group),'cornices');
@@ -33,7 +33,7 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
   await page.locator('#aceilClientSetup [type=submit]').click();
   const url=await page.locator('#aceilClientSetup input[readonly]').inputValue(),cfg=M.decode(new URL(url).hash.slice(1)).config;
   assert.equal(cfg.options.cornice.length,13);assert.equal(cfg.options.chandelier[0].price,777);assert.equal(cfg.items.spot,undefined,'migration does not add unchecked extras');assert.equal(cfg.items.linear,undefined);assert.ok(!JSON.stringify(cfg).includes('costPrice'));assert.ok(!JSON.stringify(cfg).includes('Позиція без ціни'));
-  await page.locator('#aceilClientSetup>button').click();await page.evaluate(()=>{document.getElementById('aceilClientSetupButton').click();document.querySelector('#aceilClientSetup [data-owner-settings]').open=true;});
+  await page.locator('#aceilClientSetup .owner-footer button[type=button]').click();await page.evaluate(()=>{document.getElementById('aceilClientSetupButton').click();document.querySelector('#aceilClientSetup [data-owner-settings]').open=true;});
   assert.equal(await row('custom').locator('input').isChecked(),true);assert.equal(await row('custom').evaluate(el=>el.closest('details').dataset.group),'lights');
   await row('corn0').locator('input').uncheck();await page.locator('#aceilClientSetup [type=submit]').click();
   const next=M.decode(new URL(await page.locator('#aceilClientSetup input[readonly]').inputValue()).hash.slice(1)).config;assert.equal(next.options.cornice.length,12);assert.ok(!next.options.cornice.some(it=>it.name==='Карниз прихований білий 0'));
