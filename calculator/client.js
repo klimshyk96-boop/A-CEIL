@@ -74,6 +74,9 @@
   syncRange('film','filmSeries','[data-film-series]',M.filmSeries);
   syncRange('cornice','corniceKind','[data-cornice-kind]',M.corniceKind);
   const corn=choices('cornice').find(it=>it.id===s.corniceOption),kind=corn&&M.corniceKind(corn),color=corn&&M.profileVariant(corn,'cornice');
+  const corniceRow=r.rows.find(row=>row.key==='cornice');
+  $('cornicePrice').hidden=!s.cornice;
+  $('cornicePrice').textContent=!corn?'Виберіть карниз':corn.requiresQuote?'Ціну цього карниза потрібно уточнити':corn.name+' · '+money(corn.price)+'/м'+(corniceRow&&corniceRow.total!==null?' · '+corniceRow.qty+' м = '+money(corniceRow.total):'');
   $('corniceColors').hidden=kind==='surface'||!kind;
   document.querySelectorAll('[data-cornice-color]').forEach(b=>{b.disabled=!choices('cornice').some(it=>M.corniceKind(it)===kind&&M.profileVariant(it,'cornice')===b.dataset.corniceColor);b.setAttribute('aria-pressed',b.dataset.corniceColor===color);});
   for(const el of form.querySelectorAll('input'))el.setAttribute('aria-invalid',r.errors.includes(el.name)?'true':'false');
@@ -104,8 +107,19 @@
   if(!payload){
    demo.options.film.push({id:'classic-film',series:'classic',name:'MSD Classic · біла матова M303',price:0,requiresQuote:true,widths:[{nominal:3.6,max:3.6,price:0,requiresQuote:true},{nominal:5.1,max:5.6,price:0,requiresQuote:true}]},{id:'kralton-film',series:'kralton',name:'Kralton · біла матова M303',price:500,widths:[{nominal:3.6,max:3.6,price:500},{nominal:5,max:5,price:550},{nominal:6,max:6,price:600}]});
    demo.items.doubleSpot={name:'Подвійний точковий / монтаж',price:0,requiresQuote:true};
-   demo.options.cornice=[];
-   for(const [kind,title] of [['surface','Накладний'],['hidden','Прихований'],['wide','Широкий'],['single','Однорядний']])for(const color of kind==='surface'?['']:['white','black'])demo.options.cornice.push({id:kind+'-'+color,name:'Карниз '+title.toLowerCase()+(color?' · '+(color==='white'?'білий':'чорний'):''),corniceType:kind,color,price:0,requiresQuote:true});
+   // Retail cornice prices from the owner's saved calculator, dated 2026-10-20.
+   demo.options.cornice=[
+    {id:'cornice-0',name:'Карниз прихований білий',price:1750,corniceType:'hidden',color:'white'},
+    {id:'cornice-1',name:'Карниз прихований чорний',price:1750,corniceType:'hidden',color:'black'},
+    {id:'cornice-2',name:'Карниз прихований білий широкий',price:2200,corniceType:'wide',color:'white'},
+    {id:'cornice-3',name:'Карниз прихований чорний широкий',price:2200,corniceType:'wide',color:'black'},
+    {id:'cornice-4',name:'Карниз прихований однорядний білий',price:1700,corniceType:'single',color:'white'},
+    {id:'cornice-5',name:'Карниз прихований однорядний чорний',price:1700,corniceType:'single',color:'black'},
+    {id:'cornice-6',name:'Карниз накладний ПВХ',price:650,corniceType:'surface'},
+    {id:'cornice-7',name:'Карниз UNO білий',price:1700,corniceType:'hidden',color:'white'},
+    {id:'cornice-8',name:'Карниз UNO чорний',price:1700,corniceType:'hidden',color:'black'}
+   ];
+   demo.items.cornice={...demo.options.cornice[0]};
   }
   if(!payload)demo.filmCatalog=Object.fromEntries((window.ACEIL_FILM_SERIES||[]).filter(s=>s.active!==false).map(s=>[s.id,window.ACEILGetFilmPricing(s.id)]));
   catalog=M.config(payload?payload.config:demo);productFields();rangeControls();P.init({catalog,form,calculate});restore(initial);
