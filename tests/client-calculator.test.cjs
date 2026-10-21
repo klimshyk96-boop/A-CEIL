@@ -24,7 +24,7 @@ assert.equal(M.estimate(state,assortment).total,13030,'old client state uses the
  try{for(const width of [390,1440]){
   const {page,errors}=await open(browser,width);await reveal(page);await page.waitForTimeout(400);
   const url=await page.evaluate(()=>{
-   elemItems=[{id:'f',name:'Плівка Premium',source:'area',unit:'м²',price:380,costPrice:1},{id:'p',name:'Профіль H',source:'main_profile',unit:'м',price:200,costPrice:2},{id:'c',name:'Кути',source:'corners',unit:'шт',price:100},{id:'i',name:'Вставка біла',source:'white_insert',sourceVariant:'white',unit:'м',price:60},{id:'l',name:'Люстра',source:'chandelier',unit:'шт',price:350},{id:'private',name:'PRIVATE CATALOG',source:'other',unit:'шт',price:12345}];
+   elemGroups=[];elemItems=[{id:'f',name:'Плівка Premium',source:'area',unit:'м²',price:380,costPrice:1},{id:'p',name:'Профіль H',source:'main_profile',unit:'м',price:200,costPrice:2},{id:'c',name:'Кути',source:'corners',unit:'шт',price:100},{id:'i',name:'Вставка біла',source:'white_insert',sourceVariant:'white',unit:'м',price:60},{id:'l',name:'Люстра',source:'chandelier',unit:'шт',price:350},{id:'private',name:'PRIVATE CATALOG',source:'other',unit:'шт',price:12345}];
    elemItems.push({id:'f2',name:'Плівка сатин',source:'area',unit:'м²',price:500},{id:'corn1',name:'Карниз прихований 1',unit:'м',price:1000},{id:'corn2',name:'Карниз UNO',unit:'м',price:1800},{id:'line1',name:'Світлова лінія',unit:'м',price:1500},{id:'line2',name:'Світлова лінія Premium',unit:'м',price:2000});
    document.getElementById('aceilClientSetupButton').click();
   });

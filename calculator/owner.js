@@ -2,6 +2,7 @@
  'use strict';
  const fields=[['film','Плівка, грн/м²','area','area'],['classic','Класичний профіль, грн/м','main_profile','meter'],['classicCorners','Кути класичного профілю, грн/шт','corners','piece'],['shadow','Тіньовий профіль, грн/м','shadow_profile','meter'],['shadowCorners','Кути тіньового профілю, грн/шт','shadow_corners','piece'],['floating','Парящий профіль, грн/м','floating_profile','meter'],['floatingCorners','Кути парящого профілю, грн/шт','floating_corners','piece'],['led','LED для парящого профілю, грн/м','','meter'],['white','Біла вставка, грн/м','white_insert','meter'],['black','Чорна вставка, грн/м','white_insert','meter'],['chandelier','Люстра, грн/шт','chandelier','piece'],['spot','Точковий світильник, грн/шт','spot','piece'],['cornice','Карнизи, грн/м','','meter']];
  function items(){let live=[];try{live=Array.isArray(elemItems)?elemItems:[];}catch(_){}const master=window['__A·CEILNomenCatalogV339']?.items||[],merged=new Map(live.map(it=>[String(it.id),it]));master.forEach(it=>merged.set(String(it.id),it));return [...merged.values()];}
+ function nomenGroups(){let live=[];try{live=Array.isArray(elemGroups)?elemGroups:[];}catch(_){}if(live.length)return live;const master=window['__A·CEILNomenCatalogV339']?.groups;return Array.isArray(master)?master:[];}
  function isCornice(it){return /карниз|ніша|uno|уно|cornice/i.test(String(it.name||'')+' '+String(it.source||''));}
  function filmTariffs(){
   const filmCatalog={},filmOverrides={},raw=items();
@@ -11,7 +12,7 @@
   return{filmCatalog,filmOverrides};
  }
  function catalogueItems(){
-  const raw=items(),out=raw.filter(it=>!(Number(it&&it.filmWidth)>0&&it.colorCode)),series=window.ACEIL_FILM_SERIES||[];
+  const raw=items(),savedGroups=nomenGroups(),out=raw.filter(it=>!(Number(it&&it.filmWidth)>0&&it.colorCode)),series=window.ACEIL_FILM_SERIES||[];
   series.filter(s=>s.active!==false).forEach(s=>{
    const entries=window.ACEIL_COLOR_CATALOG_BY_SERIES?.[s.id]||[],prices=window.ACEILGetFilmPricing?.(s.id)||{};
    const codes=new Set(['M303','L303','S303',...raw.filter(it=>(it.seriesId||it.filmSeriesId||'premium')===s.id).map(it=>it.colorCode).filter(Boolean)]);
@@ -20,16 +21,21 @@
     const bands=e.filmWidths?.length?e.filmWidths:[{nominal:3.6,max:3.6,priceKey:'narrow'},...(e.wide510?[{nominal:5.1,max:5.6,priceKey:'wide'}]:[])];
     const widths=bands.map(w=>{const live=current.find(it=>Math.abs(Number(it.filmWidth)-w.nominal)<1e-6),price=live?Number(live.price):Number(prices[e.texture]?.[w.priceKey]);return{nominal:Number(w.nominal),max:Number(w.max)||Number(w.nominal),price:price>0?price:0,...(!(price>0)?{requiresQuote:true}:{})};}).filter(w=>w.nominal>0&&w.max>0);
     if(!widths.length)return;
+    const groupId=current[0]?.groupId??savedGroups.find(g=>(g.filmSeriesId||g.seriesId)===s.id)?.id;
+    if(savedGroups.length&&groupId==null)return;
     const texture=window.ACEIL_TEXTURE_LABELS?.[e.texture]||e.label||e.texture;
-    out.push({id:'film:'+s.id+':'+e.code,name:[s.manufacturer,s.name,texture,e.colorName||e.code].filter(Boolean).join(' · '),series:s.id,unit:'м²',price:widths[0].price,requiresQuote:widths.every(w=>w.requiresQuote),source:'area',widths,filmFamily:true,filmSelected:current.some(it=>it.filmSelected),originalIds:current.map(it=>String(it.id))});
+    out.push({id:'film:'+s.id+':'+e.code,groupId,name:[s.manufacturer,s.name,texture,e.colorName||e.code].filter(Boolean).join(' · '),series:s.id,unit:'м²',price:widths[0].price,requiresQuote:widths.every(w=>w.requiresQuote),source:'area',widths,filmFamily:true,filmSelected:current.some(it=>it.filmSelected),originalIds:current.map(it=>String(it.id))});
    });
   });
   const M=window.ACEILClientCalc;
+  // Quote placeholders only support older catalogues without saved groups.
+  if(!savedGroups.length){
   for(const [key,name,source,unit] of [['chandelier','Люстра / монтаж','chandelier','шт'],['spot','Точковий світильник / монтаж','spot','шт'],['doubleSpot','Подвійний точковий світильник / монтаж','double_spot','шт'],['linear','Світлова лінія','linear','м']]){
    if(!out.some(it=>(it.source===source||(key==='doubleSpot'&&it.source==='lighttype:double_spot'))||(key==='doubleSpot'&&/подвійн|double.spot/i.test(it.name))||(key==='linear'&&/^Світлова лінія$/i.test(it.name))))out.push({id:'quote:'+key,name,price:0,requiresQuote:true,source,unit});
   }
   for(const [kind,title] of [['surface','Накладний'],['hidden','Прихований'],['wide','Широкий'],['single','Однорядний']])for(const color of kind==='surface'?['']:['white','black']){
    if(!out.some(it=>isCornice(it)&&unitOf(it)==='meter'&&M.corniceKind(it)===kind&&(!color||M.corniceColor(it)===color)))out.push({id:'quote:cornice:'+kind+':'+color,name:'Карниз '+title.toLowerCase()+(color?' · '+(color==='white'?'білий':'чорний'):''),unit:'м',price:0,requiresQuote:true,corniceType:kind,color});
+  }
   }
   return out;
  }
@@ -103,7 +109,6 @@
   if(saved.film)saved.film=filmId(saved.film);if(Array.isArray(saved.filmOptions))saved.filmOptions=saved.filmOptions.map(filmId);
   if(saved.__catalog&&![4,5].includes(saved.__productRules)){settings.open=true;settingsTitle.textContent='Оновити прайс із підбором ширини';output.textContent='Збережіть прайс ще раз, щоб додати Premium, Classic, Kralton, освітлення та варіанти карнизів. Усі кольори доступні з загальної бази; карнизи — за цінами номенклатури.';}
   const selection=new Map(),roles=new Map(),rows=new Map();
-  const roleTitle=key=>fields.find(f=>f[0]===key)?.[1].split(',')[0]||'Оберіть категорію';
   function guess(item){return fields.find(([key,,source,unit])=>unitOf(item)===unit&&eligible(item,key,source))?.[0]||'';}
   list.forEach(item=>roles.set(String(item.id),guess(item)));
   if(saved.__productRules===5&&saved.__selection){
@@ -135,36 +140,37 @@
   const tabs=document.createElement('div');tabs.className='owner-tabs';let onlySelected=false;
   const all=text('button','Усі'),chosenTab=text('button','Обрані');all.type=chosenTab.type='button';all.dataset.ownerFilter='all';chosenTab.dataset.ownerFilter='selected';tabs.append(all,chosenTab);
   const count=text('p','');count.id='clientAssortmentCount';count.setAttribute('aria-live','polite');toolbar.append(search,tabs,count);form.append(toolbar);
-  const groups=new Map(),groupsDef=[['film','Плівки'],['profile','Профілі та кути'],['insert','Вставки'],['light','Освітлення'],['cornice','Карнизи'],['other','Інші позиції']];
-  function groupKey(key){return key==='film'?'film':['classic','shadow','floating','classicCorners','shadowCorners','floatingCorners','led'].includes(key)?'profile':['white','black'].includes(key)?'insert':['chandelier','spot','doubleSpot','linear'].includes(key)?'light':key==='cornice'?'cornice':'other';}
-  for(const [key,title] of groupsDef){const group=document.createElement('details');group.className='owner-category';group.open=true;group.append(text('summary',title));groups.set(key,group);form.append(group);}
+  const groups=new Map(),groupNames=new Map(),definitions=nomenGroups(),ungrouped='__owner_ungrouped__';
+  for(const definition of definitions){
+   const key=String(definition.id);if(groups.has(key))continue;
+   const group=document.createElement('details');group.className='owner-category';group.dataset.group=key;group.open=!definition.collapsed;group.append(text('summary',definition.name||'Група'));groups.set(key,group);groupNames.set(key,definition.name||'Група');form.append(group);
+  }
+  function groupKey(item){return item.groupId!=null&&groups.has(String(item.groupId))?String(item.groupId):ungrouped;}
+  if(list.some(it=>groupKey(it)===ungrouped)){
+   const group=document.createElement('details');group.className='owner-category';group.dataset.group=ungrouped;group.open=true;group.append(text('summary','Без групи'));groups.set(ungrouped,group);groupNames.set(ungrouped,'Без групи');form.append(group);
+  }
   function refresh(){
    const query=search.value.trim().toLocaleLowerCase('uk');let visible=0;
-   rows.forEach(({row,checkbox,category,meta,item},id)=>{
-    const key=roles.get(id)||'',checked=selection.has(id);checkbox.checked=checked;checkbox.name=key?key+'Options':'unassigned';category.value=key;
-    category.hidden=!checked||!!guess(item);row.classList.toggle('is-selected',checked);meta.textContent=roleTitle(key)+(key==='film'&&item.filmFamily?' · повна палітра серії':'');
-    row.hidden=(onlySelected&&!checked)||!(item.name+' '+roleTitle(key)).toLocaleLowerCase('uk').includes(query);if(!row.hidden)visible++;
+   rows.forEach(({row,checkbox,meta,item},id)=>{
+    const key=roles.get(id)||'',checked=selection.has(id);checkbox.checked=checked;checkbox.name=key?key+'Options':'unassigned';
+    row.classList.toggle('is-selected',checked);meta.textContent=checked&&!key?'Немає джерела розрахунку в номенклатурі':item.filmFamily?'Ціна залежить від ширини полотна':'';meta.hidden=!meta.textContent;
+    row.hidden=(onlySelected&&!checked)||!(item.name+' '+groupNames.get(groupKey(item))).toLocaleLowerCase('uk').includes(query);if(!row.hidden)visible++;
    });
-   groups.forEach(group=>{const matching=[...group.querySelectorAll('.owner-item')].filter(row=>!row.hidden);group.hidden=!matching.length;group.querySelector('summary').textContent=groupsDef.find(g=>g[0]===group.dataset.group)[1]+' · '+matching.length;});
+   groups.forEach((group,key)=>{const matching=[...group.querySelectorAll('.owner-item')].filter(row=>!row.hidden);group.hidden=!matching.length&&(onlySelected||!!query);group.querySelector('summary').textContent=groupNames.get(key)+' · '+matching.length;if(query&&matching.length)group.open=true;});
    count.textContent='Обрано '+selection.size+' · показано '+visible+' із '+list.length;all.setAttribute('aria-pressed',String(!onlySelected));chosenTab.setAttribute('aria-pressed',String(onlySelected));
   }
-  groups.forEach((group,key)=>group.dataset.group=key);
   for(const item of list){
    const id=String(item.id),key=roles.get(id),row=document.createElement('div');row.className='owner-item';row.dataset.clientItem=id;
    const label=document.createElement('label'),checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=id;
    const info=document.createElement('span'),name=text('strong',item.name),rate=text('span',item.requiresQuote?'Ціну уточнити':new Intl.NumberFormat('uk-UA').format(Number(item.price))+' грн/'+(item.unit||'од.')),meta=text('small','');rate.className='owner-rate';info.append(name,rate,meta);label.append(checkbox,info);
-   const category=document.createElement('select');category.setAttribute('aria-label','Категорія: '+item.name);const empty=text('option','Оберіть категорію');empty.value='';category.append(empty);
-   for(const [slot,title,,unit] of fields)if(unitOf(item)===unit){const option=text('option',title.split(',')[0]);option.value=slot;category.append(option);}
-   function assign(next){
-    roles.set(id,next);if(next.endsWith('Corners'))for(const [other,role] of selection)if(other!==id&&role===next)selection.delete(other);
-    selection.set(id,next);groups.get(groupKey(next)).append(row);refresh();
-   }
-   checkbox.onchange=()=>{if(checkbox.checked)assign(roles.get(id)||'');else{selection.delete(id);refresh();}};
-   category.onchange=()=>assign(category.value);
-   row.append(label,category);groups.get(groupKey(key)).append(row);rows.set(id,{row,checkbox,category,meta,item});
+   checkbox.onchange=()=>{
+    if(checkbox.checked){if(key?.endsWith('Corners'))for(const [other,role] of selection)if(other!==id&&role===key)selection.delete(other);selection.set(id,roles.get(id)||'');}
+    else selection.delete(id);refresh();
+   };
+   row.append(label);groups.get(groupKey(item)).append(row);rows.set(id,{row,checkbox,meta,item});
   }
   all.onclick=()=>{onlySelected=false;refresh();};chosenTab.onclick=()=>{onlySelected=true;refresh();};search.oninput=refresh;refresh();
-  form.append(text('p','Галочка — позиція доступна клієнту. Ціни підтягуються з номенклатури. Для невпізнаної позиції оберіть категорію. Кути та LED рахуються автоматично з відповідним профілем; для кожного типу кутів оберіть одну позицію.'));
+  form.append(text('p','Галочка — позиція доступна клієнту. Ціни підтягуються з номенклатури. Кути та LED рахуються автоматично з відповідним профілем; для кожного типу кутів оберіть одну позицію.'));
   const minLabel=text('label','Мінімальне замовлення, грн (0 — без обмеження)'),minimum=document.createElement('input');minimum.name='minimum';minimum.type='number';minimum.min=0;minimum.max=100000;minimum.value=saved.minimum||0;minLabel.append(minimum);form.append(minLabel);
   form.append(text('p','Для тіньового і парящого профілів оберіть кути; для парящого — також підсвічування. Карнизи рахуються як доповнення до стелі.'));
   const submit=text('button','Зберегти вибір');submit.type='submit';form.append(submit);settings.append(form);
@@ -174,7 +180,7 @@
    const data={company:companyInput.value,minimum:minimum.value,__selection:Object.fromEntries(selection)},catalog={version:1,company:data.company,date:new Date().toISOString().slice(0,10),minimum:Number(data.minimum),...filmTariffs(),items:{},options:{}};
    for(const [id,key] of selection){
     const item=list.find(it=>String(it.id)===id),field=fields.find(f=>f[0]===key);
-    if(!field||unitOf(item)!==field[3]){output.textContent='Оберіть відповідну категорію для «'+item.name+'».';return;}
+    if(!field||unitOf(item)!==field[3]){output.textContent='Для «'+item.name+'» не налаштоване підтримуване джерело розрахунку. Вкажіть його у номенклатурі.';return;}
    }
    for(const [key] of fields){
     const selected=list.filter(it=>selection.get(String(it.id))===key),previous=selected.find(it=>String(it.id)===String(saved[key]));

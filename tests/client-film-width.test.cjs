@@ -20,7 +20,7 @@ assert.equal(M.estimate(base,{...cfg,items:{...cfg.items,film:{name:'Free explic
  try{for(const width of [390,1440]){
   const {page,errors}=await open(browser,width);await reveal(page);await page.waitForTimeout(400);
   await page.evaluate(()=>{
-   elemItems=[{id:'al',name:'Базовий алюмінієвий профіль',source:'main_profile',unit:'м',price:200},{id:'pvc',name:'Базовий профіль ПВХ',source:'main_profile',unit:'м',price:150},{id:'c',name:'Кути',source:'corners',unit:'шт',price:100},{id:'sblack',name:'Тіньовий чорний',source:'shadow_profile',sourceVariant:'black',unit:'м',price:550},{id:'swhite',name:'Тіньовий білий',source:'shadow_profile',sourceVariant:'white',unit:'м',price:600},{id:'sc',name:'Кути тіньові',source:'shadow_corners',unit:'шт',price:150}];
+   elemGroups=[];elemItems=[{id:'al',name:'Базовий алюмінієвий профіль',source:'main_profile',unit:'м',price:200},{id:'pvc',name:'Базовий профіль ПВХ',source:'main_profile',unit:'м',price:150},{id:'c',name:'Кути',source:'corners',unit:'шт',price:100},{id:'sblack',name:'Тіньовий чорний',source:'shadow_profile',sourceVariant:'black',unit:'м',price:550},{id:'swhite',name:'Тіньовий білий',source:'shadow_profile',sourceVariant:'white',unit:'м',price:600},{id:'sc',name:'Кути тіньові',source:'shadow_corners',unit:'шт',price:150}];
    document.getElementById('aceilClientSetupButton').click();
   });
   await page.evaluate(()=>document.querySelectorAll('#aceilClientSetup details').forEach(el=>el.open=true));
