@@ -1,13 +1,23 @@
 (function(){
  'use strict';
  const fields=[['film','Плівка, грн/м²','area','area'],['classic','Класичний профіль, грн/м','main_profile','meter'],['classicCorners','Кути класичного профілю, грн/шт','corners','piece'],['shadow','Тіньовий профіль, грн/м','shadow_profile','meter'],['shadowCorners','Кути тіньового профілю, грн/шт','shadow_corners','piece'],['floating','Парящий профіль, грн/м','floating_profile','meter'],['floatingCorners','Кути парящого профілю, грн/шт','floating_corners','piece'],['led','LED для парящого профілю, грн/м','','meter'],['white','Біла вставка, грн/м','white_insert','meter'],['black','Чорна вставка, грн/м','white_insert','meter'],['chandelier','Люстра, грн/шт','chandelier','piece'],['spot','Точковий світильник, грн/шт','spot','piece'],['cornice','Карнизи, грн/м','','meter']];
- function items(){let live=[];try{live=Array.isArray(elemItems)?elemItems:[];}catch(_){}const master=window['__A·CEILNomenCatalogV339']?.items||[],merged=new Map(live.map(it=>[String(it.id),it]));master.forEach(it=>merged.set(String(it.id),it));return [...merged.values()];}
+ function items(){
+  let live=[];try{live=Array.isArray(elemItems)?elemItems:[];}catch(_){}
+  const master=window['__A·CEILNomenCatalogV339']||{},merged=new Map(live.map(it=>[String(it.id),it]));(master.items||[]).forEach(it=>merged.set(String(it.id),it));
+  const groups=new Map([...(master.groups||[]),...nomenGroups()].map(g=>[String(g.id),g]));
+  return [...merged.values()].map(it=>{
+   if(!(Number(it.filmWidth)>0))return it;
+   const group=groups.get(String(it.groupId))||{},name=String(it.name||'')+' '+String(group.name||''),match=String(it.name||'').toUpperCase().match(/\b[MLS]\d{3}\b/);
+   const series=it.seriesId||it.filmSeriesId||group.filmSeriesId||group.seriesId||(/classic|класік|класик/i.test(name)?'classic':/kralton|кралтон/i.test(name)?'kralton':'premium');
+   return {...it,seriesId:series,filmSeriesId:series,...(!it.colorCode&&match?{colorCode:match[0]}:{})};
+  });
+ }
  function nomenGroups(){let live=[];try{live=Array.isArray(elemGroups)?elemGroups:[];}catch(_){}if(live.length)return live;const master=window['__A·CEILNomenCatalogV339']?.groups;return Array.isArray(master)?master:[];}
  function isCornice(it){return /карниз|ніша|uno|уно|cornice/i.test(String(it.name||'')+' '+String(it.source||''));}
  function filmTariffs(){
   const filmCatalog={},filmOverrides={},raw=items();
   for(const series of window.ACEIL_FILM_SERIES||[]){if(series.active===false)continue;const rates=window.ACEILGetFilmPricing?.(series.id)||{};filmCatalog[series.id]=rates;
-   for(const entry of window.ACEIL_COLOR_CATALOG_BY_SERIES?.[series.id]||[]){const bands=entry.filmWidths?.length?entry.filmWidths:[{nominal:3.6,priceKey:'narrow'},...(entry.wide510?[{nominal:5.1,priceKey:'wide'}]:[])];for(const w of bands){const item=raw.find(it=>it.colorCode===entry.code&&(it.seriesId||it.filmSeriesId||'premium')===series.id&&Math.abs(Number(it.filmWidth)-w.nominal)<1e-6);if(item&&Number(item.price)!==Number(rates[entry.texture]?.[w.priceKey]||0))filmOverrides[series.id+':'+entry.code+':'+w.nominal]=Number(item.price);}}
+   for(const entry of window.ACEIL_COLOR_CATALOG_BY_SERIES?.[series.id]||[]){const bands=entry.filmWidths?.length?entry.filmWidths:[{nominal:3.6,priceKey:'narrow'},...(entry.wide510?[{nominal:5.1,priceKey:'wide'}]:[])];for(const w of bands){const item=raw.find(it=>it.colorCode===entry.code&&(it.seriesId||it.filmSeriesId||'premium')===series.id&&Math.abs(Number(it.filmWidth)-w.nominal)<1e-6);if(item&&Number(item.price)>0&&Number(item.price)!==Number(rates[entry.texture]?.[w.priceKey]||0))filmOverrides[series.id+':'+entry.code+':'+w.nominal]=Number(item.price);}}
   }
   return{filmCatalog,filmOverrides};
  }
@@ -19,7 +29,7 @@
    entries.filter(e=>codes.has(e.code)).forEach(e=>{
     const current=raw.filter(it=>it.colorCode===e.code&&(it.seriesId||it.filmSeriesId||'premium')===s.id&&Number(it.filmWidth)>0);
     const bands=e.filmWidths?.length?e.filmWidths:[{nominal:3.6,max:3.6,priceKey:'narrow'},...(e.wide510?[{nominal:5.1,max:5.6,priceKey:'wide'}]:[])];
-    const widths=bands.map(w=>{const live=current.find(it=>Math.abs(Number(it.filmWidth)-w.nominal)<1e-6),price=live?Number(live.price):Number(prices[e.texture]?.[w.priceKey]);return{nominal:Number(w.nominal),max:Number(w.max)||Number(w.nominal),price:price>0?price:0,...(!(price>0)?{requiresQuote:true}:{})};}).filter(w=>w.nominal>0&&w.max>0);
+    const widths=bands.map(w=>{const live=current.find(it=>Math.abs(Number(it.filmWidth)-w.nominal)<1e-6),price=Number(live?.price)>0?Number(live.price):Number(prices[e.texture]?.[w.priceKey]);return{nominal:Number(w.nominal),max:Number(w.max)||Number(w.nominal),price:price>0?price:0,...(!(price>0)?{requiresQuote:true}:{})};}).filter(w=>w.nominal>0&&w.max>0);
     if(!widths.length)return;
     const named=savedGroups.filter(g=>/плівк|полотн|film|premium|classic|kralton|класік|класик|кралтон/i.test(String(g.name||'')));
     const specific=savedGroups.find(g=>(g.filmSeriesId||g.seriesId)===s.id)||named.find(g=>new RegExp(s.id==='premium'?'premium|преміум':s.id==='classic'?'classic|класік|класик':'kralton|кралтон','i').test(String(g.name||'')));
@@ -258,12 +268,22 @@
   form.append(text('p','Позначте позиції, які клієнт зможе обрати та прорахувати. Назви, групи, ціни й одиниці — з вашої номенклатури.'));
   const minLabel=text('label','Мінімальне замовлення, грн (0 — без обмеження)'),minimum=document.createElement('input');minimum.name='minimum';minimum.type='number';minimum.min=0;minimum.max=100000;minimum.value=saved.minimum||0;minLabel.append(minimum);form.append(minLabel);
   const submit=text('button','Зберегти вибір');submit.type='submit';form.append(submit);settings.append(form);
+  const classicPrices=document.createElement('details');classicPrices.dataset.classicPrices='';classicPrices.append(text('summary','Ціни плівки Classic, грн/м²'),text('p','Задайте ваші роздрібні ціни за фактурою та шириною полотна. 0 або порожнє поле — ціну потрібно уточнити.'));
+  const classicRates=window.ACEILGetFilmPricing?.('classic')||{};
+  for(const [texture,title] of [['mat','Мат'],['lak','Глянець'],['satin','Сатин']]){
+   classicPrices.append(text('strong',title));const row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px';
+   for(const [band,width] of [['narrow','3,6 м'],['wide','5,1 м']]){const label=text('label',width),input=document.createElement('input');input.type='number';input.min=0;input.max=1000000;input.step='0.01';input.inputMode='decimal';input.name='classicPrice:'+texture+':'+band;input.setAttribute('aria-label','Classic '+title+' '+width);input.value=Number(classicRates[texture]?.[band])||'';label.append(input);row.append(label);}classicPrices.append(row);
+  }
+  form.insertBefore(classicPrices,submit);
   const close=text('button','Закрити');close.type='button';close.onclick=()=>dialog.close();dialog.append(quick,settings,output,close);document.body.append(dialog);
   form.onsubmit=async e=>{
    e.preventDefault();output.textContent='';
    const data={company:companyInput.value,minimum:minimum.value,__selection:Object.fromEntries(selection)};
    try{
-    assertOwner();const clean=buildCatalogue(data,saved);window.ACEILClientCalc.link('https://a-ceil.pp.ua/',clean);saved={...data,__catalog:clean,__productRules:5,...(saved.__cloudToken?{__cloudToken:saved.__cloudToken}:{})};localStorage.setItem(storageKey(),JSON.stringify(saved));
+    assertOwner();const rates={};let pricesChanged=false;
+    for(const input of classicPrices.querySelectorAll('input')){const [,texture,band]=input.name.split(':'),price=Number(input.value||0);if(!Number.isFinite(price)||price<0||price>1000000)throw Error('Перевірте ціни Classic.');(rates[texture]||(rates[texture]={}))[band]=price;if(price!==(Number(classicRates[texture]?.[band])||0))pricesChanged=true;}
+    if(pricesChanged)window.ACEILSetFilmPricing('classic',rates);
+    const clean=buildCatalogue(data,saved);window.ACEILClientCalc.link('https://a-ceil.pp.ua/',clean);saved={...data,__catalog:clean,__productRules:5,...(saved.__cloudToken?{__cloudToken:saved.__cloudToken}:{})};localStorage.setItem(storageKey(),JSON.stringify(saved));
     if(saved.__cloudToken){output.textContent='Оновлюю прайс…';await syncSavedCatalogue(true);assertOwner();saved=JSON.parse(localStorage.getItem(storageKey()));}
     ready(clean,true);output.textContent=saved.__cloudToken?'Вибір і ціни оновлено у постійному посиланні.':'Вибір збережено. Клієнту доступні лише позначені позиції.';
    }catch(err){output.textContent=err.message;}
