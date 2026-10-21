@@ -169,28 +169,28 @@
   const form=document.createElement('form');let saved={};try{saved=JSON.parse(localStorage.getItem(storageKey())||'{}');}catch(_){}
   const quick=document.createElement('details'),settings=document.createElement('details'),settingsTitle=text('summary','Що бачить клієнт');quick.dataset.ownerLinks='';settings.dataset.ownerSettings='';settings.append(settingsTitle);settings.style.marginTop='18px';settingsTitle.style.cursor='pointer';settingsTitle.style.fontWeight='700';
   const output=document.createElement('output');output.setAttribute('aria-live','polite');
-  function ready(catalog,showLink=false){
-   catalog=window.ACEILClientCalc.config(catalog);quick.hidden=false;quick.replaceChildren(text('summary','Посилання для клієнта'));quick.open=showLink;
+  function ready(catalog){
+   catalog=window.ACEILClientCalc.config(catalog);quick.hidden=false;quick.replaceChildren();quick.open=true;
+   const caption=text('summary','Готовий прайс');caption.hidden=true;quick.append(caption);
    const base=catalog.catalogue&&location.hostname!=='a-ceil.pp.ua'?location.href:'https://a-ceil.pp.ua/';
-   const url=saved.__cloudToken?window.ACEILClientCloud.link(base,saved.__cloudToken):window.ACEILClientCalc.link(base,catalog),previewUrl=window.ACEILClientCalc.link(location.href,catalog);
-   quick.append(text('p','Готовий калькулятор · '+catalog.company));
-   const summary=text('p',catalog.catalogue?'Доступно клієнту: '+catalog.products.length+' позицій':fields.filter(([key])=>catalog.items[key]).map(([key,label])=>label.split(',')[0]).join(' · '));quick.append(summary);
-   const assortment=document.createElement('details');assortment.append(text('summary','Збережений асортимент і ціни'));
-   if(catalog.catalogue)catalog.products.forEach(item=>assortment.append(text('p',item.name+' · '+(item.requiresQuote?'Уточнити':item.price+' грн/'+item.unit))));
-   else fields.forEach(([key,label])=>{const rows=catalog.options[key]?.length?catalog.options[key]:(catalog.items[key]?[catalog.items[key]]:[]);if(!rows.length)return;assortment.append(text('h4',label));rows.forEach(item=>assortment.append(text('p',item.name+' · '+(item.requiresQuote?'Уточнити':item.price+' грн'))));});quick.append(assortment);
-   quick.append(text('p','Прайс збережено '+catalog.date+'. Після збереження номенклатури ціни обраних позицій оновлюються автоматично.'));
-   const label=text('label',saved.__cloudToken?'Постійне посилання для клієнтів':'Тестове посилання · збережений прайс'),input=document.createElement('input');input.value=url;input.readOnly=true;label.append(input);quick.append(label);
-   const copy=text('button','Скопіювати посилання');copy.type='button';copy.dataset.clientCopy='';copy.style.background='#2563eb';copy.style.color='white';copy.onclick=async()=>{try{await navigator.clipboard.writeText(url);output.textContent='Посилання скопійовано.';}catch(_){input.focus();input.select();output.textContent='Скопіюйте виділене посилання.';}};
-   const view=text('a','Відкрити калькулятор');view.href=url;view.target='_blank';view.rel='noopener';quick.append(copy,view);
-   if(location.hostname!=='a-ceil.pp.ua'){const preview=text('a','Перевірити на тесті');preview.href=previewUrl;preview.target='_blank';preview.rel='noopener';quick.append(preview);}
-
-   const publish=text('button',saved.__cloudToken?'Оновити прайс у постійному посиланні':'Увімкнути постійне посилання');publish.type='button';publish.dataset.publishCalculator='';publish.onclick=async()=>{
-    publish.disabled=true;output.textContent='Публікую прайс…';
-    try{assertOwner();if(saved.__cloudToken){await syncSavedCatalogue(true);assertOwner();saved=JSON.parse(localStorage.getItem(ownerKey));}else{const current=saved.__selection?buildCatalogue({...saved},saved):catalog,token=await window.ACEILClientCloud.publish(backend(),current);assertOwner();saved={...saved,__catalog:current,__cloudToken:token,__cloudSyncError:''};localStorage.setItem(ownerKey,JSON.stringify(saved));scheduleSync();}ready(saved.__catalog,true);output.textContent='Актуальний прайс опубліковано. Посилання залишається тим самим.';}catch(error){output.textContent=error.message;}finally{publish.disabled=false;}
-   };quick.append(publish);
-   quick.append(text('p',saved.__cloudToken?'Зміни вибору та збережені ціни номенклатури автоматично надходять у це посилання. Клієнтам повторно надсилати його не потрібно.':'Увімкніть постійне посилання один раз, щоб клієнти бачили оновлені ціни.'));
-   if(saved.__cloudSyncError)quick.append(text('p','Останнє оновлення не підтверджено. Натисніть «Оновити прайс у постійному посиланні» для повторної спроби.'));
-   settings.open=!showLink;settingsTitle.textContent='Що бачить клієнт';
+   const url=saved.__cloudToken?window.ACEILClientCloud.link(base,saved.__cloudToken):window.ACEILClientCalc.link(base,catalog);
+   quick.append(text('p',catalog.company+' · '+(catalog.catalogue?catalog.products.length+' позицій':'Прайс готовий')));
+   const label=text('label','Посилання для клієнта'),input=document.createElement('input');input.value=url;input.readOnly=true;label.append(input);label.hidden=true;quick.append(label);
+   const actions=document.createElement('div');actions.className='owner-main-actions';
+   const view=text('a','Відкрити');view.href=url;view.target='_blank';view.rel='noopener';
+   const send=text('button','Надіслати');send.type='button';send.dataset.clientCopy='';send.style.background='#2563eb';send.style.color='white';send.onclick=async()=>{
+    try{
+     if(navigator.share){try{await navigator.share({title:catalog.company+' · Калькулятор стелі',url});return;}catch(error){if(error.name==='AbortError')return;}}
+     await navigator.clipboard.writeText(url);output.textContent='Посилання скопійовано. Надішліть його клієнту.';
+    }catch(_){label.hidden=false;input.focus();input.select();output.textContent='Скопіюйте посилання й надішліть клієнту.';}
+   };
+   actions.append(view,send);quick.append(actions);
+   const publish=text('button',saved.__cloudToken?'Повторити оновлення':'Створити постійне посилання');publish.type='button';publish.dataset.publishCalculator='';publish.hidden=!!saved.__cloudToken&&!saved.__cloudSyncError;publish.onclick=async()=>{
+    publish.disabled=true;output.textContent='Зберігаю прайс…';
+    try{assertOwner();if(saved.__cloudToken){await syncSavedCatalogue(true);assertOwner();saved=JSON.parse(localStorage.getItem(ownerKey));}else{const current=saved.__selection?buildCatalogue({...saved},saved):catalog,token=await window.ACEILClientCloud.publish(backend(),current);assertOwner();saved={...saved,__catalog:current,__cloudToken:token,__cloudSyncError:''};localStorage.setItem(ownerKey,JSON.stringify(saved));scheduleSync();}ready(saved.__catalog);output.textContent='Прайс готовий до надсилання.';}catch(error){output.textContent=error.message;}finally{publish.disabled=false;}
+   };if(!publish.hidden)quick.append(publish);
+   if(saved.__cloudSyncError)quick.append(text('p','Ціни ще не оновились. Перевірте інтернет і повторіть оновлення.'));
+   settings.open=false;settingsTitle.textContent='Змінити';
   }
   let configured=false;try{if(saved.__catalog){ready(saved.__catalog);configured=true;}}catch(_){}
   if(!configured){settings.open=true;quick.hidden=true;}
@@ -285,7 +285,7 @@
   classicPrices.addEventListener('input',()=>{
    try{assertOwner();window.ACEILSetFilmPricing('classic',classicPriceValues());output.textContent='Ціни Classic збережено.';}catch(error){output.textContent=error.message;}
   });
-  const close=text('button','Закрити');close.type='button';close.onclick=()=>dialog.close();dialog.append(quick,settings,output,close);document.body.append(dialog);
+  const close=text('button','Закрити');close.type='button';close.onclick=()=>{if(settings.open&&saved.__catalog){settings.open=false;return;}dialog.close();};dialog.append(quick,settings,output,close);document.body.append(dialog);
   form.onsubmit=async e=>{
    e.preventDefault();output.textContent='';
    const data={company:companyInput.value,minimum:minimum.value,__selection:Object.fromEntries(selection)};
@@ -304,7 +304,13 @@
   const dismiss=text('button','×');dismiss.type='button';dismiss.setAttribute('aria-label','Закрити');dismiss.onclick=()=>dialog.close();header.append(heading,dismiss,intro);
   content.append(quick,settings,output);form.id='aceilClientAssortmentForm';submit.setAttribute('form',form.id);close.textContent='← Назад';footer.append(close,submit);
   dialog.replaceChildren(...styles,header,content,footer);
-  dialog.append(text('style','#aceilClientSetup{padding:0;width:min(560px,calc(100vw - 24px));height:min(88dvh,800px);max-height:88dvh;overflow:hidden;border-radius:20px;box-sizing:border-box}#aceilClientSetup[open]{display:flex;flex-direction:column}#aceilClientSetup .owner-header{flex:none;padding:16px;border-bottom:1px solid #e2e8f0;display:grid;grid-template-columns:1fr 36px;gap:6px 10px}#aceilClientSetup .owner-header h2{font-size:18px;margin:0;align-self:center}#aceilClientSetup .owner-header>button{font-size:24px;margin:0;padding:0;min-height:36px}#aceilClientSetup .owner-header>p{grid-column:1/-1;font-size:12px;margin:0;line-height:1.4}#aceilClientSetup .owner-content{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:12px 16px}#aceilClientSetup .owner-footer{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 16px max(12px,env(safe-area-inset-bottom));border-top:1px solid #e2e8f0;background:#fff}#aceilClientSetup .owner-footer button{margin:0;min-height:46px;padding:10px;font-size:14px}#aceilClientSetup .owner-toolbar{top:-12px;padding:8px 0;margin-top:10px}#aceilClientSetup .owner-tabs button{margin-top:4px;padding:9px 16px;min-height:40px}#aceilClientSetup #clientAssortmentCount{margin:7px 0 0;font-size:12px}#aceilClientSetup .owner-category{padding:0 10px;margin:8px 0}#aceilClientSetup .owner-category>summary{padding:12px 0;font-size:14px}#aceilClientSetup .owner-film-series{border-top:1px solid #edf1f7}#aceilClientSetup .owner-film-series>summary{padding:12px 0;font-size:14px;font-weight:650;cursor:pointer}#aceilClientSetup .owner-item{padding:10px 0}#aceilClientSetup .owner-item label>span{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;align-items:start}#aceilClientSetup .owner-item strong{font-size:13px;font-weight:650;line-height:1.4}#aceilClientSetup .owner-rate{font-size:12px;white-space:nowrap;margin:1px 0 0;font-weight:750}#aceilClientSetup .owner-item small{grid-column:1/-1}#aceilClientSetup [data-owner-settings]>summary,#aceilClientSetup [data-owner-links]>summary{font-size:14px;font-weight:750;cursor:pointer;padding:10px 0}#aceilClientSetup label{margin:10px 0}#aceilClientSetup input,#aceilClientSetup select{padding:9px 10px}'));
+  dialog.append(text('style','#aceilClientSetup[data-view=home]{height:max-content;margin:auto}#aceilClientSetup[data-view=home] .owner-content{flex:0 1 auto}#aceilClientSetup[data-view=home] .owner-footer{grid-template-columns:1fr}#aceilClientSetup [data-owner-settings]>summary{list-style:none;background:#eff5ff;color:#1d4ed8;border-radius:10px;text-align:center}#aceilClientSetup [data-owner-settings]>summary::-webkit-details-marker{display:none}#aceilClientSetup [data-owner-settings][open]>summary{display:none}#aceilClientSetup .owner-main-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}#aceilClientSetup .owner-main-actions>*{margin:0;text-align:center}#aceilClientSetup{padding:0;width:min(560px,calc(100vw - 24px));height:min(88dvh,800px);max-height:88dvh;overflow:hidden;border-radius:20px;box-sizing:border-box}#aceilClientSetup[open]{display:flex;flex-direction:column}#aceilClientSetup .owner-header{flex:none;padding:16px;border-bottom:1px solid #e2e8f0;display:grid;grid-template-columns:1fr 36px;gap:6px 10px}#aceilClientSetup .owner-header h2{font-size:18px;margin:0;align-self:center}#aceilClientSetup .owner-header>button{font-size:24px;margin:0;padding:0;min-height:36px}#aceilClientSetup .owner-header>p{grid-column:1/-1;font-size:12px;margin:0;line-height:1.4}#aceilClientSetup .owner-content{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:12px 16px}#aceilClientSetup .owner-footer{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 16px max(12px,env(safe-area-inset-bottom));border-top:1px solid #e2e8f0;background:#fff}#aceilClientSetup .owner-footer button{margin:0;min-height:46px;padding:10px;font-size:14px}#aceilClientSetup .owner-toolbar{top:-12px;padding:8px 0;margin-top:10px}#aceilClientSetup .owner-tabs button{margin-top:4px;padding:9px 16px;min-height:40px}#aceilClientSetup #clientAssortmentCount{margin:7px 0 0;font-size:12px}#aceilClientSetup .owner-category{padding:0 10px;margin:8px 0}#aceilClientSetup .owner-category>summary{padding:12px 0;font-size:14px}#aceilClientSetup .owner-film-series{border-top:1px solid #edf1f7}#aceilClientSetup .owner-film-series>summary{padding:12px 0;font-size:14px;font-weight:650;cursor:pointer}#aceilClientSetup .owner-item{padding:10px 0}#aceilClientSetup .owner-item label>span{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;align-items:start}#aceilClientSetup .owner-item strong{font-size:13px;font-weight:650;line-height:1.4}#aceilClientSetup .owner-rate{font-size:12px;white-space:nowrap;margin:1px 0 0;font-weight:750}#aceilClientSetup .owner-item small{grid-column:1/-1}#aceilClientSetup [data-owner-settings]>summary,#aceilClientSetup [data-owner-links]>summary{font-size:14px;font-weight:750;cursor:pointer;padding:10px 0}#aceilClientSetup label{margin:10px 0}#aceilClientSetup input,#aceilClientSetup select{padding:9px 10px}'));
+  function syncView(){
+   const editing=settings.open;dialog.dataset.view=editing?'edit':'home';quick.hidden=editing||!saved.__catalog;submit.hidden=!editing;
+   intro.textContent=editing?'Оберіть, що пропонувати клієнтам.':saved.__cloudToken?'Ціни оновлюються з вашої номенклатури автоматично.':'Ваш калькулятор готовий.';
+   settingsTitle.textContent='Змінити';content.scrollTop=0;
+  }
+  settings.addEventListener('toggle',syncView);syncView();
   dialog.showModal();
  }
  function install(){const menu=document.getElementById('elemMenu');if(!menu||document.getElementById('aceilClientSetupButton'))return;const button=text('button','Калькулятор для клієнта');button.type='button';button.id='aceilClientSetupButton';button.onclick=()=>{if(typeof closeElemMenu==='function')closeElemMenu();open();};menu.prepend(button);}

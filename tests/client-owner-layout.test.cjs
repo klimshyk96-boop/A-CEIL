@@ -28,7 +28,23 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
   await save.click();assert.ok((await page.locator('#aceilClientSetup output').textContent()).includes('Вибір збережено'));
   await page.locator('[data-owner-settings]').evaluate(e=>e.open=true);await page.locator('[data-owner-links]').evaluate(e=>e.open=false);await page.locator('[data-owner-filter=all]').click();await page.locator('.owner-category').last().scrollIntoViewIfNeeded();
   await page.screenshot({path:'/tmp/aceil-owner-compact-'+width+'.png',fullPage:false});
+  await back.click();assert.equal(await page.locator('[data-owner-settings]').evaluate(e=>e.open),false,'back returns to actions');
   await back.click();assert.equal(await page.locator('#aceilClientSetup').evaluate(e=>e.open),false);
+  await page.evaluate(()=>{
+   const key='aceil-client-preset:local',saved=JSON.parse(localStorage.getItem(key));saved.__cloudToken='a'.repeat(32);localStorage.setItem(key,JSON.stringify(saved));
+   navigator.share=async payload=>{window.sharedCalculator=payload;};document.getElementById('aceilClientSetupButton').click();
+  });
+  assert.equal(await page.locator('[data-owner-settings]').evaluate(e=>e.open),false);
+  assert.equal(await page.locator('[data-publish-calculator]').count(),0,'no publish/update button for a ready cloud calculator');
+  assert.equal(await page.locator('.owner-footer [type=submit]').isVisible(),false,'no save button outside editing');
+  assert.equal(await page.locator('[data-owner-links] input[readonly]').isVisible(),false,'no technical link field');
+  assert.deepEqual(await page.locator('.owner-main-actions').getByRole('link').allTextContents(),['Відкрити']);
+  await page.getByRole('button',{name:'Надіслати',exact:true}).click();
+  assert.equal(await page.evaluate(()=>new URL(window.sharedCalculator.url).searchParams.get('c')),'a'.repeat(32));
+  assert.ok((await page.locator('#aceilClientSetup').boundingBox()).height<500,'ready menu is compact');
+  await page.screenshot({path:'/tmp/aceil-owner-actions-'+width+'.png'});
+  await page.locator('[data-owner-settings]>summary').click();await page.locator('.owner-footer [type=submit]').waitFor({state:'visible'});
+  await back.click();await back.click();
   assert.deepEqual(errors,[]);await page.close();console.log('PASS compact owner settings, selected filter, visible back/save footer and form submission '+width+'px');
  }}finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});
