@@ -9,8 +9,8 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
   for(const set of ['laconic','technical']){
    await page.locator('[data-nom-icon-set='+set+']').click();
    const panel=page.locator('[data-nom-icon-panel='+set+']');
-   assert.equal(await panel.locator('button').count(),8);
-   assert.equal(await panel.locator('svg').count(),8);
+   assert.equal(await panel.locator('button').count(),18);
+   assert.equal(await panel.locator('svg').count(),18);
    assert.equal(await panel.isVisible(),true);
    await panel.getByRole('button',{name:'Профілі',exact:true}).click();
    assert.equal(await page.evaluate(()=>elemItems[0].icon),'svg:'+set+'-profile');
@@ -19,6 +19,17 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
    assert.deepEqual(await page.evaluate(()=>[elemItems[0].price,elemItems[0].qty]),[185,2]);
    await page.evaluate(()=>openEmojiPickerForItem('icon-item'));
    assert.equal(await page.locator('[data-nom-icon-set='+set+']').getAttribute('aria-pressed'),'true');
+   for(const key of ['light-line','light-line-corner','surface-track','recessed-track','magnetic-track','track-light','surface-cornice','hidden-cornice','wide-cornice','single-cornice']){
+    const button=panel.locator('button[onclick="selectNomenclatureSvgIcon(\''+set+'-'+key+'\')"]');
+    assert.equal(await button.count(),1);
+    await button.click();
+    assert.equal(await page.evaluate(()=>elemItems[0].icon),'svg:'+set+'-'+key);
+    assert.equal(await page.locator('#emrow_icon-item .em-icon svg').count(),1);
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ceiling_v18')).elemItems[0].icon),'svg:'+set+'-'+key);
+    assert.deepEqual(await page.evaluate(()=>[elemItems[0].price,elemItems[0].qty]),[185,2]);
+    await page.evaluate(()=>openEmojiPickerForItem('icon-item'));
+    assert.equal(await page.locator('[data-nom-icon-set='+set+']').getAttribute('aria-pressed'),'true');
+   }
   }
   await page.screenshot({path:'/tmp/aceil-icon-sets-'+width+'.png'});
   await page.locator('[data-nom-icon-set=existing]').click();assert.ok(await page.locator('[data-nom-icon-panel=existing] button').count()>20);
