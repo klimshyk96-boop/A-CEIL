@@ -23,14 +23,15 @@ assert.equal(M.estimate(base,{...cfg,items:{...cfg.items,film:{name:'Free explic
    elemItems=[{id:'al',name:'Базовий алюмінієвий профіль',source:'main_profile',unit:'м',price:200},{id:'pvc',name:'Базовий профіль ПВХ',source:'main_profile',unit:'м',price:150},{id:'c',name:'Кути',source:'corners',unit:'шт',price:100},{id:'sblack',name:'Тіньовий чорний',source:'shadow_profile',sourceVariant:'black',unit:'м',price:550},{id:'swhite',name:'Тіньовий білий',source:'shadow_profile',sourceVariant:'white',unit:'м',price:600},{id:'sc',name:'Кути тіньові',source:'shadow_corners',unit:'шт',price:150}];
    document.getElementById('aceilClientSetupButton').click();
   });
+  await page.evaluate(()=>document.querySelectorAll('#aceilClientSetup details').forEach(el=>el.open=true));
   assert.equal(await page.locator('#aceilClientSetup [name=film]').inputValue(),'film:premium:M303','film registry supplies the picker even without any live film item');
   await page.locator('#aceilClientSetup [name=classic]').selectOption('al');await page.locator('#aceilClientSetup [type=submit]').click();
   const url=await page.locator('#aceilClientSetup a').last().getAttribute('href'),payload=M.decode(new URL(url).hash.slice(1));
   assert.deepEqual(payload.config.options.film[0].widths.map(w=>[w.nominal,w.max,w.price]),[[3.6,3.6,380],[5.1,5.6,420],[5.8,6.2,420]]);
   assert.deepEqual(new Set(payload.config.options.film.map(it=>it.series)),new Set(['premium','classic','kralton']));assert.equal(payload.config.options.film.find(it=>it.series==='classic').widths[0].requiresQuote,true);
   assert.equal(payload.config.options.classic.length,2);assert.equal(payload.config.options.shadow.length,2);
-  await page.goto(url);assert.equal(await page.locator('[name=filmOption]').isVisible(),false);assert.ok((await page.locator('#filmRule').textContent()).includes('420 грн/м²'));
-  if(width===390){const before=page.url();await page.locator('#viewEstimate').click();assert.equal(page.url(),before,'mobile total must scroll without changing the encoded calculation hash');}
+  await page.goto(url);await page.locator('[data-step="1"]').click();assert.equal(await page.locator('[name=filmOption]').isVisible(),false);assert.ok((await page.locator('#filmRule').textContent()).includes('420 грн/м²'));
+  if(width===390){const before=page.url();await page.locator('#viewEstimate').click();assert.equal(page.url(),before,'estimate dialog must not change encoded hash');await page.keyboard.press('Escape');}
   const initial=Number((await page.locator('#total').textContent()).replace(/[^0-9]/g,''));
   await page.locator('[data-profile-family=classic][data-profile-variant=pvc]').click();
   assert.ok((await page.locator('#profileCurrent').textContent()).includes('ПВХ'));assert.equal(Number((await page.locator('#total').textContent()).replace(/[^0-9]/g,'')),initial-900);
@@ -38,10 +39,10 @@ assert.equal(M.estimate(base,{...cfg,items:{...cfg.items,film:{name:'Free explic
   assert.ok((await page.locator('#profileCurrent').textContent()).includes('білий'));
   const white=Number((await page.locator('#total').textContent()).replace(/[^0-9]/g,''));await page.locator('[data-profile-family=shadow][data-profile-variant=black]').click();
   assert.equal(Number((await page.locator('#total').textContent()).replace(/[^0-9]/g,'')),white-900);
-  await page.locator('[name=width]').fill('3.6');assert.ok((await page.locator('#filmRule').textContent()).includes('380 грн/м²'));
+  await page.locator('[data-step="0"]').click();await page.locator('[name=width]').fill('3.6');assert.ok((await page.locator('#filmRule').textContent()).includes('380 грн/м²'));
   await page.locator('[data-mode=manual]').click();await page.locator('[name=roomWidth]').fill('');assert.equal(await page.locator('#save').isDisabled(),true);
   await page.locator('[name=roomWidth]').fill('6.3');assert.ok((await page.locator('#error').textContent()).includes('немає придатного полотна'));
-  await page.locator('[name=roomWidth]').fill('4.4');await page.locator('#save').click();const saved=await page.locator('#savedLink').inputValue();
+  await page.locator('[name=roomWidth]').fill('4.4');await page.locator(width===390?'#viewEstimate':'#viewEstimateDesktop').click();await page.locator('#save').click();const saved=await page.locator('#savedLink').inputValue();
   await page.goto('about:blank');await page.goto(saved);assert.equal(await page.locator('[name=roomWidth]').inputValue(),'4.4');
   assert.deepEqual(errors,[]);await page.close();console.log('PASS film width boundaries, registry, profile materials/colours and width state '+width+'px');
  }}finally{await browser.close()}

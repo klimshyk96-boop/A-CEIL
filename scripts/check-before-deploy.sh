@@ -23,9 +23,12 @@ node tests/curve-report-consistency.test.cjs || exit 1
 node tests/report-plan-layout.test.cjs || exit 1
 node tests/client-calculator.test.cjs || exit 1
 node tests/client-film-width.test.cjs || exit 1
+node tests/client-wizard.test.cjs || exit 1
 node --check calculator/model.js || exit 1
 node --check calculator/client.js || exit 1
 node --check calculator/owner.js || exit 1
+node --check calculator/cloud.js || exit 1
+node --check calculator/wizard.js || exit 1
 node tests/pipeline-contract.test.cjs || exit 1
 node tests/render-pipeline.test.cjs || exit 1
 node tests/stability-regression.test.cjs || exit 1

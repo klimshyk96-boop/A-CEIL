@@ -27,6 +27,20 @@
  }
  function filmSeries(item){if(item.series)return item.series;const name=String(item.name||'');return /kralton|кралтон/i.test(name)?'kralton':/classic|класік|класик/i.test(name)?'classic':/premium|преміум/i.test(name)?'premium':'other';}
  function corniceKind(item){if(item.corniceType)return item.corniceType;const name=String(item.name||'');return /одноряд|single/i.test(name)?'single':/широк|wide/i.test(name)?'wide':/наклад|surface/i.test(name)?'surface':/прихов|hidden|uno|ніша/i.test(name)?'hidden':'other';}
+ function contour(raw){
+  if(!Array.isArray(raw)||raw.length<3||raw.length>24)return null;
+  const p=raw.map(v=>({x:number(v?.x),y:number(v?.y)}));if(p.some(v=>!Number.isFinite(v.x)||!Number.isFinite(v.y)||v.x<0||v.y<0||v.x>50||v.y>50))return null;
+  const cross=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x),between=(a,b,c)=>Math.abs(cross(a,b,c))<1e-8&&c.x>=Math.min(a.x,b.x)-1e-8&&c.x<=Math.max(a.x,b.x)+1e-8&&c.y>=Math.min(a.y,b.y)-1e-8&&c.y<=Math.max(a.y,b.y)+1e-8;
+  let area=0,perimeter=0;
+  for(let i=0;i<p.length;i++){
+   const a=p[i],b=p[(i+1)%p.length],len=Math.hypot(b.x-a.x,b.y-a.y);if(len<.1)return null;area+=a.x*b.y-a.y*b.x;perimeter+=len;
+   if(Math.abs(cross(p[(i+p.length-1)%p.length],a,b))<1e-8)return null;
+   for(let j=i+1;j<p.length;j++){if(j===i+1||(i===0&&j===p.length-1))continue;const c=p[j],d=p[(j+1)%p.length];if(cross(a,b,c)*cross(a,b,d)<0&&cross(c,d,a)*cross(c,d,b)<0||between(a,b,c)||between(a,b,d)||between(c,d,a)||between(c,d,b))return null;}
+  }
+  area=Math.abs(area)/2;if(area<.1||area>2500||perimeter>300)return null;
+  const width=Math.max(...p.map(v=>v.x))-Math.min(...p.map(v=>v.x)),height=Math.max(...p.map(v=>v.y))-Math.min(...p.map(v=>v.y));
+  return{points:p,area:round(area),perimeter:round(perimeter),corners:p.length,span:Math.min(width,height)};
+ }
  function config(raw){
   if(!raw||raw.version!==1)throw Error('Посилання має невідомий формат. Попросіть менеджера створити нове.');
   const out={version:1,company:String(raw.company||'A·CEIL').slice(0,80),date:String(raw.date||'').slice(0,10),minimum:Math.max(0,Math.min(100000,number(raw.minimum)||0)),demo:raw.demo===true,items:{}};
@@ -43,10 +57,11 @@
  function estimate(raw,catalog){
   const c=config(catalog),s=raw||{},errors=[],rows=[];
   function value(key,min,max,integer){const n=number(s[key]);if(!Number.isFinite(n)||n<min||n>max||(integer&&!Number.isInteger(n))){errors.push(key);return 0;}return n;}
-  const mode=s.mode==='manual'?'manual':'rectangle';let area,perimeter;
+  const mode=['manual','contour'].includes(s.mode)?s.mode:'rectangle';let area,perimeter,shape;
   if(mode==='rectangle'){const width=value('width',.3,50),length=value('length',.3,50);area=round(width*length);perimeter=round(2*(width+length));}
+  else if(mode==='contour'){shape=contour(s.points);if(!shape)errors.push('contour');area=shape?.area||0;perimeter=shape?.perimeter||0;}
   else{area=value('area',.1,2500);perimeter=value('perimeter',1,300);if(area&&perimeter&&perimeter*perimeter+0.01<4*Math.PI*area)errors.push('geometry');}
-  const corners=mode==='rectangle'?4:value('corners',3,50,true),chandelier=value('chandelier',0,100,true),spot=value('spot',0,200,true);
+  const corners=mode==='rectangle'?4:mode==='contour'?shape?.corners||0:value('corners',3,50,true),chandelier=value('chandelier',0,100,true),spot=value('spot',0,200,true);
   const profile=['classic','shadow','floating'].includes(s.profile)?s.profile:'classic';
   const insert=profile==='classic'&&['white','black'].includes(s.insert)?s.insert:'none';
   const cornice=s.cornice===true?value('corniceLength',.1,50):0;
@@ -54,7 +69,7 @@
   function row(key,qty,unit,label,override){if(qty<=0)return;const item=override||selected(key);if(!item){errors.push('price:'+key);return;}rows.push({key,name:label||item.name,qty:round(qty),unit,price:item.requiresQuote?null:item.price,total:item.requiresQuote?null:round(qty*item.price)});}
   let film=null;const filmItem=selected('film');
   if(filmItem&&filmItem.widths?.length){
-   const required=mode==='rectangle'?Math.min(number(s.width),number(s.length)):value('roomWidth',.3,50);
+   const required=mode==='rectangle'?Math.min(number(s.width),number(s.length)):mode==='contour'?shape?.span||0:value('roomWidth',.3,50);
    const roll=required>0&&Number.isFinite(required)?filmItem.widths.find(w=>w.max+1e-9>=required):null;film={required,roll:roll||null,legacy:false};
    if(!roll)errors.push('filmSpan');else row('film',area,'м²',filmItem.name+' · полотно '+roll.nominal+' м',{...filmItem,price:roll.price,requiresQuote:roll.requiresQuote===true});
   }else{film={legacy:true,quote:filmItem?.requiresQuote===true};row('film',area,'м²');}
@@ -76,6 +91,6 @@
  function encode(value){const bytes=new TextEncoder().encode(JSON.stringify(value));return btoa(Array.from(bytes,b=>String.fromCharCode(b)).join('')).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
  function decode(value){if(typeof value!=='string'||value.length>24000||!/^[\w-]+$/.test(value))throw Error('Посилання пошкоджено або завелике.');const text=atob(value.replace(/-/g,'+').replace(/_/g,'/'));return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(text,c=>c.charCodeAt(0))));}
  function link(base,c,state){const url=new URL('/calculator/',base),payload=encode({config:config(c),state:state||null});if(payload.length>24000)throw Error('Посилання завелике. Зменште кількість варіантів у прайсі.');url.hash=payload;return url.href;}
- const api={slots,number,config,estimate,encode,decode,link,profileVariant,filmSeries,corniceKind};
+ const api={slots,number,config,estimate,encode,decode,link,profileVariant,filmSeries,corniceKind,contour};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ACEILClientCalc=Object.freeze(api);
 })(typeof window!=='undefined'?window:globalThis);

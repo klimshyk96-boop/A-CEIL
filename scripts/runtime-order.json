@@ -162,5 +162,6 @@
   "js/reports/224-aceil-report-diagonals-menu-fix.js",
   "js/core/225-aceil-public-api.js",
   "calculator/model.js",
+  "calculator/cloud.js",
   "calculator/owner.js"
 ]

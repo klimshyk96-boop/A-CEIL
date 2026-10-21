@@ -41,6 +41,21 @@
  }
  fields.push(['linear','Світлові лінії, грн/м','','meter']);
  fields.push(['doubleSpot','Подвійний точковий, грн/шт','double_spot','piece']);
+
+ function eligible(it,key,source){
+  const n=String(it.name||''),src=String(it.source||'');
+  if(key==='film')return it.filmFamily||src==='area';
+  if(key==='white'||key==='black')return src==='white_insert'&&(it.sourceVariant||'white')===key;
+  if(key==='cornice')return /карниз|ніша/i.test(n);
+  if(key==='linear')return /світлов.*ліні/i.test(n)||src==='linear'||src==='lineartype:lightline';
+  if(key==='led')return /LED|стрічка/i.test(n)&&!/блок|живлення|контролер/i.test(n);
+  if(key==='doubleSpot')return ['double_spot','lighttype:double_spot'].includes(src)||/подвійн|double.spot/i.test(n);
+  if(key==='spot')return (src==='spot'||/точков|спот/i.test(n))&&!/подвійн|double.spot/i.test(n);
+  if(key==='chandelier')return src==='chandelier'||/люстр/i.test(n);
+  return src===source;
+ }
+ function optionId(key,it){let a=2166136261,b=5381;for(const c of String(it.id)){a=Math.imul(a^c.charCodeAt(0),16777619);b=Math.imul(b,33)^c.charCodeAt(0);}return key+'-'+(a>>>0).toString(16)+(b>>>0).toString(16);}
+ function backend(){try{return typeof _sb!=='undefined'?_sb:window._sb;}catch(_){return null;}}
  function storageKey(){let uid='local';try{uid=_sbUser&&_sbUser.id||uid;}catch(_){}return 'aceil-client-preset:'+uid;}
  function unitOf(item){const unit=String(item.unit||'').toLowerCase();return /²|2|кв/.test(unit)?'area':/^(м|м\.|м\/п|м.п.|м.п|пог.м|пог\. м|м.пог|м.пог.)$/.test(unit)?'meter':/шт|од/.test(unit)?'piece':'unknown';}
  function text(tag,value){const node=document.createElement(tag);node.textContent=value;return node;}
@@ -53,17 +68,23 @@
   const output=document.createElement('output');output.setAttribute('aria-live','polite');
   function ready(catalog){
    catalog=window.ACEILClientCalc.config(catalog);quick.replaceChildren();
-   const url=window.ACEILClientCalc.link('https://a-ceil.pp.ua/',catalog),previewUrl=window.ACEILClientCalc.link(location.href,catalog);
+   const url=saved.__cloudToken?window.ACEILClientCloud.link('https://a-ceil.pp.ua/',saved.__cloudToken):window.ACEILClientCalc.link('https://a-ceil.pp.ua/',catalog),previewUrl=window.ACEILClientCalc.link(location.href,catalog);
    quick.append(text('p','Готовий калькулятор · '+catalog.company));
    const summary=text('p',fields.filter(([key])=>catalog.items[key]).map(([key,label])=>label.split(',')[0]).join(' · '));quick.append(summary);
    const assortment=document.createElement('details');assortment.append(text('summary','Збережений асортимент і ціни'));
    fields.forEach(([key,label])=>{const rows=catalog.options[key]?.length?catalog.options[key]:(catalog.items[key]?[catalog.items[key]]:[]);if(!rows.length)return;assortment.append(text('h4',label));rows.forEach(item=>assortment.append(text('p',item.name+' · '+(item.requiresQuote?'Уточнити':item.price+' грн'))));});quick.append(assortment);
    quick.append(text('p','Прайс збережено '+catalog.date+'. Для нового клієнта повторно налаштовувати нічого не потрібно. Після зміни цін відкрийте «Змінити прайс» і збережіть їх.'));
-   const label=text('label','Посилання для клієнта · без Vercel'),input=document.createElement('input');input.value=url;input.readOnly=true;label.append(input);quick.append(label);
+   const label=text('label',saved.__cloudToken?'Постійне посилання для клієнтів':'Тестове посилання · збережений прайс'),input=document.createElement('input');input.value=url;input.readOnly=true;label.append(input);quick.append(label);
    const copy=text('button','Скопіювати посилання');copy.type='button';copy.dataset.clientCopy='';copy.style.background='#2563eb';copy.style.color='white';copy.onclick=async()=>{try{await navigator.clipboard.writeText(url);output.textContent='Посилання скопійовано.';}catch(_){input.focus();input.select();output.textContent='Скопіюйте виділене посилання.';}};
    const view=text('a','Відкрити калькулятор');view.href=url;view.target='_blank';view.rel='noopener';quick.append(copy,view);
    if(location.hostname!=='a-ceil.pp.ua'){const preview=text('a','Перевірити на тесті');preview.href=previewUrl;preview.target='_blank';preview.rel='noopener';quick.append(preview);}
-   settings.open=false;settingsTitle.textContent='Змінити прайс';
+
+   const publish=text('button',saved.__cloudToken?'Оновити прайс у постійному посиланні':'Увімкнути постійне посилання');publish.type='button';publish.dataset.publishCalculator='';publish.onclick=async()=>{
+    publish.disabled=true;output.textContent='Публікую прайс…';
+    try{const token=await window.ACEILClientCloud.publish(backend(),catalog);saved={...saved,__cloudToken:token};localStorage.setItem(storageKey(),JSON.stringify(saved));ready(catalog);output.textContent='Актуальний прайс опубліковано. Посилання залишається тим самим.';}catch(error){output.textContent=error.message;}finally{publish.disabled=false;}
+   };quick.append(publish);
+   quick.append(text('p',saved.__cloudToken?'Збережіть зміни та натисніть «Оновити прайс у постійному посиланні». Клієнтам повторно надсилати посилання не потрібно.':'Тестове посилання фіксує ціни. Постійне посилання потребує ввімкнення хмарного збереження на сервері.'));
+   settings.open=false;settingsTitle.textContent='Асортимент і ціни';
   }
   let configured=false;try{if(saved.__catalog){ready(saved.__catalog);configured=true;}}catch(_){}
   if(!configured){settings.open=true;quick.append(text('p','Одноразове налаштування: перевірте зіставлення з номенклатурою нижче. Надалі тут буде кнопка копіювання готового посилання.'));}
@@ -75,7 +96,7 @@
   if(saved.__catalog&&saved.__productRules!==3){settings.open=true;settingsTitle.textContent='Оновити прайс із підбором ширини';output.textContent='Збережіть прайс ще раз, щоб додати Premium, Classic, Kralton, освітлення та варіанти карнизів. Позиції без ціни позначені «Уточнити».';}
   fields.forEach(([key,label,source,unit])=>{
    const wrap=text('label',label),select=document.createElement('select');select.name=key;const empty=text('option',key.endsWith('Corners')?'Не пропонувати':'Без основної позиції');empty.value='';select.append(empty);
-   const pool=list.filter(it=>unitOf(it)===unit);pool.forEach((it)=>{const option=text('option',it.name+' · '+(it.requiresQuote?'Уточнити':Number(it.price)+' грн'));option.value=String(it.id);select.append(option);});
+   const pool=list.filter(it=>unitOf(it)===unit&&(eligible(it,key,source)||String(it.id)===String(saved[key])||saved[key+'Options']?.includes(String(it.id))));pool.forEach((it)=>{const option=text('option',it.name+' · '+(it.requiresQuote?'Уточнити':Number(it.price)+' грн'));option.value=String(it.id);select.append(option);});
    let candidates=source?pool.filter(it=>it.source===source&&(key!=='white'&&key!=='black'||(it.sourceVariant||'white')===key)):[];
    if(key==='film'){const selected=pool.filter(it=>it.filmSelected===true);if(selected.length===1)candidates=selected;else if(!saved.film){const white=pool.find(it=>it.id==='film:premium:M303');if(white)candidates=[white];}}
    if(!source){const pattern=key==='led'?/^LED монохром$|^LED підсвічування$|^LED стрічка$/i:key==='linear'?/^Світлова лінія$/i:/^Карниз прихований(?: 1)?$/i;candidates=pool.filter(it=>pattern.test(String(it.name||'').trim()));}
@@ -94,9 +115,9 @@
     form.append(extra);
    }
   });
-  form.append(text('p','Позиція у верхньому списку — варіант за замовчуванням. Позначте додаткові плівки, карнизи, світильники та світлові лінії, які клієнт зможе обирати. Якщо основну позицію не обрано, першою буде перша позначена; якщо не обрано нічого — категорія недоступна клієнту. Ціни беруться з номенклатури; редагуйте ціну у самій позиції й збережіть прайс тут повторно. Для всіх варіантів одного типу профілю використовується спільна обрана ставка кутів.'));
+  form.append(text('p','Оберіть товари, які пропонуєте клієнтам. Верхня позиція — за замовчуванням, позначені нижче — додаткові варіанти. Ціни редагуються в номенклатурі; збереження прайсу тут підтягує їх знову.'));
   const minLabel=text('label','Мінімальне замовлення, грн (0 — без обмеження)'),minimum=document.createElement('input');minimum.name='minimum';minimum.type='number';minimum.min=0;minimum.max=100000;minimum.value=saved.minimum||0;minLabel.append(minimum);form.append(minLabel);
-  form.append(text('p','Тіньовий і парящий профілі доступні клієнту лише з ціною їхніх кутів; для парящого також потрібна LED. Якщо кути включені в профіль, виберіть окрему позицію кутів із ціною 0. Карниз у цій версії додається окремо, без автоматичного віднімання від периметра профілю.'));
+  form.append(text('p','Для тіньового і парящого профілів оберіть кути; для парящого — також підсвічування. Карнизи рахуються як доповнення до стелі.'));
   const submit=text('button','Зберегти прайс');submit.type='submit';form.append(submit);settings.append(form);
   const close=text('button','Закрити');close.type='button';close.onclick=()=>dialog.close();dialog.append(quick,settings,output,close);document.body.append(dialog);
   form.onsubmit=async e=>{
@@ -105,12 +126,18 @@
    for(const [key] of fields){
     if(key.endsWith('Corners'))continue;data[key+'Options']=fd.getAll(key+'Options');
     const ids=Array.from(new Set([data[key],...data[key+'Options']].filter(Boolean))),chosen=ids.map(id=>list.find(it=>String(it.id)===id)).filter(Boolean);
-    if(chosen.length)catalog.options[key]=chosen.map((it,i)=>({id:key+'-'+i,...exportProduct(it,key,list)}));
+    if(chosen.length)catalog.options[key]=chosen.map(it=>({id:optionId(key,it),...exportProduct(it,key,list)}));
    }
    try{
-    const clean=window.ACEILClientCalc.config(catalog);window.ACEILClientCalc.link('https://a-ceil.pp.ua/',clean);localStorage.setItem(storageKey(),JSON.stringify({...data,__catalog:clean,__productRules:3}));ready(clean);output.textContent='Прайс, ширини плівки й доступні варіанти збережено.';
+    const clean=window.ACEILClientCalc.config(catalog);window.ACEILClientCalc.link('https://a-ceil.pp.ua/',clean);saved={...data,__catalog:clean,__productRules:3,...(saved.__cloudToken?{__cloudToken:saved.__cloudToken}:{})};localStorage.setItem(storageKey(),JSON.stringify(saved));ready(clean);output.textContent='Прайс, ширини плівки й доступні варіанти збережено.';
    }catch(err){output.textContent=err.message;}
-  };dialog.showModal();
+
+  };
+  for(const [title,keys] of [['Плівки',['film']],['Профілі та кути',['classic','classicCorners','shadow','shadowCorners','floating','floatingCorners','led']],['Вставки',['white','black']],['Освітлення',['chandelier','spot','doubleSpot','linear']],['Карнизи',['cornice']]]){
+   const group=document.createElement('details');group.className='owner-category';group.append(text('summary',title));for(const key of keys){const select=form.elements.namedItem(key),label=select?.closest('label'),extra=form.querySelector('[data-assortment="'+key+'"]');if(label)group.append(label);if(extra){const search=extra.querySelector('input[type=search]');if(search)search.hidden=extra.querySelectorAll('input[type=checkbox]').length<7;group.append(extra);}}form.insertBefore(group,minLabel);
+  }
+  dialog.append(text('style','#aceilClientSetup .owner-category{border:1px solid #e0e6f0;border-radius:12px;margin:10px 0;padding:4px 14px}#aceilClientSetup .owner-category>summary{padding:13px 0;cursor:pointer;font-size:15px;font-weight:750;color:#263d68}#aceilClientSetup details[data-assortment]{padding-bottom:14px}#aceilClientSetup details[data-assortment]>summary{font-size:12px;color:#62799b;padding:8px 0}'));
+  dialog.showModal();
  }
  function install(){const menu=document.getElementById('elemMenu');if(!menu||document.getElementById('aceilClientSetupButton'))return;const button=text('button','Калькулятор для клієнта');button.type='button';button.id='aceilClientSetupButton';button.onclick=()=>{if(typeof closeElemMenu==='function')closeElemMenu();open();};menu.prepend(button);}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
