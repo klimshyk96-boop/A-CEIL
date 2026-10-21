@@ -113,6 +113,7 @@ async function saveNomenclatureToCloud(){
     };
     const {error}=await _sb.from("nomenclature").upsert(payload,{onConflict:"user_id"});
     if(error)throw error;
+    window.dispatchEvent(new CustomEvent("aceil:nomenclature-saved",{detail:{userId:payload.user_id}}));
   }catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}
 }
 async function loadNomenclatureFromCloud(){

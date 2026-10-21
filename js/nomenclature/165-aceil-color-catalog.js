@@ -230,6 +230,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
   window.ACEILSetFilmPricing=function(seriesId,pricing){
     var all=readPriceOverrides(); all[seriesId]=pricing||{};
     localStorage.setItem(PRICE_KEY,JSON.stringify(all));
+    window.dispatchEvent(new CustomEvent("aceil:film-pricing-saved"));
     return window.ACEILGetFilmPricing(seriesId);
   };
 })();

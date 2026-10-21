@@ -97,7 +97,62 @@
  function storageKey(){let uid='local';try{uid=_sbUser&&_sbUser.id||uid;}catch(_){}return 'aceil-client-preset:'+uid;}
  function unitOf(item){const unit=String(item.unit||'').trim().toLowerCase();return /²|2|кв/.test(unit)?'area':/^(м|м\.|м\/п|м.п.|м.п|пог.м|пог\. м|м.пог|м.пог.)$/.test(unit)?'meter':/шт|од/.test(unit)?'piece':'unknown';}
  function text(tag,value){const node=document.createElement(tag);node.textContent=value;return node;}
+ function buildCatalogue(data,saved){
+  const selection=new Map(Object.entries(data.__selection||{})),list=catalogueItems().filter(Boolean).map(it=>it.price!=null&&String(it.price).trim()!==''&&Number.isFinite(Number(it.price))&&Number(it.price)>=0?it:{...it,price:0,requiresQuote:true});
+  const catalog={version:1,company:data.company,date:new Date().toISOString().slice(0,10),minimum:Number(data.minimum),...filmTariffs(),items:{},options:{}};
+   catalog.catalogue=true;
+   catalog.products=list.filter(it=>selection.has(String(it.id))).map(it=>{
+    const role=selection.get(String(it.id)),basis=role==='film'?'area':role.endsWith('Corners')?'corners':['classic','shadow','floating','white','black'].includes(role)?'perimeter':['area','perimeter','corners'].includes(it.source)?it.source:'manual';
+    return{id:optionId('item',it),...exportProduct(it,role||'manual',list),unit:it.unit||'шт',groupId:String(it.groupId??''),basis};
+   });
+   catalog.groups=nomenGroups().filter(g=>catalog.products.some(it=>it.groupId===String(g.id))).map(g=>({id:String(g.id),name:g.name}));
+   if(catalog.products.some(it=>it.groupId==='__owner_film_catalog__'))catalog.groups.push({id:'__owner_film_catalog__',name:'Плівка'});
+   if(catalog.products.some(it=>!catalog.groups.some(g=>g.id===it.groupId)))catalog.groups.push({id:'',name:'Без групи'});
+   for(const [key] of fields){
+    const selected=list.filter(it=>selection.get(String(it.id))===key),previous=selected.find(it=>String(it.id)===String(saved[key]));
+    if(previous)selected.splice(selected.indexOf(previous),1),selected.unshift(previous);
+    data[key]=selected[0]?String(selected[0].id):'';data[key+'Options']=selected.map(it=>String(it.id));
+    if(selected.length)catalog.items[key]=exportProduct(selected[0],key,list);
+    if(!key.endsWith('Corners')&&selected.length)catalog.options[key]=selected.map(it=>({id:optionId(key,it),...exportProduct(it,key,list)}));
+   }
+   // An unchecked series must not reappear through the shared colour palette.
+   const series=new Set((catalog.options.film||[]).map(it=>window.ACEILClientCalc.filmSeries(it)));
+   for(const key of Object.keys(catalog.filmCatalog))if(!series.has(key))delete catalog.filmCatalog[key];
+  return window.ACEILClientCalc.config(catalog);
+ }
+ const syncQueues=new Map();let syncTimer;
+ function syncSavedCatalogue(force=false){
+  const key=storageKey();
+  const pending=(syncQueues.get(key)||Promise.resolve()).catch(()=>{}).then(async()=>{
+   if(storageKey()!==key)return;
+   const saved=JSON.parse(localStorage.getItem(key)||'{}');
+   if(!saved.__cloudToken||!saved.__selection)return;
+   try{
+    const clean=buildCatalogue({...saved},saved),withoutDate=value=>JSON.stringify({...value,date:''});
+    if(!force&&!saved.__cloudSyncError&&withoutDate(clean)===withoutDate(saved.__catalog))return;
+    const token=await window.ACEILClientCloud.publish(backend(),clean);
+    if(storageKey()!==key)return;
+    const current=JSON.parse(localStorage.getItem(key)||'{}');
+    localStorage.setItem(key,JSON.stringify({...current,__catalog:clean,__cloudToken:token,__cloudSyncError:''}));
+   }catch(error){
+    if(storageKey()===key){const current=JSON.parse(localStorage.getItem(key)||'{}');localStorage.setItem(key,JSON.stringify({...current,__cloudSyncError:error.message}));}
+    throw error;
+   }
+  });
+  syncQueues.set(key,pending);return pending;
+ }
+ function scheduleSync(){
+  const key=storageKey();clearTimeout(syncTimer);
+  syncTimer=setTimeout(()=>{if(storageKey()===key)syncSavedCatalogue().catch(()=>{if(typeof showToast==='function')showToast('Ціни калькулятора не оновились. Перевірте інтернет і повторіть оновлення.',5000);});},250);
+ }
+ window.addEventListener('aceil:nomenclature-saved',event=>{
+  if(event.detail?.userId&&storageKey()==='aceil-client-preset:'+event.detail.userId)scheduleSync();
+ });
+ window.addEventListener('aceil:film-pricing-saved',scheduleSync);
+ window.addEventListener('online',scheduleSync);
  function open(){
+  const ownerKey=storageKey();
+  function assertOwner(){if(storageKey()!==ownerKey)throw Error('Обліковий запис змінився. Відкрийте налаштування калькулятора ще раз.');}
   document.getElementById('aceilClientSetup')?.remove();const dialog=document.createElement('dialog');dialog.id='aceilClientSetup';
   const style=text('style','#aceilClientSetup{border:1px solid #dbe4f0;border-radius:20px;padding:22px;width:min(560px,94vw);max-height:88dvh;overflow:auto;color:#17263d;background:#fff}#aceilClientSetup::backdrop{background:#0f172a88}#aceilClientSetup h2{font-size:20px;margin:0 0 12px}#aceilClientSetup p{font-size:13px;color:#64748b;line-height:1.5}#aceilClientSetup label{display:block;font-size:13px;font-weight:700;margin:14px 0}#aceilClientSetup input,#aceilClientSetup select{width:100%;padding:11px;font-size:16px;margin-top:7px;border:1px solid #dbe4f0;border-radius:10px;background:white;color:#17263d}#aceilClientSetup button,#aceilClientSetup a{display:inline-block;padding:12px;margin:6px 6px 0 0;border-radius:10px;border:0;background:#eff5ff;color:#1d4ed8;font-weight:700;font-size:13px;text-decoration:none}#aceilClientSetup button[type=submit]{background:#2563eb;color:white}#aceilClientSetup output{display:block;font-size:13px;margin-top:14px;color:#854d0e}');
   dialog.append(style,text('h2','Калькулятор для клієнта'),text('p','Позначте, що пропонувати клієнтам. Ціни — з вашої номенклатури.'));
@@ -113,7 +168,7 @@
    const assortment=document.createElement('details');assortment.append(text('summary','Збережений асортимент і ціни'));
    if(catalog.catalogue)catalog.products.forEach(item=>assortment.append(text('p',item.name+' · '+(item.requiresQuote?'Уточнити':item.price+' грн/'+item.unit))));
    else fields.forEach(([key,label])=>{const rows=catalog.options[key]?.length?catalog.options[key]:(catalog.items[key]?[catalog.items[key]]:[]);if(!rows.length)return;assortment.append(text('h4',label));rows.forEach(item=>assortment.append(text('p',item.name+' · '+(item.requiresQuote?'Уточнити':item.price+' грн'))));});quick.append(assortment);
-   quick.append(text('p','Прайс збережено '+catalog.date+'. Після зміни цін відкрийте «Що бачить клієнт» і збережіть вибір.'));
+   quick.append(text('p','Прайс збережено '+catalog.date+'. Після збереження номенклатури ціни обраних позицій оновлюються автоматично.'));
    const label=text('label',saved.__cloudToken?'Постійне посилання для клієнтів':'Тестове посилання · збережений прайс'),input=document.createElement('input');input.value=url;input.readOnly=true;label.append(input);quick.append(label);
    const copy=text('button','Скопіювати посилання');copy.type='button';copy.dataset.clientCopy='';copy.style.background='#2563eb';copy.style.color='white';copy.onclick=async()=>{try{await navigator.clipboard.writeText(url);output.textContent='Посилання скопійовано.';}catch(_){input.focus();input.select();output.textContent='Скопіюйте виділене посилання.';}};
    const view=text('a','Відкрити калькулятор');view.href=url;view.target='_blank';view.rel='noopener';quick.append(copy,view);
@@ -121,9 +176,10 @@
 
    const publish=text('button',saved.__cloudToken?'Оновити прайс у постійному посиланні':'Увімкнути постійне посилання');publish.type='button';publish.dataset.publishCalculator='';publish.onclick=async()=>{
     publish.disabled=true;output.textContent='Публікую прайс…';
-    try{const token=await window.ACEILClientCloud.publish(backend(),catalog);saved={...saved,__cloudToken:token};localStorage.setItem(storageKey(),JSON.stringify(saved));ready(catalog,true);output.textContent='Актуальний прайс опубліковано. Посилання залишається тим самим.';}catch(error){output.textContent=error.message;}finally{publish.disabled=false;}
+    try{assertOwner();if(saved.__cloudToken){await syncSavedCatalogue(true);assertOwner();saved=JSON.parse(localStorage.getItem(ownerKey));}else{const current=saved.__selection?buildCatalogue({...saved},saved):catalog,token=await window.ACEILClientCloud.publish(backend(),current);assertOwner();saved={...saved,__catalog:current,__cloudToken:token,__cloudSyncError:''};localStorage.setItem(ownerKey,JSON.stringify(saved));scheduleSync();}ready(saved.__catalog,true);output.textContent='Актуальний прайс опубліковано. Посилання залишається тим самим.';}catch(error){output.textContent=error.message;}finally{publish.disabled=false;}
    };quick.append(publish);
-   quick.append(text('p',saved.__cloudToken?'Збережіть зміни та натисніть «Оновити прайс у постійному посиланні». Клієнтам повторно надсилати посилання не потрібно.':'Тестове посилання фіксує ціни. Постійне посилання потребує ввімкнення хмарного збереження на сервері.'));
+   quick.append(text('p',saved.__cloudToken?'Зміни вибору та збережені ціни номенклатури автоматично надходять у це посилання. Клієнтам повторно надсилати його не потрібно.':'Увімкніть постійне посилання один раз, щоб клієнти бачили оновлені ціни.'));
+   if(saved.__cloudSyncError)quick.append(text('p','Останнє оновлення не підтверджено. Натисніть «Оновити прайс у постійному посиланні» для повторної спроби.'));
    settings.open=!showLink;settingsTitle.textContent='Що бачить клієнт';
   }
   let configured=false;try{if(saved.__catalog){ready(saved.__catalog);configured=true;}}catch(_){}
@@ -205,27 +261,11 @@
   const close=text('button','Закрити');close.type='button';close.onclick=()=>dialog.close();dialog.append(quick,settings,output,close);document.body.append(dialog);
   form.onsubmit=async e=>{
    e.preventDefault();output.textContent='';
-   const data={company:companyInput.value,minimum:minimum.value,__selection:Object.fromEntries(selection)},catalog={version:1,company:data.company,date:new Date().toISOString().slice(0,10),minimum:Number(data.minimum),...filmTariffs(),items:{},options:{}};
-   catalog.catalogue=true;
-   catalog.products=list.filter(it=>selection.has(String(it.id))).map(it=>{
-    const role=selection.get(String(it.id)),basis=role==='film'?'area':role.endsWith('Corners')?'corners':['classic','shadow','floating','white','black'].includes(role)?'perimeter':['area','perimeter','corners'].includes(it.source)?it.source:'manual';
-    return{id:optionId('item',it),...exportProduct(it,role||'manual',list),unit:it.unit||'шт',groupId:String(it.groupId??''),basis};
-   });
-   catalog.groups=nomenGroups().filter(g=>catalog.products.some(it=>it.groupId===String(g.id))).map(g=>({id:String(g.id),name:g.name}));
-   if(catalog.products.some(it=>it.groupId==='__owner_film_catalog__'))catalog.groups.push({id:'__owner_film_catalog__',name:'Плівка'});
-   if(catalog.products.some(it=>!catalog.groups.some(g=>g.id===it.groupId)))catalog.groups.push({id:'',name:'Без групи'});
-   for(const [key] of fields){
-    const selected=list.filter(it=>selection.get(String(it.id))===key),previous=selected.find(it=>String(it.id)===String(saved[key]));
-    if(previous)selected.splice(selected.indexOf(previous),1),selected.unshift(previous);
-    data[key]=selected[0]?String(selected[0].id):'';data[key+'Options']=selected.map(it=>String(it.id));
-    if(selected.length)catalog.items[key]=exportProduct(selected[0],key,list);
-    if(!key.endsWith('Corners')&&selected.length)catalog.options[key]=selected.map(it=>({id:optionId(key,it),...exportProduct(it,key,list)}));
-   }
-   // An unchecked series must not reappear through the shared colour palette.
-   const series=new Set((catalog.options.film||[]).map(it=>window.ACEILClientCalc.filmSeries(it)));
-   for(const key of Object.keys(catalog.filmCatalog))if(!series.has(key))delete catalog.filmCatalog[key];
+   const data={company:companyInput.value,minimum:minimum.value,__selection:Object.fromEntries(selection)};
    try{
-    const clean=window.ACEILClientCalc.config(catalog);window.ACEILClientCalc.link('https://a-ceil.pp.ua/',clean);saved={...data,__catalog:clean,__productRules:5,...(saved.__cloudToken?{__cloudToken:saved.__cloudToken}:{})};localStorage.setItem(storageKey(),JSON.stringify(saved));ready(clean,true);output.textContent='Вибір збережено. Клієнту доступні лише позначені позиції.';
+    assertOwner();const clean=buildCatalogue(data,saved);window.ACEILClientCalc.link('https://a-ceil.pp.ua/',clean);saved={...data,__catalog:clean,__productRules:5,...(saved.__cloudToken?{__cloudToken:saved.__cloudToken}:{})};localStorage.setItem(storageKey(),JSON.stringify(saved));
+    if(saved.__cloudToken){output.textContent='Оновлюю прайс…';await syncSavedCatalogue(true);assertOwner();saved=JSON.parse(localStorage.getItem(storageKey()));}
+    ready(clean,true);output.textContent=saved.__cloudToken?'Вибір і ціни оновлено у постійному посиланні.':'Вибір збережено. Клієнту доступні лише позначені позиції.';
    }catch(err){output.textContent=err.message;}
 
   };

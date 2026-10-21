@@ -23,6 +23,7 @@ node tests/curve-report-consistency.test.cjs || exit 1
 node tests/report-plan-layout.test.cjs || exit 1
 node tests/public-report-security.test.cjs || exit 1
 node tests/client-calculator.test.cjs || exit 1
+node tests/client-price-sync.test.cjs || exit 1
 node tests/client-film-width.test.cjs || exit 1
 node tests/client-wizard.test.cjs || exit 1
 node tests/client-palette.test.cjs || exit 1
