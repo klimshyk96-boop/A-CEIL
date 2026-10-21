@@ -47,8 +47,8 @@
   if(key==='film'&&it.widths)out.widths=it.widths;
   if(['classic','shadow','floating'].includes(key)){
    if(key==='classic')out.material=window.ACEILClientCalc.profileVariant(it,key);
-   else{const color=it.sourceVariant||it.profileColor||window.ACEILClientCalc.profileVariant(it,key);if(['white','black'].includes(color))out.color=color;
-    const matches=list.filter(row=>row.source===(key==='shadow'?'shadow_corners':'floating_corners')&&row.sourceVariant===color);if(matches.length===1)out.cornerPrice=Number(matches[0].price);
+   else{const color=itemColor(it);if(['white','black'].includes(color))out.color=color;
+    const matches=list.filter(row=>roleOf(row)===(key==='shadow'?'shadowCorners':'floatingCorners')&&itemColor(row)===color);if(matches.length===1)out.cornerPrice=Number(matches[0].price);
    }
   }
   return out;
@@ -56,22 +56,43 @@
  fields.push(['linear','Світлові лінії, грн/м','','meter']);
  fields.push(['doubleSpot','Подвійний точковий, грн/шт','double_spot','piece']);
 
- function eligible(it,key,source){
-  const n=String(it.name||''),src=String(it.source||'');
-  if(key==='film')return it.filmFamily||src==='area';
-  if(key==='white'||key==='black')return src==='white_insert'&&(it.sourceVariant||'white')===key;
-  if(key==='cornice')return isCornice(it);
-  if(key==='linear')return /світлов.*ліні/i.test(n)||src==='linear'||src==='lineartype:lightline';
-  if(key==='led')return /LED|стрічка/i.test(n)&&!/блок|живлення|контролер/i.test(n);
-  if(key==='doubleSpot')return ['double_spot','lighttype:double_spot'].includes(src)||/подвійн|double.spot/i.test(n);
-  if(key==='spot')return (src==='spot'||/точков|спот/i.test(n))&&!/подвійн|double.spot/i.test(n);
-  if(key==='chandelier')return src==='chandelier'||/люстр/i.test(n);
-  return src===source;
+ function sourceText(item){
+  const source=String(item.source||'').trim();let decoded=source;try{decoded=decodeURIComponent(source);}catch(_){}
+  return (String(item.name||'')+' '+decoded).toLocaleLowerCase('uk');
  }
+ function itemColor(item){
+  const match=String(item.source||'').match(/^walltypecolor:(white|black):/i);
+  return window.ACEILClientCalc.corniceColor({...item,color:item.color||item.profileColor||item.sourceVariant||match?.[1]});
+ }
+ function roleOf(item){
+  const unit=unitOf(item),src=String(item.source||'').trim().toLowerCase(),name=sourceText(item);
+  if(unit==='area'&&(item.filmFamily||src==='area'||Number(item.filmWidth)>0))return 'film';
+  if(unit==='meter'&&src==='white_insert')return itemColor(item)==='black'?'black':'white';
+  const explicit=fields.find(([key,,source,expected])=>source&&source===src&&unit===expected&&!['white','black'].includes(key));
+  if(explicit)return explicit[0];
+  const shadow=/тіньов|shadow/.test(name),floating=/парящ|паряч|ширяюч|floating/.test(name);
+  if(unit==='piece'){
+   if(/кут|corner/.test(name)&&!/карниз|ніша|uno|уно|cornice|трек|track|шинопров/.test(name))return shadow?'shadowCorners':floating?'floatingCorners':'classicCorners';
+   if(/подвійн|double.?spot/.test(name))return 'doubleSpot';
+   if(/люстр|chandelier/.test(name))return 'chandelier';
+   if(/точков|спот|spot/.test(name))return 'spot';
+   return '';
+  }
+  if(unit!=='meter')return '';
+  if(/карниз|ніша|uno|уно|cornice/.test(name))return 'cornice';
+  if(/світлов.*ліні|light.?line|lineartype:lightline/.test(name))return 'linear';
+  if(/вставк|insert/.test(name))return itemColor(item)==='black'?'black':'white';
+  if(/led|стрічка/.test(name)&&!/блок|живлення|контролер/.test(name))return 'led';
+  if(shadow)return 'shadow';
+  if(floating)return 'floating';
+  if(/(?:алюм|пвх|pvc).*профіл|профіл.*(?:алюм|пвх|pvc)|базов.*профіл|профіл.*базов|alumin.*profile|profile.*alumin/.test(name))return 'classic';
+  return '';
+ }
+ function eligible(it,key){return roleOf(it)===key;}
  function optionId(key,it){let a=2166136261,b=5381;for(const c of String(it.id)){a=Math.imul(a^c.charCodeAt(0),16777619);b=Math.imul(b,33)^c.charCodeAt(0);}return key+'-'+(a>>>0).toString(16)+(b>>>0).toString(16);}
  function backend(){try{return typeof _sb!=='undefined'?_sb:window._sb;}catch(_){return null;}}
  function storageKey(){let uid='local';try{uid=_sbUser&&_sbUser.id||uid;}catch(_){}return 'aceil-client-preset:'+uid;}
- function unitOf(item){const unit=String(item.unit||'').toLowerCase();return /²|2|кв/.test(unit)?'area':/^(м|м\.|м\/п|м.п.|м.п|пог.м|пог\. м|м.пог|м.пог.)$/.test(unit)?'meter':/шт|од/.test(unit)?'piece':'unknown';}
+ function unitOf(item){const unit=String(item.unit||'').trim().toLowerCase();return /²|2|кв/.test(unit)?'area':/^(м|м\.|м\/п|м.п.|м.п|пог.м|пог\. м|м.пог|м.пог.)$/.test(unit)?'meter':/шт|од/.test(unit)?'piece':'unknown';}
  function text(tag,value){const node=document.createElement(tag);node.textContent=value;return node;}
  function open(){
   document.getElementById('aceilClientSetup')?.remove();const dialog=document.createElement('dialog');dialog.id='aceilClientSetup';
@@ -109,10 +130,10 @@
   if(saved.film)saved.film=filmId(saved.film);if(Array.isArray(saved.filmOptions))saved.filmOptions=saved.filmOptions.map(filmId);
   if(saved.__catalog&&![4,5].includes(saved.__productRules)){settings.open=true;settingsTitle.textContent='Оновити прайс із підбором ширини';output.textContent='Збережіть прайс ще раз, щоб додати Premium, Classic, Kralton, освітлення та варіанти карнизів. Усі кольори доступні з загальної бази; карнизи — за цінами номенклатури.';}
   const selection=new Map(),roles=new Map(),rows=new Map();
-  function guess(item){return fields.find(([key,,source,unit])=>unitOf(item)===unit&&eligible(item,key,source))?.[0]||'';}
+  function guess(item){return roleOf(item);}
   list.forEach(item=>roles.set(String(item.id),guess(item)));
   if(saved.__productRules===5&&saved.__selection){
-   for(const [id,key] of Object.entries(saved.__selection)){const real=String(filmId(id));if(list.some(it=>String(it.id)===real)&&fields.some(f=>f[0]===key)){selection.set(real,key);roles.set(real,key);}}
+   for(const [id,key] of Object.entries(saved.__selection)){const real=String(filmId(id));const item=list.find(it=>String(it.id)===real);if(item&&fields.some(f=>f[0]===key)){const role=guess(item)||key;selection.set(real,role);roles.set(real,role);}}
   }else{
    // Preserve the previous primary and additional selections when upgrading.
    fields.forEach(([key,,source,unit])=>{
