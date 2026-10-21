@@ -5,7 +5,20 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
  try{for(const width of [390,1440]){
   const {page,errors}=await open(browser,width);await reveal(page);
   await page.evaluate(()=>{elemGroups=[{id:'icons',name:'Профілі'}];elemItems=[{id:'icon-item',groupId:'icons',name:'Профіль H',icon:'🔧',unit:'м',price:185,qty:2}];openElementsModal();openEmojiPickerForItem('icon-item');});
-  assert.deepEqual(await page.locator('[data-nom-icon-set]').allTextContents(),['Лаконічний','Технічний','Інші SVG']);
+  assert.deepEqual(await page.locator('[data-nom-icon-set]').allTextContents(),['Нові','Лаконічний','Технічний','Інші SVG']);
+  const selected=page.locator('[data-nom-icon-panel=selected]');
+  assert.equal(await selected.isVisible(),true);
+  assert.equal(await selected.locator('button').count(),5);
+  for(const key of ['light-recessed','chandelier','led-strip','ceiling-light-outline','magnetic-vent']){
+   await selected.locator('button[onclick="selectNomenclatureSvgIcon(\'selected-'+key+'\')"]').click();
+   assert.equal(await page.evaluate(()=>elemItems[0].icon),'svg:selected-'+key);
+   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ceiling_v18')).elemItems[0].icon),'svg:selected-'+key);
+   assert.deepEqual(await page.evaluate(()=>[elemItems[0].price,elemItems[0].qty]),[185,2]);
+   assert.equal(await page.locator('#emrow_icon-item .em-icon svg').count(),1);
+   await page.evaluate(()=>openEmojiPickerForItem('icon-item'));
+   assert.equal(await page.locator('[data-nom-icon-set=selected]').getAttribute('aria-pressed'),'true');
+  }
+  await page.screenshot({path:'/tmp/aceil-selected-icons-'+width+'.png'});
   for(const set of ['laconic','technical']){
    await page.locator('[data-nom-icon-set='+set+']').click();
    const panel=page.locator('[data-nom-icon-panel='+set+']');

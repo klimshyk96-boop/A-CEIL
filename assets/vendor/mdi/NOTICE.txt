@@ -1,0 +1,5 @@
+Material Design Icons by Pictogrammers.
+Source: @mdi/svg 7.4.47
+Icons used unchanged: light-recessed, chandelier, led-strip, ceiling-light-outline.
+https://pictogrammers.com/library/mdi/
+https://github.com/Templarian/MaterialDesign-SVG
