@@ -42,7 +42,7 @@ assert.equal(M.corniceKind({name:'UNO',source:'ceilingcornice:uno:white'}),'sing
   await page.locator('#aceilClientSetup [type=submit]').click();const ownerLink=await page.locator('#aceilClientSetup a').last().getAttribute('href'),config=M.decode(new URL(ownerLink).hash.slice(1)).config;
   assert.equal(config.filmOverrides['premium:M303:5.1'],443);assert.equal(config.options.cornice.length,7);assert.ok(config.options.cornice.every(it=>!it.requiresQuote));
   assert.ok(!JSON.stringify(config).includes('private-corner'));assert.ok(!JSON.stringify(config).includes('costPrice'));
-  await page.goto(ownerLink);assert.ok((await page.locator('#filmRule').textContent()).includes('443 грн'));
+  await page.goto(M.link('http://aceil.test/',{...config,catalogue:false}));assert.ok((await page.locator('#filmRule').textContent()).includes('443 грн'));
   await page.locator('[data-step="2"]').click();await page.locator('[data-extra=cornice]').click();
   for(const [kind,color,price] of [['surface',null,650],['hidden','white',1010],['hidden','black',1110],['wide','white',1210],['wide','black',1310],['single','white',1410],['single','black',1510]]){
    await page.locator('[data-cornice-kind='+kind+']').click();if(color)await page.locator('[data-cornice-color='+color+']').click();

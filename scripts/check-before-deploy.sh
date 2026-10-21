@@ -28,6 +28,8 @@ node tests/client-palette.test.cjs || exit 1
 node tests/client-cornice-prices.test.cjs || exit 1
 node tests/client-assortment-checklist.test.cjs || exit 1
 node tests/client-owner-sources.test.cjs || exit 1
+node tests/client-nomenclature.test.cjs || exit 1
+node --check calculator/nomenclature-client.js || exit 1
 node --check calculator/model.js || exit 1
 node --check calculator/client.js || exit 1
 node --check calculator/owner.js || exit 1

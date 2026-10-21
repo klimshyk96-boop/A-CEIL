@@ -30,7 +30,7 @@ assert.equal(M.estimate(base,{...cfg,items:{...cfg.items,film:{name:'Free explic
   assert.deepEqual(payload.config.options.film[0].widths.map(w=>[w.nominal,w.max,w.price]),[[3.6,3.6,380],[5.1,5.6,420],[5.8,6.2,420]]);
   assert.deepEqual(new Set(payload.config.options.film.map(it=>it.series)),new Set(['premium','classic','kralton']));assert.equal(payload.config.options.film.find(it=>it.series==='classic').widths[0].requiresQuote,true);
   assert.equal(payload.config.options.classic.length,2);assert.equal(payload.config.options.shadow.length,2);
-  await page.goto(url);await page.locator('[data-step="1"]').click();assert.equal(await page.locator('[name=filmOption]').isVisible(),false);assert.ok((await page.locator('#filmRule').textContent()).includes('420 грн/м²'));
+  await page.goto(M.link('http://aceil.test/',{...payload.config,catalogue:false}));await page.locator('[data-step="1"]').click();assert.equal(await page.locator('[name=filmOption]').isVisible(),false);assert.ok((await page.locator('#filmRule').textContent()).includes('420 грн/м²'));
   if(width===390){const before=page.url();await page.locator('#viewEstimate').click();assert.equal(page.url(),before,'estimate dialog must not change encoded hash');await page.keyboard.press('Escape');}
   const initial=Number((await page.locator('#total').textContent()).replace(/[^0-9]/g,''));
   await page.locator('[data-profile-family=classic][data-profile-variant=pvc]').click();

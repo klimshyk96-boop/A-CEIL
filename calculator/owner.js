@@ -105,9 +105,10 @@
    catalog=window.ACEILClientCalc.config(catalog);quick.hidden=false;quick.replaceChildren(text('summary','Посилання для клієнта'));quick.open=showLink;
    const url=saved.__cloudToken?window.ACEILClientCloud.link('https://a-ceil.pp.ua/',saved.__cloudToken):window.ACEILClientCalc.link('https://a-ceil.pp.ua/',catalog),previewUrl=window.ACEILClientCalc.link(location.href,catalog);
    quick.append(text('p','Готовий калькулятор · '+catalog.company));
-   const summary=text('p',fields.filter(([key])=>catalog.items[key]).map(([key,label])=>label.split(',')[0]).join(' · '));quick.append(summary);
+   const summary=text('p',catalog.catalogue?'Доступно клієнту: '+catalog.products.length+' позицій':fields.filter(([key])=>catalog.items[key]).map(([key,label])=>label.split(',')[0]).join(' · '));quick.append(summary);
    const assortment=document.createElement('details');assortment.append(text('summary','Збережений асортимент і ціни'));
-   fields.forEach(([key,label])=>{const rows=catalog.options[key]?.length?catalog.options[key]:(catalog.items[key]?[catalog.items[key]]:[]);if(!rows.length)return;assortment.append(text('h4',label));rows.forEach(item=>assortment.append(text('p',item.name+' · '+(item.requiresQuote?'Уточнити':item.price+' грн'))));});quick.append(assortment);
+   if(catalog.catalogue)catalog.products.forEach(item=>assortment.append(text('p',item.name+' · '+(item.requiresQuote?'Уточнити':item.price+' грн/'+item.unit))));
+   else fields.forEach(([key,label])=>{const rows=catalog.options[key]?.length?catalog.options[key]:(catalog.items[key]?[catalog.items[key]]:[]);if(!rows.length)return;assortment.append(text('h4',label));rows.forEach(item=>assortment.append(text('p',item.name+' · '+(item.requiresQuote?'Уточнити':item.price+' грн'))));});quick.append(assortment);
    quick.append(text('p','Прайс збережено '+catalog.date+'. Після зміни цін відкрийте «Що бачить клієнт» і збережіть вибір.'));
    const label=text('label',saved.__cloudToken?'Постійне посилання для клієнтів':'Тестове посилання · збережений прайс'),input=document.createElement('input');input.value=url;input.readOnly=true;label.append(input);quick.append(label);
    const copy=text('button','Скопіювати посилання');copy.type='button';copy.dataset.clientCopy='';copy.style.background='#2563eb';copy.style.color='white';copy.onclick=async()=>{try{await navigator.clipboard.writeText(url);output.textContent='Посилання скопійовано.';}catch(_){input.focus();input.select();output.textContent='Скопіюйте виділене посилання.';}};
@@ -133,7 +134,7 @@
   function guess(item){return roleOf(item);}
   list.forEach(item=>roles.set(String(item.id),guess(item)));
   if(saved.__productRules===5&&saved.__selection){
-   for(const [id,key] of Object.entries(saved.__selection)){const real=String(filmId(id));const item=list.find(it=>String(it.id)===real);if(item&&fields.some(f=>f[0]===key)){const role=guess(item)||key;selection.set(real,role);roles.set(real,role);}}
+   for(const [id,key] of Object.entries(saved.__selection)){const real=String(filmId(id));const item=list.find(it=>String(it.id)===real);if(item){const role=guess(item)||key;selection.set(real,role);roles.set(real,role);}}
   }else{
    // Preserve the previous primary and additional selections when upgrading.
    fields.forEach(([key,,source,unit])=>{
@@ -174,7 +175,7 @@
    const query=search.value.trim().toLocaleLowerCase('uk');let visible=0;
    rows.forEach(({row,checkbox,meta,item},id)=>{
     const key=roles.get(id)||'',checked=selection.has(id);checkbox.checked=checked;checkbox.name=key?key+'Options':'unassigned';
-    row.classList.toggle('is-selected',checked);meta.textContent=checked&&!key?'Немає джерела розрахунку в номенклатурі':item.filmFamily?'Ціна залежить від ширини полотна':'';meta.hidden=!meta.textContent;
+    row.classList.toggle('is-selected',checked);meta.textContent=item.filmFamily?'Ціна залежить від ширини полотна':'';meta.hidden=!meta.textContent;
     row.hidden=(onlySelected&&!checked)||!(item.name+' '+groupNames.get(groupKey(item))).toLocaleLowerCase('uk').includes(query);if(!row.hidden)visible++;
    });
    groups.forEach((group,key)=>{const matching=[...group.querySelectorAll('.owner-item')].filter(row=>!row.hidden);group.hidden=!matching.length&&(onlySelected||!!query);group.querySelector('summary').textContent=groupNames.get(key)+' · '+matching.length;if(query&&matching.length)group.open=true;});
@@ -185,24 +186,26 @@
    const label=document.createElement('label'),checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=id;
    const info=document.createElement('span'),name=text('strong',item.name),rate=text('span',item.requiresQuote?'Ціну уточнити':new Intl.NumberFormat('uk-UA').format(Number(item.price))+' грн/'+(item.unit||'од.')),meta=text('small','');rate.className='owner-rate';info.append(name,rate,meta);label.append(checkbox,info);
    checkbox.onchange=()=>{
-    if(checkbox.checked){if(key?.endsWith('Corners'))for(const [other,role] of selection)if(other!==id&&role===key)selection.delete(other);selection.set(id,roles.get(id)||'');}
+    if(checkbox.checked){selection.set(id,roles.get(id)||'');}
     else selection.delete(id);refresh();
    };
    row.append(label);groups.get(groupKey(item)).append(row);rows.set(id,{row,checkbox,meta,item});
   }
   all.onclick=()=>{onlySelected=false;refresh();};chosenTab.onclick=()=>{onlySelected=true;refresh();};search.oninput=refresh;refresh();
-  form.append(text('p','Галочка — позиція доступна клієнту. Ціни підтягуються з номенклатури. Кути та LED рахуються автоматично з відповідним профілем; для кожного типу кутів оберіть одну позицію.'));
+  form.append(text('p','Позначте позиції, які клієнт зможе обрати та прорахувати. Назви, групи, ціни й одиниці — з вашої номенклатури.'));
   const minLabel=text('label','Мінімальне замовлення, грн (0 — без обмеження)'),minimum=document.createElement('input');minimum.name='minimum';minimum.type='number';minimum.min=0;minimum.max=100000;minimum.value=saved.minimum||0;minLabel.append(minimum);form.append(minLabel);
-  form.append(text('p','Для тіньового і парящого профілів оберіть кути; для парящого — також підсвічування. Карнизи рахуються як доповнення до стелі.'));
   const submit=text('button','Зберегти вибір');submit.type='submit';form.append(submit);settings.append(form);
   const close=text('button','Закрити');close.type='button';close.onclick=()=>dialog.close();dialog.append(quick,settings,output,close);document.body.append(dialog);
   form.onsubmit=async e=>{
    e.preventDefault();output.textContent='';
    const data={company:companyInput.value,minimum:minimum.value,__selection:Object.fromEntries(selection)},catalog={version:1,company:data.company,date:new Date().toISOString().slice(0,10),minimum:Number(data.minimum),...filmTariffs(),items:{},options:{}};
-   for(const [id,key] of selection){
-    const item=list.find(it=>String(it.id)===id),field=fields.find(f=>f[0]===key);
-    if(!field||unitOf(item)!==field[3]){output.textContent='Для «'+item.name+'» не налаштоване підтримуване джерело розрахунку. Вкажіть його у номенклатурі.';return;}
-   }
+   catalog.catalogue=true;
+   catalog.products=list.filter(it=>selection.has(String(it.id))).map(it=>{
+    const role=selection.get(String(it.id)),basis=role==='film'?'area':role.endsWith('Corners')?'corners':['classic','shadow','floating','white','black'].includes(role)?'perimeter':['area','perimeter','corners'].includes(it.source)?it.source:'manual';
+    return{id:optionId('item',it),...exportProduct(it,role||'manual',list),unit:it.unit||'шт',groupId:String(it.groupId??''),basis};
+   });
+   catalog.groups=nomenGroups().filter(g=>catalog.products.some(it=>it.groupId===String(g.id))).map(g=>({id:String(g.id),name:g.name}));
+   if(catalog.products.some(it=>!catalog.groups.some(g=>g.id===it.groupId)))catalog.groups.push({id:'',name:'Без групи'});
    for(const [key] of fields){
     const selected=list.filter(it=>selection.get(String(it.id))===key),previous=selected.find(it=>String(it.id)===String(saved[key]));
     if(previous)selected.splice(selected.indexOf(previous),1),selected.unshift(previous);

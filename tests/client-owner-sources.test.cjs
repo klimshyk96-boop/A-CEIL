@@ -38,9 +38,9 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
   assert.deepEqual(cfg.options.classic.map(it=>it.material),['aluminium','pvc']);assert.equal(cfg.items.white.price,60);assert.equal(cfg.items.black.price,70);assert.ok(!JSON.stringify(cfg).includes('Блок живлення'));
   const base={mode:'rectangle',width:4,length:5,profile:'shadow',cornice:false,chandelier:0,spot:0,doubleSpot:0};
   for(const [color,price,corner] of [['black',550,351],['white',600,364]]){
-   const result=M.estimate({...base,shadowOption:cfg.options.shadow.find(it=>it.color===color).id},cfg);assert.equal(result.valid,true);assert.equal(result.rows.find(it=>it.key==='shadow').price,price);assert.equal(result.rows.find(it=>it.key==='shadowCorners').total,corner*4);
+   const result=M.estimate({...base,shadowOption:cfg.options.shadow.find(it=>it.color===color).id},{...cfg,catalogue:false});assert.equal(result.valid,true);assert.equal(result.rows.find(it=>it.key==='shadow').price,price);assert.equal(result.rows.find(it=>it.key==='shadowCorners').total,corner*4);
   }
-  await page.goto(url.replace('https://a-ceil.pp.ua','http://aceil.test'));await page.locator('[data-step="1"]').click();assert.equal(await page.locator('[name=profile][value=shadow]').isEnabled(),true);assert.equal(await page.locator('[name=profile][value=floating]').isEnabled(),true);
+  await page.goto(url.replace('https://a-ceil.pp.ua','http://aceil.test'));await page.locator('[data-step="1"]').click();assert.equal(await page.getByRole('checkbox',{name:'Тіньовий чорний',exact:true}).isEnabled(),true);assert.equal(await page.getByRole('checkbox',{name:'Парящий чорний',exact:true}).isEnabled(),true);
   assert.deepEqual(errors,[]);await page.close();console.log('PASS legacy and dynamic profile sources, screenshot label, colours, corner rates, inserts and saved calculator '+width+'px');
  }}finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});

@@ -53,6 +53,15 @@
  function config(raw){
   if(!raw||raw.version!==1)throw Error('Посилання має невідомий формат. Попросіть менеджера створити нове.');
   const out={version:1,company:String(raw.company||'A·CEIL').slice(0,80),date:String(raw.date||'').slice(0,10),minimum:Math.max(0,Math.min(100000,number(raw.minimum)||0)),demo:raw.demo===true,items:{}};
+  if(raw.catalogue===true){
+   if(!Array.isArray(raw.products)||!raw.products.length||raw.products.length>120)throw Error('Оберіть від 1 до 120 позицій номенклатури.');
+   const seen=new Set();out.catalogue=true;out.products=raw.products.map(item=>{
+    const id=String(item.id??'').slice(0,80);if(!id||seen.has(id))throw Error('Повторна або невідома позиція номенклатури.');seen.add(id);
+    return{id,...product(item,'film'),unit:String(item.unit||'шт').slice(0,16),groupId:String(item.groupId??'').slice(0,80),basis:['area','perimeter','corners'].includes(item.basis)?item.basis:'manual'};
+   });
+   if(!Array.isArray(raw.groups)||raw.groups.length>120)throw Error('Некоректні групи номенклатури.');
+   out.groups=raw.groups.map(g=>({id:String(g.id??'').slice(0,80),name:String(g.name||'Без групи').slice(0,100)}));
+  }
   if(raw.filmCatalog){
    out.filmCatalog={};
    for(const series of seriesIds){if(!raw.filmCatalog[series])continue;out.filmCatalog[series]={};for(const texture of textures){if(!raw.filmCatalog[series][texture])continue;const rates={};for(const key of rateKeys){const v=raw.filmCatalog[series][texture][key];if(v==null)continue;const n=number(v);if(!Number.isFinite(n)||n<0||n>1000000)throw Error('Некоректний тариф плівки.');rates[key]=n;}out.filmCatalog[series][texture]=rates;}}
@@ -66,7 +75,7 @@
    optionCount+=list.length;if(list.length&&!out.items[key])out.items[key]=product(out.options[key][0],key);
   }
   if(optionCount>120)throw Error('Оберіть до 120 позицій загалом для клієнтського калькулятора.');
-  if(!out.items.film||!out.items.classic||!out.items.classicCorners)throw Error('У посиланні немає ціни плівки, базового профілю або його кутів.');
+  if(!out.catalogue&&(!out.items.film||!out.items.classic||!out.items.classicCorners))throw Error('У посиланні немає ціни плівки, базового профілю або його кутів.');
   return out;
  }
  function estimate(raw,catalog,palette){
@@ -76,7 +85,26 @@
   if(mode==='rectangle'){const width=value('width',.3,50),length=value('length',.3,50);area=round(width*length);perimeter=round(2*(width+length));}
   else if(mode==='contour'){shape=contour(s.points);if(!shape)errors.push('contour');area=shape?.area||0;perimeter=shape?.perimeter||0;}
   else{area=value('area',.1,2500);perimeter=value('perimeter',1,300);if(area&&perimeter&&perimeter*perimeter+0.01<4*Math.PI*area)errors.push('geometry');}
-  const corners=mode==='rectangle'?4:mode==='contour'?shape?.corners||0:value('corners',3,50,true),chandelier=value('chandelier',0,100,true),spot=value('spot',0,200,true);
+  const corners=mode==='rectangle'?4:mode==='contour'?shape?.corners||0:value('corners',3,50,true);
+  if(c.catalogue){
+   const selected=s.selectedProducts&&typeof s.selectedProducts==='object'?s.selectedProducts:{};
+   for(const [id,choice] of Object.entries(selected)){
+    const item=c.products.find(it=>it.id===id);if(!item||!choice||typeof choice!=='object'){errors.push('product:'+id);continue;}
+    const enteredQty=choice.qty==null?({area,perimeter,corners})[item.basis]??1:number(choice.qty),qty=round(enteredQty);
+    if(!Number.isFinite(qty)||qty<=0||qty>100000||(/шт|од/.test(item.unit)&&!Number.isInteger(enteredQty))){errors.push('quantity:'+id);continue;}
+    let price=item.price,quote=item.requiresQuote===true,name=item.name;
+    if(item.widths?.length){
+     const span=mode==='rectangle'?Math.min(number(s.width),number(s.length)):mode==='contour'?shape?.span||0:value('roomWidth',.3,50);
+     const roll=item.widths.find(w=>w.max+1e-9>=span);if(!roll){errors.push('filmSpan');continue;}price=roll.price;quote=roll.requiresQuote===true;name+=' · полотно '+roll.nominal+' м';
+    }
+    rows.push({key:'product:'+id,id,name,qty:round(qty),unit:item.unit,price:quote?null:price,total:quote?null:round(qty*price)});
+   }
+   const quoteRequired=rows.filter(r=>r.price===null).map(r=>r.name),complete=quoteRequired.length===0,subtotal=round(rows.reduce((a,r)=>a+(r.total||0),0));
+   const minimum=rows.length&&complete?round(Math.max(0,c.minimum-subtotal)):0;
+   if(minimum)rows.push({key:'minimum',name:'Доплата до мінімального замовлення',qty:1,unit:'посл.',price:minimum,total:minimum});
+   return{valid:errors.length===0,complete,quoteRequired,errors,area,perimeter,corners,rows,total:round(subtotal+minimum)};
+  }
+  const chandelier=value('chandelier',0,100,true),spot=value('spot',0,200,true);
   const profile=['classic','shadow','floating'].includes(s.profile)?s.profile:'classic';
   const insert=profile==='classic'&&['white','black'].includes(s.insert)?s.insert:'none';
   const cornice=s.cornice===true?value('corniceLength',.1,50):0;

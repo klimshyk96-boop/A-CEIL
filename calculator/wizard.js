@@ -8,10 +8,10 @@
  function go(next){
   const errors=M.estimate(api.values(),api.catalog).errors.filter(k=>['width','length','area','perimeter','corners','roomWidth','geometry','contour'].includes(k));
   if(next>0&&errors.length){if(step!==0)go(0);$('stepError').hidden=false;$('stepError').textContent=errors.includes('contour')?'Замкніть контур без перетинів.':'Перевірте розміри кімнати.';return;}
-  step=Math.max(0,Math.min(2,next));$('stepError').hidden=true;
+  step=Math.max(0,Math.min(api.catalog.catalogue?1:2,next));$('stepError').hidden=true;
   document.querySelectorAll('[data-panel]').forEach(el=>el.hidden=Number(el.dataset.panel)!==step);
   document.querySelectorAll('[data-step]').forEach(b=>{if(Number(b.dataset.step)===step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
-  $('stepBack').hidden=step===0;$('stepNext').textContent=['Обрати стелю →','Додати деталі →','Переглянути розрахунок →'][step];
+  $('stepBack').hidden=step===0;$('stepNext').textContent=api.catalog.catalogue?['Обрати позиції →','Переглянути розрахунок →'][step]:['Обрати стелю →','Додати деталі →','Переглянути розрахунок →'][step];
   document.querySelector('[data-panel="'+step+'"] h1')?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'smooth'});
  }
  function openEstimate(){const box=$('estimateDialog');if(!box.open){box.append($('estimate'));box.showModal();}}
@@ -34,7 +34,7 @@
    b.onclick=()=>{const el=form.elements.namedItem(key),on=!active.has(key);if(on)active.add(key);else active.delete(key);if(['cornice','linearEnabled'].includes(key))el.checked=on;else el.value=on?'1':'0';api.calculate();};$('extraCards').append(b);
   }
   document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>go(Number(b.dataset.step)));
-  $('stepNext').onclick=()=>step===2?openEstimate():go(step+1);$('stepBack').onclick=()=>go(step-1);
+  $('stepNext').onclick=()=>step===(api.catalog.catalogue?1:2)?openEstimate():go(step+1);$('stepBack').onclick=()=>go(step-1);
   $('viewEstimate').onclick=$('viewEstimateDesktop').onclick=openEstimate;
   const close=document.createElement('button');close.type='button';close.className='modal-close';close.textContent='← Повернутися до вибору';close.onclick=()=>$('estimateDialog').close();$('estimateDialog').prepend(close);
   $('estimateDialog').addEventListener('close',()=>$('estimateHome').append($('estimate')));

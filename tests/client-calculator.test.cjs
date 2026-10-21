@@ -39,7 +39,7 @@ assert.equal(M.estimate(state,assortment).total,13030,'old client state uses the
   const payload=M.decode(new URL(generated).hash.slice(1));assert.equal(payload.config.items.film.price,380);assert.ok(!JSON.stringify(payload).includes('costPrice'));assert.ok(!JSON.stringify(payload).includes('PRIVATE CATALOG'));
   assert.ok(payload.config.options.film.length>=3);assert.ok(payload.config.options.cornice.length>=7);assert.equal(payload.config.options.linear.length,2);
   const filmAlt=payload.config.options.film.find(it=>it.name==='Плівка сатин').id,cornAlt=payload.config.options.cornice.find(it=>it.name==='Карниз UNO').id,lineAlt=payload.config.options.linear.find(it=>it.name==='Світлова лінія Premium').id;
-  const preview=await page.locator('#aceilClientSetup a').last().getAttribute('href');
+  const preview=M.link('http://aceil.test/',{...payload.config,catalogue:false}); // Legacy wizard compatibility; generic catalogue covered separately.
   await page.locator('#aceilClientSetup>button').click();
   await page.evaluate(()=>document.getElementById('aceilClientSetupButton').click());
   assert.equal(await page.locator('#aceilClientSetup [data-owner-links]').getAttribute('open'),null,'link details stay closed on next visit');

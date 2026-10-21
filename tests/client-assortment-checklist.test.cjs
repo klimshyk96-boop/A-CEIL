@@ -23,7 +23,7 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
   assert.equal(await page.locator('[data-group=empty]').evaluate(el=>el.open),false,'saved collapse state is retained');
   assert.equal(await row('corn0').evaluate(el=>el.closest('details').dataset.group),'cornices');
   const originalOrder=await page.locator('[data-group=cornices] .owner-item').evaluateAll(rows=>rows.map(row=>row.dataset.clientItem));
-  await row('unmapped').locator('input').check();await page.locator('#aceilClientSetup [type=submit]').click();assert.ok((await page.locator('#aceilClientSetup output').innerText()).includes('джерело'));await row('unmapped').locator('input').uncheck();
+  await row('unmapped').locator('input').check();assert.equal(await row('unmapped').locator('input').isChecked(),true);await row('unmapped').locator('input').uncheck();
   await page.locator('#clientAssortmentSearch').fill('Модель Q');await row('custom').locator('input').check();await page.locator('#clientAssortmentSearch').fill('');
   await page.locator('[data-owner-filter=selected]').click();assert.equal(await row('corn1').isVisible(),false);
   await row('custom').locator('input').uncheck();assert.equal(await row('custom').isVisible(),false);

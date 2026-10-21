@@ -13,7 +13,7 @@ declare result text;
 begin
  if auth.uid() is null or not exists(select 1 from public.profiles where id=auth.uid() and is_active=true) then raise exception 'Authentication required' using errcode='42501'; end if;
  if jsonb_typeof(p_config) is distinct from 'object' or p_config->>'version' is distinct from '1' or jsonb_typeof(p_config->'items') is distinct from 'object' or octet_length(p_config::text)>25000 then raise exception 'Invalid catalogue'; end if;
- p_config=jsonb_build_object('version',1,'company',left(p_config->>'company',80),'date',left(p_config->>'date',10),'minimum',p_config->'minimum','filmCatalog',p_config->'filmCatalog','filmOverrides',p_config->'filmOverrides','items',p_config->'items','options',coalesce(p_config->'options','{}'::jsonb));
+ p_config=jsonb_build_object('version',1,'company',left(p_config->>'company',80),'date',left(p_config->>'date',10),'minimum',p_config->'minimum','filmCatalog',p_config->'filmCatalog','filmOverrides',p_config->'filmOverrides','items',p_config->'items','options',coalesce(p_config->'options','{}'::jsonb)) || case when p_config->>'catalogue'='true' then jsonb_build_object('catalogue',true,'products',p_config->'products','groups',p_config->'groups') else '{}'::jsonb end;
  insert into public.aceil_client_calculators(user_id,config) values(auth.uid(),p_config)
  on conflict(user_id) do update set config=excluded.config,updated_at=now()
  returning token into result;
