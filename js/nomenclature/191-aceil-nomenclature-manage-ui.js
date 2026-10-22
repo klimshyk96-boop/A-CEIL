@@ -138,6 +138,66 @@
   // MDI artwork: assets/vendor/mdi/LICENSE.txt and NOTICE.txt.
   NOMENCLATURE_ICONS=NOMENCLATURE_ICONS.concat([{"key": "selected-light-recessed", "set": "selected", "label": "Точковий світильник", "color": "#3159c9", "shape": "<g fill=\"currentColor\" stroke=\"none\"><path d=\"M12 7C6.5 7 2 9.46 2 12.5S6.5 18 12 18 22 15.54 22 12.5 17.5 7 12 7M16.5 10C16.5 10.4 14.9 11.54 12 11.54S7.5 10.4 7.5 10C7.5 9.91 7.65 9.74 7.9 9.55C9.06 9.21 10.44 9 12 9S14.94 9.21 16.1 9.55C16.35 9.74 16.5 9.91 16.5 10M12 16C7.12 16 4 13.93 4 12.5C4 11.81 4.73 11 6.03 10.29C6.3 11.83 8.87 13.04 12 13.04C15.13 13.04 17.7 11.83 17.97 10.29C19.27 11 20 11.81 20 12.5C20 13.93 16.88 16 12 16Z\" /></g>"}, {"key": "selected-chandelier", "set": "selected", "label": "Люстра", "color": "#3159c9", "shape": "<g fill=\"currentColor\" stroke=\"none\"><path d=\"M15 13.1C15 14.76 13.66 16.1 12 16.1S9 14.76 9 13.1 10.34 10.1 12 10.1 15 11.44 15 13.1M9 2V3C9 4.11 9.9 5 11 5V9.1C11.32 9.04 11.66 9 12 9S12.68 9.04 13 9.1V5C14.11 5 15 4.11 15 3V2H9M4 11.1C2.34 11.1 1 12.44 1 14.1S2.34 17.1 4 17.1 7 15.76 7 14.1 5.66 11.1 4 11.1M20 11.1C18.34 11.1 17 12.44 17 14.1S18.34 17.1 20 17.1 23 15.76 23 14.1 21.66 11.1 20 11.1M20 18.1C19.32 18.1 18.67 17.96 18.08 17.71C17.6 17.95 17.07 18.1 16.5 18.1C15.39 18.1 14.41 17.57 13.77 16.77C13.22 17 12.63 17.1 12 17.1S10.78 17 10.23 16.77C9.59 17.57 8.61 18.1 7.5 18.1C6.93 18.1 6.4 17.95 5.92 17.71C5.33 17.96 4.68 18.1 4 18.1C3.73 18.1 3.46 18.06 3.2 18C4.21 19.29 5.76 20.1 7.5 20.1C8.83 20.1 10.05 19.63 11 18.84V21.1C11 21.65 11.45 22.1 12 22.1C12.55 22.1 13 21.65 13 21.1V18.84C13.95 19.63 15.17 20.1 16.5 20.1C18.24 20.1 19.79 19.29 20.8 18C20.54 18.06 20.27 18.1 20 18.1Z\" /></g>"}, {"key": "selected-led-strip", "set": "selected", "label": "LED-стрічка", "color": "#3159c9", "shape": "<g fill=\"currentColor\" stroke=\"none\"><path d=\"M2.81,8.46L14.83,20.5L15.54,19.78L16.95,21.19L18.36,19.78L16.95,18.36L18.36,16.95L19.78,18.36L21.19,16.95L19.78,15.54L20.5,14.83L8.46,2.81L2.81,8.46M5.64,8.46L8.46,5.64L17.66,14.83L14.83,17.66L5.64,8.46M7.05,8.46L8.46,9.88L9.88,8.46L8.46,7.05L7.05,8.46M9.17,10.59L10.59,12L12,10.59L10.59,9.17L9.17,10.59M11.29,12.71L12.71,14.12L14.12,12.71L12.71,11.29L11.29,12.71M13.41,14.83L14.83,16.24L16.24,14.83L14.83,13.41L13.41,14.83Z\" /></g>"}, {"key": "selected-ceiling-light-outline", "set": "selected", "label": "Підвісний світильник", "color": "#3159c9", "shape": "<g fill=\"currentColor\" stroke=\"none\"><path d=\"M14.76 11L16.76 15H7.24L9.24 11H14.76M13 4H11V9H8L4 17H20L16 9H13V4M14 18H10C10 19.11 10.9 20 12 20S14 19.11 14 18Z\" /></g>"}, {"key": "selected-magnetic-vent", "set": "selected", "label": "Магнітна витяжка", "color": "#3159c9", "shape": "<g transform=\"scale(.75)\" stroke-width=\"1.6\"><rect x=\"3\" y=\"3\" width=\"26\" height=\"26\" rx=\"3\"/><rect x=\"7\" y=\"7\" width=\"18\" height=\"18\" rx=\"1\"/><path d=\"M11 12h10M11 16h10M11 20h10\"/></g>"}]);
 
+  // Additional ceiling equipment and installation work icons (original SVG artwork).
+  NOMENCLATURE_ICONS=NOMENCLATURE_ICONS.concat([
+  {
+    "key": "selected-camera",
+    "set": "selected",
+    "label": "Камера",
+    "color": "#3159c9",
+    "shape": "<path d=\"M4 7h16v3H4zM5 10a7 7 0 0 0 14 0\"/><circle cx=\"12\" cy=\"13\" r=\"2.2\"/><path d=\"M8 4h8M12 4v3\"/>"
+  },
+  {
+    "key": "selected-sensor",
+    "set": "selected",
+    "label": "Датчик",
+    "color": "#3159c9",
+    "shape": "<ellipse cx=\"12\" cy=\"9\" rx=\"8\" ry=\"4\"/><path d=\"M4 9v3c0 2.2 3.6 4 8 4s8-1.8 8-4V9M8 10h.01M12 11h.01M16 10h.01M9 19l-1 2M15 19l1 2M12 19v3\"/>"
+  },
+  {
+    "key": "selected-height-work",
+    "set": "selected",
+    "label": "Робота на висоті",
+    "color": "#3159c9",
+    "shape": "<path d=\"M4 21 8 3h4l4 18M7 7h6M6 12h8M5 17h10M19 3v18m-2-16 2-2 2 2m-4 14 2 2 2-2\"/>"
+  },
+  {
+    "key": "selected-double-spot",
+    "set": "selected",
+    "label": "Подвійний точковий світильник",
+    "color": "#3159c9",
+    "shape": "<rect x=\"2\" y=\"6\" width=\"20\" height=\"12\" rx=\"2\"/><circle cx=\"7.2\" cy=\"12\" r=\"3.2\"/><circle cx=\"16.8\" cy=\"12\" r=\"3.2\"/><path d=\"M5.8 10.8a2 2 0 0 1 2.8 0m6.8 0a2 2 0 0 1 2.8 0\"/>"
+  },
+  {
+    "key": "selected-curved-wall",
+    "set": "selected",
+    "label": "Криволінійність",
+    "color": "#3159c9",
+    "shape": "<path d=\"M3 18C3 2 21 22 21 6\" stroke-width=\"2.6\"/><path d=\"M3 18V5M21 6v13M3 5h5m8 14h5\" stroke-dasharray=\"2 2\"/><circle cx=\"3\" cy=\"18\" r=\"1.5\" fill=\"currentColor\"/><circle cx=\"21\" cy=\"6\" r=\"1.5\" fill=\"currentColor\"/>"
+  },
+  {
+    "key": "selected-round-vent",
+    "set": "selected",
+    "label": "Кругла витяжка",
+    "color": "#3159c9",
+    "shape": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"6.5\"/><path d=\"M7 8h10M5.7 12h12.6M7 16h10\"/>"
+  },
+  {
+    "key": "selected-wall-protection",
+    "set": "selected",
+    "label": "Захист стін",
+    "color": "#3159c9",
+    "shape": "<path d=\"M3 21V3h18v18M3 6h18\"/><path d=\"M5 6v13l4-2 3 2 3-2 4 2V6\" fill=\"currentColor\" fill-opacity=\".12\"/><path d=\"m7 9 3 3m4-3 3 3M7 4h2m6 0h2\"/>"
+  },
+  {
+    "key": "selected-floor-protection",
+    "set": "selected",
+    "label": "Захист підлоги",
+    "color": "#3159c9",
+    "shape": "<path d=\"m3 17 6-9h11l-5 10H5M3 17c0-1.7 3-2.2 3-.5v3c0 1.7-3 1.7-3 0v-3M6 20h10l6-11M10 10l-3 5m7-5-3 5m7-5-3 5\"/><path d=\"M3 3v5m0 0h4\"/>"
+  }
+]);
+
   function escapeText(value){
     return String(value==null?"":value).replace(/[&<>"']/g,function(ch){
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
