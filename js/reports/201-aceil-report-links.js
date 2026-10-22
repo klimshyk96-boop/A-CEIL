@@ -31,16 +31,20 @@
     var activeObject = null, currentProject = null;
     try { activeObject = typeof _activeObjectId !== "undefined" ? _activeObjectId : window._activeObjectId; } catch (_) { activeObject = window._activeObjectId; }
     try { currentProject = typeof _currentProjectId !== "undefined" ? _currentProjectId : window._currentProjectId; } catch (_) { currentProject = window._currentProjectId; }
-    var refs = [reference, activeObject, currentProject]
+    var explicit = reference !== null && reference !== undefined && reference !== "";
+    var refs = (explicit ? [reference] : [activeObject, currentProject])
       .filter(function (x) { return x !== null && x !== undefined && x !== ""; })
       .map(String);
-    var found = list.find(function (p) {
-      return [p && p.id, p && p._dbId, p && p._localId].some(function (id) {
-        return id !== null && id !== undefined && refs.indexOf(String(id)) >= 0;
+    // Resolve references in priority order, independent of project list order.
+    for (var i = 0; i < refs.length; i++) {
+      var found = list.find(function (p) {
+        return [p && p.id, p && p._dbId, p && p._localId].some(function (id) {
+          return id !== null && id !== undefined && String(id) === refs[i];
+        });
       });
-    });
-    if (!found && list.length === 1) found = list[0];
-    return found || null;
+      if (found) return found;
+    }
+    return !explicit && list.length === 1 ? list[0] : null;
   }
 
   function dbId(project) {

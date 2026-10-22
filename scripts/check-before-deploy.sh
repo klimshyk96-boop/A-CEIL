@@ -24,6 +24,7 @@ node tests/multiple-curve-diagonals.test.cjs || exit 1
 node tests/curve-report-consistency.test.cjs || exit 1
 node tests/report-plan-layout.test.cjs || exit 1
 node tests/public-report-security.test.cjs || exit 1
+node tests/project-report-identity.test.cjs || exit 1
 node tests/client-calculator.test.cjs || exit 1
 node tests/client-price-sync.test.cjs || exit 1
 node tests/client-classic-prices.test.cjs || exit 1

@@ -7,6 +7,7 @@
   var STATUSES = [["new", "Нове КП"], ["in_progress", "В роботі"], ["won", "Договір підписано"], ["lost", "Відмова"]];
   var STORE = "A_CEIL_project_crm_v2";
   var REPORT_CACHE = Object.create(null);
+  var reportRequest = 0;
 
   function client() { try { return (typeof _sb !== "undefined" && _sb) || window._sb || null; } catch (_) { return window._sb || null; } }
   function signedUser() { try { return (typeof _sbUser !== "undefined" && _sbUser) || window._sbUser || null; } catch (_) { return window._sbUser || null; } }
@@ -22,9 +23,15 @@
     return [ref, current, object].filter(function (x) { return x != null && x !== ""; }).map(String);
   }
   function projectBy(ref) {
-    var refs = activeRefs(ref);
+    var explicit = ref != null && ref !== "";
+    var refs = explicit ? [String(ref)] : activeRefs();
     var items = list();
-    return items.find(function (p) { return [p.id, p._dbId, p._localId].some(function (id) { return id != null && refs.indexOf(String(id)) >= 0; }); }) || (items.length === 1 ? items[0] : null);
+    // An explicit target must never fall back to the last opened project.
+    for (var i = 0; i < refs.length; i++) {
+      var found = items.find(function (p) { return [p.id, p._dbId, p._localId].some(function (id) { return id != null && String(id) === refs[i]; }); });
+      if (found) return found;
+    }
+    return !explicit && items.length === 1 ? items[0] : null;
   }
   function readStore() { try { var x = JSON.parse(localStorage.getItem(STORE) || "{}"); return x && typeof x === "object" ? x : {}; } catch (_) { return {}; } }
   function writeStore(data) { try { localStorage.setItem(STORE, JSON.stringify(data || {})); } catch(_){window.__diagSilent&&window.__diagSilent(_)} }
@@ -48,7 +55,8 @@
   function hasActiveReport(p) {
     if (!p) return false;
     var cached = REPORT_CACHE[String(p._dbId || p.id || "")];
-    var source = p.report_token ? p : cached;
+    // An explicit null means access was revoked; do not revive a cached token.
+    var source = p.report_token !== undefined ? p : cached;
     if (!source || !source.report_token) return false;
     if (!source.report_expires_at) return true;
     var expires = new Date(source.report_expires_at).getTime();
@@ -149,10 +157,17 @@
   async function updateReportBox() {
     var state = document.getElementById("editReportState"), open = document.getElementById("editReportOpen"), revoke = document.getElementById("editReportRevoke"), box = document.getElementById("editReportAccess");
     if (!state || !open || !revoke || !box) return;
+    var request = ++reportRequest;
     state.textContent = "⏳ Перевіряємо посилання на КП…"; open.style.display = "none"; revoke.style.display = "none"; box.dataset.url = "";
     var ref = document.getElementById("editProjId").value, p = projectBy(ref), db = p && (p._dbId || p.id), row = null, c = client();
     if (c && uuid(db)) {
-      var result = await c.from("projects").select("id,report_token,report_published_at,report_expires_at").eq("id", db).single();
+      var result;
+      try { result = await c.from("projects").select("id,report_token,report_published_at,report_expires_at").eq("id", db).single(); }
+      catch (error) {
+        if (request === reportRequest && document.getElementById("editProjId").value === ref) state.textContent = "⚠️ Не вдалося перевірити посилання: " + (error.message || error);
+        return;
+      }
+      if (request !== reportRequest || document.getElementById("editProjId").value !== ref) return;
       if (result.error) { state.textContent = "⚠️ Не вдалося перевірити посилання: " + (result.error.message || "помилка Supabase"); return; }
       row = result.data || null;
       if (p && row) remember(p, row);
@@ -200,7 +215,20 @@
   }
   function install() {
     installFields("saveProjectModal", "projComment", "proj"); installFields("editProjectModal", "editProjComment", "edit"); installFields("newObjectModal", "newObjComment", "newObj"); installReportBox(); installReportBadges(); restoreLocal();
-    var oldEdit = window.editProject; if (typeof oldEdit === "function" && !oldEdit.__crmV2) { window.editProject = function (id) { var r = oldEdit.apply(this, arguments); setTimeout(function () { fill("edit", projectBy(id)); updateReportBox().catch(function (error) { var state = document.getElementById("editReportState"); if (state) state.textContent = "⚠️ Не вдалося перевірити посилання: " + (error.message || error); }); }, 20); return r; }; window.editProject.__crmV2 = true; try { editProject = window.editProject; } catch(_){window.__diagSilent&&window.__diagSilent(_)} }
+    var oldEdit = window.editProject;
+    if (typeof oldEdit === "function" && !oldEdit.__crmV2) {
+      window.editProject = function (id) {
+        var result = oldEdit.apply(this, arguments), request = ++reportRequest;
+        setTimeout(function () {
+          if (request !== reportRequest || String(document.getElementById("editProjId").value) !== String(id)) return;
+          fill("edit", projectBy(id));
+          updateReportBox().catch(function (error) { window.__diagSilent && window.__diagSilent(error); });
+        }, 20);
+        return result;
+      };
+      window.editProject.__crmV2 = true;
+      try { editProject = window.editProject; } catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    }
     var oldOpen = window.openSaveProjectModal; if (typeof oldOpen === "function" && !oldOpen.__crmV2) { window.openSaveProjectModal = function () { var r = oldOpen.apply(this, arguments); setTimeout(function () { fill("proj", projectBy()); }, 20); return r; }; window.openSaveProjectModal.__crmV2 = true; try { openSaveProjectModal = window.openSaveProjectModal; } catch(_){window.__diagSilent&&window.__diagSilent(_)} }
     var oldNew = window.openNewObjectModal; if (typeof oldNew === "function" && !oldNew.__crmV2) { window.openNewObjectModal = function () { var r = oldNew.apply(this, arguments); setTimeout(function () { fill("newObj", null); }, 20); return r; }; window.openNewObjectModal.__crmV2 = true; try { openNewObjectModal = window.openNewObjectModal; } catch(_){window.__diagSilent&&window.__diagSilent(_)} }
     var oldProjects = window.openProjectsModal; if (typeof oldProjects === "function" && !oldProjects.__reportBadgesV2) {
