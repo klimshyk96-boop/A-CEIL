@@ -526,7 +526,7 @@ async function alphaSingle(rs){
   const od=_overallDims(st,rs);od&&rows.push(["Габаритні розміри",od]);
   ry+=info(c,RX,ry,RW,rows,titles.info)+12;
   ry+=lines(c,RX,ry,RW,titles.placement,wallLines,"Елементи не задані")+12;
-  if(!0===rs.showLegend)ry+=legend(c,RX,ry,RW,Array.isArray(lightMarks)?lightMarks:[],cornices,titles.legend,Array.isArray(wallMarks)?wallMarks:[],Array.isArray(wallTypes)?wallTypes:[],Array.isArray(linearElements)?linearElements:[])+12;
+  if(!0===rs.showLegend)ry+=legend(c,RX,ry,RW,Array.isArray(lightMarks)?lightMarks:[],cornices,titles.legend,Array.isArray(wallMarks)?wallMarks:[],Array.isArray(wallTypes)?wallTypes:[],Array.isArray(linearElements)?linearElements:[],elemItems,{wallMarks:wallMarks,lengths:lengths,circleMode:circleMode,circleDiamCm:circleDiamCm})+12;
   if(showTable)ry+=table(c,RX,ry,RW,groups,isClient(rs),titles.table,false)+12;
   let ly=planY+PLAN_H+12;
   if(!1!==rs.dimensionsList)ly+=wallDimensionsList(c,LX,ly,LW,allDimLines,"Розміри не задані",titles.dimensions)+12;

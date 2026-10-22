@@ -211,3 +211,32 @@ console.log('Manual full-contour profile colour tests: OK');
  assert.equal(room.profile().color,'#ff9500');
  assert.equal(room.qty('shadow_profile','shadow'),12,'manual drawing style must not replace geometric calculation rules');
 }
+
+// A legacy/manual row need not carry a source or a manual-override flag.
+for (const family of ['floating', 'shadow']) for (const variant of ['black','white']) {
+ const label=(family==='floating'?'Парящий':'Тіньовий')+' '+(variant==='black'?'чорний':'білий');
+ const items=[{id:'base',source:'main_profile',qty:0,manualQtyOverride:true},
+  {id:'white',source:family+'_profile',sourceVariant:'white',qty:0,fullContourSelected:false},
+  {id:'selected',name:label,unit:'м',qty:3,price:750},
+  {id:'corner',name:'Кут '+label,unit:'шт',qty:4}];
+ const room=makeRoom({items,presets:[{name:label,color:'#ff9500'}]});
+ assert.equal(room.profile().source,family+'_profile');
+ assert.equal(room.profile().color,'#ff9500');
+ assert.equal(room.profile().item.id,'selected');
+ assert.equal(items[2].qty,3);
+ items[2].source='';items[2].autoMatchedSource='walltypecolor:'+variant+':'+encodeURIComponent(label);
+ assert.equal(room.profile().color,'#ff9500');
+}
+console.log('PASS legacy/manual black and white floating/shadow profile rows');
+
+for(const family of ['shadow','floating'])for(const variant of ['black','white']){
+ const label=family==='shadow'?'Тіньовий профіль':'Парящий профіль';
+ const items=baseItems([{id:'selected-'+family,source:family+'_profile',sourceVariant:variant,name:label+' '+variant}]);
+ const marks=[{...fullWall('colour',0,label),profileColor:variant}];
+ const room=makeRoom({items,marks});room.recalculate();
+ assert.equal(items.find(i=>i.id==='selected-'+family).qty,3);
+ assert.equal(items.find(i=>i.id===family).qty,0,'generic row must not duplicate coloured profile');
+ assert.equal(items.find(i=>i.id==='base').qty,9);
+ assert.equal(items.find(i=>i.id==='insert').qty,9);
+}
+console.log('PASS black/white floating and shadow lengths without double counting');

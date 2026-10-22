@@ -211,9 +211,12 @@ function contourPerimeterM(state){
   try{var value=parseFloat(String(document.getElementById("per")&&document.getElementById("per").textContent||"0").replace(",","."));return isFinite(value)?value:0}catch(_){return 0}
 }
 function contourSourceOfItem(item){
-  var source=String(item&&item.source||'');
+  var source=String(item&&(item.source||item.autoMatchedSource)||'');
   if(/^(main_profile|shadow_profile|floating_profile)$/.test(source))return source;
-  var label='';
+  // Older/manual catalogue rows can have only a name. Keep explicit unrelated
+  // sources authoritative and never mistake corners/breaks for profile lengths.
+  var label=!source&&item&&(!item.unit||item.unit==='м')?String(item.name||''):'';
+  if(!source&&/(кут|обрив|демонтаж)/i.test(label))return '';
   if(source.indexOf('walltype:')===0)label=source.slice(9);
   else if(source.indexOf('walltypecolor:')===0){var rest=source.slice(14),colon=rest.indexOf(':');if(colon>=0)label=rest.slice(colon+1);}
   try{label=decodeURIComponent(label);}catch(_){}
@@ -396,15 +399,18 @@ function activeWholeContourProfile(draft,collection,state){
   return explicitContourProfile(list,draft)||inferredContourProfile(list,state);
 }
 function manualContourStyle(list){
-  var base=list.filter(function(it){return it&&it.source==='main_profile';});
+  var base=list.filter(function(it){return it&&contourSourceOfItem(it)==='main_profile';});
   if(!base.length||!base.some(function(it){return it.manualQtyOverride===true;})
     ||base.some(function(it){return (Number(it.qty)||0)!==0;}))return null;
-  var chosen=list.filter(function(it){return it&&it.manualQtyOverride===true&&Number(it.qty)>0
+  var chosen=list.filter(function(it){return it&&Number(it.qty)>0
     &&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(it));});
+  var manual=chosen.filter(function(it){return it.manualQtyOverride===true;});
+  if(manual.length)chosen=manual;
+  else chosen=chosen.filter(function(it){return !it.autoFilled;});
   return chosen.length===1?chosen[0]:null;
 }
 function contourProfile(draft,collection,state){
-  var list=Array.isArray(collection)?collection:getElemItems(),selected=explicitContourProfile(list,draft)||manualContourStyle(list)||inferredContourProfile(list,state),whole=!!selected;
+  var list=Array.isArray(collection)?collection:getElemItems(),selected=(draft&&draft.fullContourSelected?explicitContourProfile(list,draft):null)||manualContourStyle(list)||explicitContourProfile(list,draft)||inferredContourProfile(list,state),whole=!!selected;
   if(!selected)selected=list.find(function(it){return it&&it.source==="main_profile"})||{id:"__base_aluminium__",source:"main_profile",name:"Базовий алюмінієвий профіль"};
   var presets=typeof window.rwe2WallPresetRead==="function"?window.rwe2WallPresetRead():[];
   presets=Array.isArray(presets)?presets:[];
