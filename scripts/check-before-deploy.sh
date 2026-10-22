@@ -16,6 +16,7 @@ node tests/wall-state-restore.test.cjs || exit 1
 node tests/xss-injection.test.cjs || exit 1
 node tests/voice-number.test.cjs || exit 1
 node tests/autocount-profile.test.cjs || exit 1
+node tests/manual-profile-colour.test.cjs || exit 1
 node tests/linear-autocount.test.cjs || exit 1
 node tests/insert-choice.test.cjs || exit 1
 node tests/canvas-hit-guard.test.cjs || exit 1

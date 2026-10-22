@@ -210,6 +210,18 @@ function contourPerimeterM(state){
   }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   try{var value=parseFloat(String(document.getElementById("per")&&document.getElementById("per").textContent||"0").replace(",","."));return isFinite(value)?value:0}catch(_){return 0}
 }
+function contourSourceOfItem(item){
+  var source=String(item&&item.source||'');
+  if(/^(main_profile|shadow_profile|floating_profile)$/.test(source))return source;
+  var label='';
+  if(source.indexOf('walltype:')===0)label=source.slice(9);
+  else if(source.indexOf('walltypecolor:')===0){var rest=source.slice(14),colon=rest.indexOf(':');if(colon>=0)label=rest.slice(colon+1);}
+  try{label=decodeURIComponent(label);}catch(_){}
+  label=norm(label);
+  if(label.indexOf('тіньов')>=0)return 'shadow_profile';
+  if(label.indexOf('парящ')>=0)return 'floating_profile';
+  return '';
+}
 function explicitContourProfile(list,draft){
   /* Aluminium is the remainder of the contour, not an overriding "whole
      contour" choice. Older saved rooms can still contain
@@ -217,8 +229,8 @@ function explicitContourProfile(list,draft){
      essential: otherwise a shadow/floating wall is never subtracted from the
      aluminium profile or from the insert. Only a special profile may replace
      the whole contour explicitly. */
-  if(draft&&draft.fullContourSelected&&/^(shadow_profile|floating_profile)$/.test(draft.source))return draft;
-  return list.find(function(it){return it&&it.fullContourSelected&&/^(shadow_profile|floating_profile)$/.test(it.source)})||null;
+  if(draft&&draft.fullContourSelected&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(draft)))return draft;
+  return list.find(function(it){return it&&it.fullContourSelected&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(it))})||null;
 }
 function inferredContourProfile(list,state){
   var perimeter=contourPerimeterM(state);if(!(perimeter>0))return null;
@@ -231,16 +243,16 @@ function inferredContourProfile(list,state){
     return /^(shadow_profile|floating_profile)$/.test(source)||name.indexOf("тіньов")>=0||name.indexOf("парящ")>=0;
   });
   var families=["shadow_profile","floating_profile"].map(function(source){
-    var rows=list.filter(function(it){return it&&it.source===source}),total=rows.reduce(function(sum,it){return sum+(Number(it.qty)||0)},0),keyword=source==="shadow_profile"?"тіньов":"парящ";
+    var rows=list.filter(function(it){return it&&contourSourceOfItem(it)===source}),total=rows.reduce(function(sum,it){return sum+(Number(it.qty)||0)},0),keyword=source==="shadow_profile"?"тіньов":"парящ";
     var marked=marks.filter(function(m){return m&&norm(m.type||m.name||m.title).indexOf(keyword)>=0}).reduce(function(sum,m){return sum+(Number(m.lenCm)||0)},0)/100;
-    return {total:total,marked:marked,manual:rows.some(function(it){return it.manualQtyOverride===true}),item:rows.sort(function(a,b){return (Number(b.qty)||0)-(Number(a.qty)||0)})[0]};
+    return {total:total,marked:marked,manual:rows.some(function(it){return it.manualQtyOverride===true}),positive:rows.filter(function(it){return Number(it.qty)>0;}).length,item:rows.sort(function(a,b){return (Number(b.qty)||0)-(Number(a.qty)||0)})[0]};
   }).filter(function(entry){
     var tolerance=Math.max(.02,perimeter*.002);
-    /* A manual full-perimeter quantity is only a compatibility fallback for
-       old rooms that have no profile marks. Once even one wall is marked, the
+    /* A manual full-perimeter quantity identifies an unmarked contour.
+       Once even one wall is marked, the
        wall geometry is authoritative. This prevents a stale manual 12 m row
        from turning a new 3 m shadow wall into a full shadow contour. */
-    return entry.item&&Math.abs(entry.total-perimeter)<=tolerance&&(
+    return entry.item&&entry.positive===1&&Math.abs(entry.total-perimeter)<=tolerance&&(
       Math.abs(entry.marked-perimeter)<=tolerance||(!hasProfileMarks&&entry.manual)
     );
   });
@@ -258,6 +270,7 @@ function profileFamilyOfMark(mark){
 }
 function profileVariantOfItem(item){
   var variant=String(item&&item.sourceVariant||"");
+  if(!variant&&item&&String(item.source||"").indexOf("walltypecolor:")===0)variant=String(item.source).slice(14).split(":")[0];
   return variant==="white"||variant==="black"?variant:colorFromName(item&&item.name||"");
 }
 function profileMarksFor(family,variant,ctx){
@@ -363,14 +376,20 @@ function partialContourQty(source,item,ctx){
   return null;
 }
 function presetColorFor(selected,presets,state){
-  if(!selected||selected.source==="main_profile")return "#1d1d1f";
-  var preset=presets.find(function(p){return p&&p.name===selected.fullContourPresetName});
-  if(preset&&preset.color)return preset.color;
-  var keyword=selected.source==="shadow_profile"?"тіньов":"парящ",variant=selected.sourceVariant||"",marks=state&&Array.isArray(state.wallMarks)?state.wallMarks:getWallMarks();
-  var mark=marks.find(function(m){return m&&norm(m.type||m.name||m.title).indexOf(keyword)>=0&&(!variant||wallProfileColor(m)===variant)&&/^#[0-9a-f]{3,8}$/i.test(String(m.color||""))});
+  var source=contourSourceOfItem(selected);
+  if(!selected||source==='main_profile')return '#1d1d1f';
+  var valid=function(value){return /^#[0-9a-f]{3,8}$/i.test(String(value||''));};
+  var preset=presets.find(function(p){return p&&p.name===selected.fullContourPresetName&&valid(p.color);});
+  if(preset)return preset.color;
+  var keyword=source==='shadow_profile'?'тіньов':'парящ',variant=profileVariantOfItem(selected),marks=state&&Array.isArray(state.wallMarks)?state.wallMarks:getWallMarks();
+  var mark=marks.find(function(m){return m&&norm(m.type||m.name||m.title).indexOf(keyword)>=0&&(!variant||wallProfileColor(m)===variant)&&valid(m.color);});
   if(mark)return mark.color;
-  preset=presets.find(function(p){return p&&norm(p.name).indexOf(keyword)>=0&&(!variant||colorFromName(p.name)===variant)&&/^#[0-9a-f]{3,8}$/i.test(String(p.color||""))});
-  return preset&&preset.color||selected.fullContourColor||"#1d1d1f";
+  var family=presets.filter(function(p){return p&&norm(p.name).indexOf(keyword)>=0&&valid(p.color);});
+  // Physical black/white is separate from the colour used to annotate the plan.
+  // Prefer a variant preset; an uncoloured family preset applies to both variants.
+  preset=variant?(family.find(function(p){return colorFromName(p.name)===variant;})
+    ||family.find(function(p){return !colorFromName(p.name);})):family[0];
+  return preset&&preset.color||selected.fullContourColor||'#1d1d1f';
 }
 function activeWholeContourProfile(draft,collection,state){
   var list=Array.isArray(collection)?collection:getElemItems();
@@ -383,7 +402,7 @@ function contourProfile(draft,collection,state){
   presets=Array.isArray(presets)?presets:[];
   var color=presetColorFor(selected,presets,state);
   if(!/^#[0-9a-f]{3,8}$/i.test(color))color="#1d1d1f";
-  return {item:selected,source:selected.source,color:color,label:selected.name||"Базовий алюмінієвий профіль",whole:whole};
+  return {item:selected,source:contourSourceOfItem(selected)||selected.source,color:color,label:selected.name||"Базовий алюмінієвий профіль",whole:whole};
 }
 window.aceilContourProfile=contourProfile;
 window.aceilContourProfileColor=function(){var p=contourProfile();return p?p.color:"#1d1d1f";};
@@ -398,7 +417,7 @@ window.aceilWholeContourCompute=function(source,item,ctx){
   if(source==="white_insert")return insertRowIsChosen(item)&&profile.source==="main_profile"?Math.round(per)/100:0;
   if(/_profile$/.test(source))return source===profile.source&&String(item.id)===String(profile.item.id)?Math.round(per)/100:0;
   var cornerSource={main_profile:"corners",shadow_profile:"shadow_corners",floating_profile:"floating_corners"}[profile.source];
-  var variant=profile.item.sourceVariant||"",matching=!item.sourceVariant||item.sourceVariant===variant;
+  var variant=profileVariantOfItem(profile.item),matching=!item.sourceVariant||item.sourceVariant===variant;
   var rows=getElemItems().filter(function(row){return row&&row.source===cornerSource&&!row.manualQtyOverride;});
   var chosen=rows.find(function(row){return (row.sourceVariant||"")===variant;})||rows.find(function(row){return !row.sourceVariant;});
   return source===cornerSource&&matching&&(!chosen||String(chosen.id)===String(item.id))?count:0;
