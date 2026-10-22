@@ -22,9 +22,10 @@
     st.linearElements=clone(currentLinear());
     return st;
   }
-  function restoreFromState(raw){
-    var st=parseState(raw),list=setLinear(st.linearElements||[]);
+  function restoreList(values){
+    var list=setLinear(values||[]);
     setTimeout(function(){
+      if(currentLinear()!==list)return;
       list.forEach(function(el){
         if(!el.centerCanvasPx&&el.center&&typeof lightCoordsToCanvas==='function'){
           try{
@@ -37,6 +38,9 @@
     },0);
     return list;
   }
+
+  window.A·CEIL=window.A·CEIL||{};
+  window.A·CEIL.LinearPersistence=Object.freeze({restore:restoreList});
 
   // Save the linear elements in every normal saveState() snapshot.
   var oldSaveState=window.saveState||((typeof saveState==='function')?saveState:null);
@@ -57,38 +61,7 @@
 
   // Multi-room persistence is handled by A·CEIL-multiroom-lifecycle-v31, whose canonical canvas state already includes linearElements.
 
-  // Restore after the final project loader has applied the room/project state.
-  var oldLoadProject=window.loadProject||((typeof loadProject==='function')?loadProject:null);
-  if(typeof oldLoadProject==='function'&&!oldLoadProject.__linearPersistV5){
-    var wrappedLoadProject=async function(id){
-      var r=await oldLoadProject.apply(this,arguments);
-      try{
-        var ps=typeof getProjects==='function'?getProjects():[];
-        var p=(ps||[]).find(function(x){return x&&(String(x.id)===String(id)||String(x._dbId)===String(id)||String(x._localId)===String(id));});
-        var raw=null;
-        if(p&&Array.isArray(p.rooms)&&typeof _activeRoomIdx!=='undefined'&&_activeRoomIdx!=null&&p.rooms[_activeRoomIdx])raw=p.rooms[_activeRoomIdx].state;
-        else if(p)raw=p.state;
-        restoreFromState(raw);
-      }catch(e){setLinear([]);}
-      return r;
-    };
-    wrappedLoadProject.__linearPersistV5=true;window.loadProject=wrappedLoadProject;try{loadProject=wrappedLoadProject;}catch(e){window.__diagSilent&&window.__diagSilent(e)}
-  }
-
-  var oldOpenObjectRooms=window.openObjectRooms;
-  if(typeof oldOpenObjectRooms==='function'&&!oldOpenObjectRooms.__linearPersistV5){
-    var wrappedOpenObjectRooms=async function(id){
-      var r=await oldOpenObjectRooms.apply(this,arguments);
-      try{
-        var ps=typeof getProjects==='function'?getProjects():[];
-        var p=(ps||[]).find(function(x){return x&&(String(x.id)===String(id)||String(x._dbId)===String(id)||String(x._localId)===String(id));});
-        var raw=p&&Array.isArray(p.rooms)&&typeof _activeRoomIdx!=='undefined'&&p.rooms[_activeRoomIdx]?p.rooms[_activeRoomIdx].state:null;
-        restoreFromState(raw);
-      }catch(e){setLinear([]);}
-      return r;
-    };
-    wrappedOpenObjectRooms.__linearPersistV5=true;window.openObjectRooms=wrappedOpenObjectRooms;try{openObjectRooms=wrappedOpenObjectRooms;}catch(e){window.__diagSilent&&window.__diagSilent(e)}
-  }
+  // Project and room loaders restore linear state directly via WallElementPersistence.
 
   // Add light-line details to the existing report light-coordinate section.
   var oldGet=window.getLightCoordLines||((typeof getLightCoordLines==='function')?getLightCoordLines:null);

@@ -93,8 +93,16 @@ async function reply(page,index,id=A){await page.evaluate(({index,id})=>window._
   await waitWrite(page,1);
   assert.equal(await page.evaluate(()=>!!window.__writes[0].id),existing);
   await page.evaluate(()=>{lengths[0]=510;lengths[2]=510;realPts[1].x=510;realPts[2].x=510;pts[1].x=610;pts[2].x=610});await reply(page,0);await waitWrite(page,2);
-  assert.equal(await page.evaluate(()=>window.__writes[1].id),A);assert.equal(await page.evaluate(()=>window.__writes[1].payload.state.lengths[0]),510);
-  await reply(page,1);await page.waitForFunction(()=>window['A·CEILCloudFirstV330'].status().state==='saved',null,{timeout:5000});
+  // Catalogue initialization may enqueue an intermediate revision during the
+  // first request. Drain it too: the contract is the final edit, not two writes.
+  let last=1;
+  while(await page.evaluate(index=>window.__writes[index].payload.state.lengths[0],last)!==510&&last<5){
+   assert.equal(await page.evaluate(index=>window.__writes[index].id,last),A);
+   await reply(page,last);last++;await waitWrite(page,last+1);
+  }
+  assert.equal(await page.evaluate(index=>window.__writes[index].id,last),A);assert.equal(await page.evaluate(index=>window.__writes[index].payload.state.lengths[0],last),510);
+  await reply(page,last);await page.waitForFunction(()=>window['A·CEILCloudFirstV330'].status().state==='saved',null,{timeout:5000});
+  assert.equal(await page.evaluate(()=>JSON.parse(window['A·CEIL'].ProjectRepository.list()[0].state).lengths[0]),510);
   assert.deepEqual(await page.evaluate(()=>window['A·CEIL'].ProjectRepository.list().map(p=>p.id)),[A]);
   assert.deepEqual(errors,[]);await page.close();console.log('PASS automatic draft '+(existing?'reuse':'creation')+': later edits use the same cloud ID');
  }

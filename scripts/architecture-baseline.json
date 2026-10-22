@@ -104,7 +104,6 @@
   ],
   "wallMarks": [
    "js/canvas/050-aceil-wall-edit-modal.js",
-   "js/canvas/061-aceil-wall-marks-bridge-room-load.js",
    "js/canvas/063-aceil-wall-marks-persist.js",
    "js/canvas/066-aceil-wall-anchor-sync.js",
    "js/canvas/068-aceil-wall-position-preview.js",
@@ -187,15 +186,6 @@
    "js/rooms/074-aceil-light-grid-placement.js",
    "js/rooms/110-aceil-linear-element.js"
   ],
-  "_loadRoomToCanvas": [
-   "js/canvas/061-aceil-wall-marks-bridge-room-load.js",
-   "js/canvas/063-aceil-wall-marks-persist.js",
-   "js/admin/159-aceil-access-clean.js",
-   "js/nomenclature/167-aceil-color-picker.js",
-   "js/canvas/173-aceil-wall-elements-persistence.js",
-   "js/reports/184-aceil-estimate-variants-ui.js",
-   "js/canvas/187-aceil-ceiling-cornices.js"
-  ],
   "_sb": [
    "js/nomenclature/062-aceil-nomenclature-cloud-merge.js",
    "js/admin/159-aceil-access-clean.js"
@@ -213,13 +203,6 @@
    "js/nomenclature/171-aceil-offline-nomenclature.js",
    "js/reports/184-aceil-estimate-variants-ui.js",
    "js/nomenclature/212-aceil-film-group-state-fix.js"
-  ],
-  "loadProject": [
-   "js/canvas/063-aceil-wall-marks-persist.js",
-   "js/rooms/multiroom-lifecycle.js",
-   "js/reports/112-aceil-linear-element-persist-report-fix.js",
-   "js/canvas/173-aceil-wall-elements-persistence.js",
-   "js/canvas/187-aceil-ceiling-cornices.js"
   ],
   "_rwe2CurrentWallId": [
    "js/canvas/066-aceil-wall-anchor-sync.js",
@@ -346,9 +329,9 @@
    "js/reports/104-aceil-multiroom-report-sandbox-fix.js",
    "js/reports/146-aceil-report-discount-advance.js"
   ],
-  "openObjectRooms": [
+  "loadProject": [
    "js/rooms/multiroom-lifecycle.js",
-   "js/reports/112-aceil-linear-element-persist-report-fix.js"
+   "js/canvas/187-aceil-ceiling-cornices.js"
   ],
   "elemItems": [
    "js/nomenclature/118-aceil-nomen-raise.js",
@@ -390,6 +373,12 @@
   "openQuickSourceMenu": [
    "js/nomenclature/140-aceil-universal-autocount.js",
    "js/nomenclature/170-aceil-autocount-menu.js"
+  ],
+  "_loadRoomToCanvas": [
+   "js/admin/159-aceil-access-clean.js",
+   "js/nomenclature/167-aceil-color-picker.js",
+   "js/reports/184-aceil-estimate-variants-ui.js",
+   "js/canvas/187-aceil-ceiling-cornices.js"
   ],
   "openProjectsModal": [
    "js/admin/159-aceil-access-clean.js",
