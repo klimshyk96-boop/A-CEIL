@@ -1251,3 +1251,36 @@ body.rp-home-pro #A·CEILToolPanel #lightBadge,body.rp-home-pro #A·CEILToolPane
 .nom-svg-grid[hidden]{display:none}
 
 [data-nom-icon-panel] .nom-icon-option .nom-svg-icon span{white-space:normal;font-size:11px;line-height:1.25}
+
+/* Compact nomenclature controls — approved light blue design. */
+#elementsModal .em-plus,
+#elementsModal .em-unit,
+#elementsModal .grp-add,
+#elementsModal .grp-toggle,
+#elementsModal .grp-edit{
+  box-sizing:border-box!important;
+  width:32px!important;min-width:32px!important;max-width:32px!important;
+  height:32px!important;min-height:32px!important;max-height:32px!important;
+  flex:0 0 32px!important;align-self:center!important;
+  padding:0!important;border-radius:9px!important;
+  border:1px solid #d7e3f5!important;
+  background:#edf4ff!important;color:#3159c9!important;
+  box-shadow:none!important;font-size:13px!important;line-height:1!important;
+}
+#elementsModal .em-plus,
+#elementsModal .em-unit,
+#elementsModal .grp-add,
+#elementsModal .grp-toggle{display:inline-flex!important;align-items:center!important;justify-content:center!important;}
+#elementsModal .grp-add{background:#3159c9!important;border-color:#3159c9!important;color:#fff!important;font-size:20px!important;}
+#elementsModal .grp-toggle,
+#elementsModal .grp-edit{background:#fff!important;border-color:#e1e7ef!important;color:#64748b!important;}
+#elementsModal .grp-header{background:#f6f8fc!important;padding:9px 8px!important;gap:5px!important;}
+#elementsModal .grp-name{color:#243650!important;}
+#elementsModal .em-row{padding-top:9px!important;padding-bottom:9px!important;}
+#elementsModal .em-unit-label{color:#64748b!important;}
+#elementsModal .grp-count{background:#e8edf5!important;color:#64748b!important;}
+#elementsModal .em-plus:focus-visible,
+#elementsModal .em-unit:focus-visible,
+#elementsModal .grp-add:focus-visible,
+#elementsModal .grp-toggle:focus-visible,
+#elementsModal .grp-edit:focus-visible{outline:2px solid #3159c9;outline-offset:2px;}
