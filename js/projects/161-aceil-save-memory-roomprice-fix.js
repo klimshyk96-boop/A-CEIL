@@ -32,34 +32,13 @@ if(typeof prevLoad==="function"&&!prevLoad.__roomPriceFinalFix){
 
 /* Keep Safari storage from slowly growing during a long measuring session. */
 function housekeeping(force){
-  try{
-    var repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
-    if(!repair)return;
-    var bytes=typeof repair.storageBytes==="function"?repair.storageBytes():0;
-    if(force||bytes>2300000){
-      if(typeof repair.freeSpace==="function")repair.freeSpace({aggressive:true});
-      if(typeof repair.trimDiagnostics==="function")repair.trimDiagnostics(8);
-      window.setPendingQueue(window.getPendingQueue());
-    }
-  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  var persistence=window.A·CEIL&&window.A·CEIL.ProjectPersistence;
+  if(persistence&&typeof persistence.prepareSave==='function') persistence.prepareSave(force);
 }
 housekeeping(true);
 setInterval(function(){housekeeping(false);},120000);
 document.addEventListener("visibilitychange",function(){
   if(document.visibilityState==="hidden")housekeeping(false);
 });
-
-/* Before either single-room or multi-room save, make a little headroom.
-   This is intentionally silent: no false "memory full" toast if cloud/local repo save succeeds. */
-var prevSaveProject=window.saveProject;
-if(typeof prevSaveProject==="function"&&!prevSaveProject.__memoryHeadroomFix){
-  var wrappedSave=async function(){
-    housekeeping(true);
-    return await prevSaveProject.apply(this,arguments);
-  };
-  wrappedSave.__memoryHeadroomFix=true;
-  window.saveProject=wrappedSave;
-  try{saveProject=wrappedSave;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-}
 
 })();

@@ -61,7 +61,21 @@
   };
 
   window.saveProject = async function(){
-    if(!activeObjectRecord()) return singleRoomSaveProject ? singleRoomSaveProject.apply(this,arguments) : undefined;
+    var persistence=window.A·CEIL&&window.A·CEIL.ProjectPersistence;
+    if(persistence&&typeof persistence.prepareSave==='function') persistence.prepareSave(true);
+    var target=activeObjectRecord();
+    if(!target) return singleRoomSaveProject ? singleRoomSaveProject.apply(this,arguments) : undefined;
+    var targetObject=target.obj;
+    var storage=window.A_CEIL_UserStorage;
+    var owner=storage?storage.getUserId():'';
+    var client=window._sb;
+    var roomIndex=typeof _activeRoomIdx==='undefined'?null:_activeRoomIdx;
+    var roomId=window._activeRoomId;
+    function sameOwner(){ return (!storage||storage.getUserId()===owner)&&window._sb===client; }
+    function sameContext(){
+      return sameOwner()&&typeof _activeObjectId!=='undefined'&&matches(targetObject,_activeObjectId)
+        &&(typeof _activeRoomIdx==='undefined'?null:_activeRoomIdx)===roomIndex&&window._activeRoomId===roomId;
+    }
 
     var name=(document.getElementById('projName')?.value||'').trim();
     var addr=(document.getElementById('projAddr')?.value||'').trim();
@@ -77,6 +91,7 @@
       }
     }
 
+    if(!sameContext()) return false;
     var current=projects();
     var rec=activeObjectRecord(current);
     if(!rec) return false;
@@ -96,27 +111,26 @@
     obj._syncStatus=obj._dbId?'pending_update':'pending_create';
     rec.projects[rec.index]=obj;
 
-    var persistence=window.A·CEIL&&window.A·CEIL.ProjectPersistence;
     var result=persistence&&typeof persistence.saveProjects==='function'
       ? await persistence.saveProjects(rec.projects,{currentProjects:current,reason:'save_project_info',projectId:obj.id||obj._dbId||null})
       : {ok:false,reason:'persistence_unavailable'};
-    if(!result.ok){ showSaveError(result); return false; }
+    if(!result.ok){ if(sameContext()) showSaveError(result); return false; }
+    if(!sameOwner()) return false;
+    // UI belongs to the context that initiated this save. Close it before the
+    // network wait; a late response must not close a newly opened project form.
+    if(sameContext()){
+      if(typeof closeModal==='function') closeModal('saveProjectModal');
+      setCurrentMeta(obj,name,addr,phone,comment);
+    }
 
     var synced=false;
     try { if(typeof window._updateObjectInCloud==='function') synced=await window._updateObjectInCloud(obj); }
     catch(e){ try{window.A·CEIL&&window.A·CEIL.DebugLog&&window.A·CEIL.DebugLog.warn('cloud_update_failed_saveinfo',{message:String(e&&e.message||e),projectId:obj.id||obj._dbId||null,source:'project-save-controller',operation:'update'});}catch(_){window.__diagSilent&&window.__diagSilent(_)} }
 
-    if(synced){
-      var latest=projects(),latestRec=activeObjectRecord(latest);
-      if(latestRec){
-        delete latestRec.obj._syncStatus; delete latestRec.obj._dirty; delete latestRec.obj._localUpdatedAt;
-        latestRec.projects[latestRec.index]=latestRec.obj;
-        if(window.A·CEIL.ProjectRepository) window.A·CEIL.ProjectRepository.replaceAll(latestRec.projects);
-      }
-    }
-    if(typeof closeModal==='function') closeModal('saveProjectModal');
-    if(typeof showToast==='function') showToast('💾 Багатокімнатний проєкт збережено');
-    setCurrentMeta(obj,name,addr,phone,comment);
+    // The shared queue alone acknowledges revisions and clears pending flags.
+    if(sameContext()&&typeof showToast==='function') showToast(synced
+      ? '💾 Багатокімнатний проєкт збережено'
+      : '💾 Збережено на пристрої. Очікує синхронізації');
     return true;
   };
 

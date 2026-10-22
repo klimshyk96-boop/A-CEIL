@@ -9,6 +9,7 @@ node tests/security-config.test.cjs || exit 1
 node tests/pending-sync-queue.test.cjs || exit 1
 node tests/pending-sync-queue-browser.test.cjs || exit 1
 node tests/shared-project-save.test.cjs || exit 1
+node tests/project-save-context.test.cjs || exit 1
 node tests/xss-injection.test.cjs || exit 1
 node tests/voice-number.test.cjs || exit 1
 node tests/autocount-profile.test.cjs || exit 1

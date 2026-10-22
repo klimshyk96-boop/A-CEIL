@@ -126,10 +126,19 @@
     var wrapped=function(){
       var snapshot=currentSnapshot();
       var beforeId=typeof _currentProjectId!=="undefined"?_currentProjectId:null;
+      var storage=window.A_CEIL_UserStorage,owner=storage?storage.getUserId():'';
+      var objectId=typeof _activeObjectId!=="undefined"?_activeObjectId:null;
+      var roomIndex=typeof _activeRoomIdx!=="undefined"?_activeRoomIdx:null;
       backupWrite(snapshot,beforeId,null,null);
       var result=previous.apply(this,arguments);
-      Promise.resolve(result).then(function(){
+      Promise.resolve(result).then(function(saved){
+        if(saved===false||(storage&&storage.getUserId()!==owner))return;
         var afterId=typeof _currentProjectId!=="undefined"?_currentProjectId:beforeId;
+        var original=findProject(beforeId);
+        if(beforeId!=null&&(!original||![original.id,original._dbId,original._localId].some(function(id){return id!=null&&key(id)===key(afterId);})))return;
+        if((typeof _activeObjectId!=="undefined"?_activeObjectId:null)!==objectId
+          ||(typeof _activeRoomIdx!=="undefined"?_activeRoomIdx:null)!==roomIndex
+          ||JSON.stringify(currentSnapshot())!==JSON.stringify(snapshot))return;
         backupWrite(snapshot,afterId,null,null);
         var project=findProject(afterId||beforeId);
         if(project){

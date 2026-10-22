@@ -66,6 +66,25 @@ async function reply(page,index,id=A){await page.evaluate(({index,id})=>window._
   assert.deepEqual(await page.evaluate(()=>{const p=window['A·CEIL'].ProjectRepository.list()[0];return {dirty:p._dirty,pending:p._syncStatus,queued:getPendingQueue().length}}),{dirty:true,pending:'pending_update',queued:1});
   assert.deepEqual(errors,[]);await page.close();console.log('PASS failed room metadata save stays queued and protected in the local cache');
  }
+ {
+  const {page,errors}=await fixture(browser);
+  await page.evaluate(({A,B})=>{
+   const room=id=>({id,name:id,state:JSON.stringify({pts:[{x:0,y:0},{x:500,y:0},{x:500,y:300},{x:0,y:300}],realPts:[{x:0,y:0},{x:500,y:0},{x:500,y:300},{x:0,y:300}],lengths:[500,300,500,300],closed:true})});
+   window['A·CEIL'].ProjectRepository.replaceAll([
+    {id:A,_dbId:A,name:'Apartment A',multiRoom:true,rooms:[room('rA')],state:'{}'},
+    {id:B,_dbId:B,name:'Apartment B',multiRoom:true,rooms:[room('rB')],state:'{}',order_source:'site',deal_status:'won',_dirty:true,_syncStatus:'pending_update',_localUpdatedAt:123}]);
+   window.__A·CEILReportRendering=true; // Isolate manual-save callbacks from the independent autosave timer.
+   _activeObjectId=A;_activeRoomIdx=0;window._activeRoomId='rA';_currentProjectId=A;
+   document.getElementById('projName').value='Renamed A';
+   document.getElementById('projOrderSource').value='instagram';
+   document.getElementById('projDealStatus').value='in_progress';
+   window.__metadataSave=saveProject().then(result=>{window.__metadataDone=true;return result});
+  },{A,B});await waitWrite(page,1);
+  await page.evaluate(B=>{_activeObjectId=B;_currentProjectId=B;_activeRoomIdx=0;window._activeRoomId='rB';_currentProjName='Apartment B';document.getElementById('saveProjectModal').classList.add('open')},B);
+  await reply(page,0);await page.waitForFunction(()=>window.__metadataDone,null,{timeout:5000}).catch(async error=>{console.error(await page.evaluate(()=>({writes:__writes.map(x=>({id:x.id,name:x.payload.name})),queue:getPendingQueue(),project:_currentProjectId,object:_activeObjectId})));throw error});
+  assert.deepEqual(await page.evaluate(B=>{const p=window['A·CEIL'].ProjectRepository.list().find(x=>x.id===B);return {name:_currentProjName,id:_currentProjectId,dirty:p._dirty,status:p._syncStatus,at:p._localUpdatedAt,source:p.order_source,deal:p.deal_status,open:document.getElementById('saveProjectModal').classList.contains('open')}},B),{name:'Apartment B',id:B,dirty:true,status:'pending_update',at:123,source:'site',deal:'won',open:true});
+  assert.deepEqual(errors,[]);await page.close();console.log('PASS complete save wrapper chain preserves another project metadata, CRM, flags and newly opened form');
+ }
  for(const existing of [false,true]){
   const {page,errors}=await fixture(browser);
   await page.evaluate(()=>{window['A·CEIL'].ProjectRepository.replaceAll([]);_currentProjectId=null;window.__newDraft=window['A·CEILCloudFirstV330'].syncNow()});

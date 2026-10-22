@@ -382,6 +382,19 @@
      This matches the final runtime behavior that previously arrived much later
      from save-memory-roomprice-fix-v1. */
   window.A·CEIL.ProjectPersistence = Object.freeze({
+    /* Shared save preparation replaces the late saveProject interception. */
+    prepareSave: function(force){
+      try{
+        const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
+        if(!repair)return;
+        const bytes=typeof repair.storageBytes==='function'?repair.storageBytes():0;
+        if(force||bytes>2300000){
+          if(typeof repair.freeSpace==='function')repair.freeSpace({aggressive:true});
+          if(typeof repair.trimDiagnostics==='function')repair.trimDiagnostics(8);
+          window.setPendingQueue(window.getPendingQueue());
+        }
+      }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    },
     /* Both autosave and room saves commit locally before calling this method.
        Always resolve the latest repository record; never write an old caller snapshot. */
     syncProject: async function(reference){

@@ -172,7 +172,6 @@
    "js/projects/059-aceil-dirty-state-delete-guards.js",
    "js/rooms/088-aceil-multiroom-save-controller.js",
    "js/projects/090-aceil-geolocation.js",
-   "js/projects/161-aceil-save-memory-roomprice-fix.js",
    "js/canvas/173-aceil-wall-elements-persistence.js"
   ],
   "drawLightMarks": [

@@ -241,7 +241,16 @@
       window.openProjectsModal.__reportBadgesV2 = true;
       try { openProjectsModal = window.openProjectsModal; } catch(_){window.__diagSilent&&window.__diagSilent(_)}
     }
-    wrap("saveProject", function () { return { refs: activeRefs(), values: values("proj") }; }, function (x) { var p = projectBy(activeRefs()[0] || x.refs[0]); if (p) { remember(p, x.values); push(p).catch(function () {}); } });
+    wrap("saveProject", function () {
+      var user=signedUser();
+      return { refs: activeRefs(), values: values("proj"), owner: user&&user.id, client: client() };
+    }, function (x, result) {
+      var user=signedUser();
+      if(result===false||(user&&user.id)!==x.owner||client()!==x.client)return;
+      // Resolve the saved target, never the project opened during the request.
+      var p = projectBy(x.refs[0] || activeRefs()[0]);
+      if (p) { remember(p, x.values); push(p).catch(function () {}); }
+    });
     wrap("saveEditProject", function () { return { ref: document.getElementById("editProjId").value, values: values("edit") }; }, function (x) { var p = projectBy(x.ref); if (p) { remember(p, x.values); push(p).catch(function () {}); } });
     wrap("createObject", function () { return values("newObj"); }, function (v) { var p = projectBy(activeRefs()[0]); if (p) { remember(p, v); push(p).catch(function () {}); } });
     wrap("loadProjectsFromCloud", null, function () { restoreLocal(); refresh().catch(function () {}); });
