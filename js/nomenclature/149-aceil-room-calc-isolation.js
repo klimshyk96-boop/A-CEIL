@@ -101,52 +101,41 @@ function refresh(){
   try{if(typeof recalcElemTotal==='function')recalcElemTotal();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
-var oldLoad=window._loadRoomToCanvas||((typeof _loadRoomToCanvas==='function')?_loadRoomToCanvas:null);
-if(typeof oldLoad==='function'&&!oldLoad.__roomCalcIsolationV331){
-  var wrappedLoad=function(obj,roomIdx){
-    var catalog=catalogItems(), groupsBefore=catalogGroups();
-    var target=obj&&Array.isArray(obj.rooms)?obj.rooms[roomIdx]:null;
-    /* v3.39: global nomenclature is authoritative.
-       Room snapshot contributes only quantities/results. */
-    var targetItems=mergedRoomItems(target,catalog);
-    var targetGroups=mergedRoomGroups(target,groupsBefore);
-
-    var result=oldLoad.apply(this,arguments);
-
-    /* Restore room results on top of the global catalog without replacing
-       group order, names, icons, prices, units or auto-fill sources. */
-    install(targetItems,targetGroups);
-    refresh();
-    persistRoomRuntime(obj,roomIdx);
-    return result;
-  };
-  wrappedLoad.__roomCalcIsolationV331=true;
-  wrappedLoad.__original=oldLoad;
-  window._loadRoomToCanvas=wrappedLoad;
-  try{_loadRoomToCanvas=wrappedLoad;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+/* Explicit lifecycle operations: no interception of room globals. */
+function emptyState(items,groups){
+  return {schemaVersion:window.A·CEILProjectSchema?window.A·CEILProjectSchema.CURRENT_VERSION:3,
+    projectType:'room',pts:[],lengths:[],realPts:[],closed:false,diagonals:[],diagonalOverrides:{},
+    circleMode:false,circleDiamCm:0,notes:[],elemItems:clone(items),elemGroups:clone(groups),
+    lightMarks:[],wallMarks:[],linearElements:[],wallTypes:[],arcPoints:[]};
 }
-
-/* New room: same catalog/prices, always zero room quantities. */
-var oldConfirm=window.confirmNewRoom||((typeof confirmNewRoom==='function')?confirmNewRoom:null);
-if(typeof oldConfirm==='function'&&!oldConfirm.__roomCalcIsolationV331){
-  var wrappedConfirm=function(){
-    var catalog=catalogItems(),groups=catalogGroups();
-    var result=oldConfirm.apply(this,arguments);
-    var fresh=catalog.map(zeroResult);
-    install(fresh,groups);refresh();
-    try{
-      var idx=typeof _activeRoomIdx!=='undefined'?_activeRoomIdx:null;
-      var oid=typeof _activeObjectId!=='undefined'?_activeObjectId:null;
-      var list=window.A·CEIL.ProjectRepository.list();
-      var oi=list.findIndex(function(p){return p&&[p.id,p._dbId,p._localId].some(function(v){return v!=null&&oid!=null&&String(v)===String(oid);});});
-      if(oi>=0&&Number.isInteger(idx)&&list[oi].rooms&&list[oi].rooms[idx])persistRoomRuntime(list[oi],idx);
-    }catch(_){window.__diagSilent&&window.__diagSilent(_)}
-    return result;
-  };
-  wrappedConfirm.__roomCalcIsolationV331=true;
-  window.confirmNewRoom=wrappedConfirm;
-  try{confirmNewRoom=wrappedConfirm;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+function refreshPrice(){
+  try{if(typeof recalcElemTotal==='function')recalcElemTotal();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(typeof updateElemBadge==='function')updateElemBadge();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(typeof rpcUpdate==='function')rpcUpdate();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(typeof rpUpdateHome==='function')rpUpdateHome();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
+window.A·CEIL=window.A·CEIL||{};
+window.A·CEIL.RoomNomenclature=Object.freeze({
+  prepareLoad:function(obj,index){
+    var room=obj&&Array.isArray(obj.rooms)?obj.rooms[index]:null;
+    if(!room)return null;
+    var state=parse(room.state);
+    // Preserve legacy empty-state defaults without installing an obsolete catalogue first.
+    var saved=Array.isArray(state.elemItems)&&state.elemItems.length?state.elemItems:
+      (Array.isArray(room.elemItems)&&room.elemItems.length?room.elemItems:null);
+    if(!saved)room.state=JSON.stringify(Object.assign(emptyState([],[]),state));
+    return {object:obj,index:index,items:mergedRoomItems(room,catalogItems()),groups:mergedRoomGroups(room,catalogGroups())};
+  },
+  finishLoad:function(context){
+    if(!context)return;
+    install(context.items,context.groups);refresh();persistRoomRuntime(context.object,context.index);
+  },
+  refreshPrice:function(){refreshPrice();setTimeout(refreshPrice,0);setTimeout(refreshPrice,80);},
+  newRoomState:function(){return emptyState(catalogItems().map(zeroResult),catalogGroups());},
+  installNewRoom:function(state,obj,index){
+    install(state.elemItems,state.elemGroups);refresh();persistRoomRuntime(obj,index);
+  }
+});
 
 window.A·CEILRoomCalcAuditV331=function(){
   try{

@@ -283,6 +283,8 @@
     var oi=arr.findIndex(function(p){return match(p,objectId);});
     if(oi<0){if(typeof showToast==='function')showToast('Помилка: активний обʼєкт не знайдено');return;}
     var obj=normalizeObject(arr[oi]);
+    var roomNomen=window.A·CEIL&&window.A·CEIL.RoomNomenclature;
+    var newState=roomNomen?roomNomen.newRoomState():null;
     var st=currentCanvasState(),idx=-1,rid=window._activeRoomId||'';
     if(rid)idx=obj.rooms.findIndex(function(r){return String(r&&r.id)===String(rid);});
     if(idx<0&&typeof _activeRoomIdx!=='undefined'&&Number.isInteger(_activeRoomIdx)&&_activeRoomIdx>=0&&_activeRoomIdx<obj.rooms.length)idx=_activeRoomIdx;
@@ -294,6 +296,7 @@
       _fillRoomFromCanvas(first,st);obj.rooms.push(first);idx=obj.rooms.length-1;
     }
     var room={id:'room_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),name:name,area:'',per:'',inC:'',outC:'',thumb:'',state:null,elemItems:[],elemGroups:[]};
+    if(newState){room.state=JSON.stringify(newState);room.elemItems=clone(newState.elemItems);room.elemGroups=clone(newState.elemGroups);}
     obj.rooms.push(room);obj.projectType='apartment';obj.multiRoom=true;obj._roomRevision=Date.now();obj._localUpdatedAt=Date.now();obj._dirty=true;obj._syncStatus=obj._dbId?'pending_update':'pending_create';
     syncStateRooms(obj);arr[oi]=obj;write(arr);
     try{_activeObjectId=obj.id||obj._dbId||objectId;_activeRoomIdx=obj.rooms.length-1;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
@@ -305,6 +308,7 @@
     try{var tbl=document.getElementById('tbl');if(tbl)tbl.innerHTML='<table><tr><td style="color:#8e8e93;padding:10px;text-align:center;font-size:11px;">Натискайте на екран, щоб ставити кути</td></tr></table>';}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     try{var dl=document.getElementById('diagList');if(dl)dl.innerHTML='немає';}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     try{if(typeof _hideAddRoomBtn==='function')_hideAddRoomBtn();if(typeof draw==='function')draw();if(typeof _renderRoomTabsAboveCanvas==='function')_renderRoomTabsAboveCanvas();if(typeof _showRoomSaveBar==='function')_showRoomSaveBar(name);}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    if(roomNomen)roomNomen.installNewRoom(newState,obj,obj.rooms.length-1);
     /* Preserve TEST7 behavior: room creation is committed locally first;
        explicit room/project save performs the complete cloud sync. */
     if(typeof showToast==='function')showToast('🚪 '+name+' — першу кімнату збережено');

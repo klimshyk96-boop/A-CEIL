@@ -89,7 +89,6 @@
   "js/rooms/116-aceil-free-light-pro.js",
   "js/i18n/117-aceil-lang-switchers.js",
   "js/nomenclature/118-aceil-nomen-raise.js",
-  "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",
   "js/core/121-aceil-state-manager.js",
   "js/core/122-aceil-critical-load-guard.js",
   "js/core/debug-panel.js",

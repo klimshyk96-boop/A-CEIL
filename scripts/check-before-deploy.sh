@@ -11,6 +11,7 @@ node tests/pending-sync-queue-browser.test.cjs || exit 1
 node tests/shared-project-save.test.cjs || exit 1
 node tests/project-save-context.test.cjs || exit 1
 node tests/room-save-canonical.test.cjs || exit 1
+node tests/room-load-consolidation.test.cjs || exit 1
 node tests/xss-injection.test.cjs || exit 1
 node tests/voice-number.test.cjs || exit 1
 node tests/autocount-profile.test.cjs || exit 1

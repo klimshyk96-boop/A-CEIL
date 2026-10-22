@@ -190,10 +190,7 @@
   "_loadRoomToCanvas": [
    "js/canvas/061-aceil-wall-marks-bridge-room-load.js",
    "js/canvas/063-aceil-wall-marks-persist.js",
-   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",
-   "js/nomenclature/149-aceil-room-calc-isolation.js",
    "js/admin/159-aceil-access-clean.js",
-   "js/projects/161-aceil-save-memory-roomprice-fix.js",
    "js/nomenclature/167-aceil-color-picker.js",
    "js/canvas/173-aceil-wall-elements-persistence.js",
    "js/reports/184-aceil-estimate-variants-ui.js",
@@ -349,24 +346,17 @@
    "js/reports/104-aceil-multiroom-report-sandbox-fix.js",
    "js/reports/146-aceil-report-discount-advance.js"
   ],
-  "confirmNewRoom": [
-   "js/rooms/multiroom-lifecycle.js",
-   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",
-   "js/nomenclature/149-aceil-room-calc-isolation.js"
-  ],
   "openObjectRooms": [
    "js/rooms/multiroom-lifecycle.js",
    "js/reports/112-aceil-linear-element-persist-report-fix.js"
   ],
   "elemItems": [
    "js/nomenclature/118-aceil-nomen-raise.js",
-   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",
    "js/nomenclature/149-aceil-room-calc-isolation.js",
    "js/nomenclature/164-aceil-elements-open-readonly.js"
   ],
   "elemGroups": [
    "js/nomenclature/118-aceil-nomen-raise.js",
-   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",
    "js/nomenclature/149-aceil-room-calc-isolation.js"
   ],
   "generateObjectReport": [

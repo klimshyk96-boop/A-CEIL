@@ -41,6 +41,6 @@ function fixture(){
   f.c.__A·CEILReportRendering=false;f.c._activeRoomId='missing';assert.equal(await f.c.saveCurrentRoom({silent:true}),false);assert.equal(f.writes(),0);
   console.log('PASS report rendering and invalid room identity perform no partial writes');
  }
- const old=read('js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js'),walls=read('js/canvas/173-aceil-wall-elements-persistence.js');
+ const old=read('js/nomenclature/149-aceil-room-calc-isolation.js'),walls=read('js/canvas/173-aceil-wall-elements-persistence.js');
  assert.doesNotMatch(old+walls,/window\.saveCurrentRoom\s*=/);
 })().catch(error=>{console.error(error);process.exit(1)});
