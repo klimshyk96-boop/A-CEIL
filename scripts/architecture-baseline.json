@@ -349,11 +349,6 @@
    "js/reports/104-aceil-multiroom-report-sandbox-fix.js",
    "js/reports/146-aceil-report-discount-advance.js"
   ],
-  "saveCurrentRoom": [
-   "js/rooms/multiroom-lifecycle.js",
-   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",
-   "js/canvas/173-aceil-wall-elements-persistence.js"
-  ],
   "confirmNewRoom": [
    "js/rooms/multiroom-lifecycle.js",
    "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",

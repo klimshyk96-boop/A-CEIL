@@ -183,27 +183,18 @@
     window._loadRoomToCanvas=wrapped;
     try{_loadRoomToCanvas=wrapped;}catch(_){ }
   }
-  function wrapSaveRoom(){
-    var previous=window.saveCurrentRoom||typeof saveCurrentRoom==="function"&&saveCurrentRoom;
-    if(typeof previous!=="function"||previous.__wallPersistenceV2)return;
-    var wrapped=function(){
-      var snapshot=currentSnapshot();
-      var objectId=typeof _activeObjectId!=="undefined"?_activeObjectId:null;
-      var roomIndex=typeof _activeRoomIdx!=="undefined"?_activeRoomIdx:null;
-      backupWrite(snapshot,null,objectId,roomIndex);
-      var result=previous.apply(this,arguments);
-      try{
-        var project=findProject(objectId),room=project&&project.rooms&&project.rooms[roomIndex];
-        if(room){patchState(room,snapshot);setProjects(projectList());}
-      }catch(_){ }
-      return result;
-    };
-    wrapped.__wallPersistenceV2=true;
-    window.saveCurrentRoom=wrapped;
-    try{saveCurrentRoom=wrapped;}catch(_){ }
-  }
+  // The lifecycle owns room capture and commits. Keep only the optional backup.
+  window.A·CEIL=window.A·CEIL||{};
+  window.A·CEIL.WallElementPersistence=Object.freeze({
+    backupRoom:function(project,roomId){
+      var index=project&&Array.isArray(project.rooms)?project.rooms.findIndex(function(room){return room&&key(room.id)===key(roomId);}):-1;
+      if(index<0)return;
+      var room=project.rooms[index];
+      backupWrite(snapshotFromState(room.state,room),null,project.id,index);
+    }
+  });
 
-  function init(){wrapSaveState();wrapSaveProject();wrapLoadProject();wrapLoadRoom();wrapSaveRoom();}
+  function init(){wrapSaveState();wrapSaveProject();wrapLoadProject();wrapLoadRoom();}
   init();
   setTimeout(init,100);
   setTimeout(init,700);

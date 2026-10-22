@@ -77,6 +77,10 @@
     rec.room.inC=document.getElementById('inCorners')?.textContent||'';
     rec.room.outC=document.getElementById('outCorners')?.textContent||'';
     rec.room.state=JSON.stringify(st);
+    // Room-local mirrors belong to the same snapshot and repository commit.
+    rec.room.elemItems=clone(st.elemItems);
+    rec.room.elemGroups=clone(st.elemGroups);
+    rec.room.wallMarks=clone(st.wallMarks);
     rec.obj.projectType='apartment'; rec.obj.multiRoom=true;
     rec.obj.thumb=rec.room.thumb||rec.obj.thumb||'';
     rec.obj._roomRevision=Date.now(); rec.obj._localUpdatedAt=Date.now(); rec.obj._dirty=true;
@@ -97,7 +101,6 @@
 
   window.saveCurrentRoom=async function(options){
     options=options||{};
-    var current=list();
     var prepared=buildLocalCommit(!options.silent);
     if(!prepared) return false;
 
@@ -111,24 +114,11 @@
       return false;
     }
 
-    /* Backup/SafeSave — додатковий захист, але його збій не скасовує вже успішний локальний запис. */
+    // Wall backup is optional; it must not perform another repository write.
     try{
-      var persistence=window.A·CEIL&&window.A·CEIL.ProjectPersistence;
-      if(persistence&&typeof persistence.saveProjects==='function'){
-        var result=await persistence.saveProjects(prepared.projects,{
-          currentProjects:current,
-          reason:'save_current_room',
-          projectId:prepared.project.id||prepared.project._dbId||null,
-          roomId:prepared.roomId,
-          allowWriteWithoutBackup:true
-        });
-        if(!result||result.ok===false){
-          try{window.A·CEIL&&window.A·CEIL.DebugLog&&window.A·CEIL.DebugLog.warn('room_backup_save_warning',{result:result,projectId:prepared.project.id||prepared.project._dbId||null,roomId:prepared.roomId});}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-        }
-      }
-    }catch(e){
-      try{window.A·CEIL&&window.A·CEIL.DebugLog&&window.A·CEIL.DebugLog.warn('room_backup_save_exception',{message:String(e&&e.message||e),projectId:prepared.project.id||prepared.project._dbId||null,roomId:prepared.roomId});}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-    }
+      var walls=window.A·CEIL&&window.A·CEIL.WallElementPersistence;
+      if(walls&&typeof walls.backupRoom==='function') walls.backupRoom(prepared.project,prepared.roomId);
+    }catch(e){window.__diagSilent&&window.__diagSilent(e)}
 
     if(!options.skipCloud){
       try{ if(typeof window._updateObjectInCloud==='function') await window._updateObjectInCloud(prepared.project); }

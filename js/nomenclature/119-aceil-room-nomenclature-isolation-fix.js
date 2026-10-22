@@ -52,15 +52,6 @@
     try{if(typeof updateElemBadge==='function')updateElemBadge();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     try{var m=document.getElementById('elementsModal');if(m&&m.classList.contains('open')&&typeof renderElemList==='function')renderElemList();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
-  function persistActiveRuntime(){
-    var rec=activeRecord();if(!rec)return false;
-    var st=parseState(rec.room.state);
-    st.schemaVersion=st.schemaVersion||currentSchema();st.projectType='room';
-    st.elemItems=clone(typeof elemItems!=='undefined'?elemItems:window.elemItems||[]);
-    st.elemGroups=clone(typeof elemGroups!=='undefined'?elemGroups:window.elemGroups||[]);
-    rec.room.elemItems=clone(st.elemItems);rec.room.elemGroups=clone(st.elemGroups);rec.room.state=JSON.stringify(st);
-    rec.obj.rooms[rec.ri]=rec.room;rec.arr[rec.oi]=rec.obj;write(rec.arr);return true;
-  }
 
   var oldConfirm=window.confirmNewRoom||((typeof confirmNewRoom==='function')?confirmNewRoom:null);
   if(typeof oldConfirm==='function'&&!oldConfirm.__roomNomenIsolationV1){
@@ -112,10 +103,5 @@
     window._loadRoomToCanvas=wrappedLoad;try{_loadRoomToCanvas=wrappedLoad;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
 
-  // Save explicit room-local copies whenever the room is saved.
-  var oldSaveRoom=window.saveCurrentRoom;
-  if(typeof oldSaveRoom==='function'&&!oldSaveRoom.__roomNomenIsolationV1){
-    var wrappedSaveRoom=async function(){persistActiveRuntime();return await oldSaveRoom.apply(this,arguments);};
-    wrappedSaveRoom.__roomNomenIsolationV1=true;window.saveCurrentRoom=wrappedSaveRoom;try{saveCurrentRoom=wrappedSaveRoom;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-  }
+  // Room-local save mirrors are captured by multiroom-lifecycle.
 })();
