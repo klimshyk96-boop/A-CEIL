@@ -78,6 +78,6 @@ assert.doesNotMatch(wallUi,/_prevOpenWallModalForInit/,
 const versions=[...index.matchAll(/(?:src|href)="[^"]+\.(?:js|css)\?v=([^"]+)"/g)].map(match=>match[1]);
 assert(versions.length>150,"runtime asset list unexpectedly shrank");
 assert.strictEqual(new Set(versions).size,1,"all runtime assets must share one build ID");
-assert.strictEqual(versions[0],"20261022-nomenclature-controls1","unexpected stability build ID");
+assert.strictEqual(versions[0],"20261022-nomenclature-columns1","unexpected stability build ID");
 
 console.log("Stability regression tests: OK");
