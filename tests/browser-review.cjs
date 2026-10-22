@@ -1,6 +1,6 @@
 const {chromium}=require('playwright');
 const fs=require('fs'),path=require('path');
-const root=path.resolve(process.argv[2]||path.join(__dirname,'..'));
+const root=path.resolve(process.argv.slice(2).find(a=>!a.startsWith('--'))||path.join(__dirname,'..'));
 const stub=`window.supabase={createClient(){const q=new Proxy(function(){},{get(t,k){if(k==='then')return r=>Promise.resolve({data:[],error:null}).then(r);return (...a)=>q},apply(){return q}});return {auth:{getSession:async()=>({data:{session:null},error:null}),getUser:async()=>({data:{user:null},error:null}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}}),signOut:async()=>({error:null}),startAutoRefresh(){},stopAutoRefresh(){}},from:()=>q,rpc:()=>q,channel:()=>q,removeChannel:async()=>{},removeAllChannels:async()=>{},storage:{from:()=>q}}}};`;
 async function open(browser,width=1440,dpr=1,sourceRoot=root,beforeGoto){
  const page=await browser.newPage({viewport:{width,height:1000},deviceScaleFactor:dpr});

@@ -1,6 +1,11 @@
 
 !function(){
   "use strict";
+  function escapeRoomName(value){
+    return String(value==null?"":value).replace(/[&<>"']/g,function(ch){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
+    });
+  }
   function analyzeNow(){
     try{ if(window.A·CEILMeasureConfidence&&typeof window.A·CEILMeasureConfidence.analyze==="function") return window.A·CEILMeasureConfidence.analyze(); }catch(e){window.__diagSilent&&window.__diagSilent(e)}
     return null;
@@ -62,7 +67,7 @@
     if(!problems.length) return proceedCallback();
     var combined={
       icon:problems.some(function(p){return p.verdict.type==="proven";})?"🔴":"🟡",
-      text:problems.map(function(p){return p.verdict.icon+" <b>"+p.name+"</b>: "+p.verdict.text;}).join("<br><br>")
+      text:problems.map(function(p){return p.verdict.icon+" <b>"+escapeRoomName(p.name)+"</b>: "+p.verdict.text;}).join("<br><br>")
     };
     showGate(combined,proceedCallback);
   }

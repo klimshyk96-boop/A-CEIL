@@ -93,8 +93,9 @@
   }
   function preview(canvas,fileName,title){
     var old=document.getElementById("aceilInstallerPreview");if(old)old.remove();
-    var layer=document.createElement("div");layer.id="aceilInstallerPreview";layer.innerHTML='<div class="ais-preview-head"><button type="button" data-close>← '+t("back")+'</button><strong>'+t("ready")+'</strong><span></span></div><div class="ais-preview-body"><img alt="'+title+'"></div><div class="ais-preview-actions"><button type="button" data-save>'+t("save")+'</button><button type="button" class="primary" data-share>'+t("share")+'</button></div>';
-    document.body.appendChild(layer);layer.querySelector("img").src=canvas.toDataURL("image/png");
+    var layer=document.createElement("div");layer.id="aceilInstallerPreview";layer.innerHTML='<div class="ais-preview-head"><button type="button" data-close>← '+t("back")+'</button><strong>'+t("ready")+'</strong><span></span></div><div class="ais-preview-body"><img></div><div class="ais-preview-actions"><button type="button" data-save>'+t("save")+'</button><button type="button" class="primary" data-share>'+t("share")+'</button></div>';
+    var image=layer.querySelector("img");image.alt=String(title==null?"":title);
+    document.body.appendChild(layer);image.src=canvas.toDataURL("image/png");
     var close=function(){layer.remove()};layer.querySelector("[data-close]").onclick=close;
     layer.querySelector("[data-save]").onclick=async function(){var blob=await canvasBlob(canvas);download(blob,fileName);toast(t("saved"))};
     layer.querySelector("[data-share]").onclick=async function(){try{var blob=await canvasBlob(canvas);if(!await nativeShare(blob,fileName,title))download(blob,fileName)}catch(error){if(!error||error.name!=="AbortError")toast(error&&error.message||t("failed"),4200)}};
