@@ -101,3 +101,15 @@ test('a reconnect before ProjectRepository is loaded cannot discard pending work
   assert.equal(await f.c.flushPendingQueue(),false);assert.equal(f.c.getPendingQueue().length,1);assert.equal(f.requests.length,0);
   f.c['A·CEIL'].ProjectRepository=repo;const done=f.c.flushPendingQueue();await tick();f.reply(0);assert.equal(await done,true);
 });
+
+test('apartment writes rebuild state.rooms from the latest repository rooms and retain the preview', async () => {
+  const rooms=[{id:'r1',state:'{"pts":[{"x":1,"y":2}]}'}];
+  const f=fixture([{id:'local-a',_dbId:'db-a',name:'Apartment',multiRoom:true,rooms,state:'{"multiRoom":true,"rooms":[]}',thumb:'data:image/png;base64,preview'}]);
+  f.enqueue();const done=f.c.flushPendingQueue();await tick();
+  assert.deepEqual(f.requests[0].payload.state.rooms,rooms);assert.equal(f.requests[0].payload.thumb,'data:image/png;base64,preview');
+  f.reply(0);assert.equal(await done,true);
+});
+test('empty apartment data cannot overwrite a cloud drawing', async () => {
+  const f=fixture([{id:'local-a',_dbId:'db-a',multiRoom:true,rooms:[],state:'{}'}]);f.enqueue();
+  assert.equal(await f.c.flushPendingQueue(),false);assert.equal(f.requests.length,0);assert.equal(f.c.getPendingQueue().length,1);
+});

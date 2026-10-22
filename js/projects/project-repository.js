@@ -382,6 +382,33 @@
      This matches the final runtime behavior that previously arrived much later
      from save-memory-roomprice-fix-v1. */
   window.A·CEIL.ProjectPersistence = Object.freeze({
+    /* Both autosave and room saves commit locally before calling this method.
+       Always resolve the latest repository record; never write an old caller snapshot. */
+    syncProject: async function(reference){
+      const ids=typeof reference==='object'&&reference ? projectKeys(reference) : [String(reference)];
+      const find=()=>api.list({clone:true}).find(p=>projectKeys(p).some(id=>ids.includes(id)));
+      const local=find();
+      if(!local)return false;
+      // Queue references are compact, so the latest local record must remain
+      // protected from synced-cache eviction even if this request goes offline.
+      local._dirty=true;
+      local._syncStatus=local._dbId?'pending_update':'pending_create';
+      local._localUpdatedAt=Date.now();
+      const items=api.list({clone:true});
+      const index=items.findIndex(p=>projectKeys(p).some(id=>projectKeys(local).includes(id)));
+      if(index<0)return false;
+      items[index]=local;api.replaceAll(items);
+      const storage=window.A_CEIL_UserStorage;
+      const owner=storage?storage.getUserId():'';
+      window.addToPendingQueue({type:'save',payload:{localId:local.id,dbId:local._dbId||null},addedAt:Date.now()});
+      await window.flushPendingQueue();
+      if(storage&&storage.getUserId()!==owner)return false;
+      const current=find();
+      const waiting=current&&window.getPendingQueue().some(op=>op.payload&&projectKeys(current).some(id=>[op.payload.localId,op.payload.dbId].filter(v=>v!=null).map(String).includes(id)));
+      const ok=!!current&&!waiting&&!current._dirty&&!String(current._syncStatus||'').startsWith('pending');
+      try{if(document.getElementById('projectsModal')?.classList.contains('open')&&typeof renderProjects==='function')renderProjects();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      return ok;
+    },
     saveProjects: async function(nextProjects, meta){
       try{
         api.replaceAll(Array.isArray(nextProjects) ? nextProjects : []);

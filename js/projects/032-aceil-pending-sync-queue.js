@@ -94,9 +94,19 @@ const PENDING_KEY = "ceiling_pendingSync";
     let state;
     try { state = typeof local.state === "string" ? JSON.parse(local.state || "{}") : clone(local.state || {}); }
     catch (_) { state = {}; }
+    if (local.multiRoom || local.projectType === "apartment" || state.multiRoom) {
+      const rooms = Array.isArray(local.rooms) ? clone(local.rooms) : state.rooms || [];
+      const drawn = rooms.some(room => {
+        let st = room.state || {};
+        try { if (typeof st === "string") st = JSON.parse(st); } catch (_) { st = {}; }
+        return st.closed || st.circleMode || [st.pts, st.realPts, st.wallMarks, st.lightMarks].some(value => Array.isArray(value) && value.length);
+      });
+      if (!drawn) throw new Error("Порожній об'єкт не замінює хмарний проєкт");
+      state = {schemaVersion: state.schemaVersion || 3, projectType: "apartment", multiRoom: true, rooms};
+    }
     const value = field => local[field] == null ? fallback[field] || "" : local[field];
     return {user_id: uid, name: value("name"), addr: value("addr"), phone: value("phone"), comment: value("comment"),
-      area: value("area"), per: value("per"), in_corners: value("inC"), out_corners: value("outC"), thumb: "", state};
+      area: value("area"), per: value("per"), in_corners: value("inC"), out_corners: value("outC"), thumb: local.thumb || "", state};
   }
   function signature(local, payload, uid) {
     return JSON.stringify([payloadFor(local, payload, uid), local.rooms || null, local._localUpdatedAt || null]);

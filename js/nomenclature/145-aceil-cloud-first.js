@@ -60,11 +60,6 @@ function match(p,id){
     return v!=null&&String(v)===String(id)
   });
 }
-function cacheState(){
-  /* Раніше тут щоразу писалась повна копія стану в A·CEIL_cloud_cache_v330, але її ніхто не читав
-     (поточний малюнок відновлюється з ceiling_v18, чернетка — з ceiling_recovery_draft_v1).
-     Це лише забирало місце в 5 МБ localStorage Safari, тому запис прибрано. */
-}
 function cloudReady(){return !!(sb()&&sbUser())}
 function isAutomaticDraft(p){
   return !!p&&String(p.comment||"")==="Автоматична чернетка A·CEIL";
@@ -82,169 +77,92 @@ function projectFromCloud(row,st){
   };
 }
 
+function context(){
+  return {user:String(sbUser()&&sbUser().id||""),client:sb(),
+    project:typeof _currentProjectId!=="undefined"?_currentProjectId:null,
+    object:typeof _activeObjectId!=="undefined"?_activeObjectId:null,
+    room:window._activeRoomId||null,index:typeof _activeRoomIdx!=="undefined"?_activeRoomIdx:null};
+}
+function sameContext(before){
+  var after=context();
+  function sameId(a,b){return a===b||a!=null&&b!=null&&projects().some(function(p){return match(p,a)&&match(p,b)});}
+  return before.user===after.user&&before.client===after.client&&sameId(before.project,after.project)&&sameId(before.object,after.object)&&before.room===after.room&&before.index===after.index;
+}
+function contextKey(){var c=context();return JSON.stringify([c.user,c.project,c.object,c.room,c.index]);}
+var lastSavedContext=null;
 async function syncSingleProject(){
-  var client=sb(),user=sbUser();
-  if(!client||!user)return false;
-
-  var st=currentState();
-  if(!meaningful(st))return false;
-
-  var id=typeof _currentProjectId!=="undefined"?_currentProjectId:null;
-  var arr=projects();
-  var idx=id!=null?arr.findIndex(function(p){return match(p,id)}):-1;
-  var p=idx>=0?arr[idx]:null;
-
-  /* v3.38: якщо Supabase id вже є, він авторитетний.
-     Навіть якщо localStorage переповнений і ProjectRepository не запам'ятав рядок,
-     не робимо новий INSERT — відновлюємо мінімальний запис і UPDATE тієї ж чернетки. */
-  var idText=id==null?"":String(id);
-  var hasCloudId=!!idText&&!idText.startsWith("local_")&&!idText.startsWith("obj_")&&!idText.startsWith("room_");
-  if(!p&&hasCloudId){
-    p={
-      id:idText,_dbId:idText,
-      name:(typeof _currentProjName!=="undefined"&&_currentProjName)||"Чернетка",
-      addr:(typeof _currentProjAddr!=="undefined"&&_currentProjAddr)||"",
-      phone:(typeof _currentProjPhone!=="undefined"&&_currentProjPhone)||"",
-      comment:(typeof _currentProjComment!=="undefined"&&_currentProjComment)||"Автоматична чернетка A·CEIL",
-      area:document.getElementById("area")?.textContent||"",
-      per:document.getElementById("per")?.textContent||"",
-      inC:document.getElementById("inCorners")?.textContent||"",
-      outC:document.getElementById("outCorners")?.textContent||"",
-      thumb:"",
-      state:JSON.stringify(st)
-    };
+  var before=context(),client=before.client,user=sbUser(),st=currentState();
+  if(!client||!user||!meaningful(st))return false;
+  var repo=window.A·CEIL.ProjectRepository;
+  var arr=repo.list({clone:true}),id=before.project;
+  var p=arr.find(function(item){return match(item,id)})||null;
+  var cloudId=/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(String(id||""));
+  if(!p&&cloudId){
+    p={id:String(id),_dbId:String(id),name:_currentProjName||"Чернетка",addr:_currentProjAddr||"",phone:_currentProjPhone||"",comment:_currentProjComment||"Автоматична чернетка A·CEIL"};
   }
-
-  /* Якщо після перезапуску Safari локальний ID не відновився, знаходимо
-     останню автоматичну чернетку цього користувача й ОНОВЛЮЄМО її.
-     Таким чином автозбереження має один робочий слот, а не створює картку
-     після кожного нового сеансу. Іменовані проєкти це правило не зачіпає. */
-  if(!p&&!hasCloudId){
-    var found=await client.from("projects")
-      .select("*")
-      .eq("user_id",user.id)
-      .eq("comment","Автоматична чернетка A·CEIL")
-      .order("created_at",{ascending:false})
-      .limit(1)
-      .maybeSingle();
+  if(!p&&!cloudId){
+    // Read-only discovery preserves the existing automatic draft across reloads.
+    var found=await client.from("projects").select("*").eq("user_id",user.id)
+      .eq("comment","Автоматична чернетка A·CEIL").order("created_at",{ascending:false}).limit(1).maybeSingle();
+    if(!sameContext(before))return false;
     if(found.error)throw found.error;
-    if(found.data&&isAutomaticDraft(found.data)){
-      p=projectFromCloud(found.data,st);
-      idx=arr.findIndex(function(x){return match(x,found.data.id)});
-      if(idx>=0)arr[idx]=p;else{arr.unshift(p);idx=0}
-      try{window.A·CEIL.ProjectRepository.replaceAll(arr)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-      try{_currentProjectId=found.data.id}catch(_){window._currentProjectId=found.data.id}
-      try{_currentProjName=p.name}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-      try{_currentProjComment=p.comment}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-    }
+    if(found.data&&isAutomaticDraft(found.data))p=projectFromCloud(found.data,st);
+    // Refresh after the request: do not replace another project's newer local edit.
+    arr=repo.list({clone:true});
+    if(p)p=arr.find(function(item){return match(item,p.id)})||p;
+    st=currentState();
+    if(!meaningful(st))return false;
   }
-
+  if(p&&(p.multiRoom||p.projectType==="apartment"))return false;
   if(!p){
-    var now=new Date();
-    var pad=function(v){return String(v).padStart(2,"0")};
-    var draftName="Чернетка "+pad(now.getDate())+"."+pad(now.getMonth()+1)+" "+pad(now.getHours())+":"+pad(now.getMinutes());
-    var payload={
-      user_id:user.id,
-      name:draftName,
-      addr:"",
-      phone:"",
-      comment:"Автоматична чернетка A·CEIL",
-      area:document.getElementById("area")?.textContent||"",
-      per:document.getElementById("per")?.textContent||"",
-      in_corners:document.getElementById("inCorners")?.textContent||"",
-      out_corners:document.getElementById("outCorners")?.textContent||"",
-      thumb:typeof getCanvasThumb==="function"?getCanvasThumb(.35):"",
-      state:st
-    };
-    var created=await client.from("projects").insert(payload).select().single();
-    if(created.error)throw created.error;
-    if(!created.data)return false;
-
-    p={
-      id:created.data.id,_dbId:created.data.id,
-      name:created.data.name||draftName,
-      addr:created.data.addr||"",phone:created.data.phone||"",
-      comment:created.data.comment||"",
-      area:created.data.area||payload.area,per:created.data.per||payload.per,
-      inC:created.data.in_corners||payload.in_corners,
-      outC:created.data.out_corners||payload.out_corners,
-      thumb:created.data.thumb||payload.thumb,
-      date:created.data.created_at?new Date(created.data.created_at).toLocaleDateString("uk-UA"):now.toLocaleDateString("uk-UA"),
-      state:JSON.stringify(st)
-    };
-    arr.unshift(p);
-    try{window.A·CEIL.ProjectRepository.replaceAll(arr)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-    try{_currentProjectId=created.data.id}catch(_){window._currentProjectId=created.data.id}
-    try{_currentProjName=p.name}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-    try{_currentProjAddr=p.addr}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-    try{_currentProjPhone=p.phone}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-    try{_currentProjComment=p.comment}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-    var cs=document.getElementById("cloudStatus");
-    if(cs)cs.textContent="☁️ чернетка в хмарі";
-    return true;
+    var now=new Date(),pad=function(v){return String(v).padStart(2,"0")};
+    p={id:"local_draft_"+Date.now()+"_"+Math.random().toString(36).slice(2),
+      name:"Чернетка "+pad(now.getDate())+"."+pad(now.getMonth()+1)+" "+pad(now.getHours())+":"+pad(now.getMinutes()),
+      addr:"",phone:"",comment:"Автоматична чернетка A·CEIL",date:now.toLocaleDateString("uk-UA")};
   }
-
-  if(p.multiRoom||p.projectType==="apartment")return false;
-
-  var dbId=p._dbId||(!String(p.id||"").startsWith("local_")?p.id:null);
-  if(!dbId)return false;
-
-  var payload2={
-    user_id:user.id,
-    name:p.name||"Чернетка",
-    addr:p.addr||"",phone:p.phone||"",comment:p.comment||"",
+  p=Object.assign({},p,{state:JSON.stringify(st),
     area:document.getElementById("area")?.textContent||p.area||"",
     per:document.getElementById("per")?.textContent||p.per||"",
-    in_corners:document.getElementById("inCorners")?.textContent||p.inC||"",
-    out_corners:document.getElementById("outCorners")?.textContent||p.outC||"",
+    inC:document.getElementById("inCorners")?.textContent||p.inC||"",
+    outC:document.getElementById("outCorners")?.textContent||p.outC||"",
     thumb:typeof getCanvasThumb==="function"?getCanvasThumb(.35):(p.thumb||""),
-    state:st
-  };
-  var updated=await client.from("projects").update(payload2).eq("id",dbId).select().single();
-  if(updated.error)throw updated.error;
-
-  p=Object.assign({},p,{
-    id:dbId,_dbId:dbId,
-    area:payload2.area,per:payload2.per,
-    inC:payload2.in_corners,outC:payload2.out_corners,
-    thumb:payload2.thumb,state:JSON.stringify(st)
-  });
-  delete p._dirty;delete p._syncStatus;delete p._localUpdatedAt;
-  if(idx>=0)arr[idx]=p;
-  else arr.unshift(p);
-  try{window.A·CEIL.ProjectRepository.replaceAll(arr)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-
-  var cs2=document.getElementById("cloudStatus");
-  if(cs2)cs2.textContent="☁️ синхронізовано";
-  return true;
+    _dirty:true,_localUpdatedAt:Date.now(),_syncStatus:p._dbId?"pending_update":"pending_create"});
+  var idx=arr.findIndex(function(item){return match(item,p.id)});
+  if(idx>=0)arr[idx]=p;else arr.unshift(p);
+  repo.replaceAll(arr);
+  _currentProjectId=p.id;
+  _currentProjName=p.name;_currentProjAddr=p.addr;_currentProjPhone=p.phone;_currentProjComment=p.comment;
+  return window.A·CEIL.ProjectPersistence.syncProject(p);
 }
 
 async function syncNow(){
   if(busy){again=true;return}
   if(window.__A·CEILReportRendering||window.__A·CEILSessionSwitching)return;
   busy=true;
-  var savingSignature=stateSignature();
+  var savingSignature=stateSignature(),before=context();
   try{
-    cacheState();
     var ok=false;
     var hasRoom=typeof _activeObjectId!=="undefined"&&_activeObjectId!=null&&
       typeof _activeRoomIdx!=="undefined"&&Number.isInteger(_activeRoomIdx)&&_activeRoomIdx>=0;
 
     if(hasRoom&&typeof window.saveCurrentRoom==="function"){
-      ok=await window.saveCurrentRoom({silent:true});
+      var target=before.object;
+      var saved=await window.saveCurrentRoom({silent:true,skipCloud:true});
+      var project=projects().find(function(item){return match(item,target)});
+      if(saved&&project)ok=await window._updateObjectInCloud(project);
     }else if(cloudReady()){
       ok=await syncSingleProject();
     }
 
-    if(ok){
+    if(ok&&sameContext(before)&&savingSignature===stateSignature()){
       lastOk=Date.now();
-      lastSavedSignature=savingSignature;
+      lastSavedSignature=savingSignature;lastSavedContext=contextKey();
       window.__A·CEILCloudFirstStatusV330="saved";
     }else{
-      window.__A·CEILCloudFirstStatusV330=cloudReady()?"cache_only":"offline_cache";
+      if(before.user===context().user)window.__A·CEILCloudFirstStatusV330=cloudReady()?"cache_only":"offline_cache";
     }
   }catch(e){
-    window.__A·CEILCloudFirstStatusV330="offline_cache";
+    if(before.user===context().user)window.__A·CEILCloudFirstStatusV330="offline_cache";
     try{
       window.A·CEIL&&window.A·CEIL.DebugLog&&window.A·CEIL.DebugLog.warn(
         "cloud_first_save_failed_v330",
@@ -253,7 +171,8 @@ async function syncNow(){
     }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }finally{
     busy=false;
-    if(again){again=false;schedule(120)}
+    if(before.user===context().user&&(savingSignature!==stateSignature()||!sameContext(before)))again=true;
+    if(again){again=false;if(before.user===context().user&&meaningful(currentState()))schedule(120)}
   }
 }
 function schedule(ms){
@@ -262,18 +181,6 @@ function schedule(ms){
 }
 window.rmCloudFirstSaveV330=function(){schedule(600)};
 
-var prevSave=window.saveState||(typeof saveState==="function"?saveState:null);
-if(typeof prevSave==="function"){
-  window.saveState=function(){
-    var r=prevSave.apply(this,arguments);
-    /* Зміни підхопить хвилинний контролер нижче. Не створюємо
-       мережевий запит після кожного руху точки або елемента. */
-    cacheState();
-    return r;
-  };
-  try{saveState=window.saveState}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-}
-
 /* Надійне автозбереження: раз на хвилину перевіряємо сам стан макета.
    Це працює навіть для дій, які не викликали saveState(). Якщо змін немає,
    Supabase і список проєктів взагалі не чіпаємо. */
@@ -281,18 +188,17 @@ setInterval(function(){
   var st=currentState();
   if(!meaningful(st))return;
   var signature=stateSignature();
-  if(signature&&signature!==lastSavedSignature)syncNow();
+  if(signature&&(signature!==lastSavedSignature||contextKey()!==lastSavedContext))syncNow();
 },60000);
 
 /* Safari: не запускаємо новий async Supabase-запит у pagehide.
    visibilitychange достатньо, а локальний аварійний кеш зберігається синхронно. */
 document.addEventListener("visibilitychange",function(){
   if(document.visibilityState==="hidden"){
-    cacheState();
     schedule(0);
   }
 });
-window.addEventListener("pagehide",function(){cacheState()});
+
 
 window.A·CEILCloudFirstV330={
   syncNow:syncNow,schedule:schedule,

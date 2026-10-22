@@ -165,7 +165,6 @@
    "js/canvas/061-aceil-wall-marks-bridge-room-load.js",
    "js/canvas/063-aceil-wall-marks-persist.js",
    "js/reports/112-aceil-linear-element-persist-report-fix.js",
-   "js/nomenclature/145-aceil-cloud-first.js",
    "js/nomenclature/170-aceil-autocount-menu.js",
    "js/canvas/173-aceil-wall-elements-persistence.js"
   ],
@@ -238,21 +237,9 @@
    "js/canvas/069-aceil-wall-preset-toolbar.js",
    "js/canvas/153-aceil-wall-preset-order.js"
   ],
-  "saveCurrentRoom": [
-   "js/projects/072-aceil-object-room-save-cloud.js",
-   "js/rooms/multiroom-lifecycle.js",
-   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",
-   "js/canvas/173-aceil-wall-elements-persistence.js"
-  ],
   "_syncObjectToCloud": [
    "js/projects/072-aceil-object-room-save-cloud.js",
    "js/projects/210-aceil-project-crm.js"
-  ],
-  "getProjects": [
-   "js/projects/072-aceil-object-room-save-cloud.js",
-   "js/projects/094-aceil-project-schema-migrations.js",
-   "js/projects/project-repository.js",
-   "js/reports/184-aceil-estimate-variants-ui.js"
   ],
   "openLightFlowModal": [
    "js/rooms/074-aceil-light-grid-placement.js",
@@ -333,6 +320,11 @@
    "js/reports/091-aceil-pdf-cloud-report.js",
    "js/reports/201-aceil-report-links.js"
   ],
+  "getProjects": [
+   "js/projects/094-aceil-project-schema-migrations.js",
+   "js/projects/project-repository.js",
+   "js/reports/184-aceil-estimate-variants-ui.js"
+  ],
   "A·CEILMergeCloudProjects": [
    "js/projects/094-aceil-project-schema-migrations.js",
    "js/projects/project-repository.js",
@@ -357,6 +349,11 @@
   "saveToPhone": [
    "js/reports/104-aceil-multiroom-report-sandbox-fix.js",
    "js/reports/146-aceil-report-discount-advance.js"
+  ],
+  "saveCurrentRoom": [
+   "js/rooms/multiroom-lifecycle.js",
+   "js/nomenclature/119-aceil-room-nomenclature-isolation-fix.js",
+   "js/canvas/173-aceil-wall-elements-persistence.js"
   ],
   "confirmNewRoom": [
    "js/rooms/multiroom-lifecycle.js",
