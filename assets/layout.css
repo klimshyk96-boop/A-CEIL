@@ -1324,3 +1324,8 @@ body.rp-home-pro #A·CEILToolPanel #lightBadge,body.rp-home-pro #A·CEILToolPane
 
 #elementsModal #elemList .em-row>.em-line-total[data-long-total="true"]{font-size:8px!important;}
 @media(max-width:360px){#elementsModal #elemList .em-row>.em-line-total[data-long-total="true"]{font-size:7.5px!important;}}
+
+/* Group folders share the nomenclature SVG style. */
+#elementsModal .grp-name{display:flex!important;align-items:center;gap:6px;}
+#elementsModal .nom-group-folder{width:18px;height:18px;flex:0 0 18px;color:#3159c9;}
+#elementsModal .nom-group-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
