@@ -20,7 +20,7 @@ function us(){return window.A_CEIL_UserStorage||null;}
 function nat(){var u=us();return u&&u.native?u.native:null;}
 function rawKeys(){
   var n=nat(),out=[];
-  try{for(var i=0;i<localStorage.length;i++){var k=n?n.key.call(localStorage,i):localStorage.key(i);if(k!=null)out.push(k);}}catch(_){}
+  try{for(var i=0;i<localStorage.length;i++){var k=n?n.key.call(localStorage,i):localStorage.key(i);if(k!=null)out.push(k);}}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return out;
 }
 function rawGet(k){try{var n=nat();return n?n.getItem.call(localStorage,k):localStorage.getItem(k);}catch(_){return null;}}
@@ -86,7 +86,7 @@ function cleanLegacy(){
     if(rawRemove(base)){out.removed.push(base);out.freedBytes+=b;}
   });
   root().StorageCleanupLast=out;
-  try{if(out.removed.length&&window.console)console.info("[A·CEIL] storage cleanup: removed dead copies "+out.removed.join(", ")+", freed "+Math.round(out.freedBytes/1024)+" KB");}catch(_){}
+  try{if(out.removed.length&&window.console)console.info("[A·CEIL] storage cleanup: removed dead copies "+out.removed.join(", ")+", freed "+Math.round(out.freedBytes/1024)+" KB");}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return out;
 }
 
@@ -98,7 +98,7 @@ function removeDeadCache(){
     var uid=currentUid(),keys=[KEY_CLOUD_CACHE];
     if(uid)keys.push(KEY_CLOUD_CACHE+MARK+uid);
     keys.forEach(function(k){if(rawGet(k)!=null){freed+=sizeOf(k);if(rawRemove(k))removed.push(k);}});
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return {removed:removed,freedBytes:freed};
 }
 
@@ -106,11 +106,11 @@ function removeDeadCache(){
 function warnIfFull(){
   var r=report();
   if(r.totalKB<=WARN_KB)return false;
-  try{if(sessionStorage.getItem(WARN_FLAG))return false;sessionStorage.setItem(WARN_FLAG,"1");}catch(_){}
+  try{if(sessionStorage.getItem(WARN_FLAG))return false;sessionStorage.setItem(WARN_FLAG,"1");}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   var top=r.rows.slice(0,2).map(function(x){return label(x)+" "+x.kb+" КБ";}).join(", ");
   try{
     if(typeof showToast==="function"){showToast("\u26a0\ufe0f Пам'ять Safari майже повна: "+r.totalKB+" з ~"+QUOTA_KB+" КБ. Найбільше: "+top,7000);return true;}
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return false;
 }
 
@@ -131,6 +131,6 @@ window["A\u00b7CEILStorageAuditV340"]=function(){
 try{
   var u=us();
   if(u&&typeof u.onChange==="function")u.onChange(function(){setTimeout(function(){removeDeadCache();cleanLegacy();},800);});
-  setTimeout(function(){try{removeDeadCache();cleanLegacy();warnIfFull();}catch(_){}},2500);
-}catch(_){}
+  setTimeout(function(){try{removeDeadCache();cleanLegacy();warnIfFull();}catch(_){window.__diagSilent&&window.__diagSilent(_)}},2500);
+}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 })();

@@ -40,10 +40,11 @@ assert.equal(M.estimate(state,assortment).total,13030,'old client state uses the
   assert.ok(payload.config.options.film.length>=3);assert.ok(payload.config.options.cornice.length>=7);assert.equal(payload.config.options.linear.length,2);
   const filmAlt=payload.config.options.film.find(it=>it.name==='Плівка сатин').id,cornAlt=payload.config.options.cornice.find(it=>it.name==='Карниз UNO').id,lineAlt=payload.config.options.linear.find(it=>it.name==='Світлова лінія Premium').id;
   const preview=M.link('http://aceil.test/',{...payload.config,catalogue:false}); // Legacy wizard compatibility; generic catalogue covered separately.
-  await page.locator('#aceilClientSetup>button').click();
+  await page.locator('#aceilClientSetup .owner-header>button').click();
   await page.evaluate(()=>document.getElementById('aceilClientSetupButton').click());
-  assert.equal(await page.locator('#aceilClientSetup [data-owner-links]').getAttribute('open'),null,'link details stay closed on next visit');
-  await page.locator('#aceilClientSetup [data-owner-links]>summary').click();assert.equal(await page.locator('#aceilClientSetup [data-client-copy]').isVisible(),true);
+  /* owner layout 20261022: the link block is always open on the home view (was: closed on next visit) */
+  assert.equal(await page.locator('#aceilClientSetup [data-owner-links]').getAttribute('open'),'','link details are open on the home view');
+  assert.equal(await page.locator('#aceilClientSetup [data-client-copy]').isVisible(),true);
   assert.equal(await page.locator('#aceilClientSetup input[readonly]').inputValue(),generated,'ready client link is reused without rebuilding the catalogue');
   assert.equal(await page.locator('[name=filmOptions][value=f2]').isChecked(),true,'saved assortment is restored');
   await page.goto(preview,{waitUntil:'load'});

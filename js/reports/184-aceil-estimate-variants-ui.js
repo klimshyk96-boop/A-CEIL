@@ -178,7 +178,7 @@ function requiredFilmWidthMetersFromRoom(room){
       if(w>0 && h>0) return Math.min(w,h);
       return w||h||0;
     }
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return 0;
 }
 /* room.area is the same value already displayed/saved for the room
@@ -196,7 +196,7 @@ function roomAreaM2(room){
       for(var i=0;i<pts.length;i++){ var p=pts[i], q=pts[(i+1)%pts.length]; sum+=num(p&&p.x)*num(q&&q.y)-num(q&&q.x)*num(p&&p.y); }
       return Math.abs(sum)/2/10000;
     }
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return 0;
 }
 
@@ -400,7 +400,7 @@ function persistProject(project){
       if(typeof window._updateObjectInCloud==='function'){
         Promise.resolve(window._updateObjectInCloud(clone(project))).catch(function(){});
       }
-    }catch(_){}
+    }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     return true;
   }catch(_){ return false; }
 }
@@ -563,7 +563,7 @@ function computeRoomItems(project, room, variantId){
 
 function groupsForState(state){
   if(typeof window._modernGetNomenclatureGroupsFromState==='function'){
-    try{ var g=window._modernGetNomenclatureGroupsFromState(state); if(Array.isArray(g)) return g; }catch(_){}
+    try{ var g=window._modernGetNomenclatureGroupsFromState(state); if(Array.isArray(g)) return g; }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   /* Fallback only - mirrors the canonical grouping so nothing here
      duplicates the price formula itself. Used only if the canonical
@@ -582,7 +582,7 @@ function groupsForState(state){
 }
 function totalForGroups(groups){
   if(typeof window._modernGroupsTotal==='function'){
-    try{ return num(window._modernGroupsTotal(groups)); }catch(_){}
+    try{ return num(window._modernGroupsTotal(groups)); }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   var t=0;
   (groups||[]).forEach(function(g){ (g.items||[]).forEach(function(it){ t+=num(it.qty)*num(it.price); }); });
@@ -874,7 +874,7 @@ function esc(s){
     return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
   });
 }
-function toast(msg){ try{ if(typeof window.showToast==='function') window.showToast(msg); }catch(_){} }
+function toast(msg){ try{ if(typeof window.showToast==='function') window.showToast(msg); }catch(_){window.__diagSilent&&window.__diagSilent(_)} }
 function money(v){ return ENGINE.money(v); }
 function activeProjectId(){
   try{ return typeof _activeObjectId!=='undefined' ? _activeObjectId : null; }catch(_){ return null; }
@@ -933,7 +933,7 @@ function virtualizeObjArg(obj){
     try{
       return list.map(function(p){
         if(!p || !Array.isArray(p.rooms) || !p.rooms.length) return p;
-        try{ ENGINE.ensure(p); }catch(_){}
+        try{ ENGINE.ensure(p); }catch(_){window.__diagSilent&&window.__diagSilent(_)}
         if(p._activeEstimateVariantId==null) return p;
         return ENGINE.virtualizeProjectForRender(p);
       });
@@ -941,7 +941,7 @@ function virtualizeObjArg(obj){
   };
   wrapped.__aceilVariantsRenderWrap = true;
   window.getProjects = wrapped;
-  try{ getProjects = wrapped; }catch(_){}
+  try{ getProjects = wrapped; }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 })();
 
 function makeObjArgWrapper(old){
@@ -960,7 +960,7 @@ if(typeof oldGenerateObjectReport==='function' && !oldGenerateObjectReport.__ace
   var wrappedGenerateObjectReport=makeObjArgWrapper(oldGenerateObjectReport);
   wrappedGenerateObjectReport.__aceilVariantsV1=true;
   window.generateObjectReport=wrappedGenerateObjectReport;
-  try{ generateObjectReport=wrappedGenerateObjectReport; }catch(_){}
+  try{ generateObjectReport=wrappedGenerateObjectReport; }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
 var oldGenerateModernObjectReport=window.generateModernObjectReport;
@@ -968,7 +968,7 @@ if(typeof oldGenerateModernObjectReport==='function' && !oldGenerateModernObject
   var wrappedGenerateModernObjectReport=makeObjArgWrapper(oldGenerateModernObjectReport);
   wrappedGenerateModernObjectReport.__aceilVariantsV1=true;
   window.generateModernObjectReport=wrappedGenerateModernObjectReport;
-  try{ generateModernObjectReport=wrappedGenerateModernObjectReport; }catch(_){}
+  try{ generateModernObjectReport=wrappedGenerateModernObjectReport; }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
 var oldBuildCloudStructuredReport=window.A_CEIL_buildCloudStructuredReport;
@@ -976,7 +976,7 @@ if(typeof oldBuildCloudStructuredReport==='function' && !oldBuildCloudStructured
   var wrappedBuildCloudStructuredReport=makeNoArgWrapper(oldBuildCloudStructuredReport);
   wrappedBuildCloudStructuredReport.__aceilVariantsV1=true;
   window.A_CEIL_buildCloudStructuredReport=wrappedBuildCloudStructuredReport;
-  try{ A_CEIL_buildCloudStructuredReport=wrappedBuildCloudStructuredReport; }catch(_){}
+  try{ A_CEIL_buildCloudStructuredReport=wrappedBuildCloudStructuredReport; }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
 var oldPublishManagerReport=window.A_CEIL_PublishManagerReport;
@@ -984,7 +984,7 @@ if(typeof oldPublishManagerReport==='function' && !oldPublishManagerReport.__ace
   var wrappedPublishManagerReport=makeNoArgWrapper(oldPublishManagerReport);
   wrappedPublishManagerReport.__aceilVariantsV1=true;
   window.A_CEIL_PublishManagerReport=wrappedPublishManagerReport;
-  try{ A_CEIL_PublishManagerReport=wrappedPublishManagerReport; }catch(_){}
+  try{ A_CEIL_PublishManagerReport=wrappedPublishManagerReport; }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
 var oldOpenManagerReport=window.A_CEIL_OpenManagerReport;
@@ -992,7 +992,7 @@ if(typeof oldOpenManagerReport==='function' && !oldOpenManagerReport.__aceilVari
   var wrappedOpenManagerReport=makeNoArgWrapper(oldOpenManagerReport);
   wrappedOpenManagerReport.__aceilVariantsV1=true;
   window.A_CEIL_OpenManagerReport=wrappedOpenManagerReport;
-  try{ A_CEIL_OpenManagerReport=wrappedOpenManagerReport; }catch(_){}
+  try{ A_CEIL_OpenManagerReport=wrappedOpenManagerReport; }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
 /* ---------------------------------------------------------------
@@ -1020,12 +1020,12 @@ if(typeof oldLoadRoomToCanvas==='function' && !oldLoadRoomToCanvas.__aceilVarian
            exposed separately below as a safe read-only virtual view. */
         if(obj && proj.rooms) obj.rooms = proj.rooms;
       }
-    }catch(_){}
+    }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     return oldLoadRoomToCanvas.apply(this, arguments);
   };
   wrappedLoadRoomToCanvas.__aceilVariantsV1=true;
   window._loadRoomToCanvas=wrappedLoadRoomToCanvas;
-  try{ _loadRoomToCanvas=wrappedLoadRoomToCanvas; }catch(_){}
+  try{ _loadRoomToCanvas=wrappedLoadRoomToCanvas; }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
 /* ---------------------------------------------------------------
@@ -1127,7 +1127,7 @@ function injectInterfaceTotals(project, breakdown){
         badge.textContent=money(breakdown.rooms[i].total);
       }
     }
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
 function renderVariantBar(project, explicitHost){
@@ -1261,7 +1261,7 @@ async function openVariantsFromRoomScreen(){
     if(typeof window.saveCurrentRoom==='function' && typeof _activeRoomIdx!=='undefined' && _activeRoomIdx!=null){
       await Promise.resolve(window.saveCurrentRoom({silent:true}));
     }
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   var project=findActiveProject();
   if(!project){ toast('Об’єкт не знайдено'); return; }
   var overlay=ensureHomeVariantsModal();
@@ -1321,7 +1321,7 @@ function ensureVisibleVariantsMenuAction(){
     try{
       var closeFn=window['closeA\u00B7CEILRoomMenu'];
       if(typeof closeFn==='function') closeFn();
-    }catch(_){}
+    }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     openVariantsFromRoomScreen();
   });
   var separator=menu.querySelector('.rm-room-menu-separator');
@@ -1341,7 +1341,7 @@ function currentRoomForVariantProject(project){
   var rid=window._activeRoomId;
   var room=rooms.find(function(r){ return rid!=null&&r&&String(r.id)===String(rid); });
   if(room) return room;
-  try{ if(typeof _activeRoomIdx!=='undefined'&&Number.isInteger(_activeRoomIdx)) return rooms[_activeRoomIdx]||null; }catch(_){}
+  try{ if(typeof _activeRoomIdx!=='undefined'&&Number.isInteger(_activeRoomIdx)) return rooms[_activeRoomIdx]||null; }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return rooms[0]||null;
 }
 function restoreNormalNomenclatureChrome(){
@@ -1390,7 +1390,7 @@ if(typeof oldOpenElementsModal==='function'&&!oldOpenElementsModal.__aceilVarian
   };
   openElementsVariantAware.__aceilVariantReadonly=true;
   window.openElementsModal=openElementsVariantAware;
-  try{ openElementsModal=openElementsVariantAware; }catch(_){}
+  try{ openElementsModal=openElementsVariantAware; }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
 /* ---------------------------------------------------------------
@@ -1619,7 +1619,7 @@ function openBulkModal(project, baseVariantId){
     try{
       var saved=JSON.parse(localStorage.getItem('aceil_film_popular_codes_v1')||'null');
       if(Array.isArray(saved) && saved.length) return saved;
-    }catch(_){}
+    }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     return Array.isArray(window.ACEIL_POPULAR_CODES) ? window.ACEIL_POPULAR_CODES : [];
   }
   function filmChipHtml(c){
@@ -2098,12 +2098,12 @@ if(typeof oldRenderObjectRooms==='function' && !oldRenderObjectRooms.__aceilVari
     try{
       var project=obj || findActiveProject();
       if(project) renderVariantBar(project);
-    }catch(_){}
+    }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     return result;
   };
   wrapped.__aceilVariantsV1=true;
   window.renderObjectRooms=wrapped;
-  try{ renderObjectRooms=wrapped; }catch(_){}
+  try{ renderObjectRooms=wrapped; }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
 var oldCloseObjectRooms=window.closeObjectRooms;
@@ -2115,7 +2115,7 @@ if(typeof oldCloseObjectRooms==='function' && !oldCloseObjectRooms.__aceilVarian
   };
   wrappedClose.__aceilVariantsV1=true;
   window.closeObjectRooms=wrappedClose;
-  try{ closeObjectRooms=wrappedClose; }catch(_){}
+  try{ closeObjectRooms=wrappedClose; }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 })();
 

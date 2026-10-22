@@ -19,7 +19,7 @@
           const key=localStorage.key(i);
           if(key!=null)out[key]=2*(String(key).length+String(localStorage.getItem(key)||'').length);
         }
-      }catch(_){}
+      }catch(_){window.__diagSilent&&window.__diagSilent(_)}
       return out;
     };
     const storageBytes = () => Object.values(keyBytes()).reduce((sum,size)=>sum+size,0);
@@ -53,7 +53,7 @@
       try{
         const value=JSON.parse(localStorage.getItem(key)||'[]');
         if(Array.isArray(value)&&value.length>limit)localStorage.setItem(key,JSON.stringify(value.slice(-limit)));
-      }catch(_){}
+      }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     };
     const trimDiagnostics = limit => {
       const n=Math.max(0,Number(limit)||8);
@@ -65,7 +65,7 @@
       const before=storageBytes(),aggressive=!!(options&&options.aggressive),force=!!(options&&options.force),removed=[];
       if(!force && before<2300000)return {beforeBytes:before,afterBytes:before,removed:removed};
       try{
-        try{const sc=window.A·CEIL&&window.A·CEIL.StorageCleanup;if(sc){if(typeof sc.removeDeadCache==='function')sc.removeDeadCache();if(typeof sc.cleanLegacy==='function')sc.cleanLegacy();}}catch(_){}
+        try{const sc=window.A·CEIL&&window.A·CEIL.StorageCleanup;if(sc){if(typeof sc.removeDeadCache==='function')sc.removeDeadCache();if(typeof sc.cleanLegacy==='function')sc.cleanLegacy();}}catch(_){window.__diagSilent&&window.__diagSilent(_)}
         duplicateCacheKeys.forEach(key=>{
           if(localStorage.getItem(key)!=null){localStorage.removeItem(key);removed.push(key);}
         });
@@ -73,7 +73,7 @@
         if(force && storageBytes()>4200000)diagnosticKeys.forEach(key=>{
           if(localStorage.getItem(key)!=null){localStorage.removeItem(key);removed.push(key);}
         });
-      }catch(_){}
+      }catch(_){window.__diagSilent&&window.__diagSilent(_)}
       return {beforeBytes:before,afterBytes:storageBytes(),removed:removed};
     };
     let lastError=null;
@@ -126,8 +126,8 @@
   };
   function activeIds(){
     const ids=[];
-    try{if(typeof _activeObjectId!=='undefined'&&_activeObjectId!=null)ids.push(String(_activeObjectId));}catch(_){}
-    try{if(typeof _currentProjectId!=='undefined'&&_currentProjectId!=null)ids.push(String(_currentProjectId));}catch(_){}
+    try{if(typeof _activeObjectId!=='undefined'&&_activeObjectId!=null)ids.push(String(_activeObjectId));}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    try{if(typeof _currentProjectId!=='undefined'&&_currentProjectId!=null)ids.push(String(_currentProjectId));}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     return ids;
   }
   function isUnsynced(project){
@@ -150,7 +150,7 @@
     try{
       const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
       if(repair&&typeof repair.stripThumbs==='function')p=repair.stripThumbs(p);
-    }catch(_){}
+    }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     if(Array.isArray(p.rooms)){
       p.rooms.forEach(room=>{
         if(!room||typeof room!=='object')return;
@@ -168,7 +168,7 @@
           delete st.rooms;
           p.state=typeof p.state==='string'?JSON.stringify(st):st;
         }
-      }catch(_){}
+      }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     }
     return p;
   }
@@ -254,7 +254,7 @@
           });
         }
       }
-    }catch(_){}
+    }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   function list(options){
     const projects=ensureMemory();
@@ -347,7 +347,7 @@
   try{
     const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
     if(repair&&typeof repair.freeSpace==='function')repair.freeSpace({aggressive:true});
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 
   const api = Object.freeze({
     STORAGE_KEY,
@@ -369,13 +369,13 @@
   window.A·CEILProjectRepository = api;
   window.getProjects = function(){ return api.list(); };
   window.setProjects = function(projects){ return api.replaceAll(projects); };
-  try { getProjects = window.getProjects; setProjects = window.setProjects; } catch(_){}
+  try { getProjects = window.getProjects; setProjects = window.setProjects; } catch(_){window.__diagSilent&&window.__diagSilent(_)}
 
   window.addEventListener('aceil:user-storage-changed',function(){
     memoryCache=null;
     memoryUserId='';
     ensureMemory();
-    try{if(typeof renderProjects==='function')renderProjects();}catch(_){}
+    try{if(typeof renderProjects==='function')renderProjects();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   });
 
   /* Canonical local persistence lives with the repository.
@@ -440,7 +440,7 @@
       };
       wrapped.__preserveAllCanonical=true;
       window.A·CEILMergeCloudProjects=wrapped;
-      try{A·CEILMergeCloudProjects=wrapped;}catch(_){}
+      try{A·CEILMergeCloudProjects=wrapped;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     }
     window.A·CEILRestoreProjectsBackup=function(){
       try{

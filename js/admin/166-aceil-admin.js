@@ -6,7 +6,7 @@ var profile=null,loading=false;
 function sb(){try{return (typeof _sb!=="undefined"&&_sb)||window._sb||null}catch(e){return window._sb||null}}
 function currentUser(){try{return (typeof _sbUser!=="undefined"&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
 function esc(v){return String(v==null?"":v).replace(/[&<>\"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;","'":"&#39;"}[c]})}
-function toast(t){try{if(typeof showToast==="function")showToast(t,3500)}catch(e){}}
+function toast(t){try{if(typeof showToast==="function")showToast(t,3500)}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
 function content(v){var e=document.getElementById("aceilAdminContent");if(e)e.innerHTML=v}
 
 function removeLegacyMenuItem(){
@@ -69,7 +69,7 @@ function ensureCockpitAdminButton(){
   button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 16h7M14 19h4M19 14v4"/></svg><span id="aceilAdminDebugBadge" class="aceil-admin-debug-badge" hidden>0</span>';
   button.onclick=function(){window.A_CEIL_Admin.open()};
   actions.insertBefore(button,actions.firstChild);
-  try{var debugPanel=window.A·CEIL&&window.A·CEIL.DebugPanel;setDebugCount(debugPanel&&typeof debugPanel.getCount==='function'?debugPanel.getCount():0)}catch(e){}
+  try{var debugPanel=window.A·CEIL&&window.A·CEIL.DebugPanel;setDebugCount(debugPanel&&typeof debugPanel.getCount==='function'?debugPanel.getCount():0)}catch(e){window.__diagSilent&&window.__diagSilent(e)}
   return button;
 }
 function visible(v){
@@ -382,10 +382,10 @@ window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,approve
 
 function boot(){
   removeLegacyMenuItem();
-  try{if(currentUser())refreshOwner(currentUser())}catch(e){}
+  try{if(currentUser())refreshOwner(currentUser())}catch(e){window.__diagSilent&&window.__diagSilent(e)}
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 document.addEventListener("visibilitychange",function(){var m=document.getElementById("aceilAdminModal");if(document.visibilityState==="visible"&&currentUser()&&m&&m.classList.contains("open"))setTimeout(function(){refreshOwner(currentUser())},250)});
 window.addEventListener('aceil:debug-count',function(ev){setDebugCount(ev&&ev.detail?ev.detail.count:0)});
-setTimeout(function(){try{var p=window.A·CEIL&&window.A·CEIL.DebugPanel;setDebugCount(p&&typeof p.getCount==='function'?p.getCount():0)}catch(e){}},0);
+setTimeout(function(){try{var p=window.A·CEIL&&window.A·CEIL.DebugPanel;setDebugCount(p&&typeof p.getCount==='function'?p.getCount():0)}catch(e){window.__diagSilent&&window.__diagSilent(e)}},0);
 })();

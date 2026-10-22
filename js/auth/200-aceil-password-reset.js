@@ -120,6 +120,6 @@
     try {
       var sb = await waitForClient(15000);
       sb.auth.onAuthStateChange(function (event) { if (event === "PASSWORD_RECOVERY") newPasswordForm(); });
-    } catch (_) {}
+    } catch(_){window.__diagSilent&&window.__diagSilent(_)}
   })();
 })();

@@ -18,7 +18,7 @@ assert.equal(M.estimate({...room,selectedProducts:{power:{qty:1}}},{...fixture,p
    elemItems=[{id:'shadow',groupId:'profiles',name:'Тіньовий чорний',unit:'м',price:550},{id:'power',groupId:'extras',name:'Блок живлення 24В 200Вт',unit:'шт',price:800,costPrice:1},{id:'corn',groupId:'extras',name:'Карниз UNO',unit:'м',price:1700},{id:'custom',groupId:'extras',name:'Моя довільна позиція',unit:'кг',price:333},{id:'quote',groupId:'extras',name:'Позиція без ціни',unit:'шт',price:null},{id:'private',groupId:'extras',name:'Не для клієнта',unit:'шт',price:9999}];
    window['__A·CEILNomenCatalogV339']={groups:elemGroups,items:elemItems};
    const old={version:1,company:'Test',items:{film:{name:'Old',price:1},classic:{name:'Old',price:1},classicCorners:{name:'Old',price:1}}};
-   localStorage.setItem('aceil-client-preset:local',JSON.stringify({company:'Test',__productRules:5,__selection:{},__catalog:old}));document.getElementById('aceilClientSetupButton').click();
+   localStorage.setItem('aceil-client-preset:local',JSON.stringify({company:'Test',__productRules:5,__selection:{},__catalog:old}));document.getElementById('aceilClientSetupButton').click();document.querySelectorAll('#aceilClientSetup details').forEach(e=>e.open=true);
   });
   for(const id of ['shadow','power','corn','custom','quote'])await page.locator('[data-client-item='+id+'] input').check();
   await page.locator('#aceilClientSetup [type=submit]').click();assert.ok((await page.locator('#aceilClientSetup output').textContent()).includes('Вибір збережено'));

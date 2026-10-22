@@ -15,7 +15,7 @@
   }
   function t(key){var set=copy[language()]||copy.uk;return set[key]||copy.uk[key]||key}
   function clone(value){try{return JSON.parse(JSON.stringify(value))}catch(_){return value}}
-  function toast(message,duration){try{if(typeof showToast==="function")showToast(message,duration||3200)}catch(_){}}
+  function toast(message,duration){try{if(typeof showToast==="function")showToast(message,duration||3200)}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
   function safeName(value){
     var map={а:"a",б:"b",в:"v",г:"h",ґ:"g",д:"d",е:"e",є:"ye",ж:"zh",з:"z",и:"y",і:"i",ї:"yi",й:"i",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"kh",ц:"ts",ч:"ch",ш:"sh",щ:"shch",ь:"",ю:"yu",я:"ya"};
     return String(value||"A-CEIL").toLowerCase().split("").map(function(ch){return Object.prototype.hasOwnProperty.call(map,ch)?map[ch]:ch}).join("").replace(/[^a-z0-9._-]+/g,"_").replace(/^_+|_+$/g,"").slice(0,80)||"A-CEIL";
@@ -44,7 +44,7 @@
     if(!Array.isArray(object.rooms))object.rooms=[];
     try{
       if(source&&typeof _activeRoomIdx!=="undefined"&&_activeRoomIdx!=null&&object.rooms[_activeRoomIdx])object.rooms[_activeRoomIdx]=Object.assign({},object.rooms[_activeRoomIdx],currentRoom());
-    }catch(_){}
+    }catch(_){window.__diagSilent&&window.__diagSilent(_)}
     if(!object.rooms.length)object.rooms=[currentRoom()];
     return object;
   }
@@ -69,7 +69,7 @@
   }
   function preset(harpoonColor,productionTime){
     var base={drawing:true,showLights:false,showLightCoords:false,mountingLightBindings:false,showLegend:false,showWallMarks:false,showWallCoords:false,area:false,dimensions:true,dimensionsList:true,overall:false,diagonals:false,nomenclature:false,qty:false,unitPrice:false,rowTotal:false,grandTotal:false,diagMode:"manual",reportStyle:"modern",reportAudience:"contractor-sheet",harpoonColor:harpoonColor||"",productionTime:productionTime||"",companyName:"A·CEIL PRO",companyPhone:"",companySite:""};
-    try{var saved=typeof window._loadRS==="function"?window._loadRS():{};base.companyName=saved.companyName||base.companyName;base.companyPhone=saved.companyPhone||"";base.companySite=saved.companySite||""}catch(_){}
+    try{var saved=typeof window._loadRS==="function"?window._loadRS():{};base.companyName=saved.companyName||base.companyName;base.companyPhone=saved.companyPhone||"";base.companySite=saved.companySite||""}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     return base;
   }
   function measurementProblem(object){
@@ -106,7 +106,7 @@
     var clean=cleanObject(object),settings=preset(selectedHarpoonColor,selectedProductionTime),oldSettings=null,hadSettings=false,oldPreview=window._modernOpenPreview,captured=null;
     try{
       hadSettings=localStorage.getItem("reportSettings")!==null;oldSettings=localStorage.getItem("reportSettings");localStorage.setItem("reportSettings",JSON.stringify(settings));window.reportSettings=settings;
-      var capture=function(canvas,fileName){captured={canvas:canvas,fileName:fileName}};window._modernOpenPreview=capture;try{_modernOpenPreview=capture}catch(_){}
+      var capture=function(canvas,fileName){captured={canvas:canvas,fileName:fileName}};window._modernOpenPreview=capture;try{_modernOpenPreview=capture}catch(_){window.__diagSilent&&window.__diagSilent(_)}
       if(typeof window.generateModernObjectReport!=="function")throw new Error(t("failed"));
       await window.generateModernObjectReport(clean,settings);if(!captured||!captured.canvas)throw new Error(t("failed"));
       var fileName="A-CEIL_blank_vykonavtsiu_"+safeName(clean.name)+".png",title=t("blank")+" — "+String(clean.name||"A·CEIL"),blob=await canvasBlob(captured.canvas),shared=false;
@@ -115,8 +115,8 @@
       if(!shared)preview(captured.canvas,fileName,title);
     }catch(error){toast(error&&error.message||t("failed"),4500);if(captured&&captured.canvas)preview(captured.canvas,captured.fileName||"A-CEIL.png",t("ready"))}
     finally{
-      window._modernOpenPreview=oldPreview;try{_modernOpenPreview=oldPreview}catch(_){}
-      if(hadSettings)localStorage.setItem("reportSettings",oldSettings);else localStorage.removeItem("reportSettings");try{window.reportSettings=typeof window._loadRS==="function"?window._loadRS():{}}catch(_){}
+      window._modernOpenPreview=oldPreview;try{_modernOpenPreview=oldPreview}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      if(hadSettings)localStorage.setItem("reportSettings",oldSettings);else localStorage.removeItem("reportSettings");try{window.reportSettings=typeof window._loadRS==="function"?window._loadRS():{}}catch(_){window.__diagSilent&&window.__diagSilent(_)}
       busy=false;setStatus("");document.querySelectorAll("#aceilInstallerShareModal [data-harpoon],#aceilInstallerShareModal [data-time]").forEach(function(button){button.disabled=false});document.querySelectorAll("#aceilInstallerShareModal [data-mode]").forEach(function(button){button.disabled=!(selectedHarpoonColor&&selectedProductionTime)});
     }
   }
@@ -128,7 +128,7 @@
     modal.querySelector(".ais-close").onclick=function(){closeChooser(true)};modal.addEventListener("click",function(event){if(event.target===modal)closeChooser(true)});modal.querySelectorAll("[data-harpoon]").forEach(function(button){button.onclick=function(){selectedHarpoonColor=button.dataset.harpoon;modal.querySelectorAll("[data-harpoon]").forEach(function(item){item.classList.toggle("active",item===button)});updateReady();setStatus("")}});modal.querySelectorAll("[data-time]").forEach(function(button){button.onclick=function(){selectedProductionTime=button.dataset.time;modal.querySelectorAll("[data-time]").forEach(function(item){item.classList.toggle("active",item===button)});updateReady();setStatus("")}});modal.querySelectorAll("[data-mode]").forEach(function(button){button.onclick=buildAndShare});translate();
   }
   function setStatus(value){var el=document.querySelector("#aceilInstallerShareModal [data-status]");if(el)el.textContent=value||""}
-  function openChooser(){ensureUi();translate();selectedHarpoonColor="";selectedProductionTime="";setStatus("");var modal=document.getElementById("aceilInstallerShareModal");modal.querySelectorAll("[data-harpoon],[data-time]").forEach(function(button){button.classList.remove("active")});modal.querySelectorAll("[data-mode]").forEach(function(button){button.disabled=true});modal.classList.add("open");try{if(typeof window.closeA·CEILRoomMenu==="function")window.closeA·CEILRoomMenu()}catch(_){}}
+  function openChooser(){ensureUi();translate();selectedHarpoonColor="";selectedProductionTime="";setStatus("");var modal=document.getElementById("aceilInstallerShareModal");modal.querySelectorAll("[data-harpoon],[data-time]").forEach(function(button){button.classList.remove("active")});modal.querySelectorAll("[data-mode]").forEach(function(button){button.disabled=true});modal.classList.add("open");try{if(typeof window.closeA·CEILRoomMenu==="function")window.closeA·CEILRoomMenu()}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
   function closeChooser(clear){var modal=document.getElementById("aceilInstallerShareModal");if(modal&&!busy||clear===false&&modal)modal.classList.remove("open");if(clear)setStatus("")}
   function translate(){
     var modal=document.getElementById("aceilInstallerShareModal"),button=document.getElementById("aceilInstallerShareAction");

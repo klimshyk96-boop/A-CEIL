@@ -11,7 +11,7 @@
   function client() { try { return (typeof _sb !== "undefined" && _sb) || window._sb || null; } catch (_) { return window._sb || null; } }
   function signedUser() { try { return (typeof _sbUser !== "undefined" && _sbUser) || window._sbUser || null; } catch (_) { return window._sbUser || null; } }
   function list() { try { return typeof getProjects === "function" ? getProjects() || [] : []; } catch (_) { return []; } }
-  function saveList(items) { try { if (typeof setProjects === "function") setProjects(items); } catch (_) {} }
+  function saveList(items) { try { if (typeof setProjects === "function") setProjects(items); } catch(_){window.__diagSilent&&window.__diagSilent(_)} }
   function uuid(value) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || "")); }
   function clean(value) { return String(value == null ? "" : value).trim(); }
   function fingerprint(p) { return [clean(p && p.name).toLowerCase(), clean(p && p.addr).toLowerCase(), clean(p && p.phone).replace(/\D/g, "")].join("|"); }
@@ -27,7 +27,7 @@
     return items.find(function (p) { return [p.id, p._dbId, p._localId].some(function (id) { return id != null && refs.indexOf(String(id)) >= 0; }); }) || (items.length === 1 ? items[0] : null);
   }
   function readStore() { try { var x = JSON.parse(localStorage.getItem(STORE) || "{}"); return x && typeof x === "object" ? x : {}; } catch (_) { return {}; } }
-  function writeStore(data) { try { localStorage.setItem(STORE, JSON.stringify(data || {})); } catch (_) {} }
+  function writeStore(data) { try { localStorage.setItem(STORE, JSON.stringify(data || {})); } catch(_){window.__diagSilent&&window.__diagSilent(_)} }
   function recordKey(p) { return clean(p && (p._dbId || p.id)) || fingerprint(p); }
   function remember(p, values) {
     if (!p) return;
@@ -86,7 +86,7 @@
         var title = head.querySelector(".rp-project-title");
         head.insertBefore(badge, title && title.nextSibling || head.firstChild);
       });
-    } catch (_) {}
+    } catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
 
   async function loadViewCounts(c, items, data) {
@@ -114,7 +114,7 @@
     var next = function () { var result = old.apply(this, arguments); setTimeout(decorateReportBadges, 0); return result; };
     next.__reportBadgesV1 = true;
     window.renderProjects = next;
-    try { renderProjects = next; } catch (_) {}
+    try { renderProjects = next; } catch(_){window.__diagSilent&&window.__diagSilent(_)}
     window.addEventListener("aceil:report-link-change", function () {
       refresh().catch(function () { setTimeout(decorateReportBadges, 0); });
     });
@@ -187,7 +187,7 @@
       var key = recordKey(p); data[key] = Object.assign({}, data[key] || {}, row, { fingerprint: fingerprint(p), updatedAt: Date.now() });
     });
     await loadViewCounts(c, items, data);
-    if (changed) { writeStore(data); saveList(items); try { if (typeof renderProjects === "function") renderProjects(); } catch (_) {} }
+    if (changed) { writeStore(data); saveList(items); try { if (typeof renderProjects === "function") renderProjects(); } catch(_){window.__diagSilent&&window.__diagSilent(_)} }
     setTimeout(decorateReportBadges, 0);
   }
   function afterSave(prefix, ref) {
@@ -196,13 +196,13 @@
   function wrap(name, before, after) {
     var old = window[name]; if (typeof old !== "function" || old.__crmV2) return;
     var next = function () { var ctx = before ? before.apply(this, arguments) : null, result = old.apply(this, arguments); return Promise.resolve(result).then(function (value) { if (after) after(ctx, value); return value; }); };
-    next.__crmV2 = true; window[name] = next; try { if (name === "saveProject") saveProject = next; else if (name === "saveEditProject") saveEditProject = next; else if (name === "createObject") createObject = next; else if (name === "loadProjectsFromCloud") loadProjectsFromCloud = next; } catch (_) {}
+    next.__crmV2 = true; window[name] = next; try { if (name === "saveProject") saveProject = next; else if (name === "saveEditProject") saveEditProject = next; else if (name === "createObject") createObject = next; else if (name === "loadProjectsFromCloud") loadProjectsFromCloud = next; } catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   function install() {
     installFields("saveProjectModal", "projComment", "proj"); installFields("editProjectModal", "editProjComment", "edit"); installFields("newObjectModal", "newObjComment", "newObj"); installReportBox(); installReportBadges(); restoreLocal();
-    var oldEdit = window.editProject; if (typeof oldEdit === "function" && !oldEdit.__crmV2) { window.editProject = function (id) { var r = oldEdit.apply(this, arguments); setTimeout(function () { fill("edit", projectBy(id)); updateReportBox().catch(function (error) { var state = document.getElementById("editReportState"); if (state) state.textContent = "⚠️ Не вдалося перевірити посилання: " + (error.message || error); }); }, 20); return r; }; window.editProject.__crmV2 = true; try { editProject = window.editProject; } catch (_) {} }
-    var oldOpen = window.openSaveProjectModal; if (typeof oldOpen === "function" && !oldOpen.__crmV2) { window.openSaveProjectModal = function () { var r = oldOpen.apply(this, arguments); setTimeout(function () { fill("proj", projectBy()); }, 20); return r; }; window.openSaveProjectModal.__crmV2 = true; try { openSaveProjectModal = window.openSaveProjectModal; } catch (_) {} }
-    var oldNew = window.openNewObjectModal; if (typeof oldNew === "function" && !oldNew.__crmV2) { window.openNewObjectModal = function () { var r = oldNew.apply(this, arguments); setTimeout(function () { fill("newObj", null); }, 20); return r; }; window.openNewObjectModal.__crmV2 = true; try { openNewObjectModal = window.openNewObjectModal; } catch (_) {} }
+    var oldEdit = window.editProject; if (typeof oldEdit === "function" && !oldEdit.__crmV2) { window.editProject = function (id) { var r = oldEdit.apply(this, arguments); setTimeout(function () { fill("edit", projectBy(id)); updateReportBox().catch(function (error) { var state = document.getElementById("editReportState"); if (state) state.textContent = "⚠️ Не вдалося перевірити посилання: " + (error.message || error); }); }, 20); return r; }; window.editProject.__crmV2 = true; try { editProject = window.editProject; } catch(_){window.__diagSilent&&window.__diagSilent(_)} }
+    var oldOpen = window.openSaveProjectModal; if (typeof oldOpen === "function" && !oldOpen.__crmV2) { window.openSaveProjectModal = function () { var r = oldOpen.apply(this, arguments); setTimeout(function () { fill("proj", projectBy()); }, 20); return r; }; window.openSaveProjectModal.__crmV2 = true; try { openSaveProjectModal = window.openSaveProjectModal; } catch(_){window.__diagSilent&&window.__diagSilent(_)} }
+    var oldNew = window.openNewObjectModal; if (typeof oldNew === "function" && !oldNew.__crmV2) { window.openNewObjectModal = function () { var r = oldNew.apply(this, arguments); setTimeout(function () { fill("newObj", null); }, 20); return r; }; window.openNewObjectModal.__crmV2 = true; try { openNewObjectModal = window.openNewObjectModal; } catch(_){window.__diagSilent&&window.__diagSilent(_)} }
     var oldProjects = window.openProjectsModal; if (typeof oldProjects === "function" && !oldProjects.__reportBadgesV2) {
       window.openProjectsModal = function () {
         var result = oldProjects.apply(this, arguments);
@@ -211,7 +211,7 @@
         return result;
       };
       window.openProjectsModal.__reportBadgesV2 = true;
-      try { openProjectsModal = window.openProjectsModal; } catch (_) {}
+      try { openProjectsModal = window.openProjectsModal; } catch(_){window.__diagSilent&&window.__diagSilent(_)}
     }
     wrap("saveProject", function () { return { refs: activeRefs(), values: values("proj") }; }, function (x) { var p = projectBy(activeRefs()[0] || x.refs[0]); if (p) { remember(p, x.values); push(p).catch(function () {}); } });
     wrap("saveEditProject", function () { return { ref: document.getElementById("editProjId").value, values: values("edit") }; }, function (x) { var p = projectBy(x.ref); if (p) { remember(p, x.values); push(p).catch(function () {}); } });
@@ -227,7 +227,7 @@
       };
       window._syncObjectToCloud.__crmV2 = true;
       window._updateObjectInCloud = window._syncObjectToCloud;
-      try { _syncObjectToCloud = window._syncObjectToCloud; _updateObjectInCloud = window._syncObjectToCloud; } catch (_) {}
+      try { _syncObjectToCloud = window._syncObjectToCloud; _updateObjectInCloud = window._syncObjectToCloud; } catch(_){window.__diagSilent&&window.__diagSilent(_)}
     }
     refresh().catch(function () {});
   }

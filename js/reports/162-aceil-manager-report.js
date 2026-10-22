@@ -14,16 +14,16 @@ function projects(){try{return window.A·CEIL.ProjectRepository.list({clone:true
 function match(p,id){return !!p&&id!=null&&[p.id,p._dbId,p._localId].some(function(v){return v!=null&&String(v)===String(id)})}
 function activeObject(){
   var id=null;
-  try{if(typeof _activeObjectId!=="undefined"&&_activeObjectId!=null)id=_activeObjectId}catch(_){}
-  try{if(id==null&&typeof _currentProjectId!=="undefined"&&_currentProjectId!=null)id=_currentProjectId}catch(_){}
-  try{if(id==null&&window.__A·CEILPendingMultiRoomReportId!=null)id=window.__A·CEILPendingMultiRoomReportId}catch(_){}
+  try{if(typeof _activeObjectId!=="undefined"&&_activeObjectId!=null)id=_activeObjectId}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(id==null&&typeof _currentProjectId!=="undefined"&&_currentProjectId!=null)id=_currentProjectId}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(id==null&&window.__A·CEILPendingMultiRoomReportId!=null)id=window.__A·CEILPendingMultiRoomReportId}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   var list=projects(),hit=list.find(function(p){return match(p,id)})||null;
   if(hit)return hit;
   try{
     if(typeof getProjects==="function"&&typeof _currentProjName!=="undefined"&&_currentProjName){
       return (getProjects()||[]).find(function(p){return p&&p.multiRoom&&String(p.name||"")===String(_currentProjName||"")})||null;
     }
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return null;
 }
 function currentSingleState(){
@@ -54,7 +54,7 @@ function reportObject(){
   var st=hasSaved?saved:live,hasContent=(Array.isArray(st.pts)&&st.pts.length>=3)||(st.circleMode&&n(st.circleDiamCm)>0)||(Array.isArray(st.elemItems)&&st.elemItems.length)||(Array.isArray(st.lightMarks)&&st.lightMarks.length);
   if(!obj&&!hasContent)return null;
   var area=obj&&obj.area!=null?obj.area:currentMetric("area"),per=obj&&obj.per!=null?obj.per:currentMetric("per"),inC=obj&&obj.inC!=null?obj.inC:currentMetric("inCorners"),outC=obj&&obj.outC!=null?obj.outC:currentMetric("outCorners"),thumb=String(obj&&obj.thumb||"");
-  if(!thumb&&!hasSaved)try{if(typeof getCanvasThumb==="function")thumb=getCanvasThumb(.4)||""}catch(_){}
+  if(!thumb&&!hasSaved)try{if(typeof getCanvasThumb==="function")thumb=getCanvasThumb(.4)||""}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   var base=obj?clone(obj):{};
   base.name=String(base.name||((typeof _currentProjName!=="undefined"&&_currentProjName)||"Поточний проєкт"));
   base.addr=String(base.addr||((typeof _currentProjAddr!=="undefined"&&_currentProjAddr)||""));
@@ -64,11 +64,11 @@ function reportObject(){
   return base;
 }
 function sbClient(){
-  try{if(typeof _sb!=="undefined"&&_sb)return _sb}catch(_){}
+  try{if(typeof _sb!=="undefined"&&_sb)return _sb}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return window._sb||null;
 }
 function signedUser(){
-  try{if(typeof _sbUser!=="undefined"&&_sbUser)return _sbUser}catch(_){}
+  try{if(typeof _sbUser!=="undefined"&&_sbUser)return _sbUser}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return window._sbUser||null;
 }
 function appReturnUrl(){
@@ -80,7 +80,7 @@ function appReturnUrl(){
   }catch(_){return "https://a-ceil.pp.ua/"}
 }
 function groupRows(st){
-  try{if(typeof _modernGetNomenclatureGroupsFromState==="function")return clone(_modernGetNomenclatureGroupsFromState(st||{}))||[]}catch(_){}
+  try{if(typeof _modernGetNomenclatureGroupsFromState==="function")return clone(_modernGetNomenclatureGroupsFromState(st||{}))||[]}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   var items=Array.isArray(st&&st.elemItems)?st.elemItems:[],groups=Array.isArray(st&&st.elemGroups)?st.elemGroups:[],by={},out=[];
   items.filter(function(i){return n(i&&i.qty)>0}).forEach(function(it){var gid=String(it.groupId||"_none");(by[gid]||(by[gid]=[])).push(it)});
   groups.forEach(function(g){if(by[String(g.id)]&&by[String(g.id)].length)out.push({name:g.name||"Група",items:by[String(g.id)]})});
@@ -143,7 +143,7 @@ function roomStats(room){
   var st=parse(room&&room.state),area=n(room&&room.area),per=n(room&&room.per),inC=n(room&&room.inC),outC=n(room&&room.outC);
   var groups=groupRows(st),total=0,profiles={},canvas={},insert={},lighting={},other={};
   groups.forEach(function(g){(g.items||[]).forEach(function(it){var qty=n(it.qty),price=n(it.price),sum=qty*price;if(qty<=0)return;total+=sum;var row={qty:qty,unit:it.unit||"шт",total:sum},c=category(g.name,it.name);addAgg(c==="profiles"?profiles:c==="canvas"?canvas:c==="insert"?insert:c==="lighting"?lighting:other,it.name,row)})});
-  var lightCount=0;try{lightCount=window.A·CEILFixtureLightCount?window.A·CEILFixtureLightCount(st.lightMarks||[]):(st.lightMarks||[]).length}catch(_){}
+  var lightCount=0;try{lightCount=window.A·CEILFixtureLightCount?window.A·CEILFixtureLightCount(st.lightMarks||[]):(st.lightMarks||[]).length}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return{name:String(room&&room.name||"Кімната"),plan:planImage(room,st),area:area,per:per,corners:inC+outC,lights:lightCount,total:total,profiles:profiles,canvas:canvas,insert:insert,lighting:lighting,other:other};
 }
 function aggregate(obj){
@@ -185,7 +185,7 @@ function makeHtml(obj,data){
   '<section class="md-kpis"><div class="md-kpi blue"><small>Загальна площа</small><b>'+fmt(a.area,2)+' м²</b></div><div class="md-kpi green"><small>Загальний периметр</small><b>'+fmt(a.per,2)+' м</b></div><div class="md-kpi orange"><small>Кількість кутів</small><b>'+fmt(a.corners,0)+' шт</b></div><div class="md-kpi violet"><small>Загальна сума</small><b>'+money(a.total)+'</b></div></section>'+
   '<section class="md-grid3">'+block("Профілі",a.profiles,"по всьому обʼєкту")+block("Полотно",a.canvas,"по всьому обʼєкту")+block("Вставка",a.insert,"по всьому обʼєкту")+'</section>'+
   '<section class="md-grid4"><section class="md-card"><div class="md-card-title">Освітлення</div>'+lightingRows+'</section><section class="md-card"><div class="md-card-title">Додаткові роботи / матеріали</div>'+otherRows+'</section><section class="md-card"><div class="md-card-title">Підсумок</div><div class="md-simple-row"><span>Площа</span><b>'+fmt(a.area,2)+' м²</b></div><div class="md-simple-row"><span>Периметр</span><b>'+fmt(a.per,2)+' м</b></div><div class="md-simple-row"><span>Профілі</span><b>'+fmt(vals(a.profiles).reduce(function(s,x){return s+x.qty},0),2)+' м</b></div><div class="md-simple-row"><span>Світло</span><b>'+fmt(a.lights,0)+' шт</b></div></section><section class="md-card"><div class="md-card-title">Фінанси</div><div class="md-fin"><div class="md-donut"></div><div>'+finLegend+'</div></div><div class="md-fin-total">'+money(a.total)+'</div></section></section>'+
-  '<section class="md-rooms"><h3>'+roomsTitle+'</h3>'+roomsHtml+'</section></div><div class="md-plan-modal" id="mdPlanModal" onclick="if(event.target===this)this.classList.remove(\'show\')"><div class="md-plan-card"><div class="md-plan-head"><span id="mdPlanModalTitle">План кімнати</span><button class="md-plan-close" type="button" onclick="document.getElementById(\'mdPlanModal\').classList.remove(\'show\')">×</button></div><img id="mdPlanModalImg" alt="План кімнати"></div></div><script>(function(){var publicToken=new URLSearchParams(location.search).get("r");if(!new RegExp("^/(?:r|report)/[a-f0-9]{20,64}/?$","i").test(location.pathname)&&!new RegExp("^[a-f0-9]{20,64}$","i").test(publicToken||""))return;var appUrl='+JSON.stringify(returnUrl)+',back=document.getElementById("mdBack"),cloud=document.getElementById("mdCloud"),share=document.getElementById("mdShare"),box=document.getElementById("mdCloudBox"),inp=document.getElementById("mdCloudUrl"),copy=document.getElementById("mdCopy");function reportUrl(){return location.origin+"/r/"+(publicToken||location.pathname.split("/").filter(Boolean).pop())}function showUrl(){inp.value=reportUrl();box.classList.add("show");cloud.textContent="✓ Хмарне посилання";return inp.value}back.onclick=function(){location.href=appUrl||"/"};cloud.onclick=showUrl;copy.onclick=async function(){var u=showUrl();try{await navigator.clipboard.writeText(u);copy.textContent="✓ Скопійовано";setTimeout(function(){copy.textContent="Копіювати"},1500)}catch(e){inp.focus();inp.select()}};share.onclick=async function(){var u=reportUrl();try{if(navigator.share)await navigator.share({title:"Менеджерський звіт A·CEIL",url:u});else{await navigator.clipboard.writeText(u);showUrl()}}catch(e){}};})();<\/script></body></html>';
+  '<section class="md-rooms"><h3>'+roomsTitle+'</h3>'+roomsHtml+'</section></div><div class="md-plan-modal" id="mdPlanModal" onclick="if(event.target===this)this.classList.remove(\'show\')"><div class="md-plan-card"><div class="md-plan-head"><span id="mdPlanModalTitle">План кімнати</span><button class="md-plan-close" type="button" onclick="document.getElementById(\'mdPlanModal\').classList.remove(\'show\')">×</button></div><img id="mdPlanModalImg" alt="План кімнати"></div></div><script>(function(){var publicToken=new URLSearchParams(location.search).get("r");if(!new RegExp("^/(?:r|report)/[a-f0-9]{20,64}/?$","i").test(location.pathname)&&!new RegExp("^[a-f0-9]{20,64}$","i").test(publicToken||""))return;var appUrl='+JSON.stringify(returnUrl)+',back=document.getElementById("mdBack"),cloud=document.getElementById("mdCloud"),share=document.getElementById("mdShare"),box=document.getElementById("mdCloudBox"),inp=document.getElementById("mdCloudUrl"),copy=document.getElementById("mdCopy");function reportUrl(){return location.origin+"/r/"+(publicToken||location.pathname.split("/").filter(Boolean).pop())}function showUrl(){inp.value=reportUrl();box.classList.add("show");cloud.textContent="✓ Хмарне посилання";return inp.value}back.onclick=function(){location.href=appUrl||"/"};cloud.onclick=showUrl;copy.onclick=async function(){var u=showUrl();try{await navigator.clipboard.writeText(u);copy.textContent="✓ Скопійовано";setTimeout(function(){copy.textContent="Копіювати"},1500)}catch(e){inp.focus();inp.select()}};share.onclick=async function(){var u=reportUrl();try{if(navigator.share)await navigator.share({title:"Менеджерський звіт A·CEIL",url:u});else{await navigator.clipboard.writeText(u);showUrl()}}catch(e){window.__diagSilent&&window.__diagSilent(e)}};})();<\/script></body></html>';
 }
 window.A_CEIL_PublishManagerReport=async function(){
   var obj=reportObject();
@@ -208,33 +208,33 @@ function bindLocalReport(win,onBack){
     try{return showUrl(await window.A_CEIL_PublishManagerReport())}
     catch(e){
       cloud.textContent="⚠️ "+(e&&e.message?e.message:"Помилка");
-      try{var log=window.A·CEIL&&window.A·CEIL.DebugLog;if(log&&log.error)log.error("manager_report_cloud_failed",{message:String(e&&e.message||e),name:String(e&&e.name||"")})}catch(_){}
+      try{var log=window.A·CEIL&&window.A·CEIL.DebugLog;if(log&&log.error)log.error("manager_report_cloud_failed",{message:String(e&&e.message||e),name:String(e&&e.name||"")})}catch(_){window.__diagSilent&&window.__diagSilent(_)}
       throw e;
     }
     finally{cloud.disabled=false}
   }
   back.addEventListener("click",function(){
     if(typeof onBack==="function"){onBack();return}
-    try{window.focus()}catch(_){}
-    try{win.close()}catch(_){}
-    setTimeout(function(){try{if(!win.closed)win.location.replace(appReturnUrl())}catch(_){}},180);
+    try{window.focus()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    try{win.close()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    setTimeout(function(){try{if(!win.closed)win.location.replace(appReturnUrl())}catch(_){window.__diagSilent&&window.__diagSilent(_)}},180);
   });
   cloud.addEventListener("click",function(){getCloud().catch(function(){})});
   copy.addEventListener("click",async function(){
     if(!inp.value)return;
     try{await navigator.clipboard.writeText(inp.value);copy.textContent="✓ Скопійовано";setTimeout(function(){copy.textContent="Копіювати"},1500)}
-    catch(_){try{inp.focus();inp.select();doc.execCommand("copy")}catch(__){}}
+    catch(_){try{inp.focus();inp.select();doc.execCommand("copy")}catch(__){window.__diagSilent&&window.__diagSilent(__)}}
   });
   function shareReadyUrl(url){
     var nav=win.navigator||navigator;
     if(nav&&typeof nav.share==="function"){
       nav.share({title:"Менеджерський звіт A·CEIL",text:"Менеджерський звіт A·CEIL",url:url}).catch(function(e){
         if(e&&e.name==="AbortError")return;
-        try{var log=window.A·CEIL&&window.A·CEIL.DebugLog;if(log&&log.warn)log.warn("manager_report_native_share_failed",{message:String(e&&e.message||e)})}catch(_){}
+        try{var log=window.A·CEIL&&window.A·CEIL.DebugLog;if(log&&log.warn)log.warn("manager_report_native_share_failed",{message:String(e&&e.message||e)})}catch(_){window.__diagSilent&&window.__diagSilent(_)}
       });
       return;
     }
-    navigator.clipboard.writeText(url).then(function(){share.textContent="✓ Посилання скопійовано";setTimeout(function(){share.textContent="↗ Поділитися"},1800)}).catch(function(){try{inp.focus();inp.select();doc.execCommand("copy")}catch(_){}});
+    navigator.clipboard.writeText(url).then(function(){share.textContent="✓ Посилання скопійовано";setTimeout(function(){share.textContent="↗ Поділитися"},1800)}).catch(function(){try{inp.focus();inp.select();doc.execCommand("copy")}catch(_){window.__diagSilent&&window.__diagSilent(_)}});
   }
   share.addEventListener("click",function(){
     /* iOS Safari only opens the native share sheet during the original tap.
@@ -265,12 +265,12 @@ function openManagerReportInApp(html){
 }
 window.A_CEIL_OpenManagerReport=async function(){
   var obj=reportObject();
-  if(!obj||!Array.isArray(obj.rooms)||!obj.rooms.length){try{showToast("Спочатку створіть контур або відкрийте проєкт")}catch(_){}return}
+  if(!obj||!Array.isArray(obj.rooms)||!obj.rooms.length){try{showToast("Спочатку створіть контур або відкрийте проєкт")}catch(_){window.__diagSilent&&window.__diagSilent(_)}return}
   var html=makeHtml(obj,aggregate(obj));
-  if(isInstalledApp()){try{openManagerReportInApp(html)}catch(e){try{showToast(e&&e.message?e.message:"Не вдалося відкрити звіт")}catch(_){} }return}
-  var win=window.open("","_blank");if(!win){try{showToast("Дозвольте спливаючі вікна")}catch(_){}return}
+  if(isInstalledApp()){try{openManagerReportInApp(html)}catch(e){try{showToast(e&&e.message?e.message:"Не вдалося відкрити звіт")}catch(_){window.__diagSilent&&window.__diagSilent(_)} }return}
+  var win=window.open("","_blank");if(!win){try{showToast("Дозвольте спливаючі вікна")}catch(_){window.__diagSilent&&window.__diagSilent(_)}return}
   try{win.document.open();win.document.write(html);win.document.close();bindLocalReport(win)}
-  catch(e){try{win.close()}catch(_){}try{showToast(e&&e.message?e.message:"Не вдалося відкрити звіт")}catch(_){} }
+  catch(e){try{win.close()}catch(_){window.__diagSilent&&window.__diagSilent(_)}try{showToast(e&&e.message?e.message:"Не вдалося відкрити звіт")}catch(_){window.__diagSilent&&window.__diagSilent(_)} }
 };
 function injectManagerCard(){
   var modal=document.getElementById("reportSettingsModal");if(!modal)return;
@@ -280,11 +280,11 @@ function injectManagerCard(){
   var target=document.getElementById("reportAudienceCard")||document.getElementById("rsToggles")||modal.firstElementChild;
   var card=document.createElement("div");card.id="A_CEIL_ManagerReportCard";
   card.innerHTML='<div class="mr-kicker">'+(obj.rooms.length>1?'Багатокімнатний':'Однокімнатний')+' режим</div><div class="mr-title">📊 Менеджерський звіт</div><div class="mr-sub">Ключові показники, профілі, полотно, вставка, освітлення, фінанси та план одним екраном.</div><button type="button">Відкрити менеджерський звіт</button>';
-  card.querySelector("button").onclick=function(){try{if(typeof closeReportSettings==="function")closeReportSettings()}catch(_){}setTimeout(window.A_CEIL_OpenManagerReport,60)};
+  card.querySelector("button").onclick=function(){try{if(typeof closeReportSettings==="function")closeReportSettings()}catch(_){window.__diagSilent&&window.__diagSilent(_)}setTimeout(window.A_CEIL_OpenManagerReport,60)};
   if(target&&target.parentNode)target.parentNode.insertBefore(card,target);else modal.appendChild(card);
 }
 var prev=window.openReportSettings;
-if(typeof prev==="function"&&!prev.__managerReportV2){var wrapped=function(){var r=prev.apply(this,arguments);setTimeout(injectManagerCard,30);setTimeout(injectManagerCard,160);return r};wrapped.__managerReportV2=true;window.openReportSettings=wrapped;try{openReportSettings=wrapped}catch(_){}}
-document.addEventListener("click",function(e){try{var m=document.getElementById("reportSettingsModal");if(m&&m.style.display!=="none")setTimeout(injectManagerCard,20)}catch(_){}},true);
+if(typeof prev==="function"&&!prev.__managerReportV2){var wrapped=function(){var r=prev.apply(this,arguments);setTimeout(injectManagerCard,30);setTimeout(injectManagerCard,160);return r};wrapped.__managerReportV2=true;window.openReportSettings=wrapped;try{openReportSettings=wrapped}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
+document.addEventListener("click",function(e){try{var m=document.getElementById("reportSettingsModal");if(m&&m.style.display!=="none")setTimeout(injectManagerCard,20)}catch(_){window.__diagSilent&&window.__diagSilent(_)}},true);
 setTimeout(injectManagerCard,500);
 })();

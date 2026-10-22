@@ -197,16 +197,16 @@
       if (window["A·CEIL"] && window["A·CEIL"].ProjectRepository) {
         window["A·CEIL"].ProjectRepository.replaceAll(projects());
       } else if (typeof setProjects === "function") setProjects(projects());
-    } catch (_) {}
+    } catch(_){window.__diagSilent&&window.__diagSilent(_)}
     try {
       if (window.A_CEIL_ProjectCRM && window.A_CEIL_ProjectCRM.noteReport) {
         window.A_CEIL_ProjectCRM.noteReport(project, values);
       }
-    } catch (_) {}
+    } catch(_){window.__diagSilent&&window.__diagSilent(_)}
     try { if (typeof renderProjects === "function") setTimeout(function () { renderProjects(); }, 0); }
-    catch (_) {}
+    catch(_){window.__diagSilent&&window.__diagSilent(_)}
     try { window.dispatchEvent(new CustomEvent("aceil:report-link-change", { detail: { projectId: dbId(project) || project.id || null } })); }
-    catch (_) {}
+    catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
 
   async function publishPayload(payload, options) {
@@ -288,7 +288,7 @@
     if (button) { button.dataset.reportUrl = ""; button.style.display = ""; button.disabled = false; button.textContent = "🔗 Повторити"; }
     if (status) { status.textContent = "Не вдалося створити посилання: " + (error.message || error); status.style.color = "#b91c1c"; }
     try { if (typeof showToast === "function") showToast("Не вдалося створити посилання: " + (error.message || error)); }
-    catch (_) {}
+    catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
 
   function wrapClassicPublisher() {
@@ -320,7 +320,7 @@
     };
     wrapped.__secureReportV2 = true;
     window["A·CEILPublishReport"] = wrapped;
-    try { A·CEILPublishReport = wrapped; } catch (_) {}
+    try { A·CEILPublishReport = wrapped; } catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wrapClassicPublisher, { once: true });

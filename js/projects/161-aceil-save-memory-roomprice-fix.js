@@ -78,7 +78,7 @@ function writePending(q){
     }else{
       localStorage.setItem("ceiling_pendingSync",raw);MEM_PENDING=[];return true;
     }
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   /* If Safari quota is exhausted, keep the small queue in RAM.
      The project itself remains in ProjectRepository and can still sync now. */
   return false;
@@ -87,7 +87,7 @@ function pendingBadge(){
   try{
     var n=readPending().length, el=document.getElementById("cloudStatus");
     if(el&&n>0){el.textContent="⏳ "+n+" не збережено";el.title="Є зміни, які очікують синхронізації.";}
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
 window.getPendingQueue=readPending;
@@ -109,7 +109,7 @@ try{
   setPendingQueue=window.setPendingQueue;
   addToPendingQueue=window.addToPendingQueue;
   removeFromPendingQueue=window.removeFromPendingQueue;
-}catch(_){}
+}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 
 window.flushPendingQueue=async function(){
   if(!window._sb||!window._sbUser)return false;
@@ -166,20 +166,20 @@ window.flushPendingQueue=async function(){
     var el=document.getElementById("cloudStatus");
     if(el)el.textContent=remaining.length?"⏳ "+remaining.length+" не збережено":"☁️ синхронізовано";
     if(typeof hideSync==="function")hideSync();
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return remaining.length===0;
 };
-try{flushPendingQueue=window.flushPendingQueue;}catch(_){}
+try{flushPendingQueue=window.flushPendingQueue;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 
 /* ProjectPersistence is canonical in project-repository.js. */
 
 /* Refresh the current room's own nomenclature total AFTER room state has been installed.
    This prevents the previous room's price from remaining in the cockpit/header. */
 function refreshRoomPrice(){
-  try{if(typeof recalcElemTotal==="function")recalcElemTotal();}catch(_){}
-  try{if(typeof updateElemBadge==="function")updateElemBadge();}catch(_){}
-  try{if(typeof rpcUpdate==="function")rpcUpdate();}catch(_){}
-  try{if(typeof rpUpdateHome==="function")rpUpdateHome();}catch(_){}
+  try{if(typeof recalcElemTotal==="function")recalcElemTotal();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(typeof updateElemBadge==="function")updateElemBadge();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(typeof rpcUpdate==="function")rpcUpdate();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{if(typeof rpUpdateHome==="function")rpUpdateHome();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 var prevLoad=window._loadRoomToCanvas;
 if(typeof prevLoad==="function"&&!prevLoad.__roomPriceFinalFix){
@@ -192,7 +192,7 @@ if(typeof prevLoad==="function"&&!prevLoad.__roomPriceFinalFix){
   };
   wrappedLoad.__roomPriceFinalFix=true;
   window._loadRoomToCanvas=wrappedLoad;
-  try{_loadRoomToCanvas=wrappedLoad;}catch(_){}
+  try{_loadRoomToCanvas=wrappedLoad;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
 /* Keep Safari storage from slowly growing during a long measuring session. */
@@ -206,7 +206,7 @@ function housekeeping(force){
       if(typeof repair.trimDiagnostics==="function")repair.trimDiagnostics(8);
       writePending(readPending());
     }
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 housekeeping(true);
 setInterval(function(){housekeeping(false);},120000);
@@ -224,7 +224,7 @@ if(typeof prevSaveProject==="function"&&!prevSaveProject.__memoryHeadroomFix){
   };
   wrappedSave.__memoryHeadroomFix=true;
   window.saveProject=wrappedSave;
-  try{saveProject=wrappedSave;}catch(_){}
+  try{saveProject=wrappedSave;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
 })();

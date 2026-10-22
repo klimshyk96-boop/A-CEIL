@@ -64,7 +64,7 @@
         var legacy=nativeGet.call(localStorage,key);
         if(legacy!=null)nativeSet.call(localStorage,scoped,legacy);
       }
-    }catch(_){}
+    }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   function setUser(userOrId){
     var uid=cleanId(userOrId&&userOrId.id||userOrId);
@@ -72,8 +72,8 @@
     var previous=currentUserId;
     currentUserId=uid;
     Object.keys(tenantKeys).forEach(function(key){migrateLegacy(key,uid)});
-    listeners.slice().forEach(function(fn){try{fn(uid,previous)}catch(_){}});
-    try{window.dispatchEvent(new CustomEvent('aceil:user-storage-changed',{detail:{userId:uid,previousUserId:previous}}))}catch(_){}
+    listeners.slice().forEach(function(fn){try{fn(uid,previous)}catch(_){window.__diagSilent&&window.__diagSilent(_)}});
+    try{window.dispatchEvent(new CustomEvent('aceil:user-storage-changed',{detail:{userId:uid,previousUserId:previous}}))}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     return true;
   }
   function onChange(fn){if(typeof fn==='function')listeners.push(fn)}

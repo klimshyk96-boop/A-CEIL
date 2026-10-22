@@ -27,7 +27,7 @@ function reportGroups(st){
     if(typeof _modernGetNomenclatureGroupsFromState==="function"){
       return clone(_modernGetNomenclatureGroupsFromState(st||{}))||[];
     }
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   var items=(st&&Array.isArray(st.elemItems)?st.elemItems:[])||[];
   var groups=(st&&Array.isArray(st.elemGroups)?st.elemGroups:[])||[];
   var active=items.filter(function(i){return num(i&&i.qty)>0}), used={}, out=[];
@@ -84,7 +84,7 @@ function linesFor(st,kind){
     }
     if(kind==="ceilings"&&window.getCeilingElementCoordLinesV326) return clone(window.getCeilingElementCoordLinesV326(st||{}))||[];
     if(kind==="exhausts"&&typeof getExhaustCoordLines==="function") return clone(getExhaustCoordLines(st||{}))||[];
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return [];
 }
 function fixtureCount(st){
@@ -104,7 +104,7 @@ function roomSnapshot(name,st,fallback){
     if(!area&&typeof _modernRoomStatsFromCurrent==="function"&&(!st.pts||!st.pts.length)){
       var x=_modernRoomStatsFromCurrent(); area=x.area;per=x.per;inC=x.inC;outC=x.outC;
     }
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return {
     name:String(name||"Кімната"),
     area:String(area||"—"),
@@ -130,7 +130,7 @@ function activeObject(){
     if(id!=null) return ps.find(function(p){
       return [p&&p.id,p&&p._dbId,p&&p._localId].some(function(v){return v!=null&&String(v)===String(id)});
     })||null;
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return null;
 }
 window.A_CEIL_buildCloudStructuredReport=function(fileName){
@@ -140,10 +140,10 @@ window.A_CEIL_buildCloudStructuredReport=function(fileName){
     phone:"",
     comment:""
   };
-  try{meta.name=String(typeof _currentProjName!=="undefined"&&_currentProjName||obj&&obj.name||"Звіт A·CEIL")}catch(_){}
-  try{meta.address=String(typeof _currentProjAddr!=="undefined"&&_currentProjAddr||obj&&obj.addr||"")}catch(_){}
-  try{meta.phone=String(typeof _currentProjPhone!=="undefined"&&_currentProjPhone||obj&&obj.phone||"")}catch(_){}
-  try{meta.comment=String(typeof _currentProjComment!=="undefined"&&_currentProjComment||obj&&obj.comment||"")}catch(_){}
+  try{meta.name=String(typeof _currentProjName!=="undefined"&&_currentProjName||obj&&obj.name||"Звіт A·CEIL")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{meta.address=String(typeof _currentProjAddr!=="undefined"&&_currentProjAddr||obj&&obj.addr||"")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{meta.phone=String(typeof _currentProjPhone!=="undefined"&&_currentProjPhone||obj&&obj.phone||"")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try{meta.comment=String(typeof _currentProjComment!=="undefined"&&_currentProjComment||obj&&obj.comment||"")}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 
   if(obj&&obj.multiRoom&&Array.isArray(obj.rooms)&&obj.rooms.length){
     var rooms=obj.rooms.map(function(r){
@@ -155,7 +155,7 @@ window.A_CEIL_buildCloudStructuredReport=function(fileName){
   var st=currentState(), stats={};
   try{
     if(typeof _modernRoomStatsFromCurrent==="function") stats=_modernRoomStatsFromCurrent()||{};
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   var room=roomSnapshot(meta.name||"Кімната",st,{
     area:stats.area||document.getElementById("area")&&document.getElementById("area").textContent||"",
     per:stats.per||document.getElementById("per")&&document.getElementById("per").textContent||"",
@@ -207,7 +207,7 @@ function renderEstimate(groups,total){
 function routeUrl(loc){
   try{
     if(window.A·CEILLocation&&window.A·CEILLocation.routeUrl) return window.A·CEILLocation.routeUrl(loc);
-  }catch(_){}
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
   if(!loc) return "";
   var a=Number(loc.latitude!=null?loc.latitude:loc.lat),b=Number(loc.longitude!=null?loc.longitude:loc.lng);
   return Number.isFinite(a)&&Number.isFinite(b)?"https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(a+","+b):String(loc.mapUrl||"");

@@ -38,7 +38,7 @@
     if (!loc) return "";
     var direct = String(loc.mapUrl || "").trim();
     if (direct) {
-      try { var url = new URL(direct); if (url.protocol === "https:" || url.protocol === "http:") return url.href; } catch (_) {}
+      try { var url = new URL(direct); if (url.protocol === "https:" || url.protocol === "http:") return url.href; } catch(_){window.__diagSilent&&window.__diagSilent(_)}
     }
     if ((loc.latitude == null ? loc.lat : loc.latitude) == null || (loc.longitude == null ? loc.lng : loc.longitude) == null) return "";
     var lat = Number(loc.latitude == null ? loc.lat : loc.latitude), lng = Number(loc.longitude == null ? loc.lng : loc.longitude);
@@ -101,7 +101,7 @@
         p_token: lookupToken,
         p_session_id: persistentViewSessionId()
       });
-    } catch (_) {}
+    } catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
 
   // Ідентифікатор сесії створюється в браузері, а message_id і текст Telegram
@@ -148,7 +148,7 @@
         trackingReady = true;
         flushPendingEvents();
       }
-    } catch (_) {}
+    } catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
 
   function sendReportEvent(action, extra, preferBeacon) {
@@ -178,7 +178,7 @@
           keepalive: true
         }).catch(function () {});
       }
-    } catch (_) {}
+    } catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
 
   function sendCurrentDuration(preferBeacon) {
@@ -233,7 +233,7 @@
       sendReportEvent("share", { duration_seconds: currentVisibleSeconds() }, false);
       var btn = document.getElementById("rprShareBtn");
       if (btn) { var prev = btn.textContent; btn.textContent = "✅ Посилання скопійовано"; setTimeout(function () { btn.textContent = prev; }, 1800); }
-    } catch (_) {}
+    } catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   window.__A·CEILShareReport = shareReport;
 
@@ -272,12 +272,12 @@
       function showLink() { link.style.display = "block"; link.focus(); link.select(); return link.value; }
       button("🔗 Посилання", async function () {
         var url = showLink();
-        try { await navigator.clipboard.writeText(url); } catch (_) {}
+        try { await navigator.clipboard.writeText(url); } catch(_){window.__diagSilent&&window.__diagSilent(_)}
       });
       button("↗ Поділитися", async function () {
         try {
           if (navigator.share) await navigator.share({ title: "Менеджерський звіт A·CEIL", url: link.value });
-          else { showLink(); try { await navigator.clipboard.writeText(link.value); } catch (_) {} }
+          else { showLink(); try { await navigator.clipboard.writeText(link.value); } catch(_){window.__diagSilent&&window.__diagSilent(_)} }
         } catch (error) { if (error.name !== "AbortError") showLink(); }
       });
       bar.appendChild(link); overlay.appendChild(bar);

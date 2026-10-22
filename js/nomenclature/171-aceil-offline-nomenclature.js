@@ -17,7 +17,7 @@
   function runtimeGroups(){try{return typeof elemGroups!=="undefined"&&Array.isArray(elemGroups)?elemGroups:(window.elemGroups||[])}catch(_){return window.elemGroups||[]}}
   function setRuntime(name,value){
     window[name]=value;
-    try{if(name==="elemItems")elemItems=value;if(name==="elemGroups")elemGroups=value;if(name==="lightTypes")lightTypes=value}catch(_){}
+    try{if(name==="elemItems")elemItems=value;if(name==="elemGroups")elemGroups=value;if(name==="lightTypes")lightTypes=value}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   function key(it){return it&&it.id!=null?"id:"+String(it.id):"n:"+String(it&&it.name||"").trim().toLowerCase()+"|g:"+String(it&&it.groupId==null?"":it.groupId)+"|u:"+String(it&&it.unit||"")}
   function mergeItems(catalog,current){
@@ -67,10 +67,10 @@
     if(Array.isArray(data.lightTypes)&&data.lightTypes.length)setRuntime("lightTypes",clone(data.lightTypes));
     window.__A·CEILNomenCatalogV339={items:clone(data.items),groups:clone(data.groups)};
     window._nomenCloudLoaded=true;window._nomenclatureLoading=false;window.__A_CEIL_NOMEN_OFFLINE_READY=true;
-    try{_nomenclatureLoading=false}catch(_){}
-    try{if(typeof renderElemList==="function")renderElemList()}catch(_){}
-    try{if(typeof updateElemBadge==="function")updateElemBadge()}catch(_){}
-    try{if(typeof recalcElemTotal==="function")recalcElemTotal()}catch(_){}
+    try{_nomenclatureLoading=false}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    try{if(typeof renderElemList==="function")renderElemList()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    try{if(typeof updateElemBadge==="function")updateElemBadge()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    try{if(typeof recalcElemTotal==="function")recalcElemTotal()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     return true;
   }
   function scheduleCapture(){clearTimeout(captureTimer);captureTimer=setTimeout(capture,700)}
@@ -79,14 +79,14 @@
   var oldOpen=window.openElementsModal;
   if(typeof oldOpen==="function"&&!oldOpen.__offlineNomV1){
     var wrappedOpen=function(){if(offline())restore();return oldOpen.apply(this,arguments)};
-    wrappedOpen.__offlineNomV1=true;window.openElementsModal=wrappedOpen;try{openElementsModal=wrappedOpen}catch(_){}
+    wrappedOpen.__offlineNomV1=true;window.openElementsModal=wrappedOpen;try{openElementsModal=wrappedOpen}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   [window.loadNomenclatureFromCloud,window.forceLoadNomenclature].forEach(function(fn){
     if(typeof fn!=="function"||fn.__offlineCaptureV1)return;
     var wrapped=async function(){if(offline())return restore();var result=await fn.apply(this,arguments);scheduleCapture();return result};
     wrapped.__offlineCaptureV1=true;
-    if(fn===window.loadNomenclatureFromCloud){window.loadNomenclatureFromCloud=wrapped;try{loadNomenclatureFromCloud=wrapped}catch(_){}}
-    if(fn===window.forceLoadNomenclature){window.forceLoadNomenclature=wrapped;try{forceLoadNomenclature=wrapped}catch(_){}}
+    if(fn===window.loadNomenclatureFromCloud){window.loadNomenclatureFromCloud=wrapped;try{loadNomenclatureFromCloud=wrapped}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
+    if(fn===window.forceLoadNomenclature){window.forceLoadNomenclature=wrapped;try{forceLoadNomenclature=wrapped}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
   });
 
   if(offline())setTimeout(restore,0);
@@ -97,9 +97,9 @@
     window.__A_CEIL_NOMEN_OFFLINE_READY=false;
     setRuntime("elemItems",[]);setRuntime("elemGroups",[]);setRuntime("lightTypes",[]);
     window.__A·CEILNomenCatalogV339={items:[],groups:[]};
-    try{if(typeof renderElemList==="function")renderElemList()}catch(_){}
+    try{if(typeof renderElemList==="function")renderElemList()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     if(offline())restore();
-    else setTimeout(function(){try{if(typeof window.forceLoadNomenclature==="function")window.forceLoadNomenclature("user-switch")}catch(_){}},80);
+    else setTimeout(function(){try{if(typeof window.forceLoadNomenclature==="function")window.forceLoadNomenclature("user-switch")}catch(_){window.__diagSilent&&window.__diagSilent(_)}},80);
   });
   window.A_CEIL_OfflineNomenclature={capture:capture,restore:restore,hasCache:function(){return !!read()}};
 })();

@@ -5,7 +5,7 @@ var HEARTBEAT_MS=30000;
 
 function sb(){try{return (typeof _sb!=="undefined"&&_sb)||window._sb||null}catch(e){return window._sb||null}}
 function user(){try{return (typeof _sbUser!=="undefined"&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
-function diag(e){try{window.__diagSilent&&window.__diagSilent(e)}catch(_){}}
+function diag(e){try{window.__diagSilent&&window.__diagSilent(e)}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
 function deviceLabel(){
   try{
     var ua=navigator.userAgent||"";

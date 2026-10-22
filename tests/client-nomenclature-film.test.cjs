@@ -4,11 +4,12 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
  const browser=await chromium.launch({headless:true,executablePath:process.env.ACEIL_CHROMIUM_PATH});
  try{for(const width of [390,1440]){
   const {page,errors}=await open(browser,width);await reveal(page);
+  await page.waitForTimeout(2500); /* let startup timers (film group autofill) finish before the test replaces nomenclature state */
   await page.evaluate(()=>{
    elemGroups=[{id:'profiles',name:'Мої профілі',collapsed:false}];elemItems=[{id:'s',groupId:'profiles',name:'Тіньовий чорний',unit:'м',price:550}];window['__A·CEILNomenCatalogV339']={groups:elemGroups,items:elemItems};
-   localStorage.setItem('aceil-client-preset:local',JSON.stringify({__productRules:5,__selection:{},__catalog:{version:1,catalogue:true,company:'Test',groups:[{id:'profiles',name:'Мої профілі'}],products:[{id:'old',name:'Old',unit:'м',price:1,basis:'manual',groupId:'profiles'}]}}));document.getElementById('aceilClientSetupButton').click();
+   localStorage.setItem('aceil-client-preset:local',JSON.stringify({__productRules:5,__selection:{},__catalog:{version:1,catalogue:true,company:'Test',groups:[{id:'profiles',name:'Мої профілі'}],products:[{id:'old',name:'Old',unit:'м',price:1,basis:'manual',groupId:'profiles'}]}}));document.getElementById('aceilClientSetupButton').click();document.querySelectorAll('#aceilClientSetup details').forEach(e=>e.open=true);
   });
-  assert.equal(await page.locator('[data-group="__owner_film_catalog__"]>summary').textContent(),'Плівка · 9');
+  assert.equal(await page.locator('[data-owner-films]>summary').textContent(),'Плівка');
   for(const series of ['premium','classic','kralton'])assert.equal(await page.locator('[data-client-item="film:'+series+':M303"] input').isVisible(),true,'film available without any room film row or film group');
   await page.locator('[data-client-item="film:premium:M303"] input').check();await page.locator('#aceilClientSetup [type=submit]').click();
   const link=await page.locator('#aceilClientSetup input[readonly]').inputValue(),cfg=M.decode(new URL(link).hash.slice(1)).config,film=cfg.products[0];

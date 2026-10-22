@@ -26,7 +26,7 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
    ];
    const cfg={version:1,company:'Test',items:{film:{name:'Film',price:380},classic:{name:'Al',price:185},classicCorners:{name:'Corners',price:100}}};
    localStorage.setItem('aceil-client-preset:local',JSON.stringify({company:'Test',__productRules:5,__catalog:cfg,__selection:{f:'film',p:'classic',c:'classicCorners',sb:'cornice'}}));
-   document.getElementById('aceilClientSetupButton').click();
+   document.getElementById('aceilClientSetupButton').click();document.querySelectorAll('#aceilClientSetup details').forEach(e=>e.open=true);
   });
   assert.equal(await page.locator('[data-client-item=sb] input').getAttribute('name'),'shadowOptions','recognizes the screenshot label and corrects stale mappings');
   for(const id of ['f','p','pvc','c','sb','sw','fb','fw','scb','fc','led','i','ib'])await page.locator('[data-client-item='+id+'] input').check();

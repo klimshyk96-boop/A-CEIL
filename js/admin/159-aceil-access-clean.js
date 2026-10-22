@@ -3,22 +3,22 @@
 'use strict';
 var busy=false, ACCESS=null, NOM_DENIED=false, lastAccessSig='', lastResumeRightsAt=0;
 var ACCESS_CACHE_KEY='A_CEIL_access_snapshot_v1';
-try{if(!localStorage.getItem('A_CEIL_access_log_cleanup_v50')){localStorage.setItem('A_CEIL_access_log_cleanup_v50','1');var dp=window.A·CEIL&&window.A·CEIL.DebugPanel;if(dp&&typeof dp.clear==='function')dp.clear()}}catch(_cleanupError){}
+try{if(!localStorage.getItem('A_CEIL_access_log_cleanup_v50')){localStorage.setItem('A_CEIL_access_log_cleanup_v50','1');var dp=window.A·CEIL&&window.A·CEIL.DebugPanel;if(dp&&typeof dp.clear==='function')dp.clear()}}catch(_cleanupError){window.__diagSilent&&window.__diagSilent(_cleanupError)}
 function accessSig(a){if(!a)return'';return [a.app_role,a.is_active,a.owner_id,a.nomenclature_access,a.projects_access,a.projects_edit,a.projects_scope,a.access_until].map(function(v){return String(v==null?'':v)}).join('|')}
 function sb(){try{var c=(typeof _sb!=='undefined'&&_sb)||window._sb||null;if(c&&!window._sb)window._sb=c;return c}catch(e){return window._sb||null}}
 function usr(){try{var u=(typeof _sbUser!=='undefined'&&_sbUser)||window._sbUser||null;if(u&&!window._sbUser)window._sbUser=u;return u}catch(e){return window._sbUser||null}}
 function clone(v){try{return JSON.parse(JSON.stringify(v))}catch(e){return v}}
-function setGlobal(n,v){try{window[n]=v}catch(e){};try{if(n==='elemItems')elemItems=v;if(n==='elemGroups')elemGroups=v;if(n==='lightTypes')lightTypes=v}catch(e){}}
-function refreshNomUI(){try{if(typeof renderElemList==='function')renderElemList()}catch(e){};try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){};try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){};try{if(typeof renderLightMenu==='function')renderLightMenu()}catch(e){}}
+function setGlobal(n,v){try{window[n]=v}catch(e){window.__diagSilent&&window.__diagSilent(e)};try{if(n==='elemItems')elemItems=v;if(n==='elemGroups')elemGroups=v;if(n==='lightTypes')lightTypes=v}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
+function refreshNomUI(){try{if(typeof renderElemList==='function')renderElemList()}catch(e){window.__diagSilent&&window.__diagSilent(e)};try{if(typeof updateElemBadge==='function')updateElemBadge()}catch(e){window.__diagSilent&&window.__diagSilent(e)};try{if(typeof recalcElemTotal==='function')recalcElemTotal()}catch(e){window.__diagSilent&&window.__diagSilent(e)};try{if(typeof renderLightMenu==='function')renderLightMenu()}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
 function clearNom(){setGlobal('elemItems',[]);setGlobal('elemGroups',[]);setGlobal('lightTypes',[]);refreshNomUI()}
 function applyNomGate(a){NOM_DENIED=!a||a.is_active!==true;window.A_CEIL_NOMENCLATURE_DENIED=NOM_DENIED;if(NOM_DENIED)clearNom();return NOM_DENIED}
-function saveAccessSnapshot(a,u){if(!a||!u||!u.id)return;try{localStorage.setItem(ACCESS_CACHE_KEY,JSON.stringify({userId:String(u.id),savedAt:Date.now(),access:a}))}catch(e){}}
+function saveAccessSnapshot(a,u){if(!a||!u||!u.id)return;try{localStorage.setItem(ACCESS_CACHE_KEY,JSON.stringify({userId:String(u.id),savedAt:Date.now(),access:a}))}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
 function offlineAccess(u){
   if(!u||!u.id)return null;
   if(String(u.email||'').toLowerCase()==='klimshyk96@gmail.com')return {app_role:'owner',is_active:true,owner_id:u.id,nomenclature_access:true,projects_access:true,projects_edit:true,projects_scope:'all'};
   try{var row=JSON.parse(localStorage.getItem(ACCESS_CACHE_KEY)||'null');return row&&String(row.userId)===String(u.id)&&row.access?row.access:null}catch(e){return null}
 }
-function enterOffline(u){window.__A_CEIL_OFFLINE_ACTIVE=true;try{if(typeof window.A_CEIL_enterOfflineMode==='function')window.A_CEIL_enterOfflineMode(u)}catch(e){}var el=document.getElementById('cloudStatus');if(el)el.textContent='⚠️ офлайн · локальні дані'}
+function enterOffline(u){window.__A_CEIL_OFFLINE_ACTIVE=true;try{if(typeof window.A_CEIL_enterOfflineMode==='function')window.A_CEIL_enterOfflineMode(u)}catch(e){window.__diagSilent&&window.__diagSilent(e)}var el=document.getElementById('cloudStatus');if(el)el.textContent='⚠️ офлайн · локальні дані'}
 async function rights(){var c=sb(),u=usr();if(!u)return null;if(!navigator.onLine){var cached=offlineAccess(u);if(cached){ACCESS=cached;window.A_CEIL_MY_ACCESS=cached}return cached}if(!c)return offlineAccess(u);try{var r=await("function"==typeof withTimeout?withTimeout(c.rpc('get_my_access'),6000,"Перевірка доступу"):c.rpc('get_my_access'));if(r.error)throw r.error;var a=Array.isArray(r.data)?r.data[0]:r.data;if(!a)return null;ACCESS=a;window.A_CEIL_MY_ACCESS=a;saveAccessSnapshot(a,u);applyNomGate(a);return a}catch(e){var fallback=offlineAccess(u);if(fallback){ACCESS=fallback;window.A_CEIL_MY_ACCESS=fallback}if(isTransientNetworkError(e)||/таймаут/i.test(String(e&&e.message||"")))return fallback;throw e}}
 function nomItemKey(it){if(!it)return'';if(it.id!=null)return'id:'+String(it.id);return'n:'+String(it.name||'').trim().toLowerCase()+'|g:'+String(it.groupId==null?'':it.groupId)+'|u:'+String(it.unit||'')}
 function currentNomItems(){try{return clone(typeof elemItems!=='undefined'&&Array.isArray(elemItems)?elemItems:(window.elemItems||[]))}catch(e){return clone(window.elemItems||[])}}
@@ -45,20 +45,20 @@ function mergeCatalogWithRoomResults(catalog,current){
   return out.concat(scoped.map(clone));
 }
 function mergeCatalogGroupsWithRoom(catalog,current){var out=clone(Array.isArray(catalog)?catalog:[]),seen={};out.forEach(function(g){seen[String(g&&g.id)]=true});(Array.isArray(current)?current:[]).filter(function(g){return g&&g.roomScoped===true&&g.roomScopedKind==='film-color'}).forEach(function(g){if(!seen[String(g.id)])out.unshift(clone(g))});return out}
-async function loadNom(a){var c=sb(),u=usr();if(!c||!u)return false;if(applyNomGate(a))return false;var source=u.id;var r=await c.from('nomenclature').select('user_id,items,groups,wall_presets,light_types').eq('user_id',source).maybeSingle();if(r.error)throw r.error;if(!r.data){clearNom();window.__A·CEILNomenCatalogV339={items:[],groups:[]};return false}var d=r.data,current=currentNomItems(),currentGroups=clone(typeof elemGroups!=='undefined'&&Array.isArray(elemGroups)?elemGroups:(window.elemGroups||[]));setGlobal('elemGroups',mergeCatalogGroupsWithRoom(d.groups,currentGroups));var items=mergeCatalogWithRoomResults(clone(Array.isArray(d.items)?d.items:[]),current);setGlobal('elemItems',items);try{window.__A·CEILNomenCatalogV339={items:clone(Array.isArray(d.items)?d.items:[]),groups:clone(Array.isArray(d.groups)?d.groups:[])}}catch(e){}if(Array.isArray(d.wall_presets)){try{localStorage.setItem('A·CEIL_wall_presets_v32',JSON.stringify(d.wall_presets))}catch(e){}}if(Array.isArray(d.light_types)){var cloudLightTypes=clone(d.light_types);setGlobal('lightTypes',cloudLightTypes);try{localStorage.setItem('lightTypes_v1',JSON.stringify(cloudLightTypes))}catch(e){}try{if(typeof window.rmRenderCeilingElementsV318==='function')window.rmRenderCeilingElementsV318()}catch(e){}}refreshNomUI();return true}
-function mapProject(p){var st={};try{st=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){};var multi=st.multiRoom===true,u=usr(),ownerId=p.user_id||null;return {id:p.id,_dbId:p.id,_ownerId:ownerId,_shared:!!(u&&ownerId&&String(ownerId)!==String(u.id)),name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',multiRoom:multi,rooms:multi?(st.rooms||[]):undefined,state:multi?null:(typeof p.state==='string'?p.state:JSON.stringify(st))}}
-function replaceProjects(rows){var mapped=(rows||[]).map(mapProject);try{if(window.A·CEIL&&window.A·CEIL.ProjectRepository)window.A·CEIL.ProjectRepository.replaceAll(mapped);else if(typeof setProjects==='function')setProjects(mapped)}catch(e){};try{if(typeof renderProjects==='function')renderProjects()}catch(e){}}
+async function loadNom(a){var c=sb(),u=usr();if(!c||!u)return false;if(applyNomGate(a))return false;var source=u.id;var r=await c.from('nomenclature').select('user_id,items,groups,wall_presets,light_types').eq('user_id',source).maybeSingle();if(r.error)throw r.error;if(!r.data){clearNom();window.__A·CEILNomenCatalogV339={items:[],groups:[]};return false}var d=r.data,current=currentNomItems(),currentGroups=clone(typeof elemGroups!=='undefined'&&Array.isArray(elemGroups)?elemGroups:(window.elemGroups||[]));setGlobal('elemGroups',mergeCatalogGroupsWithRoom(d.groups,currentGroups));var items=mergeCatalogWithRoomResults(clone(Array.isArray(d.items)?d.items:[]),current);setGlobal('elemItems',items);try{window.__A·CEILNomenCatalogV339={items:clone(Array.isArray(d.items)?d.items:[]),groups:clone(Array.isArray(d.groups)?d.groups:[])}}catch(e){window.__diagSilent&&window.__diagSilent(e)}if(Array.isArray(d.wall_presets)){try{localStorage.setItem('A·CEIL_wall_presets_v32',JSON.stringify(d.wall_presets))}catch(e){window.__diagSilent&&window.__diagSilent(e)}}if(Array.isArray(d.light_types)){var cloudLightTypes=clone(d.light_types);setGlobal('lightTypes',cloudLightTypes);try{localStorage.setItem('lightTypes_v1',JSON.stringify(cloudLightTypes))}catch(e){window.__diagSilent&&window.__diagSilent(e)}try{if(typeof window.rmRenderCeilingElementsV318==='function')window.rmRenderCeilingElementsV318()}catch(e){window.__diagSilent&&window.__diagSilent(e)}}refreshNomUI();return true}
+function mapProject(p){var st={};try{st=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){window.__diagSilent&&window.__diagSilent(e)};var multi=st.multiRoom===true,u=usr(),ownerId=p.user_id||null;return {id:p.id,_dbId:p.id,_ownerId:ownerId,_shared:!!(u&&ownerId&&String(ownerId)!==String(u.id)),name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',multiRoom:multi,rooms:multi?(st.rooms||[]):undefined,state:multi?null:(typeof p.state==='string'?p.state:JSON.stringify(st))}}
+function replaceProjects(rows){var mapped=(rows||[]).map(mapProject);try{if(window.A·CEIL&&window.A·CEIL.ProjectRepository)window.A·CEIL.ProjectRepository.replaceAll(mapped);else if(typeof setProjects==='function')setProjects(mapped)}catch(e){window.__diagSilent&&window.__diagSilent(e)};try{if(typeof renderProjects==='function')renderProjects()}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
 async function loadProjects(a){var c=sb(),u=usr();if(!c||!u||!a||a.is_active!==true)return false;var r=await("function"==typeof withTimeout?withTimeout(c.from('projects').select('*').order('created_at',{ascending:false}),8000,"Список проєктів"):c.from('projects').select('*').order('created_at',{ascending:false}));if(r.error)throw r.error;replaceProjects(r.data||[]);return true}
 async function refresh(){if(busy)return false;var c=sb(),u=usr();if(!u)return false;if(!navigator.onLine){var cached=offlineAccess(u);if(cached){ACCESS=cached;applyNomGate(cached);lastAccessSig=accessSig(cached)}enterOffline(u);return true}if(!c)return false;busy=true;try{var a=await rights();if(!a)return false;await Promise.all([loadNom(a),loadProjects(a)]);applyNomGate(a);lastAccessSig=accessSig(a);return true}catch(e){enterOffline(u);return true}finally{busy=false}}
 async function refreshOnResume(){if(busy)return false;var now=Date.now();if(now-lastResumeRightsAt<1200)return true;lastResumeRightsAt=now;var c=sb(),u=usr();if(!u)return false;if(!navigator.onLine){enterOffline(u);return true}if(!c)return false;busy=true;try{var prev=lastAccessSig||accessSig(ACCESS),a=await rights();if(!a)return false;var sig=accessSig(a);if(sig!==prev){await Promise.all([loadNom(a),loadProjects(a)])}else{applyNomGate(a)}lastAccessSig=sig;return true}catch(e){enterOffline(u);return true}finally{busy=false}}
 /* Nomenclature window remains available. OFF means its catalogue is empty for a non-owner. */
-var oldElements=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);if(typeof oldElements==='function'){var openElementsClean=async function(){var a=null;try{a=await rights();if(a)applyNomGate(a)}catch(e){}var r=oldElements.apply(this,arguments);if(a&&applyNomGate(a))setTimeout(clearNom,0);return r};window.openElementsModal=openElementsClean;try{openElementsModal=openElementsClean}catch(e){}}
+var oldElements=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);if(typeof oldElements==='function'){var openElementsClean=async function(){var a=null;try{a=await rights();if(a)applyNomGate(a)}catch(e){window.__diagSilent&&window.__diagSilent(e)}var r=oldElements.apply(this,arguments);if(a&&applyNomGate(a))setTimeout(clearNom,0);return r};window.openElementsModal=openElementsClean;try{openElementsModal=openElementsClean}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
 /* Prevent room/project snapshots from resurrecting catalogue rows while access is OFF. */
-var oldRoomLoad=window._loadRoomToCanvas||(typeof _loadRoomToCanvas==='function'?_loadRoomToCanvas:null);if(typeof oldRoomLoad==='function'){var roomLoadGated=function(){var r=oldRoomLoad.apply(this,arguments);if(NOM_DENIED){clearNom();setTimeout(clearNom,0)}return r};window._loadRoomToCanvas=roomLoadGated;try{_loadRoomToCanvas=roomLoadGated}catch(e){}}
+var oldRoomLoad=window._loadRoomToCanvas||(typeof _loadRoomToCanvas==='function'?_loadRoomToCanvas:null);if(typeof oldRoomLoad==='function'){var roomLoadGated=function(){var r=oldRoomLoad.apply(this,arguments);if(NOM_DENIED){clearNom();setTimeout(clearNom,0)}return r};window._loadRoomToCanvas=roomLoadGated;try{_loadRoomToCanvas=roomLoadGated}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
 /* If any older module adds an item later (lights, room restore, local state), purge it before nomenclature renders. */
 (function(p){if(p)p.stage("accessGate",{around:function(next,args){if(NOM_DENIED){setGlobal('elemItems',[]);setGlobal('elemGroups',[])}return next()}})})(window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].pipeline&&window["A\u00b7CEIL"].pipeline.get("renderElemList"));
-var oldProjects=window.openProjectsModal||(typeof openProjectsModal==='function'?openProjectsModal:null);if(typeof oldProjects==='function'){var openProjectsClean=async function(){if(navigator.onLine)try{var a=await rights();await loadProjects(a)}catch(e){if(!isTransientNetworkError(e))console.error('[A·CEIL projects]',e)}return oldProjects.apply(this,arguments)};window.openProjectsModal=openProjectsClean;try{openProjectsModal=openProjectsClean}catch(e){}}
-window.forceLoadNomenclature=async function(){if(!navigator.onLine)return false;var a=await rights();return a?loadNom(a):false};try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){};try{loadNomenclatureFromCloud=window.forceLoadNomenclature}catch(e){}
+var oldProjects=window.openProjectsModal||(typeof openProjectsModal==='function'?openProjectsModal:null);if(typeof oldProjects==='function'){var openProjectsClean=async function(){if(navigator.onLine)try{var a=await rights();await loadProjects(a)}catch(e){if(!isTransientNetworkError(e))console.error('[A·CEIL projects]',e)}return oldProjects.apply(this,arguments)};window.openProjectsModal=openProjectsClean;try{openProjectsModal=openProjectsClean}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
+window.forceLoadNomenclature=async function(){if(!navigator.onLine)return false;var a=await rights();return a?loadNom(a):false};try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){window.__diagSilent&&window.__diagSilent(e)};try{loadNomenclatureFromCloud=window.forceLoadNomenclature}catch(e){window.__diagSilent&&window.__diagSilent(e)}
 window.A_CEIL_forceAccessRefresh=refresh;
 function boot(n){if(n>4||window.__A_CEIL_OFFLINE_ACTIVE===true)return;setTimeout(async function(){if(await refresh())return;boot(n+1)},500)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){boot(0)},{once:true});else boot(0);
@@ -78,7 +78,7 @@ function scheduleLiveRefresh(){
     }catch(e){
       if(isTransientNetworkError(e)){
         if(navigator.onLine&&liveRetryCount<2){liveRetryCount++;setTimeout(scheduleLiveRefresh,1000*liveRetryCount);return;}
-        try{var log=window.A·CEIL&&window.A·CEIL.DebugLog;if(log&&log.warn)log.warn('realtime_access_network_unavailable',{attempts:liveRetryCount+1,message:String(e&&e.message||e)})}catch(_){}
+        try{var log=window.A·CEIL&&window.A·CEIL.DebugLog;if(log&&log.warn)log.warn('realtime_access_network_unavailable',{attempts:liveRetryCount+1,message:String(e&&e.message||e)})}catch(_){window.__diagSilent&&window.__diagSilent(_)}
         liveRetryCount=0;return;
       }
       enterOffline(usr());
@@ -87,7 +87,7 @@ function scheduleLiveRefresh(){
 }
 function safeRemoveLiveChannel(client,ch){
   if(!client||!ch)return;
-  try{var p=client.removeChannel(ch);if(p&&typeof p.catch==='function')p.catch(function(){})}catch(e){}
+  try{var p=client.removeChannel(ch);if(p&&typeof p.catch==='function')p.catch(function(){})}catch(e){window.__diagSilent&&window.__diagSilent(e)}
 }
 function startLiveAccess(n){
   n=n||0;
@@ -115,7 +115,7 @@ function startLiveAccess(n){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){startLiveAccess(0)},{once:true});else startLiveAccess(0);
 window.addEventListener('online',function(){setTimeout(function(){refresh();startLiveAccess(0)},250)});
 /* Session changes (login/logout/account switch) rebuild the live subscription. */
-try{var _liveSb=sb();if(_liveSb&&_liveSb.auth&&_liveSb.auth.onAuthStateChange)_liveSb.auth.onAuthStateChange(function(){var ch=liveChannel;liveChannel=null;liveUid=null;safeRemoveLiveChannel(_liveSb,ch);setTimeout(function(){startLiveAccess(0)},100)})}catch(e){}
+try{var _liveSb=sb();if(_liveSb&&_liveSb.auth&&_liveSb.auth.onAuthStateChange)_liveSb.auth.onAuthStateChange(function(){var ch=liveChannel;liveChannel=null;liveUid=null;safeRemoveLiveChannel(_liveSb,ch);setTimeout(function(){startLiveAccess(0)},100)})}catch(e){window.__diagSilent&&window.__diagSilent(e)}
 })();
 
 /* Canonical post-password hydration is part of the access/auth authority. */
@@ -171,7 +171,7 @@ try{var _liveSb=sb();if(_liveSb&&_liveSb.auth&&_liveSb.auth.onAuthStateChange)_l
       if (!user) return false;
 
       state.sessionUser = user.id || user.email || 'session';
-      try{ window._sbUser = user; }catch(_e){}
+      try{ window._sbUser = user; }catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
 
       // Respect the same access gate as the original application.
       if (typeof window.A_CEIL_checkActive === 'function'){
@@ -179,7 +179,7 @@ try{var _liveSb=sb();if(_liveSb&&_liveSb.auth&&_liveSb.auth.onAuthStateChange)_l
         if (!allowed) return false;
       }
 
-      try{ if (typeof window.hideAuthScreen === 'function') window.hideAuthScreen(); }catch(_e){}
+      try{ if (typeof window.hideAuthScreen === 'function') window.hideAuthScreen(); }catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
 
       // Canonical existing loader: it fetches projects AND nomenclature.
       // Do not rely on SIGNED_IN timing after password auth.
@@ -209,14 +209,14 @@ try{var _liveSb=sb();if(_liveSb&&_liveSb.auth&&_liveSb.auth.onAuthStateChange)_l
     }catch(e){
       state.error = String(e && (e.message || e) || 'unknown');
       state.lastFinishedAt = Date.now();
-      try{ if (window.__diagSilent) window.__diagSilent(e); }catch(_e){}
+      try{ if (window.__diagSilent) window.__diagSilent(e); }catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
       return false;
     }
   }
 
   var wrapped = async function(){
     var wasLogin = true;
-    try{ wasLogin = (typeof _authMode === 'undefined' || _authMode === 'login'); }catch(_e){}
+    try{ wasLogin = (typeof _authMode === 'undefined' || _authMode === 'login'); }catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
 
     var result = await originalDoAuth.apply(this, arguments);
     if (wasLogin){
@@ -230,7 +230,7 @@ try{var _liveSb=sb();if(_liveSb&&_liveSb.auth&&_liveSb.auth.onAuthStateChange)_l
   wrapped.__original = originalDoAuth;
 
   window.doAuth = wrapped;
-  try{ doAuth = wrapped; }catch(_e){}
+  try{ doAuth = wrapped; }catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
   window.A_CEIL_HydrateAfterPasswordLogin = hydrateAfterPasswordLogin;
   window.A_CEIL_HydrateAfterAuth = hydrateAfterPasswordLogin;
   window.A_CEIL_Test5AuthStatus = state;

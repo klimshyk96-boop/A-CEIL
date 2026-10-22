@@ -16,7 +16,7 @@ function normalize(){
     Force the normal mode back to its normal automatic placement. */
  var auto=h.querySelector('.rm353-method[data-method="room"]');
  if(auto && !h.querySelector('.rm353-method.active:not([data-method="sketch"])')){
-   try{auto.click()}catch(_){}
+   try{auto.click()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
  }
  main.textContent = m==="one" ? "Готово — поставити світильник" :
                     m==="row" ? "Готово — створити ряд" :
@@ -31,14 +31,14 @@ document.addEventListener("click",function(e){
    var h=g("rmLightClean353"), auto=h&&h.querySelector('.rm353-method[data-method="room"]');
    if(auto && !auto.classList.contains("active")){
      e.preventDefault();e.stopImmediatePropagation();
-     try{auto.click()}catch(_){}
+     try{auto.click()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
      setTimeout(function(){var b=g("rm353Main");if(b)b.click()},0);
    }
  }
  if(e.target&&e.target.closest&&e.target.closest("#rmLfTabs"))setTimeout(normalize,0);
 },true);
 var modal=g("lightFlowModal");
-if(modal)try{new MutationObserver(function(){if(modal.classList.contains("open"))setTimeout(normalize,0)}).observe(modal,{attributes:true,attributeFilter:["class"]})}catch(_){}
+if(modal)try{new MutationObserver(function(){if(modal.classList.contains("open"))setTimeout(normalize,0)}).observe(modal,{attributes:true,attributeFilter:["class"]})}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",normalize,{once:true});else setTimeout(normalize,0);
 window.A·CEIL_BUILD_LABEL="v3.75 A·CEIL REPORT-REBRAND";
 })();

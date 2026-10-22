@@ -18,7 +18,7 @@ function useInAppReport(){
 function clean(value){return String(value==null?"":value).trim()}
 function currentMeta(fileName){
   var structuredName="";
-  try{structuredName=clean(window._currentProjName||document.getElementById("projName")&&document.getElementById("projName").value)}catch(_){}
+  try{structuredName=clean(window._currentProjName||document.getElementById("projName")&&document.getElementById("projName").value)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   return {
     name:structuredName||clean(fileName)||"Звіт A·CEIL",
     address:clean(window._currentProjAddr||document.getElementById("projAddr")&&document.getElementById("projAddr").value),
@@ -42,9 +42,9 @@ function dataUrlToBlob(dataUrl){
 }
 async function publishImageReport(canvas,fileName,dataUrl){
   if(!window.A_CEIL_ReportLinks)throw new Error("Модуль захищених посилань не завантажено");
-  var structured=null;try{if(typeof window.A_CEIL_buildCloudStructuredReport==="function")structured=window.A_CEIL_buildCloudStructuredReport(fileName)}catch(_){}
+  var structured=null;try{if(typeof window.A_CEIL_buildCloudStructuredReport==="function")structured=window.A_CEIL_buildCloudStructuredReport(fileName)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   if(structured&&structured.type==="single"&&typeof window.A_CEIL_cloudPlanImage==="function"){
-    try{structured.drawing=window.A_CEIL_cloudPlanImage(canvas)}catch(_){}
+    try{structured.drawing=window.A_CEIL_cloudPlanImage(canvas)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   var payload={version:2,createdAt:new Date().toISOString(),meta:structured&&structured.meta||currentMeta(fileName),location:activeLocation(),structured:structured};
   if(!(structured&&structured.drawing))payload.image=dataUrl||canvas.toDataURL("image/png");
@@ -72,15 +72,15 @@ function openReportInsideApp(canvas,fileName){
   async function cloudUrl(){if(cloudInput.value&&!/^Помилка:/.test(cloudInput.value))return cloudInput.value;cloudInput.value="";cloudButton.disabled=true;cloudButton.textContent="Завантаження…";try{var url=await publishImageReport(canvas,fileName,dataUrl);cloudInput.value=url;cloudBox.hidden=false;cloudButton.textContent="Посилання готове";return url}catch(e){var message=String(e&&e.message||e||"Помилка хмари");cloudButton.textContent="Повторити";cloudInput.value="Помилка: "+message;cloudBox.hidden=false;throw e}finally{cloudButton.disabled=false}}
   async function shareUrl(url){if(navigator.share){try{await navigator.share({title:"Звіт A·CEIL",text:"Звіт A·CEIL",url:url});return}catch(e){if(e&&e.name==="AbortError")return}}try{await navigator.clipboard.writeText(url);shareButton.textContent="Посилання скопійовано";setTimeout(function(){shareButton.textContent="Поділитися"},1800)}catch(_){cloudBox.hidden=false;cloudInput.focus();cloudInput.select()}}
   layer.querySelector("[data-close]").onclick=close;layer.querySelector("[data-save]").onclick=save;
-  cloudButton.onclick=function(){cloudUrl().catch(function(e){try{showToast(e&&e.message?e.message:"Помилка хмари")}catch(_){}})};
+  cloudButton.onclick=function(){cloudUrl().catch(function(e){try{showToast(e&&e.message?e.message:"Помилка хмари")}catch(_){window.__diagSilent&&window.__diagSilent(_)}})};
   copyButton.onclick=async function(){if(!cloudInput.value)return;try{await navigator.clipboard.writeText(cloudInput.value);copyButton.textContent="Скопійовано";setTimeout(function(){copyButton.textContent="Копіювати"},1500)}catch(_){cloudInput.focus();cloudInput.select()}};
   openButton.onclick=function(){if(cloudInput.value)window.open(cloudInput.value,"_blank","noopener")};
-  shareButton.onclick=function(){if(cloudInput.value){shareUrl(cloudInput.value);return}shareButton.disabled=true;shareButton.textContent="Готуємо посилання…";cloudUrl().then(function(){shareButton.disabled=false;shareButton.textContent="Натисніть ще раз"}).catch(function(e){shareButton.disabled=false;shareButton.textContent="Поділитися";try{showToast(e&&e.message?e.message:"Помилка хмари")}catch(_){}})};
+  shareButton.onclick=function(){if(cloudInput.value){shareUrl(cloudInput.value);return}shareButton.disabled=true;shareButton.textContent="Готуємо посилання…";cloudUrl().then(function(){shareButton.disabled=false;shareButton.textContent="Натисніть ще раз"}).catch(function(e){shareButton.disabled=false;shareButton.textContent="Поділитися";try{showToast(e&&e.message?e.message:"Помилка хмари")}catch(_){window.__diagSilent&&window.__diagSilent(_)}})};
   window.addEventListener("keydown",onKey);
 }
 var previousPreview=window._modernOpenPreview;
 if(typeof previousPreview==="function"&&!previousPreview.__aceilInApp){
   var previewWrapped=function(canvas,fileName){return useInAppReport()?openReportInsideApp(canvas,fileName):previousPreview.apply(this,arguments)};
-  previewWrapped.__aceilInApp=true;window._modernOpenPreview=previewWrapped;try{_modernOpenPreview=previewWrapped}catch(_){}
+  previewWrapped.__aceilInApp=true;window._modernOpenPreview=previewWrapped;try{_modernOpenPreview=previewWrapped}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 })();

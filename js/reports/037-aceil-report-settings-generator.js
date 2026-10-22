@@ -8,7 +8,7 @@
   const bits=[];
   if(st&&st.area!=null)bits.push("Площа: "+st.area+" м²");
   if(st&&st.per!=null)bits.push("Периметр: "+st.per+" м");
-  try{if(Array.isArray(pts)&&pts.length)bits.push("Кути: "+pts.length)}catch(_e){}
+  try{if(Array.isArray(pts)&&pts.length)bits.push("Кути: "+pts.length)}catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
   if(!bits.length)return;
   c.fillStyle="#64748b";c.font="bold 13px Arial";c.textAlign="left";
   c.fillText(bits.join("  •  "),PAD,y);
@@ -89,7 +89,7 @@ function _reportLinearMountingLines(){
   }
   function canvasPoints(el){
     const cen=el.centerCanvasPx;if(!cen||!isFinite(cen.x)||!isFinite(cen.y))return null;
-    let px=1;try{if(typeof _pxPerCm==='function'&&_pxPerCm()>0)px=_pxPerCm();}catch(_e){}
+    let px=1;try{if(typeof _pxPerCm==='function'&&_pxPerCm()>0)px=_pxPerCm();}catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
     return offsets(el).map(p=>({x:cen.x+p.x*px,y:cen.y+p.y*px}));
   }
   function bind(p){let best=null;for(let i=0;i<room.length;i++){let a=room[i],b=room[(i+1)%room.length],dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy;if(!l2)continue;let t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/l2)),qx=a.x+t*dx,qy=a.y+t*dy,dist=Math.hypot(p.x-qx,p.y-qy);if(!best||dist<best.dist){let cm=(Array.isArray(lengths)&&isFinite(+lengths[i]))?+lengths[i]:Math.sqrt(l2);best={dist,side:i,cm:Math.round(cm*t)};}}return best;}
@@ -180,7 +180,7 @@ function legend(c,x,y,w,legendLightMarks,cornices,titleText,legendWallMarks,lege
     if(de && String(de.value).trim()!=="") d=de.value;
     if(ae && String(ae.value).trim()!=="") a=ae.value;
     let saved={};
-    try{saved=JSON.parse(localStorage.getItem("reportSettings")||"{}")||{}}catch(_e){}
+    try{saved=JSON.parse(localStorage.getItem("reportSettings")||"{}")||{}}catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
     if(d==null)d=saved.discountPercent;
     if(a==null)a=saved.advanceAmount;
     return {
@@ -330,7 +330,7 @@ async function plan(c,x,y,w,h,imgSrc,titleText,labelState){
           sx=Math.max(0,minX-pad);sy=Math.max(0,minY-pad);
           sw=Math.min(t.width-sx,maxX-minX+pad*2);sh=Math.min(t.height-sy,maxY-minY+pad*2);
         }
-      }catch(_e){}
+      }catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
       const sc=Math.min(aw/sw,ah/sh),dw=sw*sc,dh=sh*sc;
       const dx=x+(w-dw)/2,dy=y+48+(ah-dh)/2;
       c.drawImage(img,sx,sy,sw,sh,dx,dy,dw,dh);
@@ -376,12 +376,12 @@ async function plan(c,x,y,w,h,imgSrc,titleText,labelState){
   function num(v){v=Number(String(v==null?"":v).replace(",","."));return Number.isFinite(v)?v:0}
   function paymentSettings(){
     let saved={};
-    try{saved=JSON.parse(localStorage.getItem("reportSettings")||"{}")||{}}catch(_e){}
+    try{saved=JSON.parse(localStorage.getItem("reportSettings")||"{}")||{}}catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
     let live={};
     try{live=(typeof window._loadRS==="function"?window._loadRS():window.reportSettings)||{}}catch(_e){live=window.reportSettings||{}}
     let d=null,a=null;
-    try{const el=document.getElementById("rsDiscountPercent");if(el&&String(el.value).trim()!=="")d=el.value}catch(_e){}
-    try{const el=document.getElementById("rsAdvanceAmount");if(el&&String(el.value).trim()!=="")a=el.value}catch(_e){}
+    try{const el=document.getElementById("rsDiscountPercent");if(el&&String(el.value).trim()!=="")d=el.value}catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
+    try{const el=document.getElementById("rsAdvanceAmount");if(el&&String(el.value).trim()!=="")a=el.value}catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
     if(d==null)d=saved.discountPercent!=null?saved.discountPercent:(live.discountPercent!=null?live.discountPercent:(rs&&rs.discountPercent));
     if(a==null)a=saved.advanceAmount!=null?saved.advanceAmount:(live.advanceAmount!=null?live.advanceAmount:(rs&&rs.advanceAmount));
     return{discount:Math.max(0,Math.min(100,num(d))),advance:Math.max(0,num(a))};
@@ -407,11 +407,11 @@ async function plan(c,x,y,w,h,imgSrc,titleText,labelState){
   const cc=cropped.getContext("2d");
   if(!cc)return out;
   cc.drawImage(out,0,0,cropped.width,Math.min(cropped.height,out.height),0,0,cropped.width,Math.min(cropped.height,out.height));
-  try{cc.setTransform(scale,0,0,scale,0,0)}catch(_e){}
+  try{cc.setTransform(scale,0,0,scale,0,0)}catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
   footer(cc,W,H,rs);
   return cropped;
 }
-function footer(c,W,H,rs){c.fillStyle="#94a3b8",c.font="12px Arial",c.textAlign="center",c.fillText((rs.companyName||"A·CEIL PRO")+" • "+[rs.companyPhone,rs.companySite].filter(Boolean).join(" • "),W/2,H-26),c.textAlign="left"}function _overallDims(st,rs){try{if(!0!==(rs||{}).overall)return"";if(!window.A·CEILGeometry||"function"!=typeof window.A·CEILGeometry.calculate)return"";var data=null;if(st&&(st.realPts||st.points||st.pts))data=st;if(!data)try{if(typeof realPts!=="undefined"&&Array.isArray(realPts)&&realPts.length>1)data={pts:pts,realPts:realPts,lengths:lengths,wallTypes:wallTypes,arcPoints:arcPoints}}catch(_e){}if(!data)try{if(typeof pts!=="undefined"&&Array.isArray(pts)&&pts.length>1)data={points:pts}}catch(_e){}if(!data)return"";const b=window.A·CEILGeometry.calculate(data).boundsM;if(!b||!(b.width>0)||!(b.height>0))return"";const a=Math.max(b.width,b.height),s=Math.min(b.width,b.height);return a.toFixed(2)+" × "+s.toFixed(2)+" м"}catch(e){return""}}
+function footer(c,W,H,rs){c.fillStyle="#94a3b8",c.font="12px Arial",c.textAlign="center",c.fillText((rs.companyName||"A·CEIL PRO")+" • "+[rs.companyPhone,rs.companySite].filter(Boolean).join(" • "),W/2,H-26),c.textAlign="left"}function _overallDims(st,rs){try{if(!0!==(rs||{}).overall)return"";if(!window.A·CEILGeometry||"function"!=typeof window.A·CEILGeometry.calculate)return"";var data=null;if(st&&(st.realPts||st.points||st.pts))data=st;if(!data)try{if(typeof realPts!=="undefined"&&Array.isArray(realPts)&&realPts.length>1)data={pts:pts,realPts:realPts,lengths:lengths,wallTypes:wallTypes,arcPoints:arcPoints}}catch(_e){window.__diagSilent&&window.__diagSilent(_e)}if(!data)try{if(typeof pts!=="undefined"&&Array.isArray(pts)&&pts.length>1)data={points:pts}}catch(_e){window.__diagSilent&&window.__diagSilent(_e)}if(!data)return"";const b=window.A·CEILGeometry.calculate(data).boundsM;if(!b||!(b.width>0)||!(b.height>0))return"";const a=Math.max(b.width,b.height),s=Math.min(b.width,b.height);return a.toFixed(2)+" × "+s.toFixed(2)+" м"}catch(e){return""}}
 function _allWallDimensionLines(st){
   try{
     st=st||{};
@@ -498,7 +498,7 @@ function rmReportCreateHQCanvas(W,H){
   out.dataset.logicalWidth=String(W);out.dataset.logicalHeight=String(H);out.dataset.hdScale=String(scale);
   const c=out.getContext("2d");if(!c)throw new Error("Canvas 2D context unavailable");
   try{c.setTransform(scale,0,0,scale,0,0)}catch(_e){c.scale(scale,scale)}
-  try{c.imageSmoothingEnabled=true;c.imageSmoothingQuality="high"}catch(_e){}
+  try{c.imageSmoothingEnabled=true;c.imageSmoothingQuality="high"}catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
   return{out,c,scale};
 }
 async function alphaSingle(rs){

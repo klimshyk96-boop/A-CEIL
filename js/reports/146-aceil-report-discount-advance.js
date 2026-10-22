@@ -156,7 +156,7 @@ function injectReportBackButton(win){
   try {
     var doc = win.document;
     var editorUrl = "";
-    try { editorUrl = String(window.location.href || ""); } catch(_){}
+    try { editorUrl = String(window.location.href || ""); } catch(_){window.__diagSilent&&window.__diagSilent(_)}
     var attempt = function(){
       if (!doc.body) { setTimeout(attempt, 20); return; }
       if (doc.getElementById("rmReportBackBtn")) return;
@@ -176,13 +176,13 @@ function injectReportBackButton(win){
       btn.onclick = function(){
         try {
           if (win.opener && !win.opener.closed) win.opener.focus();
-        } catch(_){}
-        try { win.close(); } catch(_){}
+        } catch(_){window.__diagSilent&&window.__diagSilent(_)}
+        try { win.close(); } catch(_){window.__diagSilent&&window.__diagSilent(_)}
         /* iOS/PWA fallback: якщо standalone-вікно не дозволило close(), повертаємо редактор у цьому ж вікні. */
         setTimeout(function(){
           try {
             if (!win.closed && editorUrl) win.location.replace(editorUrl);
-          } catch(_){}
+          } catch(_){window.__diagSilent&&window.__diagSilent(_)}
         },120);
       };
       doc.body.appendChild(btn);
@@ -236,7 +236,7 @@ if ("function" == typeof oldSaveToPhone && !oldSaveToPhone.__discAdv401) {
         setTimeout(function(){ injectIntoPopup(capturedWin, html); }, 60);
       }
     } catch(e){
-      try{ if(capturedWin) injectReportBackButton(capturedWin); }catch(_){}
+      try{ if(capturedWin) injectReportBackButton(capturedWin); }catch(_){window.__diagSilent&&window.__diagSilent(_)}
       window.__diagSilent&&window.__diagSilent(e)
     }
   };

@@ -38,7 +38,7 @@
       menu.hidden=!checkbox.checked;
       menu.querySelectorAll("[data-value]").forEach(function(button){button.classList.toggle("active",button.dataset.value===(select.value||"manual"))});
     }
-    menu.querySelectorAll("[data-value]").forEach(function(button){button.addEventListener("click",function(){select.value=button.dataset.value;try{if(typeof window.saveReportSettings==="function")window.saveReportSettings()}catch(_){}render()})});
+    menu.querySelectorAll("[data-value]").forEach(function(button){button.addEventListener("click",function(){select.value=button.dataset.value;try{if(typeof window.saveReportSettings==="function")window.saveReportSettings()}catch(_){window.__diagSilent&&window.__diagSilent(_)}render()})});
     checkbox.addEventListener("change",render);render();
   }
   var previous=window.openReportSettings;
@@ -46,7 +46,7 @@
     var wrapped=function(){var result=previous.apply(this,arguments);setTimeout(enhance,0);setTimeout(enhance,80);return result};
     wrapped.__aceilReportDiagonalsMenuV1=true;
     window.openReportSettings=wrapped;
-    try{openReportSettings=wrapped}catch(_){}
+    try{openReportSettings=wrapped}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   document.addEventListener("A·CEIL-language-changed",function(){setTimeout(enhance,0)});
 })();

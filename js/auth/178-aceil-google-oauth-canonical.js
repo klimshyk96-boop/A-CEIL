@@ -23,7 +23,7 @@
       if(result.error)throw result.error;
       return result.data;
     }catch(error){
-      try{window.__diagSilent&&window.__diagSilent(error)}catch(_){}
+      try{window.__diagSilent&&window.__diagSilent(error)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
       if(typeof setAuthError==="function"){
         setAuthError("Google: "+(error&&error.message?error.message:"помилка входу"));
       }
