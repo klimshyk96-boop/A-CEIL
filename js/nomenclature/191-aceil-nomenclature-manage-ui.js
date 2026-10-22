@@ -198,7 +198,7 @@
   }
 ]);
 
-  // Pipe collars, film removal and cornice termination (original SVG artwork).
+  // Pipe collars, film and installation details (original SVG artwork).
   NOMENCLATURE_ICONS=NOMENCLATURE_ICONS.concat([
   {
     "key": "selected-pipe-bypass",
@@ -219,7 +219,21 @@
     "set": "selected",
     "label": "Обрив карнизу",
     "color": "#3159c9",
-    "shape": "<path d=\"M2 5h14v5H2M2 8h14M16 4v7M6 10v4m-2 0h4v7H4zM12 10v4m-2 0h4v7h-4zM19 6h3m-3 3h3\"/><path d=\"M16 15v5m-2-2 2-3 2 3\"/>"
+    "shape": "<path d=\"m2 7 14-3 6 3v10l-6 3L2 17z\" fill=\"currentColor\" fill-opacity=\".08\"/><path d=\"m2 7 14 3 6-3M16 10v10M2 11l11 2M2 14l11 2\"/><path d=\"m18 10 3-1v7l-3 1z\" fill=\"currentColor\" fill-opacity=\".65\" stroke=\"none\"/>"
+  },
+  {
+    "key": "selected-film-roll",
+    "set": "selected",
+    "label": "Плівка",
+    "color": "#3159c9",
+    "shape": "<path d=\"M6 4h12a3 3 0 0 1 0 6H8v8c0 1.7-1.3 3-3 3h13\"/><path d=\"M18 4v14a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1\" fill=\"currentColor\" fill-opacity=\".1\"/><path d=\"M5 4a3 3 0 0 1 0 6H2M5 7h.01\"/>"
+  },
+  {
+    "key": "selected-corner-fix",
+    "set": "selected",
+    "label": "Фіксація кута",
+    "color": "#3159c9",
+    "shape": "<path d=\"M4 3h5v12h12v6H4z\" fill=\"currentColor\" fill-opacity=\".12\"/><circle cx=\"6.5\" cy=\"7\" r=\"1\"/><circle cx=\"6.5\" cy=\"17.5\" r=\"1\"/><circle cx=\"17\" cy=\"18\" r=\"1\"/><path d=\"M13 5h6v6m-5-1 5-5\"/>"
   }
 ]);
 
