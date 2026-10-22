@@ -198,6 +198,31 @@
   }
 ]);
 
+  // Pipe collars, film removal and cornice termination (original SVG artwork).
+  NOMENCLATURE_ICONS=NOMENCLATURE_ICONS.concat([
+  {
+    "key": "selected-pipe-bypass",
+    "set": "selected",
+    "label": "Обхід труби",
+    "color": "#3159c9",
+    "shape": "<ellipse cx=\"12\" cy=\"5\" rx=\"3.5\" ry=\"2\"/><path d=\"M8.5 5v9c0 2.7 7 2.7 7 0V5M8.5 10C4.5 10.7 2 12.3 2 14.5 2 17.5 6.5 20 12 20s10-2.5 10-5.5c0-2.2-2.5-3.8-6.5-4.5M12 16v4\"/>"
+  },
+  {
+    "key": "selected-film-removal",
+    "set": "selected",
+    "label": "Демонтаж плівки",
+    "color": "#3159c9",
+    "shape": "<path d=\"M3 4h18M4 7h15v5c-4 0-7 3-7 7H4z\" fill=\"currentColor\" fill-opacity=\".1\"/><path d=\"M12 19c1-3 5-2 7-7M21 15v6m-3-3 3 3 2-3\"/>"
+  },
+  {
+    "key": "selected-cornice-end",
+    "set": "selected",
+    "label": "Обрив карнизу",
+    "color": "#3159c9",
+    "shape": "<path d=\"M2 5h14v5H2M2 8h14M16 4v7M6 10v4m-2 0h4v7H4zM12 10v4m-2 0h4v7h-4zM19 6h3m-3 3h3\"/><path d=\"M16 15v5m-2-2 2-3 2 3\"/>"
+  }
+]);
+
   function escapeText(value){
     return String(value==null?"":value).replace(/[&<>"']/g,function(ch){
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
