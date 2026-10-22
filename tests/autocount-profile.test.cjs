@@ -188,14 +188,26 @@ for (const source of ['floating_profile', 'walltypecolor:black:'+encodeURICompon
   const floating=items.find(x=>x.id==='floating');Object.assign(floating,{name:'Парящий чорний',qty:12,manualQtyOverride:true});
   const room=makeRoom({items,presets:[{name:'Парящий білий',color:'#00ccff'},{name:'Парящий профіль',color:'#ff9500'},{name:'Парящий чорний',color:'#aa3300'}]});
   assert.equal(room.profile().color,'#aa3300','matching physical variant has priority');
-  floating.qty=3;assert.equal(room.profile().whole,false,'partial manual quantity must not paint the entire room');assert.equal(room.profile().color,'#1d1d1f');
+  floating.qty=3;assert.equal(room.profile().whole,true,'manual H=0 selects the profile style without a perimeter quantity requirement');assert.equal(room.profile().color,'#aa3300');
+  items.find(x=>x.id==='base').qty=.01;assert.equal(room.profile().color,'#1d1d1f','positive base H restores its ordinary black outline');items.find(x=>x.id==='base').qty=0;
   floating.qty=12;items.push({id:'another',source:'floating_profile',name:'Парящий білий',qty:6,manualQtyOverride:true});floating.qty=6;
   assert.equal(room.profile().whole,false,'two mixed manual variants cannot select one colour for the whole contour');
 }
 {
-  const items=baseItems();Object.assign(items.find(x=>x.id==='base'),{qty:0,manualQtyOverride:true});
+  const items=baseItems();Object.assign(items.find(x=>x.id==='base'),{qty:0,manualQtyOverride:false});
   Object.assign(items.find(x=>x.id==='floating'),{qty:12,manualQtyOverride:true,sourceVariant:'black'});
-  const room=makeRoom({items,marks:[fullWall('partial',0,'Парящий профіль','#ff9500')],presets:[{name:'Парящий профіль',color:'#ff9500'}]});
-  assert.equal(room.profile().whole,false,'existing partial wall geometry remains authoritative');
+  const room=makeRoom({items,marks:[{...fullWall('partial',0,'Парящий профіль','#ff9500'),profileColor:'black'}],presets:[{name:'Парящий профіль',color:'#ff9500'}]});
+  assert.equal(room.profile().whole,false,'automatic zero H must not turn a partial wall mark into a whole-room choice');
+  items.find(x=>x.id==='base').manualQtyOverride=true;assert.equal(room.profile().color,'#ff9500','explicitly zeroing H selects the manual profile style even when wall marks exist');
+  assert.equal(room.qty('floating_profile','floating'),3,'manual style selection does not change quantity calculation from wall geometry');
 }
 console.log('Manual full-contour profile colour tests: OK');
+
+{
+ const items=baseItems();Object.assign(items.find(x=>x.id==='base'),{qty:0,manualQtyOverride:true});
+ Object.assign(items.find(x=>x.id==='floating'),{qty:3,manualQtyOverride:true,sourceVariant:'black'});
+ Object.assign(items.find(x=>x.id==='shadow'),{qty:12});
+ const room=makeRoom({items,marks:[0,1,2,3].map(i=>fullWall('shadow-'+i,i,'Тіньовий профіль')),presets:[{name:'Парящий профіль',color:'#ff9500'}]});
+ assert.equal(room.profile().color,'#ff9500');
+ assert.equal(room.qty('shadow_profile','shadow'),12,'manual drawing style must not replace geometric calculation rules');
+}

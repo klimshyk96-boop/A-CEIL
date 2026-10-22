@@ -395,8 +395,16 @@ function activeWholeContourProfile(draft,collection,state){
   var list=Array.isArray(collection)?collection:getElemItems();
   return explicitContourProfile(list,draft)||inferredContourProfile(list,state);
 }
+function manualContourStyle(list){
+  var base=list.filter(function(it){return it&&it.source==='main_profile';});
+  if(!base.length||!base.some(function(it){return it.manualQtyOverride===true;})
+    ||base.some(function(it){return (Number(it.qty)||0)!==0;}))return null;
+  var chosen=list.filter(function(it){return it&&it.manualQtyOverride===true&&Number(it.qty)>0
+    &&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(it));});
+  return chosen.length===1?chosen[0]:null;
+}
 function contourProfile(draft,collection,state){
-  var list=Array.isArray(collection)?collection:getElemItems(),selected=activeWholeContourProfile(draft,list,state),whole=!!selected;
+  var list=Array.isArray(collection)?collection:getElemItems(),selected=explicitContourProfile(list,draft)||manualContourStyle(list)||inferredContourProfile(list,state),whole=!!selected;
   if(!selected)selected=list.find(function(it){return it&&it.source==="main_profile"})||{id:"__base_aluminium__",source:"main_profile",name:"Базовий алюмінієвий профіль"};
   var presets=typeof window.rwe2WallPresetRead==="function"?window.rwe2WallPresetRead():[];
   presets=Array.isArray(presets)?presets:[];
@@ -407,7 +415,7 @@ function contourProfile(draft,collection,state){
 window.aceilContourProfile=contourProfile;
 window.aceilContourProfileColor=function(){var p=contourProfile();return p?p.color:"#1d1d1f";};
 window.aceilWholeContourCompute=function(source,item,ctx){
-  var selected=activeWholeContourProfile(item),profile=selected?contourProfile(item):null,relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
+  var selected=activeWholeContourProfile(item),profile=selected?{item:selected,source:contourSourceOfItem(selected)||selected.source}:null,relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
   if(!relevant.test(source))return null;
   if(!profile)return partialContourQty(source,item,ctx);
   var circle=typeof circleMode!=="undefined"&&circleMode;
