@@ -89,13 +89,14 @@ function _nomenV339MergeGroupsWithRoom(catalog,current){
   return out;
 }
 function _nomenV339CaptureCatalog(){
+  if(window.A_CEILColorPicker&&window.A_CEILColorPicker.captureDefinitions)window.A_CEILColorPicker.captureDefinitions();
   var runtimeItems=_nomenV339Clone(typeof elemItems!=="undefined"&&Array.isArray(elemItems)?elemItems:[]),runtimeGroups=_nomenV339Clone(typeof elemGroups!=="undefined"&&Array.isArray(elemGroups)?elemGroups:[]),previous=window.__A·CEILNomenCatalogV339||{items:[],groups:[]};
   var managed=_nomenV339RoomFilmItems(runtimeItems),managedGroups={},cleanItems=runtimeItems.filter(function(it){return !(it&&it.roomScoped===true)}),cleanGroups=runtimeGroups.filter(function(g){return !(g&&g.roomScoped===true)}),seenItems={},seenGroups={};
   managed.forEach(function(it){managedGroups[String(it.groupId)]=true});
   cleanItems.forEach(function(it){seenItems[_nomenV339Key(it)]=true});
-  (Array.isArray(previous.items)?previous.items:[]).forEach(function(it){if(managedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0&&!seenItems[_nomenV339Key(it)])cleanItems.push(_nomenV339Clone(it))});
+  (Array.isArray(previous.items)?previous.items:[]).forEach(function(it){if((it&&it.filmWidthDefinition===true||managedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0)&&!seenItems[_nomenV339Key(it)])cleanItems.push(_nomenV339Clone(it))});
   cleanGroups.forEach(function(g){seenGroups[String(g&&g.id)]=true});
-  (Array.isArray(previous.groups)?previous.groups:[]).forEach(function(g){if(managedGroups[String(g&&g.id)]&&!seenGroups[String(g.id)])cleanGroups.push(_nomenV339Clone(g))});
+  (Array.isArray(previous.groups)?previous.groups:[]).forEach(function(g){if((managedGroups[String(g&&g.id)]||cleanItems.some(function(it){return it&&it.filmWidthDefinition===true&&String(it.groupId)===String(g&&g.id)}))&&!seenGroups[String(g.id)])cleanGroups.push(_nomenV339Clone(g))});
   var catalog={
     items:_nomenV339CatalogItems(cleanItems),
     groups:_nomenV339Clone(cleanGroups)
