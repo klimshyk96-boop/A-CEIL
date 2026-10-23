@@ -55,20 +55,58 @@
       (group.roomScopedKind === "film-color" ? 20 : 0) + (group.roomScoped === true ? 10 : 0);
   }
 
+  function repairFilmReferences(allGroups, allItems) {
+    var changed=false,managed=allItems.filter(function(item){return item&&item.filmPickerManaged===true;});
+    var orphan=managed.filter(function(item){return !allGroups.some(function(group){return group&&String(group.id)===String(item.groupId);});});
+    if(orphan.length){
+      var group=allGroups.filter(isFilmGroup).sort(function(a,b){return scoreFilmGroup(b,allItems)-scoreFilmGroup(a,allItems);})[0];
+      if(!group){
+        var first=orphan.find(function(item){return Number(item.qty)>0;})||orphan[0];
+        group={id:first.groupId||'g_film_'+Date.now(),name:'',collapsed:false,roomScoped:true,roomScopedKind:'film-color',filmSeriesId:first.filmSeriesId||first.seriesId||'premium'};
+        allGroups.unshift(group);
+      }
+      orphan.forEach(function(item){item.groupId=group.id;});changed=true;
+    }
+    // A room snapshot can retain its managed rows while the catalogue replaces
+    // group IDs. Recover the label from film metadata, never from an empty name.
+    allGroups.forEach(function(group){
+      if(!group)return;
+      var own=managed.find(function(item){return String(item.groupId)===String(group.id);});
+      if(!own)return;
+      var series=group.filmSeriesId||own.filmSeriesId||own.seriesId||'premium';
+      var meta=(window.ACEIL_FILM_SERIES||[]).find(function(entry){return entry.id===series;});
+      if(!String(group.name||'').trim()){group.name='Плівка '+(meta&&meta.name||series.charAt(0).toUpperCase()+series.slice(1));changed=true;}
+      group.roomScoped=true;group.roomScopedKind='film-color';group.filmSeriesId=series;
+    });
+    // Remove only duplicate managed widths of the same film. Prefer the row
+    // carrying an actual room quantity/manual price over the zero default.
+    var seen=new Map(),remove=new Set();
+    managed.forEach(function(item){
+      var key=[String(item.groupId),item.filmSeriesId||item.seriesId||'premium',String(item.colorCode||item.name||'').toUpperCase(),Number(item.filmWidth)||0,Number(item.filmMaxWidth)||Number(item.filmWidth)||0].join('|');
+      var previous=seen.get(key);
+      if(!previous){seen.set(key,item);return;}
+      var score=function(row){return (Number(row.qty)>0?100:0)+(row.manualQtyOverride===true?10:0);};
+      if(score(item)>score(previous)){remove.add(previous);seen.set(key,item);}else remove.add(item);
+    });
+    if(remove.size){for(var i=allItems.length-1;i>=0;i--)if(remove.has(allItems[i]))allItems.splice(i,1);changed=true;}
+    return changed;
+  }
+
   function normalizeFilmGroups() {
     if (normalizing) return false;
     normalizing = true;
     try {
       var allGroups = groups(), allItems = items();
+      var repaired=repairFilmReferences(allGroups,allItems);
       var filmGroups = allGroups.filter(isFilmGroup);
-      if (!filmGroups.length) return false;
+      if (!filmGroups.length) return repaired;
 
       var keep = filmGroups.slice().sort(function (a, b) {
         return scoreFilmGroup(b, allItems) - scoreFilmGroup(a, allItems);
       })[0];
       var duplicateIds = filmGroups.filter(function (group) { return group !== keep; })
         .map(function (group) { return String(group.id); });
-      var changed = duplicateIds.length > 0;
+      var changed = repaired || duplicateIds.length > 0;
 
       if (duplicateIds.length) {
         for (var i = allItems.length - 1; i >= 0; i--) {
