@@ -70,7 +70,7 @@
     normalizing=true;
     try{
       var allGroups=groups(),allItems=items(),changed=false,buckets=new Map(),assigned=new Set();
-      allItems.forEach(function(item){var identity=filmIdentity(item,allGroups);if(!identity)return;
+      allItems.forEach(function(item){if(window.A_CEILColorPicker&&window.A_CEILColorPicker.prepareItem&&window.A_CEILColorPicker.prepareItem(item))changed=true;var identity=filmIdentity(item,allGroups);if(!identity)return;
         if(!buckets.has(identity.key))buckets.set(identity.key,{identity:identity,rows:[]});
         buckets.get(identity.key).rows.push(item);
       });
@@ -159,6 +159,7 @@
     if (typeof oldOpen === "function" && !oldOpen.__filmGroupStateFixV1) {
       var openWrapped = function () {
         normalizeFilmGroups();
+        groups().filter(isFilmGroup).forEach(function(group){group.collapsed=false;saveUi(group);});
         return oldOpen.apply(this, arguments);
       };
       openWrapped.__filmGroupStateFixV1 = true;
@@ -177,6 +178,7 @@
     });
   }
 
+  window.A_CEIL_ExpandFilmGroup = function(group){group.collapsed=false;saveUi(group);};
   window.A_CEIL_NormalizeFilmGroups = normalizeFilmGroups;
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once: true });
   else install();

@@ -97,6 +97,7 @@ window.rmSaveNomNewItemV320=function(){
     id:id,groupId:targetGroup,icon:"📦",name:name,qty:0,unit:unit,price:price,
     inputMode:"manual",source:source,sourceVariant:""
   };
+  if(window.A_CEILColorPicker&&window.A_CEILColorPicker.prepareItem)window.A_CEILColorPicker.prepareItem(item);
   getItems().push(item);
   try{if(typeof window.rmUniversalAutoCountV319==="function")window.rmUniversalAutoCountV319()}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   try{if(typeof renderElemList==="function")renderElemList()}catch(_){window.__diagSilent&&window.__diagSilent(_)}

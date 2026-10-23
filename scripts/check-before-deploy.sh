@@ -13,6 +13,7 @@ node tests/linear-cloud-restore.test.cjs || exit 1
 node tests/film-group-hydration.test.cjs || exit 1
 node tests/film-code-isolation.test.cjs || exit 1
 node tests/film-active-view.test.cjs || exit 1
+node tests/film-add-ui.test.cjs || exit 1
 node tests/pending-sync-queue-browser.test.cjs || exit 1
 node tests/shared-project-save.test.cjs || exit 1
 node tests/project-save-context.test.cjs || exit 1
