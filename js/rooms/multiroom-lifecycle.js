@@ -366,6 +366,11 @@
       incoming=(Array.isArray(incoming)?incoming:[]).map(function(remote){
         var lp=local.find(function(p){return match(p,remote&& (remote._dbId??remote.id));});
         if(!lp) return remote;
+        // Room preservation applies only to real objects. Normalizing every
+        // matched single drawing used to inject multiRoom into its cloud state.
+        var mode=window.A_CEIL_ProjectMode;
+        var localIsMulti=mode?mode.isMulti(lp):lp.multiRoom===true||lp.projectType==='apartment'||Array.isArray(lp.rooms)&&lp.rooms.length>0;
+        if(!localIsMulti)return remote;
         normalizeObject(lp); normalizeObject(remote);
         var localRooms=lp.rooms||[],remoteRooms=remote.rooms||[];
         if(localRooms.length>remoteRooms.length||lp._dirty||lp._syncStatus||lp._roomRevision){
