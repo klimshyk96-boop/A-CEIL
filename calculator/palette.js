@@ -15,7 +15,7 @@
   search.oninput=()=>{query=search.value.trim().toLocaleLowerCase('uk');render();};const tabs=document.createElement('div');tabs.className='variant-buttons';
   for(const [key,name] of [['','Усі'],['mat','Мат'],['lak','Глянець'],['satin','Сатин']]){const tab=document.createElement('button');tab.type='button';tab.dataset.filmTexture=key;tab.textContent=name;tab.onclick=()=>{texture=key;render();};tabs.append(tab);}
   filters.append(search,tabs);const count=document.createElement('p');count.id='filmColorCount';count.className='hint';count.setAttribute('aria-live','polite');const grid=document.createElement('div');grid.id='filmColorGrid';
-  dialog.append(header,filters,count,grid);document.body.append(dialog);
+  const source=document.createElement('p');source.id='filmColorSource';source.className='hint';source.append('Зразки кольорів: ');const sourceLink=document.createElement('a');sourceLink.href='https://pullsky.com.ua/stretch-ceilings/main-palette/';sourceLink.target='_blank';sourceLink.rel='noopener noreferrer';sourceLink.textContent='PullSky';source.append(sourceLink);dialog.append(header,filters,count,grid,source);document.body.append(dialog);
   button.onclick=()=>{texture='';query='';search.value='';render();dialog.showModal();};$('filmChoices').after(button);
   document.querySelectorAll('[data-film-series]').forEach(b=>{
    const series=b.dataset.filmSeries;b.disabled=!api.catalog.filmCatalog[series]||!entries(series).length;
@@ -31,8 +31,10 @@
   if(!api?.catalog.filmCatalog)return;const s=selected(),series=s.filmSeriesId||'premium';$('paletteTitle').textContent=({premium:'Premium',classic:'Classic',kralton:'Kralton'})[series]+' · усі кольори';
   document.querySelectorAll('[data-film-texture]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.filmTexture===texture));
   const all=entries(series),filtered=all.filter(e=>(!texture||e.texture===texture)&&(!query||(e.code+' '+(e.colorName||'')+' '+e.label).toLocaleLowerCase('uk').includes(query)));
+  $('filmColorSource').hidden=!filtered.some(e=>e.swatchSource==='PullSky');
   $('filmColorCount').textContent='Показано '+filtered.length+' із '+all.length+' кольорів';$('filmColorGrid').replaceChildren();
   for(const e of filtered){const b=document.createElement('button');b.type='button';b.dataset.filmCode=e.code;b.className='palette-color';b.setAttribute('aria-pressed',e.code===s.filmCode);
+   if(e.swatch){const swatch=document.createElement('span');swatch.className='palette-swatch';swatch.style.background=e.swatch;swatch.setAttribute('aria-hidden','true');b.append(swatch);}
    const code=document.createElement('b');code.textContent=e.code;const label=document.createElement('small');label.textContent=e.label+(e.colorName?' · '+e.colorName:'');b.append(code,label);
    b.onclick=()=>{select(series,e.code);$('filmPalette').close();};$('filmColorGrid').append(b);
   }
