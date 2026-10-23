@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const test = require('node:test');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../js/projects/032-aceil-pending-sync-queue.js'), 'utf8');
+const modeSource = fs.readFileSync(require('node:path').join(__dirname, '../js/projects/022-aceil-project-mode.js'), 'utf8');
 const copy = value => JSON.parse(JSON.stringify(value));
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function fixture(initial = [{id:'local-a', _dbId:'db-a', name:'old', state:'{}', _dirty:true}]) {
@@ -24,7 +25,8 @@ function fixture(initial = [{id:'local-a', _dbId:'db-a', name:'old', state:'{}',
     const q = {update(value){method='update';payload=value;return q},insert(value){method='insert';payload=value;return q},delete(){method='delete';return q},eq(key,value){id=value;return method==='delete'?request():q},select(){return q},single:request};
     return q;
   }};
-  vm.createContext(c); vm.runInContext(source,c);
+  c['A·CEIL'] = Object.assign(c['A·CEIL'] || {}, {ProjectRepository:c['A·CEIL'].ProjectRepository});
+  vm.createContext(c); vm.runInContext(modeSource,c); vm.runInContext(source,c);
   const items = () => states.get(owner) || [];
   const enqueue = (id='local-a', extra={}) => c.addToPendingQueue({type:'save',payload:{localId:id},addedAt:1,...extra});
   const reply = (index,id='db-a',error=null) => requests[index].resolve({data:error?null:{id},error});
@@ -112,4 +114,11 @@ test('apartment writes rebuild state.rooms from the latest repository rooms and 
 test('empty apartment data cannot overwrite a cloud drawing', async () => {
   const f=fixture([{id:'local-a',_dbId:'db-a',multiRoom:true,rooms:[],state:'{}'}]);f.enqueue();
   assert.equal(await f.c.flushPendingQueue(),false);assert.equal(f.requests.length,0);assert.equal(f.c.getPendingQueue().length,1);
+});
+test('a standalone drawing with stale apartment flags syncs and is repaired', async () => {
+  const state={projectType:'apartment',multiRoom:true,rooms:[],closed:true,pts:[{x:0,y:0},{x:2,y:0},{x:2,y:2}],lengths:[2,2,2]};
+  const f=fixture([{id:'local-a',_dbId:'db-a',multiRoom:true,projectType:'apartment',rooms:[],state:JSON.stringify(state),_dirty:true}]);
+  f.enqueue();const done=f.c.flushPendingQueue();await tick();
+  assert.equal(f.requests.length,1);assert.equal(f.requests[0].payload.state.closed,true);assert.equal(f.requests[0].payload.state.multiRoom,undefined);assert.equal(f.requests[0].payload.state.rooms,undefined);
+  f.reply(0);assert.equal(await done,true);const saved=f.items()[0];assert.equal(saved.multiRoom,undefined);assert.equal(saved.rooms,undefined);assert.equal(saved._dirty,undefined);
 });

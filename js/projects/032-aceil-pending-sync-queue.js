@@ -94,7 +94,9 @@ const PENDING_KEY = "ceiling_pendingSync";
     let state;
     try { state = typeof local.state === "string" ? JSON.parse(local.state || "{}") : clone(local.state || {}); }
     catch (_) { state = {}; }
-    if (local.multiRoom || local.projectType === "apartment" || state.multiRoom) {
+    const mode=window.A_CEIL_ProjectMode;
+    const isMulti=mode&&typeof mode.isMulti==='function'?mode.isMulti(local):(local.multiRoom || local.projectType === "apartment" || state.multiRoom);
+    if (isMulti) {
       const rooms = Array.isArray(local.rooms) ? clone(local.rooms) : state.rooms || [];
       const drawn = rooms.some(room => {
         let st = room.state || {};
@@ -103,7 +105,7 @@ const PENDING_KEY = "ceiling_pendingSync";
       });
       if (!drawn) throw new Error("Порожній об'єкт не замінює хмарний проєкт");
       state = {schemaVersion: state.schemaVersion || 3, projectType: "apartment", multiRoom: true, rooms};
-    }
+    } else if(mode&&typeof mode.cleanSingleState==='function') state=mode.cleanSingleState(local);
     const value = field => local[field] == null ? fallback[field] || "" : local[field];
     return {user_id: uid, name: value("name"), addr: value("addr"), phone: value("phone"), comment: value("comment"),
       area: value("area"), per: value("per"), in_corners: value("inC"), out_corners: value("outC"), thumb: local.thumb || "", state};
@@ -137,6 +139,7 @@ const PENDING_KEY = "ceiling_pendingSync";
     if (matches(local, window._currentProjectId)) window._currentProjectId = row.id;
     if (matches(local, window._activeObjectId)) window._activeObjectId = row.id;
     if (!changed && !newer) {
+      const mode=window.A_CEIL_ProjectMode;if(mode&&typeof mode.repair==='function')mode.repair(current);
       delete current._syncStatus; delete current._dirty; delete current._localUpdatedAt;
     } else {
       current._syncStatus = "pending_update";

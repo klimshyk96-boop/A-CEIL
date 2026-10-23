@@ -23,7 +23,9 @@
       if(typeof _activeObjectId === 'undefined' || _activeObjectId == null) return null;
       var list = Array.isArray(source) ? source : projects();
       var index = list.findIndex(function(project){ return matches(project,_activeObjectId); });
-      return index >= 0 ? {projects:list,index:index,obj:list[index]} : null;
+      if(index < 0) return null;
+      var candidate=list[index],mode=window.A_CEIL_ProjectMode;
+      return mode&&typeof mode.isMulti==='function'&&!mode.isMulti(candidate)?null:{projects:list,index:index,obj:candidate};
     } catch(_) { return null; }
   }
   function setCurrentMeta(obj,name,addr,phone,comment){

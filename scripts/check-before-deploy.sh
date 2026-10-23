@@ -7,6 +7,8 @@ cd "$ROOT_DIR" || exit 1
 python3 scripts/check-runtime.py || exit 1
 node tests/security-config.test.cjs || exit 1
 node tests/pending-sync-queue.test.cjs || exit 1
+node tests/project-mode.test.cjs || exit 1
+node tests/project-mode-browser.test.cjs || exit 1
 node tests/pending-sync-queue-browser.test.cjs || exit 1
 node tests/shared-project-save.test.cjs || exit 1
 node tests/project-save-context.test.cjs || exit 1

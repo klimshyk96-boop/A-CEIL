@@ -19,6 +19,7 @@
   "js/core/019-aceil-core-ui-rooms-bulk-walls.js",
   "js/reports/020-aceil-share-card-export.js",
   "js/nomenclature/021-aceil-optional-install-works.js",
+  "js/projects/022-aceil-project-mode.js",
   "js/projects/023-aceil-projects-store-and-list.js",
   "js/nomenclature/025-aceil-state-persistence-nomenclature.js",
   "js/nomenclature/026-aceil-render-elem-list-pipeline.js",
