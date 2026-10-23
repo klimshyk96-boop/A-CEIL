@@ -161,8 +161,7 @@
    "js/admin/159-aceil-access-clean.js",
    "js/nomenclature/164-aceil-elements-open-readonly.js",
    "js/nomenclature/171-aceil-offline-nomenclature.js",
-   "js/reports/184-aceil-estimate-variants-ui.js",
-   "js/nomenclature/212-aceil-film-group-state-fix.js"
+   "js/reports/184-aceil-estimate-variants-ui.js"
   ],
   "_rwe2CurrentWallId": [
    "js/canvas/066-aceil-wall-anchor-sync.js",

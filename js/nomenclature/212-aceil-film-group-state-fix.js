@@ -3,7 +3,6 @@
   if (window.__A_CEIL_FILM_GROUP_STATE_FIX_V1) return;
   window.__A_CEIL_FILM_GROUP_STATE_FIX_V1 = true;
 
-  var UI_KEY = "A_CEIL_nomenclature_group_ui_v1";
   var normalizing = false;
 
   function norm(value) {
@@ -25,28 +24,6 @@
     return group.roomScopedKind === "film-color" || !!group.filmSeriesId ||
       name.indexOf("плів") >= 0 || name.indexOf("полотно") >= 0 || name.indexOf("film") >= 0;
   }
-  function stateKey(group) {
-    if (isFilmGroup(group)) return "film:" + String(group.filmSeriesId || "premium") + ":" + String(group.filmCode || "");
-    return "group:" + String(group && group.id || "");
-  }
-  function readUi() {
-    try {
-      var data = JSON.parse(localStorage.getItem(UI_KEY) || "{}");
-      return data && typeof data === "object" ? data : {};
-    } catch (_) { return {}; }
-  }
-  function saveUi(group) {
-    if (!group) return;
-    var data = readUi();
-    data[stateKey(group)] = { collapsed: !!group.collapsed, savedAt: Date.now() };
-    try { localStorage.setItem(UI_KEY, JSON.stringify(data)); } catch (_) {}
-  }
-  function applyUi(group) {
-    if (!group) return;
-    var saved = readUi()[stateKey(group)];
-    if (saved && typeof saved.collapsed === "boolean") group.collapsed = saved.collapsed;
-  }
-
   function scoreFilmGroup(group, allItems) {
     var own = allItems.filter(function (item) { return item && String(item.groupId) === String(group.id); });
     var managed = own.filter(function (item) { return item.filmPickerManaged === true; });
@@ -65,7 +42,7 @@
     return {code:code,series:series,texture:code[0]==='S'?'satin':code[0]==='L'?'lak':'mat',key:series+':'+code};
   }
 
-  function normalizeFilmGroups() {
+  function normalizeFilmGroups(options) {
     if(normalizing)return false;
     normalizing=true;
     try{
@@ -120,10 +97,10 @@
         candidates.slice(1).forEach(function(group){
           if(!allItems.some(function(item){return item&&String(item.groupId)===String(group.id);})){allGroups.splice(allGroups.indexOf(group),1);changed=true;}
         });
-        applyUi(keep);
       });
       var first=allGroups.filter(function(group){return assigned.has(group);}).sort(function(a,b){return scoreFilmGroup(b,allItems)-scoreFilmGroup(a,allItems);})[0];
       var index=allGroups.indexOf(first);if(index>0){allGroups.splice(index,1);allGroups.unshift(first);changed=true;}
+      if(options&&options.expand)allGroups.filter(isFilmGroup).forEach(function(group){if(group.collapsed){group.collapsed=false;changed=true;}});
       return changed;
     }finally{normalizing=false;}
   }
@@ -131,54 +108,14 @@
   function install() {
     (function(p){if(p)p.stage("filmGroups",{around:function(next,args){
         normalizeFilmGroups();
-        groups().forEach(applyUi);
         return next();
       }})})(window["A\u00b7CEIL"]&&window["A\u00b7CEIL"].pipeline&&window["A\u00b7CEIL"].pipeline.get("renderElemList"));
 
-    var oldToggle = window.toggleGroupCollapse ||
-      (typeof toggleGroupCollapse === "function" ? toggleGroupCollapse : null);
-    if (typeof oldToggle === "function" && !oldToggle.__filmGroupStateFixV1) {
-      var toggleWrapped = function (id) {
-        var before = groups().find(function (row) { return row && String(row.id) === String(id); });
-        if (before) {
-          var data = readUi();
-          data[stateKey(before)] = { collapsed: !before.collapsed, savedAt: Date.now() };
-          try { localStorage.setItem(UI_KEY, JSON.stringify(data)); } catch (_) {}
-        }
-        var result = oldToggle.apply(this, arguments);
-        var group = groups().find(function (row) { return row && String(row.id) === String(id); });
-        saveUi(group);
-        return result;
-      };
-      toggleWrapped.__filmGroupStateFixV1 = true;
-      window.toggleGroupCollapse = toggleWrapped;
-      try { toggleGroupCollapse = toggleWrapped; } catch (_) {}
-    }
+    // Group.collapsed is the single UI state. Retire the duplicate preference cache.
+    try { localStorage.removeItem("A_CEIL_nomenclature_group_ui_v1"); } catch (_) {}
 
-    var oldOpen = window.openElementsModal || (typeof openElementsModal === "function" ? openElementsModal : null);
-    if (typeof oldOpen === "function" && !oldOpen.__filmGroupStateFixV1) {
-      var openWrapped = function () {
-        normalizeFilmGroups();
-        groups().filter(isFilmGroup).forEach(function(group){group.collapsed=false;saveUi(group);});
-        return oldOpen.apply(this, arguments);
-      };
-      openWrapped.__filmGroupStateFixV1 = true;
-      window.openElementsModal = openWrapped;
-      try { openElementsModal = openWrapped; } catch (_) {}
-    }
-
-    [0, 400, 1500, 3500].forEach(function (delay) {
-      setTimeout(function () {
-        var changed = normalizeFilmGroups();
-        if (changed) {
-          try { if (typeof renderElemList === "function" && document.getElementById("elementsModal")?.classList.contains("open")) renderElemList(); } catch (_) {}
-          try { if (typeof saveState === "function") saveState(); } catch (_) {}
-        }
-      }, delay);
-    });
   }
 
-  window.A_CEIL_ExpandFilmGroup = function(group){group.collapsed=false;saveUi(group);};
   window.A_CEIL_NormalizeFilmGroups = normalizeFilmGroups;
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once: true });
   else install();

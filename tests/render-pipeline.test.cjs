@@ -82,7 +82,7 @@ function makeContext({ items, groups, localStorage, base }) {
   const groups = [
     { id: "ordinary", name: "Профілі" },
     { id: "film-old", name: "Плівка", roomScopedKind: "film-color", filmSeriesId: "premium" },
-    { id: "film-active", name: "Полотно", roomScopedKind: "film-color", filmSeriesId: "premium" }
+    { id: "film-active", name: "Полотно", collapsed: false, roomScopedKind: "film-color", filmSeriesId: "premium" }
   ];
   const items = [
     { id: "old", groupId: "film-old", colorCode: "M303", filmPickerManaged: true, filmWidth: 3.6, qty: 0 },
@@ -111,7 +111,12 @@ function makeContext({ items, groups, localStorage, base }) {
   context.window.renderElemList();
   assert.deepEqual(snapshot.groups, ["film-active", "ordinary", "g_film_premium_L303"], "active film is first and a distinct manual code keeps its own group");
   assert.deepEqual(snapshot.items, ["active", "legacy", "profile"], "only duplicate managed widths are removed; manual gloss is retained");
-  assert.equal(snapshot.collapsed, true, "saved film-group UI state must be applied before rendering");
+  assert.equal(snapshot.collapsed, false, "retired UI cache must not override group state");
+  assert.equal(context.localStorage.getItem("A_CEIL_nomenclature_group_ui_v1"), null, "duplicate group UI cache is removed");
+  groups[0].collapsed=true;context.window.renderElemList();
+  assert.equal(snapshot.collapsed,true,"rendering preserves the current manual collapse");
+  context.window.A_CEIL_NormalizeFilmGroups({expand:true});context.window.renderElemList();
+  assert.equal(snapshot.collapsed,false,"opening expands film in the canonical group state");
 }
 
 console.log("Render pipeline rules and film groups: OK");
