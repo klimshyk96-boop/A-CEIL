@@ -19,7 +19,7 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
    elemGroups=elemGroups.filter(g=>g.roomScopedKind!=='film-color');renderElemList();
    return {groups:structuredClone(elemGroups),film:elemItems.filter(x=>x.filmPickerManaged)};
   });
-  assert.equal(missing.groups.filter(g=>g.roomScopedKind==='film-color').length,1);assert.ok(missing.film.every(x=>missing.groups.some(g=>g.id===x.groupId&&g.name==='Плівка Premium')));
+  assert.equal(missing.groups.filter(g=>g.roomScopedKind==='film-color').length,1);assert.ok(missing.film.every(x=>missing.groups.some(g=>g.id===x.groupId&&/^Плівка Premium(?: · M303)?$/.test(g.name))));
   const anonymous=await page.evaluate(()=>{
    const filmGroup=elemGroups.find(g=>g.roomScopedKind==='film-color');filmGroup.name='';
    renderElemList();renderElemList();

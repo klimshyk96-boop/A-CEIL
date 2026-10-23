@@ -26,7 +26,7 @@
       name.indexOf("плів") >= 0 || name.indexOf("полотно") >= 0 || name.indexOf("film") >= 0;
   }
   function stateKey(group) {
-    if (isFilmGroup(group)) return "film:" + String(group.filmSeriesId || "premium");
+    if (isFilmGroup(group)) return "film:" + String(group.filmSeriesId || "premium") + ":" + String(group.filmCode || "");
     return "group:" + String(group && group.id || "");
   }
   function readUi() {
@@ -55,95 +55,77 @@
       (group.roomScopedKind === "film-color" ? 20 : 0) + (group.roomScoped === true ? 10 : 0);
   }
 
-  function repairFilmReferences(allGroups, allItems) {
-    var changed=false,managed=allItems.filter(function(item){return item&&item.filmPickerManaged===true;});
-    var orphan=managed.filter(function(item){return !allGroups.some(function(group){return group&&String(group.id)===String(item.groupId);});});
-    if(orphan.length){
-      var group=allGroups.filter(isFilmGroup).sort(function(a,b){return scoreFilmGroup(b,allItems)-scoreFilmGroup(a,allItems);})[0];
-      if(!group){
-        var first=orphan.find(function(item){return Number(item.qty)>0;})||orphan[0];
-        group={id:first.groupId||'g_film_'+Date.now(),name:'',collapsed:false,roomScoped:true,roomScopedKind:'film-color',filmSeriesId:first.filmSeriesId||first.seriesId||'premium'};
-        allGroups.unshift(group);
-      }
-      orphan.forEach(function(item){item.groupId=group.id;});changed=true;
-    }
-    // A room snapshot can retain its managed rows while the catalogue replaces
-    // group IDs. Recover the label from film metadata, never from an empty name.
-    allGroups.forEach(function(group){
-      if(!group)return;
-      var own=managed.find(function(item){return String(item.groupId)===String(group.id);});
-      if(!own)return;
-      var series=group.filmSeriesId||own.filmSeriesId||own.seriesId||'premium';
-      var meta=(window.ACEIL_FILM_SERIES||[]).find(function(entry){return entry.id===series;});
-      if(!String(group.name||'').trim()){group.name='Плівка '+(meta&&meta.name||series.charAt(0).toUpperCase()+series.slice(1));changed=true;}
-      group.roomScoped=true;group.roomScopedKind='film-color';group.filmSeriesId=series;
-    });
-    // Remove only duplicate managed widths of the same film. Prefer the row
-    // carrying an actual room quantity/manual price over the zero default.
-    var seen=new Map(),remove=new Set();
-    managed.forEach(function(item){
-      var key=[String(item.groupId),item.filmSeriesId||item.seriesId||'premium',String(item.colorCode||item.name||'').toUpperCase(),Number(item.filmWidth)||0,Number(item.filmMaxWidth)||Number(item.filmWidth)||0].join('|');
-      var previous=seen.get(key);
-      if(!previous){seen.set(key,item);return;}
-      var score=function(row){return (Number(row.qty)>0?100:0)+(row.manualQtyOverride===true?10:0);};
-      if(score(item)>score(previous)){remove.add(previous);seen.set(key,item);}else remove.add(item);
-    });
-    if(remove.size){for(var i=allItems.length-1;i>=0;i--)if(remove.has(allItems[i]))allItems.splice(i,1);changed=true;}
-    return changed;
+  function filmIdentity(item, allGroups) {
+    if(!item||!(item.filmPickerManaged===true||Number(item.filmWidth)>0))return null;
+    var named=String(item.name||'').toUpperCase().match(/\b[MLS]\d{3}\b/);
+    var code=named?named[0]:String(item.colorCode||'').toUpperCase();
+    if(!/^[MLS]\d{3}$/.test(code))return null;
+    var group=allGroups.find(function(g){return g&&String(g.id)===String(item.groupId);});
+    var series=item.filmSeriesId||item.seriesId||group&&group.filmSeriesId||'premium';
+    return {code:code,series:series,texture:code[0]==='S'?'satin':code[0]==='L'?'lak':'mat',key:series+':'+code};
   }
 
   function normalizeFilmGroups() {
-    if (normalizing) return false;
-    normalizing = true;
-    try {
-      var allGroups = groups(), allItems = items();
-      var repaired=repairFilmReferences(allGroups,allItems);
-      var filmGroups = allGroups.filter(isFilmGroup);
-      if (!filmGroups.length) return repaired;
-
-      var keep = filmGroups.slice().sort(function (a, b) {
-        return scoreFilmGroup(b, allItems) - scoreFilmGroup(a, allItems);
-      })[0];
-      var duplicateIds = filmGroups.filter(function (group) { return group !== keep; })
-        .map(function (group) { return String(group.id); });
-      var changed = repaired || duplicateIds.length > 0;
-
-      if (duplicateIds.length) {
-        for (var i = allItems.length - 1; i >= 0; i--) {
-          if (allItems[i] && duplicateIds.indexOf(String(allItems[i].groupId)) >= 0) allItems.splice(i, 1);
-        }
-        for (var g = allGroups.length - 1; g >= 0; g--) {
-          if (allGroups[g] !== keep && isFilmGroup(allGroups[g])) allGroups.splice(g, 1);
-        }
-      }
-
-      var keepItems = allItems.filter(function (item) {
-        return item && String(item.groupId) === String(keep.id);
+    if(normalizing)return false;
+    normalizing=true;
+    try{
+      var allGroups=groups(),allItems=items(),changed=false,buckets=new Map(),assigned=new Set();
+      allItems.forEach(function(item){var identity=filmIdentity(item,allGroups);if(!identity)return;
+        if(!buckets.has(identity.key))buckets.set(identity.key,{identity:identity,rows:[]});
+        buckets.get(identity.key).rows.push(item);
       });
-      if (keepItems.some(function (item) { return item.filmPickerManaged === true; })) {
-        for (var j = allItems.length - 1; j >= 0; j--) {
-          var item = allItems[j];
-          if (item && String(item.groupId) === String(keep.id) &&
-              Number(item.filmWidth) > 0 && item.filmPickerManaged !== true) {
-            allItems.splice(j, 1);
-            changed = true;
-          }
+      // Reserve an existing group for its own code before repairing orphan rows.
+      // A generic film group follows its active managed film, never another
+      // manually added texture that happens to use the same roll width.
+      var preferred=new Map();
+      allGroups.forEach(function(group){
+        if(!group)return;
+        var own=allItems.filter(function(item){return item&&String(item.groupId)===String(group.id)&&filmIdentity(item,allGroups);});
+        var explicit=String(group.filmCode||'').toUpperCase();
+        var row=own.find(function(item){return filmIdentity(item,allGroups).code===explicit;})||
+          own.find(function(item){return item.filmPickerManaged===true&&Number(item.qty)>0;})||own.find(function(item){return item.filmPickerManaged===true;})||own[0];
+        if(row)preferred.set(group,filmIdentity(row,allGroups).key);
+      });
+      buckets.forEach(function(bucket){
+        var identity=bucket.identity;
+        var candidates=allGroups.filter(function(group){return !assigned.has(group)&&preferred.get(group)===identity.key;});
+        candidates.sort(function(a,b){return scoreFilmGroup(b,allItems)-scoreFilmGroup(a,allItems);});
+        var keep=candidates[0];
+        if(!keep){
+          var base='g_film_'+identity.series+'_'+identity.code,gid=base,suffix=1;
+          while(allGroups.some(function(group){return group&&String(group.id)===gid;}))gid=base+'_'+suffix++;
+          var meta=(window.ACEIL_FILM_SERIES||[]).find(function(entry){return entry.id===identity.series;});
+          keep={id:gid,name:'Плівка '+(meta&&meta.name||identity.series)+' · '+identity.code,collapsed:false};
+          allGroups.push(keep);changed=true;
         }
-      }
-
-      keep.roomScoped = true;
-      keep.roomScopedKind = "film-color";
-      keep.filmSeriesId = keep.filmSeriesId || "premium";
-      applyUi(keep);
-
-      var index = allGroups.indexOf(keep);
-      if (index > 0) {
-        allGroups.splice(index, 1);
-        allGroups.unshift(keep);
-        changed = true;
-      }
+        assigned.add(keep);
+        var meta=(window.ACEIL_FILM_SERIES||[]).find(function(entry){return entry.id===identity.series;});
+        if(!String(keep.name||'').trim()){keep.name='Плівка '+(meta&&meta.name||identity.series.charAt(0).toUpperCase()+identity.series.slice(1));changed=true;}
+        keep.filmSeriesId=identity.series;keep.filmCode=identity.code;keep.filmTexture=identity.texture;
+        if(bucket.rows.some(function(item){return item.filmPickerManaged===true;})){keep.roomScoped=true;keep.roomScopedKind='film-color';}
+        bucket.rows.forEach(function(item){
+          if(String(item.groupId)!==String(keep.id)){item.groupId=keep.id;changed=true;}
+          if(item.filmPickerManaged===true){item.colorCode=identity.code;item.colorTexture=identity.texture;item.seriesId=identity.series;item.filmSeriesId=identity.series;}
+        });
+        // Deduplicate only managed rows for this exact code, series and width.
+        // Manual catalogue rows and widths are user data and are retained.
+        var seen=new Map(),remove=new Set();
+        bucket.rows.filter(function(item){return item.filmPickerManaged===true;}).forEach(function(item){
+          var key=[Number(item.filmWidth)||0,Number(item.filmMaxWidth)||Number(item.filmWidth)||0].join('|'),previous=seen.get(key);
+          if(!previous){seen.set(key,item);return;}
+          var score=function(row){return (Number(row.qty)>0?100:0)+(row.manualQtyOverride===true?10:0);};
+          if(score(item)>score(previous)){remove.add(previous);seen.set(key,item);}else remove.add(item);
+        });
+        if(remove.size){for(var i=allItems.length-1;i>=0;i--)if(remove.has(allItems[i]))allItems.splice(i,1);changed=true;}
+        candidates.slice(1).forEach(function(group){
+          if(!allItems.some(function(item){return item&&String(item.groupId)===String(group.id);})){allGroups.splice(allGroups.indexOf(group),1);changed=true;}
+        });
+        applyUi(keep);
+      });
+      var first=allGroups.filter(function(group){return assigned.has(group);}).sort(function(a,b){return scoreFilmGroup(b,allItems)-scoreFilmGroup(a,allItems);})[0];
+      var index=allGroups.indexOf(first);if(index>0){allGroups.splice(index,1);allGroups.unshift(first);changed=true;}
       return changed;
-    } finally { normalizing = false; }
+    }finally{normalizing=false;}
   }
 
   function install() {

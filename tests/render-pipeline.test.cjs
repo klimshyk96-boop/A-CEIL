@@ -85,9 +85,9 @@ function makeContext({ items, groups, localStorage, base }) {
     { id: "film-active", name: "Полотно", roomScopedKind: "film-color", filmSeriesId: "premium" }
   ];
   const items = [
-    { id: "old", groupId: "film-old", filmPickerManaged: true, filmWidth: 3.2, qty: 0 },
-    { id: "active", groupId: "film-active", filmPickerManaged: true, filmWidth: 4.2, qty: 12 },
-    { id: "legacy", groupId: "film-active", filmWidth: 3.2, qty: 0 },
+    { id: "old", groupId: "film-old", colorCode: "M303", filmPickerManaged: true, filmWidth: 3.6, qty: 0 },
+    { id: "active", groupId: "film-active", colorCode: "M303", filmPickerManaged: true, filmWidth: 3.6, qty: 12 },
+    { id: "legacy", name: "L303 5.8м", groupId: "film-active", filmWidth: 5.8, qty: 0 },
     { id: "profile", groupId: "ordinary", qty: 5 }
   ];
   let snapshot = null;
@@ -96,7 +96,7 @@ function makeContext({ items, groups, localStorage, base }) {
     groups,
     localStorage: storage({
       A_CEIL_nomenclature_group_ui_v1: JSON.stringify({
-        "film:premium": { collapsed: true, savedAt: 1 }
+        "film:premium:M303": { collapsed: true, savedAt: 1 }
       })
     }),
     base() {
@@ -109,8 +109,8 @@ function makeContext({ items, groups, localStorage, base }) {
   });
   vm.runInContext(read("js/nomenclature/212-aceil-film-group-state-fix.js"), context, { filename: "212-aceil-film-group-state-fix.js" });
   context.window.renderElemList();
-  assert.deepEqual(snapshot.groups, ["film-active", "ordinary"], "active film group must be the single first film group");
-  assert.deepEqual(snapshot.items, ["active", "profile"], "duplicate and stale film rows must be removed");
+  assert.deepEqual(snapshot.groups, ["film-active", "ordinary", "g_film_premium_L303"], "active film is first and a distinct manual code keeps its own group");
+  assert.deepEqual(snapshot.items, ["active", "legacy", "profile"], "only duplicate managed widths are removed; manual gloss is retained");
   assert.equal(snapshot.collapsed, true, "saved film-group UI state must be applied before rendering");
 }
 

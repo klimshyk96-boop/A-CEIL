@@ -57,6 +57,7 @@ function _nomenV339CatalogItems(source){
     /* Room-local results must NEVER become catalog authority. */
     it.qty=0;
     it.manualQtyOverride=false;
+    delete it.filmRoomSelected;
     it.autoFilled=false;
     it.autoZero=true;
     delete it.contourInsertSuppressed;it.insertSelected=aceilDefaultInsertSelection(it);

@@ -12,6 +12,7 @@ function zeroResult(it){
   var c=clone(it||{});
   c.qty=0;
   c.manualQtyOverride=false;
+  delete c.filmRoomSelected;
   delete c.contourInsertSuppressed;
   c.autoFilled=false;c.autoZero=true;
   /* A whole-contour replacement is a room decision, never a catalog default.
