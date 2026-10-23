@@ -293,7 +293,7 @@
   function chooseSvgIcon(key){
     if(!_editingIconId)return;
     var item=elemItems.find(function(candidate){return candidate.id===_editingIconId});
-    if(item){item.icon="svg:"+key;renderElemList();saveState()}
+    if(item){item.icon="svg:"+key;item.iconUserSelected=true;renderElemList();saveState()}
     closeModal("emojiModal");
   }
   function autoChooseIcon(){
