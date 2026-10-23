@@ -69,18 +69,10 @@ function injectDiscountAdvanceUI(){
   document.getElementById("rsAdvanceAmount").value = (rs.advanceAmount != null) ? rs.advanceAmount : "";
 }
 
-var oldOpenRS = window.openReportSettings;
-if ("function" == typeof oldOpenRS && !oldOpenRS.__discAdv401) {
-  var wrappedOpenRS = function(){
-    var r = oldOpenRS.apply(this, arguments);
+window.A·CEIL.pipeline.get("openReportSettings").stage("discountAdvance",{around:function(next){
+    var r = next();
     try { setTimeout(injectDiscountAdvanceUI, 30); } catch(e){window.__diagSilent&&window.__diagSilent(e)}
-    return r;
-  };
-  wrappedOpenRS.__discAdv401 = true;
-  window.openReportSettings = wrappedOpenRS;
-  try { openReportSettings = wrappedOpenRS; } catch(e){window.__diagSilent&&window.__diagSilent(e)}
-}
-
+    return r;}});
 // --- 3. Compute totals ---
 function sumElemItems(items){
   var total = 0;

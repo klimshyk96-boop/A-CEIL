@@ -2,6 +2,8 @@
 const assert=require('assert/strict');const {chromium}=require('playwright');const {open,reveal}=require('./browser-review.cjs');
 const checks=[];function check(n,v,i){assert.ok(v,n+': '+JSON.stringify(i));checks.push(n);}
 const EXPECT={
+ saveWallEdit:["header","profileColor","autocount","colorAutosource","breaks","distance","wallPersistence"],
+ openReportSettings:["discountAdvance","managerCard","diagonalSettings"],
  openWallEditModal:["presets","closeMenus","anchor","preview","toolbar","profileColor","placement","simplify"],
  rwe2Save:["profileColor","autocount","colorAutosource","breaks","distance"],
  autoFillNomenclature:["linear","universal","colorFix","cornices","insertChoice","filmFix"],

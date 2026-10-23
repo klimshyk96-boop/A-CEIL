@@ -1,8 +1,8 @@
 const assert=require('node:assert/strict'),path=require('node:path');
 const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.cjs');
 const root=path.join(__dirname,'..'),baseline=process.env.ACEIL_WALL_EDITOR_BASELINE;
-const expected={openWallEditModal:['presets','closeMenus','anchor','preview','toolbar','profileColor','placement','simplify'],rwe2Save:['profileColor','autocount','colorAutosource','breaks','distance']};
-async function run(browser,source,width){
+const expected={openWallEditModal:['presets','closeMenus','anchor','preview','toolbar','profileColor','placement','simplify'],rwe2Save:['profileColor','autocount','colorAutosource','breaks','distance'],saveWallEdit:['header','profileColor','autocount','colorAutosource','breaks','distance','wallPersistence']};
+async function run(browser,source,width,legacy=false){
  const {page,errors}=await open(browser,width,1,source);await reveal(page);await page.waitForTimeout(1000);
  const result=[];
  for(const scenario of [
@@ -34,8 +34,14 @@ async function run(browser,source,width){
    v('rwe2Name',s.type).dispatchEvent(new Event('input',{bubbles:true}));
    v('rwe2Anchor',s.anchor);rwe2AnchorChanged();v('rwe2Len',s.len);v('rwe2Offset',s.offset);
    v('rwe2WallDistance',23);v('rwe2ColorValue','#7c3aed');rwe2SetProfileColor(s.color);
-   document.getElementById('rwe2ForceBreaks').checked=s.force;rwe2Save();
-  },scenario);
+   document.getElementById('rwe2ForceBreaks').checked=s.force;
+   if(s.legacy){
+    for(const[id,value]of Object.entries({wallEditType:s.type,wallEditColor:'#7c3aed',wallEditAnchor:s.anchor,wallEditLen:s.len,wallEditOffset:s.offset})){
+     let input=document.getElementById(id);if(!input){input=document.createElement('input');input.id=id;input.type='hidden';document.body.appendChild(input)}input.value=String(value);
+    }
+    saveWallEdit();
+   }else rwe2Save();
+  },{...scenario,legacy});
   await page.waitForTimeout(180);
   const saved=await page.evaluate(()=>{
    const fields=m=>{const out={};for(const k of ['id','sideIndex','type','lenCm','offsetCm','anchor','color','profileColor','wallDistanceCm','forceBreaks','_fresh'])if(m&&m[k]!==undefined)out[k]=m[k];return out};
@@ -49,7 +55,7 @@ async function run(browser,source,width){
   result.push({opened,saved});
  }
  if(source===root){
-  const contract=await page.evaluate(()=>Object.fromEntries(['openWallEditModal','rwe2Save'].map(name=>{const p=window['A·CEIL'].pipeline.get(name);return[name,{order:p.order,stages:p.registered(),duplicate:p.stage(p.order[0],{})}]})));
+  const contract=await page.evaluate(()=>Object.fromEntries(['openWallEditModal','rwe2Save','saveWallEdit'].map(name=>{const p=window['A·CEIL'].pipeline.get(name);return[name,{order:p.order,stages:p.registered(),duplicate:p.stage(p.order[0],{})}]})));
   for(const[name,order]of Object.entries(expected)){assert.deepEqual(contract[name].order,order);assert.deepEqual(contract[name].stages,order);assert.equal(contract[name].duplicate,false)}
  }
  // Rapidly selecting another mark must still edit that mark after delayed UI setup.
@@ -58,5 +64,5 @@ async function run(browser,source,width){
  assert.deepEqual(errors,[]);await page.close();return result;
 }
 (async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.ACEIL_CHROMIUM_PATH||undefined});try{
- for(const width of [390,1440]){const actual=await run(browser,root,width);if(baseline)assert.deepEqual(actual,await run(browser,baseline,width));console.log('PASS wall editor: anchors, colours, distance, breaks, overhang, local persistence and pipeline '+width+'px'+(baseline?' (matches baseline)':''))}
+ for(const width of [390,1440])for(const legacy of [false,true]){const actual=await run(browser,root,width,legacy);if(baseline)assert.deepEqual(actual,await run(browser,baseline,width,legacy));console.log('PASS wall editor '+(legacy?'legacy':'modern')+': anchors, colours, distance, breaks, overhang, local persistence and pipeline '+width+'px'+(baseline?' (matches baseline)':''))}
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});

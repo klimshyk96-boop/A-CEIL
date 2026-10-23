@@ -283,8 +283,7 @@ function injectManagerCard(){
   card.querySelector("button").onclick=function(){try{if(typeof closeReportSettings==="function")closeReportSettings()}catch(_){window.__diagSilent&&window.__diagSilent(_)}setTimeout(window.A_CEIL_OpenManagerReport,60)};
   if(target&&target.parentNode)target.parentNode.insertBefore(card,target);else modal.appendChild(card);
 }
-var prev=window.openReportSettings;
-if(typeof prev==="function"&&!prev.__managerReportV2){var wrapped=function(){var r=prev.apply(this,arguments);setTimeout(injectManagerCard,30);setTimeout(injectManagerCard,160);return r};wrapped.__managerReportV2=true;window.openReportSettings=wrapped;try{openReportSettings=wrapped}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
+window.A·CEIL.pipeline.get("openReportSettings").stage("managerCard",{around:function(next){var r=next();setTimeout(injectManagerCard,30);setTimeout(injectManagerCard,160);return r}});
 document.addEventListener("click",function(e){try{var m=document.getElementById("reportSettingsModal");if(m&&m.style.display!=="none")setTimeout(injectManagerCard,20)}catch(_){window.__diagSilent&&window.__diagSilent(_)}},true);
 setTimeout(injectManagerCard,500);
 })();

@@ -16,6 +16,7 @@ node tests/room-load-consolidation.test.cjs || exit 1
 node tests/wall-state-restore.test.cjs || exit 1
 node tests/wall-editor-pipeline.test.cjs || exit 1
 node tests/verify-pipelines.cjs || exit 1
+node tests/report-settings-pipeline.test.cjs || exit 1
 node tests/xss-injection.test.cjs || exit 1
 node tests/voice-number.test.cjs || exit 1
 node tests/autocount-profile.test.cjs || exit 1

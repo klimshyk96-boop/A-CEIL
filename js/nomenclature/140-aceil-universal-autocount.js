@@ -842,7 +842,9 @@ if(typeof oldBadge==="function"){
    keep the previous zero quantity until another unrelated action occurs. */
 var wallSavePipeline=window.A·CEIL&&window.A·CEIL.pipeline&&window.A·CEIL.pipeline.get("rwe2Save");
 if(wallSavePipeline)wallSavePipeline.stage("autocount",{after:function(){schedule();}});
-["saveWallEdit","deleteWallMarkFromEditor"].forEach(function(name){
+var legacyWallSave=window.A·CEIL&&window.A·CEIL.pipeline&&window.A·CEIL.pipeline.get("saveWallEdit");
+if(legacyWallSave)legacyWallSave.stage("autocount",{after:function(){schedule();}});
+["deleteWallMarkFromEditor"].forEach(function(name){
   var old=window[name];
   if(typeof old!=="function"||old.__v319WallAutocount)return;
   var wrapped=function(){

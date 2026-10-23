@@ -68,18 +68,10 @@
       return next();
     }
   });
-  var previousLegacySave=window.saveWallEdit;
-  if(typeof previousLegacySave==="function" && !previousLegacySave.__breakOption){
-    var wrappedLegacySave=function(){
+window.A·CEIL.pipeline.get("saveWallEdit").stage("breaks",{around:function(next){
       var mark=currentWallMark(),checkbox=byId("rwe2ForceBreaks");
       if(mark) mark.forceBreaks=!!(checkbox&&checkbox.checked&&isCornice(mark));
-      return previousLegacySave.apply(this,arguments);
-    };
-    wrappedLegacySave.__breakOption=true;
-    window.saveWallEdit=wrappedLegacySave;
-    try { saveWallEdit=wrappedLegacySave; } catch(e){ window.__diagSilent&&window.__diagSilent(e); }
-  }
-
+      return next();}});
   window.A·CEIL.pipeline.get("openWallEditModal").stage("placement",{around:function(next,args){
       var breakRow=byId("rwe2ForceBreaksRow");
       if(breakRow) breakRow.dataset.markId="";

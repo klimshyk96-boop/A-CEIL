@@ -307,13 +307,7 @@
   window.A·CEIL.pipeline.get("rwe2Save").stage("distance",{around:function(next,args){saveWallDistance();var overhang=readCorniceOverhang(),result=next();restoreCorniceOverhang(overhang);return result;
     }
   });
-  var prevLegacySave=window.saveWallEdit;
-  if(typeof prevLegacySave==="function"&&!prevLegacySave.__wallDistanceV1){
-    var legacySaveWrapped=function(){saveWallDistance();var overhang=readCorniceOverhang(),result=prevLegacySave.apply(this,arguments);restoreCorniceOverhang(overhang);return result;};
-    legacySaveWrapped.__wallDistanceV1=true;window.saveWallEdit=legacySaveWrapped;
-    try{saveWallEdit=legacySaveWrapped;}catch(e){window.__diagSilent&&window.__diagSilent(e);}
-  }
-
+window.A·CEIL.pipeline.get("saveWallEdit").stage("distance",{around:function(next){saveWallDistance();var overhang=readCorniceOverhang(),result=next();restoreCorniceOverhang(overhang);return result;}});
   var prevWallCoordLines=window.getWallCoordLines||(typeof getWallCoordLines==="function"?getWallCoordLines:null);
   if(typeof prevWallCoordLines==="function"&&!prevWallCoordLines.__wallDistanceV1){
     var wallCoordLinesWrapped=function(state){

@@ -20,17 +20,9 @@ function recalcSoon(){
     return r;
     }
   });
-var prevLegacy=window.saveWallEdit;
-if(typeof prevLegacy==="function"&&!prevLegacy.__wallColorAutosourceV333){
-  var wrappedLegacy=function(){
-    var r=prevLegacy.apply(this,arguments);
+window.A·CEIL.pipeline.get("saveWallEdit").stage("colorAutosource",{around:function(next){
+    var r=next();
     recalcSoon();
-    return r;
-  };
-  wrappedLegacy.__wallColorAutosourceV333=true;
-  window.saveWallEdit=wrappedLegacy;
-  try{saveWallEdit=wrappedLegacy}catch(_){}
-}
-
+    return r;}});
 /* window.A·CEIL_BUILD_LABEL superseded in 154-aceil-light-menu.js */
 })();

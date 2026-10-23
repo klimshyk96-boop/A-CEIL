@@ -24,14 +24,6 @@
    "js/reports/037-aceil-report-settings-generator.js",
    "js/reports/146-aceil-report-discount-advance.js"
   ],
-  "openReportSettings": [
-   "js/reports/037-aceil-report-settings-generator.js",
-   "js/reports/053-aceil-report-settings-force-modern.js",
-   "js/reports/084-aceil-report-capture-labels-settings-ui.js",
-   "js/reports/146-aceil-report-discount-advance.js",
-   "js/reports/162-aceil-manager-report.js",
-   "js/reports/224-aceil-report-diagonals-menu-fix.js"
-  ],
   "generateModernSingleReport": [
    "js/reports/037-aceil-report-settings-generator.js",
    "js/projects/090-aceil-geolocation.js",
@@ -51,15 +43,6 @@
   "updateWallAnchorUI": [
    "js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js",
    "js/canvas/045-aceil-wall-full-side-color-presets.js"
-  ],
-  "saveWallEdit": [
-   "js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js",
-   "js/canvas/045-aceil-wall-full-side-color-presets.js",
-   "js/canvas/046-aceil-wall-presets.js",
-   "js/canvas/093-aceil-wall-profile-color.js",
-   "js/nomenclature/150-aceil-wall-color-autosource.js",
-   "js/canvas/169-aceil-wall-placement-restore.js",
-   "js/canvas/185-aceil-wall-menu-simplify.js"
   ],
   "handleWallTap": [
    "js/canvas/046-aceil-wall-presets.js",

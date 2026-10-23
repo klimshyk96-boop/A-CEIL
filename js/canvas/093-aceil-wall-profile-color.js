@@ -109,16 +109,9 @@
       return result;
     }
   });
-  var previousLegacySave=window.saveWallEdit;
-  if(typeof previousLegacySave==="function"&&!previousLegacySave.__profileColorPatched){
-    var wrappedLegacySave=function(){
+window.A·CEIL.pipeline.get("saveWallEdit").stage("profileColor",{around:function(next){
       var id=currentEditId();
-      var result=previousLegacySave.apply(this,arguments);
+      var result=next();
       saveChosenProfileColor(id);
-      return result;
-    };
-    wrappedLegacySave.__profileColorPatched=true;
-    window.saveWallEdit=wrappedLegacySave;
-    try{saveWallEdit=wrappedLegacySave;}catch(error){window.__diagSilent&&window.__diagSilent(error);}
-  }
+      return result;}});
 })();
