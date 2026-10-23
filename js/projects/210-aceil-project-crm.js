@@ -8,6 +8,7 @@
   var STORE = "A_CEIL_project_crm_v2";
   var REPORT_CACHE = Object.create(null);
   var reportRequest = 0;
+  var refreshFlight=null,refreshAt=0,refreshUser=null,refreshClient=null;
 
   function client() { try { return (typeof _sb !== "undefined" && _sb) || window._sb || null; } catch (_) { return window._sb || null; } }
   function signedUser() { try { return (typeof _sbUser !== "undefined" && _sbUser) || window._sbUser || null; } catch (_) { return window._sbUser || null; } }
@@ -45,9 +46,10 @@
   }
   function restoreLocal() {
     var data = readStore(), items = list(), changed = false;
+    var byFingerprint=new Map();Object.keys(data).forEach(function(k){var row=data[k];if(row&&row.fingerprint&&!byFingerprint.has(row.fingerprint))byFingerprint.set(row.fingerprint,row)});
     items.forEach(function (p) {
-      var row = data[recordKey(p)] || Object.keys(data).map(function (k) { return data[k]; }).find(function (x) { return x.fingerprint && x.fingerprint === fingerprint(p); });
-      if (row) { ["order_source", "deal_status", "report_token", "report_published_at", "report_expires_at", "report_view_count"].forEach(function (k) { if (row[k] !== undefined) p[k] = row[k]; }); changed = true; }
+      var row = data[recordKey(p)] || byFingerprint.get(fingerprint(p));
+      if (row) { ["order_source", "deal_status", "report_token", "report_published_at", "report_expires_at", "report_view_count"].forEach(function (k) { if (row[k] !== undefined&&p[k]!==row[k]) {p[k] = row[k];changed=true;} }); }
     });
     if (changed) saveList(items);
   }
@@ -64,11 +66,11 @@
   }
   function decorateReportBadges() {
     try {
-      var items = list();
+      var items = list(),byId=new Map();items.forEach(function(p){[p.id,p._dbId,p._localId].forEach(function(id){if(id!=null)byId.set(String(id),p)})});
       document.querySelectorAll("#projectsList .rp-project-card").forEach(function (card) {
         var action = card.querySelector('[onclick*="editProject"]'), attr = action && action.getAttribute("onclick") || "";
         var match = attr.match(/editProject\(['\"]([^'\"]+)['\"]\)/), id = match && match[1];
-        var p = id && items.find(function (x) { return [x.id, x._dbId, x._localId].some(function (v) { return v != null && String(v) === String(id); }); });
+        var p = id && byId.get(String(id));
         var head = card.querySelector(".rp-project-head"), old = card.querySelector(".aceil-report-active-badge"), oldViews = card.querySelector(".aceil-report-view-count");
         if (!head || !hasActiveReport(p)) { if (old) old.remove(); if (oldViews) oldViews.remove(); return; }
         var rawCount = Number(p && p.report_view_count), hasCount = Number.isFinite(rawCount) && rawCount >= 0;
@@ -99,7 +101,9 @@
 
   async function loadViewCounts(c, items, data) {
     if (!c || typeof c.rpc !== "function") return;
+    var owner=signedUser();
     var result = await c.rpc("aceil_get_report_view_counts");
+    if(client()!==c||!owner||!signedUser()||signedUser().id!==owner.id)return;
     if (result.error || !result.data || typeof result.data !== "object") return;
     Object.keys(result.data).forEach(function (projectId) {
       var count = Number(result.data[projectId]);
@@ -189,9 +193,10 @@
     var result = await c.from("projects").update({ order_source: clean(p.order_source) || null, deal_status: clean(p.deal_status) || "new" }).eq("id", db);
     if (result.error) throw result.error;
   }
-  async function refresh() {
+  async function refreshBody() {
     var c = client(), currentUser = signedUser(); if (!c || !currentUser || !currentUser.id) return;
     var result = await c.from("projects").select("id,order_source,deal_status,report_token,report_published_at,report_expires_at").eq("user_id", currentUser.id);
+    if(client()!==c||!signedUser()||signedUser().id!==currentUser.id)return;
     if (result.error) return;
     var items = list(), data = readStore(), changed = false;
     (result.data || []).forEach(function (row) {
@@ -202,8 +207,17 @@
       var key = recordKey(p); data[key] = Object.assign({}, data[key] || {}, row, { fingerprint: fingerprint(p), updatedAt: Date.now() });
     });
     await loadViewCounts(c, items, data);
+    if(client()!==c||!signedUser()||signedUser().id!==currentUser.id)return;
     if (changed) { writeStore(data); saveList(items); try { if (typeof renderProjects === "function") renderProjects(); } catch(_){window.__diagSilent&&window.__diagSilent(_)} }
-    setTimeout(decorateReportBadges, 0);
+    setTimeout(decorateReportBadges, 0);return true;
+  }
+  function refresh(soft){
+    var c=client(),u=signedUser(),uid=u&&u.id;if(!c||!uid)return Promise.resolve();
+    if(refreshFlight&&refreshFlight.client===c&&refreshFlight.uid===uid)return refreshFlight.promise;
+    if(soft&&refreshClient===c&&refreshUser===uid&&Date.now()-refreshAt<15000)return Promise.resolve();
+    var request={client:c,uid:uid};refreshFlight=request;
+    request.promise=refreshBody().then(function(ok){if(ok&&client()===c&&signedUser()&&signedUser().id===uid){refreshAt=Date.now();refreshClient=c;refreshUser=uid;}}).finally(function(){if(refreshFlight===request)refreshFlight=null;});
+    return request.promise;
   }
   function afterSave(prefix, ref) {
     setTimeout(function () { var p = projectBy(ref), v = values(prefix); if (!p) return; remember(p, v); push(p).catch(function () {}); }, 100);
@@ -235,7 +249,7 @@
       window.openProjectsModal = function () {
         var result = oldProjects.apply(this, arguments);
         setTimeout(decorateReportBadges, 0);
-        refresh().catch(function () {});
+        refresh(true).catch(function () {});
         return result;
       };
       window.openProjectsModal.__reportBadgesV2 = true;
