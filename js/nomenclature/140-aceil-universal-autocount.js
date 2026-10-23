@@ -4,11 +4,19 @@
 if(window.__rmUniversalAutocountV319)return;
 window.__rmUniversalAutocountV319=true;
 
+/* Names repeat across profile/insert/corner matching in the same calculation.
+   Cache strings, not item results: renaming or editing a source stays immediate. */
+var normalizedNames=new Map();
 function norm(v){
-  return String(v==null?"":v).toLowerCase()
+  var text=String(v==null?"":v);
+  if(normalizedNames.has(text))return normalizedNames.get(text);
+  var value=text.toLowerCase()
     .replace(/[’'`"]/g,"")
     .replace(/[^\p{L}\p{N}]+/gu," ")
     .replace(/\s+/g," ").trim();
+  if(normalizedNames.size>=1024)normalizedNames.clear();
+  normalizedNames.set(text,value);
+  return value;
 }
 function esc(v){
   return String(v==null?"":v).replace(/[&<>"']/g,function(ch){

@@ -126,11 +126,14 @@
     return saved||[];
   }
   function patchState(target){
-    if(!target)return;
-    var state=parse(target.state);
-    state.ceilingCornices=clone(list());
+    if(!target)return false;
+    var state=parse(target.state),snapshot=list(),encoded=JSON.stringify(snapshot);
+    function matches(value){return JSON.stringify(Array.isArray(value)?value:[])===encoded;}
+    if(matches(state.ceilingCornices)&&matches(target.ceilingCornices))return false;
+    state.ceilingCornices=clone(snapshot);
     target.state=JSON.stringify(state);
-    target.ceilingCornices=clone(list());
+    target.ceilingCornices=clone(snapshot);
+    return true;
   }
 
   function persistNow(){
@@ -139,9 +142,8 @@
       var projects=projectList();
       var objectId=activeObjectId(),roomIndex=activeRoomIndex(),projectId=currentProjectId();
       var project=findProject(objectId!=null?objectId:projectId);
-      if(project&&objectId!=null&&roomIndex!=null&&project.rooms&&project.rooms[roomIndex])patchState(project.rooms[roomIndex]);
-      else if(project)patchState(project);
-      if(project&&typeof window.setProjects==="function")window.setProjects(projects);
+      var target=project&&objectId!=null&&roomIndex!=null&&project.rooms?project.rooms[roomIndex]:project;
+      if(patchState(target)&&typeof window.setProjects==="function")window.setProjects(projects);
     }catch(e){window.__diagSilent&&window.__diagSilent(e);}
   }
 
@@ -334,11 +336,14 @@
   function wrapLauncher(){var previous=window.openRmLightStart;if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){var result=previous.apply(this,arguments);watchLauncher();setTimeout(injectLauncher,0);setTimeout(injectLauncher,80);setTimeout(injectLauncher,240);return result;};wrapped.__ceilingCornices=true;window.openRmLightStart=wrapped;try{openRmLightStart=wrapped;}catch(e){}}
 
   function restoreFrom(target,key){pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");window.ceilingCornices=savedCornices(target,key);redraw();}
+  /* Later modules can wrap these globals too; retrying init must not install
+     this module again just because the outer function hides our marker. */
+  var persistenceHooks=new Set();
   function wrapPersistence(){
     var loadRoom=window._loadRoomToCanvas;if(typeof loadRoom==="function"&&!loadRoom.__ceilingCornices){var roomWrapped=function(project,roomIndex){pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");var room=project&&project.rooms&&project.rooms[roomIndex],keys=["room:"+String(project&&(project.id||project._dbId||project._localId))+":"+roomIndex,room&&room.id?"roomid:"+String(room.id):""],saved=savedCornices(room,keys),result;suspendPersistence=true;try{result=loadRoom.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved;syncElemItems();redraw();return result;};roomWrapped.__ceilingCornices=true;window._loadRoomToCanvas=roomWrapped;try{_loadRoomToCanvas=roomWrapped;}catch(e){}}
     var loadProject=window.loadProject;if(typeof loadProject==="function"&&!loadProject.__ceilingCornices){var projectWrapped=function(projectId){pendingPlacement=null;var hint=id("ccPlacementHint");if(hint)hint.classList.remove("open");var project=findProject(projectId),saved=savedCornices(project,["project:"+projectId,"projectid:"+String(project&&project.id||projectId)]),result;suspendPersistence=true;try{result=loadProject.apply(this,arguments);}finally{suspendPersistence=false;}window.ceilingCornices=saved;syncElemItems();redraw();return result;};projectWrapped.__ceilingCornices=true;window.loadProject=projectWrapped;}
     var reportRoom=window._renderRoomForReport;if(typeof reportRoom==="function"&&!reportRoom.__ceilingCornices){var reportWrapped=function(room){var previousList=clone(list()),state=parse(room&&room.state);window.ceilingCornices=clone(Array.isArray(state.ceilingCornices)?state.ceilingCornices:room&&room.ceilingCornices||[]);if(window.ceilingCornices.length)reportCorniceSeen=reportCorniceSeen.concat(clone(window.ceilingCornices));try{return reportRoom.apply(this,arguments);}finally{window.ceilingCornices=previousList;redraw();}};reportWrapped.__ceilingCornices=true;window._renderRoomForReport=reportWrapped;try{_renderRoomForReport=reportWrapped;}catch(e){}}
-    ["saveState","saveCurrentRoom","saveProject"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){
+    ["saveState","saveCurrentRoom","saveProject"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||persistenceHooks.has(name))return;persistenceHooks.add(name);var wrapped=function(){
       /* Patch the cornices onto the live room/project object BEFORE the
          original save runs. Some save routines (e.g. saveCurrentRoom) grab
          a reference to the room/project, build the payload they send to
@@ -354,7 +359,7 @@
       if(!suspendPersistence){persistNow();if(result&&typeof result.then==="function")result.then(function(){persistNow();});}
       return result;
     };wrapped.__ceilingCornices=true;window[name]=wrapped;});
-    ["resetAll","resetAllSilent"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||previous.__ceilingCornices)return;var wrapped=function(){window.ceilingCornices=[];window.cancelCeilingCornicePlacement();return previous.apply(this,arguments);};wrapped.__ceilingCornices=true;window[name]=wrapped;});
+    ["resetAll","resetAllSilent"].forEach(function(name){var previous=window[name];if(typeof previous!=="function"||persistenceHooks.has(name))return;persistenceHooks.add(name);var wrapped=function(){window.ceilingCornices=[];window.cancelCeilingCornicePlacement();return previous.apply(this,arguments);};wrapped.__ceilingCornices=true;window[name]=wrapped;});
   }
   function wrapReportLegend(){
     var previous=window._modernOpenPreview;if(typeof previous!=="function"||previous.__ceilingCorniceLegend)return;

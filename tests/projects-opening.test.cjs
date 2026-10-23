@@ -50,6 +50,43 @@ async function replyRights(page,index=0){await page.evaluate(index=>__projectRig
   });
   assert.equal(access.label,'current-account');assert.equal(access.loads,0);assert.deepEqual(errors,[]);await page.close();console.log('PASS previous-account rights response cannot update new account');
  }
+ {
+  const {page,errors}=await fixture(browser,390);
+  const cdp=await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
+  await page.evaluate(()=>{
+   window.__projectWrites=0;const original=setProjects;
+   window.setProjects=function(rows){__projectWrites++;return original(rows)};setProjects=window.setProjects;
+  });
+  const timing=await page.evaluate(async()=>{
+   openProjectsModal();const start=performance.now();await openObjectRooms(__fixtureRows[1].id);
+   await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
+   return {firstFrameMs:Math.round(performance.now()-start),room:_activeRoomIdx,lengths:structuredClone(lengths)};
+  });
+  assert.equal(timing.room,0);assert.deepEqual(timing.lengths,[500,300,500,300]);
+  await page.waitForTimeout(700);
+  const unchanged=await page.evaluate(()=>{__projectWrites=0;saveState();saveState();saveState();return __projectWrites});
+  assert.equal(unchanged,0,'unchanged saves do not rewrite/migrate all cached projects');
+  // A changed wall/light/quantity is still persisted, then repeated saves are cheap.
+  const edited=await page.evaluate(()=>{
+   wallMarks=[{id:'new-wall',type:'Карниз',sideIndex:0,lenCm:100,offsetCm:0}];
+   lightMarks=[{id:'new-light',type:'spot',x:200,y:200}];elemItems[0].qty=7;elemItems[0].manualQtyOverride=true;
+   __projectWrites=0;saveState();const changedWrites=__projectWrites;
+   const state=JSON.parse(getProjects().find(p=>p.id===__fixtureRows[1].id).rooms[0].state);
+   __projectWrites=0;saveState();return {changedWrites,repeatedWrites:__projectWrites,state};
+  });
+  assert.ok(edited.changedWrites>0);assert.equal(edited.repeatedWrites,0);
+  assert.equal(edited.state.wallMarks[0].id,'new-wall');assert.equal(edited.state.lightMarks[0].id,'new-light');assert.equal(edited.state.elemItems[0].qty,7);
+  // Cornices must survive both a real change and explicit deletion.
+  for(const cornices of [[{id:'cornice-test',shape:'straight',lengthA:120,baseIndex:0,offsetX:0,offsetY:20}],[]]){
+   const saved=await page.evaluate(cornices=>{window.ceilingCornices=cornices;saveState();const room=getProjects().find(p=>p.id===__fixtureRows[1].id).rooms[0];__projectWrites=0;saveState();return {cornices:JSON.parse(room.state).ceilingCornices,repeatedWrites:__projectWrites}},cornices);
+   assert.deepEqual(saved.cornices,cornices);assert.equal(saved.repeatedWrites,0);
+  }
+  // A queued film refresh must use the newly selected room, never restore the old geometry.
+  await page.evaluate(()=>{openRoom(1);openRoom(2)});await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(()=>_activeRoomIdx),2);assert.deepEqual(await page.evaluate(()=>lengths),[500,300,500,300]);
+  assert.deepEqual(errors,[]);console.log(JSON.stringify({canvasOpening:timing,unchangedProjectWrites:unchanged,cpuSlowdown:4}));await page.close();
+ }
  for(const mode of ['empty','network-error']){
   const {page,errors}=await fixture(browser,390);
   if(mode==='empty')await page.evaluate(()=>window['A·CEIL'].ProjectRepository.replaceAll([]));

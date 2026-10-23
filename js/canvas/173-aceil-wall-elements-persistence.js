@@ -71,9 +71,11 @@
     target.wallMarks=clone(snapshot.wallMarks||[]);
   }
 
+  var saveStateInstalled=false,saveProjectInstalled=false;
   function wrapSaveState(){
     var previous=window.saveState||typeof saveState==="function"&&saveState;
-    if(typeof previous!=="function"||previous.__wallPersistenceV2)return;
+    if(typeof previous!=="function"||saveStateInstalled)return;
+    saveStateInstalled=true;
     var wrapped=function(){
       var result=previous.apply(this,arguments),snapshot=currentSnapshot();
       var projectId=typeof _currentProjectId!=="undefined"?_currentProjectId:null;
@@ -88,7 +90,8 @@
   }
   function wrapSaveProject(){
     var previous=window.saveProject||typeof saveProject==="function"&&saveProject;
-    if(typeof previous!=="function"||previous.__wallPersistenceV2)return;
+    if(typeof previous!=="function"||saveProjectInstalled)return;
+    saveProjectInstalled=true;
     var wrapped=function(){
       var snapshot=currentSnapshot();
       var beforeId=typeof _currentProjectId!=="undefined"?_currentProjectId:null;
