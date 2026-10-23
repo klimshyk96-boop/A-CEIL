@@ -543,7 +543,9 @@
     gid("acWholeContour").checked=!!item.fullContourSelected||(!current.whole&&isBase)||isCurrent&&current.whole;
     gid("acWholeContourText").textContent=isBase?(current&&current.source==="main_profile"?"Базовий алюмінієвий профіль активний":"Повернути базовий алюмінієвий профіль на весь контур"):(isCurrent&&current.whole?"Увесь контур цієї кімнати":"Замінити базовий профіль на всьому контурі");
     gid("acWholeContour").dataset.defaultBase=!current.whole&&isBase?"1":"0";
-    gid("acWholeContour").disabled=!current.whole&&isBase;
+    gid("acWholeContour").disabled=false;
+    gid("acWholeContour").hidden=!current.whole&&isBase;
+    if(!current.whole&&isBase)gid("acWholeContourText").textContent="✓ Базовий алюмінієвий H активний за замовчуванням";
   }
   function contourDraft(item){
     var enabled=gid("acEditEnabled").checked,source=gid("editElemSource").value;

@@ -257,3 +257,35 @@ for(const family of ['floating','shadow'])for(const variant of ['black','white']
  assert.equal(room.qty('white_insert','insert'),9,'same marked and manual profile is deducted once');
 }
 console.log('PASS manual profiles suppress/restore insert and deduct partial lengths once');
+
+for(const name of ['Профіль H алюмінієвий','Профіль Н алюміній','Профіль базовий'])for(const source of ['', 'full_perimeter']){
+ const items=[{id:'h',name,source,qty:0,unit:'м'},{id:'corners',name:'Фіксація кутів',unit:'шт',qty:0}];
+ const room=makeRoom({items});room.recalculate();
+ assert.equal(items[0].source,'main_profile');assert.equal(items[0].qty,12);assert.equal(items[1].qty,4);
+ assert.notEqual(items[0].manualQtyOverride,true,'H is automatic by default');
+}
+for(const family of ['floating','shadow'])for(const variant of ['white','black']){
+ const profile=family==='floating'?'Парящий':'Тіньовий';
+ const items=[{id:'h',source:'main_profile',qty:0,manualQtyOverride:true},
+ {id:'profile',source:family+'_profile',sourceVariant:variant,qty:3,manualQtyOverride:true},
+ {id:'base-corners',name:'Фіксація кутів',unit:'шт',qty:4,manualQtyOverride:true},
+ {id:'white-corners',name:'Фіксація кута '+profile+' білий',unit:'шт',qty:0},
+ {id:'black-corners',name:'Фіксація кута '+profile+' чорний',unit:'шт',qty:0}];
+ const room=makeRoom({items});room.reconcileInsert();
+ assert.equal(items[2].qty,0,'base corners disappear immediately');
+ assert.equal(items[variant==='white'?3:4].qty,4,'matching profile corners appear immediately');
+ assert.equal(items[variant==='white'?4:3].qty,0,'other colour is not charged');
+ items[1].qty=0;room.reconcileInsert();assert.equal(items[2].qty,4);assert.equal(items[3].qty+items[4].qty,0);
+}
+console.log('PASS H defaults and immediate black/white profile corner replacement/restoration');
+
+{
+ const items=baseItems([{id:'black-shadow-corners',name:'Фіксація кута тіньовий чорний',source:'walltypecolor:black:'+encodeURIComponent('Фіксація кута тіньовий'),unit:'шт',qty:0}]);
+ Object.assign(items.find(i=>i.id==='base'),{qty:0,manualQtyOverride:true});Object.assign(items.find(i=>i.id==='shadow'),{qty:3,sourceVariant:'black',manualQtyOverride:true});
+ const room=makeRoom({items});room.recalculate();const row=items.find(i=>i.id==='black-shadow-corners');assert.equal(row.source,'shadow_corners');assert.equal(row.qty,4);assert.equal(row.unit,'шт');
+}
+
+{
+ const items=[{id:'estimate-h',name:'Профіль H',unit:'м',price:185,qty:2}];
+ const room=makeRoom({items,lengths:[]});room.recalculate();assert.equal(items[0].qty,2,'no-plan legacy estimate must survive icon/list editing');
+}

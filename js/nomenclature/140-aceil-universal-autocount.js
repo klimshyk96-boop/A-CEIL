@@ -212,17 +212,18 @@ function contourPerimeterM(state){
 }
 function contourSourceOfItem(item){
   var source=String(item&&(item.source||item.autoMatchedSource)||'');
-  if(/^(main_profile|shadow_profile|floating_profile)$/.test(source))return source;
-  // Older/manual catalogue rows can have only a name. Keep explicit unrelated
-  // sources authoritative and never mistake corners/breaks for profile lengths.
-  var label=!source&&item&&(!item.unit||item.unit==='м')?String(item.name||''):'';
-  if(!source&&/(кут|обрив|демонтаж)/i.test(label))return '';
+  if(/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners)$/.test(source))return source;
+  var label=!source&&item?String(item.name||''):'';
+  if(source==='full_perimeter'&&item)label=String(item.name||'');
   if(source.indexOf('walltype:')===0)label=source.slice(9);
   else if(source.indexOf('walltypecolor:')===0){var rest=source.slice(14),colon=rest.indexOf(':');if(colon>=0)label=rest.slice(colon+1);}
   try{label=decodeURIComponent(label);}catch(_){}
   label=norm(label);
-  if(label.indexOf('тіньов')>=0)return 'shadow_profile';
-  if(label.indexOf('парящ')>=0)return 'floating_profile';
+  if(/обрив|демонтаж/.test(label))return '';
+  var corner=/кут/.test(label),family=label.indexOf('тіньов')>=0?'shadow':label.indexOf('парящ')>=0?'floating':'';
+  if(family)return corner?family+'_corners':(!item.unit||/^(м|м.п.)$/.test(item.unit)?family+'_profile':'');
+  if(corner)return /базов|класич/.test(label)||/^фіксаці[яї] кут(ів|а)$/.test(label)?'corners':'';
+  if(/^(профіль (h|н)( |$)|профіль базов|базов.*профіль|алюмінієв.*профіль (h|н)( |$))/.test(label))return 'main_profile';
   return '';
 }
 function explicitContourProfile(list,draft){
@@ -237,7 +238,7 @@ function explicitContourProfile(list,draft){
 }
 function inferredContourProfile(list,state){
   var perimeter=contourPerimeterM(state);if(!(perimeter>0))return null;
-  var base=list.filter(function(it){return it&&it.source==="main_profile"}).reduce(function(sum,it){return sum+(Number(it.qty)||0)},0);
+  var base=list.filter(function(it){return it&&contourSourceOfItem(it)==="main_profile"}).reduce(function(sum,it){return sum+(Number(it.qty)||0)},0);
   if(base>.01)return null;
   var marks=state&&Array.isArray(state.wallMarks)?state.wallMarks:getWallMarks();
   var hasProfileMarks=marks.some(function(m){
@@ -333,7 +334,7 @@ function profileCornerSet(marks,ctx){
   return set;
 }
 function mergeCornerSets(target,source){Object.keys(source||{}).forEach(function(key){target[key]=1});return target;}
-function profileRowsFor(source){return getElemItems().filter(function(row){return row&&row.source===source&&!row.manualQtyOverride;});}
+function profileRowsFor(source){return getElemItems().filter(function(row){return row&&contourSourceOfItem(row)===source&&!row.manualQtyOverride;});}
 function profileRowIsChosen(source,item,variant){
   var rows=profileRowsFor(source),colored=rows.filter(function(row){return !!profileVariantOfItem(row);}),pool;
   if(colored.length){
@@ -423,7 +424,7 @@ function manualContourStyle(list){
 }
 function contourProfile(draft,collection,state){
   var list=Array.isArray(collection)?collection:getElemItems(),selected=(draft&&draft.fullContourSelected?explicitContourProfile(list,draft):null)||manualContourStyle(list)||explicitContourProfile(list,draft)||inferredContourProfile(list,state),whole=!!selected;
-  if(!selected)selected=list.find(function(it){return it&&it.source==="main_profile"})||{id:"__base_aluminium__",source:"main_profile",name:"Базовий алюмінієвий профіль"};
+  if(!selected)selected=list.find(function(it){return it&&contourSourceOfItem(it)==="main_profile"})||{id:"__base_aluminium__",source:"main_profile",name:"Базовий алюмінієвий профіль"};
   var presets=typeof window.rwe2WallPresetRead==="function"?window.rwe2WallPresetRead():[];
   presets=Array.isArray(presets)?presets:[];
   var color=presetColorFor(selected,presets,state);
@@ -433,7 +434,7 @@ function contourProfile(draft,collection,state){
 window.aceilContourProfile=contourProfile;
 window.aceilContourProfileColor=function(){var p=contourProfile();return p?p.color:"#1d1d1f";};
 window.aceilWholeContourCompute=function(source,item,ctx){
-  var selected=activeWholeContourProfile(item),profile=selected?{item:selected,source:contourSourceOfItem(selected)||selected.source}:null,relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
+  var selected=(/corners$/.test(source)?manualContourStyle(getElemItems()):null)||activeWholeContourProfile(item),profile=selected?{item:selected,source:contourSourceOfItem(selected)||selected.source}:null,relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
   if(!relevant.test(source))return null;
   if(source==="white_insert"&&manualContourStyle(getElemItems()))return 0;
   if(!profile)return partialContourQty(source,item,ctx);
@@ -444,25 +445,28 @@ window.aceilWholeContourCompute=function(source,item,ctx){
   if(source==="white_insert")return insertRowIsChosen(item)&&profile.source==="main_profile"?Math.round(per)/100:0;
   if(/_profile$/.test(source))return source===profile.source&&String(item.id)===String(profile.item.id)?Math.round(per)/100:0;
   var cornerSource={main_profile:"corners",shadow_profile:"shadow_corners",floating_profile:"floating_corners"}[profile.source];
-  var variant=profileVariantOfItem(profile.item),matching=!item.sourceVariant||item.sourceVariant===variant;
-  var rows=getElemItems().filter(function(row){return row&&row.source===cornerSource&&!row.manualQtyOverride;});
-  var chosen=rows.find(function(row){return (row.sourceVariant||"")===variant;})||rows.find(function(row){return !row.sourceVariant;});
-  return source===cornerSource&&matching&&(!chosen||String(chosen.id)===String(item.id))?count:0;
+  var variant=profileVariantOfItem(profile.item);
+  var rows=getElemItems().filter(function(row){return row&&contourSourceOfItem(row)===cornerSource;});
+  var chosen=rows.find(function(row){return profileVariantOfItem(row)===variant;})||rows.find(function(row){return !profileVariantOfItem(row);});
+  return source===cornerSource&&chosen&&String(chosen.id)===String(item.id)?count:0;
 };
-// Manual replacement of H owns the insert even when AutoCount is disabled.
-// Remember a manually entered insert quantity so removing the replacement is reversible.
+// Manual replacement of H owns insert and corner quantities even with AutoCount off.
+// The room-only backup field also preserves corner quantities for reversible changes.
 window.A_CEIL_ReconcileContourInsert=function(){
-  var list=getElemItems(),suppress=!!manualContourStyle(list)||!!explicitContourProfile(list)||list.some(function(row){return row&&row.manualQtyOverride&&Number(row.qty)>0&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(row));}),changed=false;
+  var list=getElemItems(),whole=manualContourStyle(list)||explicitContourProfile(list),suppress=!!whole||list.some(function(row){return row&&row.manualQtyOverride&&Number(row.qty)>0&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(row));}),changed=false;
   list.forEach(function(row){
-    if(!row||row.source!=="white_insert")return;
-    if(suppress){
+    if(!row)return;
+    var source=row.source==="white_insert"?"white_insert":contourSourceOfItem(row);
+    if(source!=="white_insert"&&!/^(corners|shadow_corners|floating_corners)$/.test(source))return;
+    var active=source==="white_insert"?suppress:!!whole;
+    if(active){
       if(!row.contourInsertSuppressed){row.contourInsertSuppressed={qty:Number(row.qty)||0,manual:row.manualQtyOverride===true};changed=true;}
-      var qty=window.aceilWholeContourCompute("white_insert",row);
+      var qty=window.aceilWholeContourCompute(source,row);
       if(Number(row.qty)!==qty){row.qty=qty;changed=true;}
       row.autoZero=!(Number(row.qty)>0);
     }else if(row.contourInsertSuppressed){
       var previous=row.contourInsertSuppressed;delete row.contourInsertSuppressed;
-      row.qty=previous.manual?previous.qty:window.aceilWholeContourCompute("white_insert",row);
+      row.qty=previous.manual?previous.qty:window.aceilWholeContourCompute(source,row);
       row.autoZero=!(Number(row.qty)>0);changed=true;
     }
     if(changed&&typeof document!=="undefined"){
@@ -556,6 +560,8 @@ function computeSource(source,item,linearSummary){
 }
 function exactAutoSourceForName(name){
   var n=norm(name); if(!n)return null;
+  var contour=contourSourceOfItem({name:name});
+  if(contour)return {source:contour,unit:/corners$/.test(contour)?"шт":"м",variant:colorFromName(name)};
   if(n==="кут uno"||n==="кути uno"||n==="кут уно"||n==="кути уно"||n.indexOf("кут до uno")>=0||n.indexOf("кут до уно")>=0){
     return {source:"ceilingcornicecorners:uno",unit:"шт"};
   }
@@ -606,6 +612,13 @@ function applyUniversal(opts){
   allItems.forEach(function(it){
     if(!it)return;
     if(it.manualQtyOverride===true)return;
+    var contourSource=contourSourceOfItem(it);
+    // Name-only legacy H rows can hold an entered estimate before any plan exists.
+    // Binding a default must not erase it while editing an icon or opening the list.
+    if(contourSource==="main_profile"&&!it.source&&Number(it.qty)>0
+      &&!(typeof closed!=="undefined"&&closed&&typeof pts!=="undefined"&&pts.length>=3)
+      &&!(typeof circleMode!=="undefined"&&circleMode&&typeof circleDiamCm!=="undefined"&&circleDiamCm>0))return;
+    if(/^(main_profile|corners|shadow_corners|floating_corners)$/.test(contourSource))it.source=contourSource;
     var src=String(it.source||"");
     if(src==="ceilingcornice:uno"&&hasColoredUnoRows&&it.sourceVariant!=="white"&&it.sourceVariant!=="black"){
       it.qty=0;it.unit="м";it.autoFilled=true;it.autoZero=true;it.universalAuto=true;changed++;return;
@@ -625,6 +638,7 @@ function applyUniversal(opts){
     var auto=exactAutoSourceForName(it.name);
     if(!auto)return;
     if(auto.variant)it.sourceVariant=auto.variant;
+    if(/^(main_profile|corners|shadow_corners|floating_corners)$/.test(auto.source))it.source=auto.source;
     if(auto.source==="ceilingcornice:uno"&&hasColoredUnoRows&&!auto.variant){
       it.qty=0;it.unit="м";it.autoFilled=true;it.autoZero=true;it.universalAuto=true;changed++;return;
     }
