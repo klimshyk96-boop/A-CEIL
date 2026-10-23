@@ -60,7 +60,8 @@
     var result=clone(object);
     result.rooms=(result.rooms||[]).map(function(room){
       var next=clone(room),state=parseState(next.state);
-      next.ceilingColor=ceilingColor(state);
+      var material=window.A_CEILColorPicker&&window.A_CEILColorPicker.material(state);
+      next.ceilingColor=material?material.label:ceilingColor(state);next.ceilingSwatch=material&&material.swatch||null;
       state.wallMarks=[];state.ceilingCornices=[];state.elemItems=[];state.elemGroups=[];
       state.lightMarks=[];state.linearElements=[];state.notes=[];state.diagonals=[];state.diagonalOverrides={};
       next.state=JSON.stringify(state);return next;
