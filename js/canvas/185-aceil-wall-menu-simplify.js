@@ -268,10 +268,8 @@
 
   // Re-apply whenever the modal is opened, and shortly after (other
   // scripts build parts of this modal asynchronously via setTimeout).
-  var prevOpen = window.openWallEditModal;
-  if (typeof prevOpen === "function" && !prevOpen.__menuSimplify){
-    var wrapped = function(){
-      var result = prevOpen.apply(this, arguments);
+  window.A·CEIL.pipeline.get("openWallEditModal").stage("simplify",{around:function(next,args){
+      var result = next();
       applyState();
       syncWallDistanceUi();
       setTimeout(function(){applyState();syncWallDistanceUi();}, 30);
@@ -279,12 +277,8 @@
       setTimeout(applyState, 300);
       setTimeout(applyState, 520);
       return result;
-    };
-    wrapped.__menuSimplify = true;
-    window.openWallEditModal = wrapped;
-    try { openWallEditModal = wrapped; } catch(e){ window.__diagSilent && window.__diagSilent(e); }
-  }
-
+    }
+  });
   function saveWallDistance(){
     var mark=currentMark(),input=byId("rwe2WallDistance");
     if(mark&&input)mark.wallDistanceCm=Math.max(0,Math.round(Number(String(input.value||"0").replace(",","."))||0));
@@ -310,12 +304,9 @@
     if(typeof window.saveState==="function")window.saveState();
     if(typeof window.requestDraw==="function")window.requestDraw();else if(typeof window.draw==="function")window.draw();
   }
-  var prevRweSave=window.rwe2Save;
-  if(typeof prevRweSave==="function"&&!prevRweSave.__wallDistanceV1){
-    var rweSaveWrapped=function(){saveWallDistance();var overhang=readCorniceOverhang(),result=prevRweSave.apply(this,arguments);restoreCorniceOverhang(overhang);return result;};
-    rweSaveWrapped.__wallDistanceV1=true;window.rwe2Save=rweSaveWrapped;
-    try{rwe2Save=rweSaveWrapped;}catch(e){window.__diagSilent&&window.__diagSilent(e);}
-  }
+  window.A·CEIL.pipeline.get("rwe2Save").stage("distance",{around:function(next,args){saveWallDistance();var overhang=readCorniceOverhang(),result=next();restoreCorniceOverhang(overhang);return result;
+    }
+  });
   var prevLegacySave=window.saveWallEdit;
   if(typeof prevLegacySave==="function"&&!prevLegacySave.__wallDistanceV1){
     var legacySaveWrapped=function(){saveWallDistance();var overhang=readCorniceOverhang(),result=prevLegacySave.apply(this,arguments);restoreCorniceOverhang(overhang);return result;};

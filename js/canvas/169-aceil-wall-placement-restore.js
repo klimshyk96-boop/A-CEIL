@@ -62,18 +62,12 @@
     return true;
   }
 
-  var previousSave=window.rwe2Save;
-  if(typeof previousSave==="function" && !previousSave.__breakOption){
-    var wrappedSave=function(){
+  window.A·CEIL.pipeline.get("rwe2Save").stage("breaks",{around:function(next,args){
       var mark=currentWallMark(),checkbox=byId("rwe2ForceBreaks");
       if(mark) mark.forceBreaks=!!(checkbox&&checkbox.checked&&isCornice(mark));
-      return previousSave.apply(this,arguments);
-    };
-    wrappedSave.__breakOption=true;
-    window.rwe2Save=wrappedSave;
-    try { rwe2Save=wrappedSave; } catch(e){ window.__diagSilent&&window.__diagSilent(e); }
-  }
-
+      return next();
+    }
+  });
   var previousLegacySave=window.saveWallEdit;
   if(typeof previousLegacySave==="function" && !previousLegacySave.__breakOption){
     var wrappedLegacySave=function(){
@@ -86,21 +80,15 @@
     try { saveWallEdit=wrappedLegacySave; } catch(e){ window.__diagSilent&&window.__diagSilent(e); }
   }
 
-  var previous=window.openWallEditModal;
-  if(typeof previous==="function" && !previous.__placementRestore){
-    var wrapped=function(){
+  window.A·CEIL.pipeline.get("openWallEditModal").stage("placement",{around:function(next,args){
       var breakRow=byId("rwe2ForceBreaksRow");
       if(breakRow) breakRow.dataset.markId="";
-      var result=previous.apply(this,arguments);
+      var result=next();
       setTimeout(ensurePlacementUi,20);
       setTimeout(ensurePlacementUi,90);
       return result;
-    };
-    wrapped.__placementRestore=true;
-    window.openWallEditModal=wrapped;
-    try { openWallEditModal=wrapped; } catch(e){ window.__diagSilent&&window.__diagSilent(e); }
-  }
-
+    }
+  });
   document.addEventListener("click",function(e){
     if(e.target&&e.target.closest&&e.target.closest("#wallEditModal")&&!e.target.closest("#rwe2ForceBreaksRow")) setTimeout(ensurePlacementUi,0);
   },true);

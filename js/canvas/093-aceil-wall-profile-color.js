@@ -80,10 +80,8 @@
     return "";
   }
 
-  var previousOpen=window.openWallEditModal;
-  if(typeof previousOpen==="function"&&!previousOpen.__profileColorPatched){
-    var wrappedOpen=function(id){
-      var result=previousOpen.apply(this,arguments);
+  window.A·CEIL.pipeline.get("openWallEditModal").stage("profileColor",{around:function(next,args){var id=args[0];
+      var result=next();
       try{
         ensureProfileColorUi();
         var mark=wallMarksArr().find(function(item){return item&&item.id===id;});
@@ -92,12 +90,8 @@
         window.rwe2SetProfileColor(color);
       }catch(error){window.__diagSilent&&window.__diagSilent(error);}
       return result;
-    };
-    wrappedOpen.__profileColorPatched=true;
-    window.openWallEditModal=wrappedOpen;
-    try{openWallEditModal=wrappedOpen;}catch(error){window.__diagSilent&&window.__diagSilent(error);}
-  }
-
+    }
+  });
   function saveChosenProfileColor(id){
     try{
       var mark=wallMarksArr().find(function(item){return item&&item.id===id;});
@@ -108,19 +102,13 @@
     }catch(error){window.__diagSilent&&window.__diagSilent(error);}
   }
 
-  var previousSave=window.rwe2Save;
-  if(typeof previousSave==="function"&&!previousSave.__profileColorPatched){
-    var wrappedSave=function(){
+  window.A·CEIL.pipeline.get("rwe2Save").stage("profileColor",{around:function(next,args){
       var id=currentEditId();
-      var result=previousSave.apply(this,arguments);
+      var result=next();
       saveChosenProfileColor(id);
       return result;
-    };
-    wrappedSave.__profileColorPatched=true;
-    window.rwe2Save=wrappedSave;
-    try{rwe2Save=wrappedSave;}catch(error){window.__diagSilent&&window.__diagSilent(error);}
-  }
-
+    }
+  });
   var previousLegacySave=window.saveWallEdit;
   if(typeof previousLegacySave==="function"&&!previousLegacySave.__profileColorPatched){
     var wrappedLegacySave=function(){

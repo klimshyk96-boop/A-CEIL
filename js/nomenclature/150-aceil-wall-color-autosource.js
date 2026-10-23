@@ -14,18 +14,12 @@ function recalcSoon(){
   },40);
 }
 
-var prev=window.rwe2Save;
-if(typeof prev==="function"&&!prev.__wallColorAutosourceV333){
-  var wrapped=function(){
-    var r=prev.apply(this,arguments);
+  window.A·CEIL.pipeline.get("rwe2Save").stage("colorAutosource",{around:function(next,args){
+    var r=next();
     recalcSoon();
     return r;
-  };
-  wrapped.__wallColorAutosourceV333=true;
-  window.rwe2Save=wrapped;
-  try{rwe2Save=wrapped}catch(_){}
-}
-
+    }
+  });
 var prevLegacy=window.saveWallEdit;
 if(typeof prevLegacy==="function"&&!prevLegacy.__wallColorAutosourceV333){
   var wrappedLegacy=function(){

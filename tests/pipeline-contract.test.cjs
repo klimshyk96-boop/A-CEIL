@@ -90,4 +90,16 @@ assert.ok(
   "autofill order changed"
 );
 
+const wallPipelines={
+ openWallEditModal:{owner:"js/canvas/047-aceil-wall-preset-editor.js",order:["presets","closeMenus","anchor","preview","toolbar","profileColor","placement","simplify"],stages:{presets:"js/canvas/051-aceil-wall-preset-storage.js",closeMenus:"js/projects/059-aceil-dirty-state-delete-guards.js",anchor:"js/canvas/066-aceil-wall-anchor-sync.js",preview:"js/canvas/068-aceil-wall-position-preview.js",toolbar:"js/canvas/069-aceil-wall-preset-toolbar.js",profileColor:"js/canvas/093-aceil-wall-profile-color.js",placement:"js/canvas/169-aceil-wall-placement-restore.js",simplify:"js/canvas/185-aceil-wall-menu-simplify.js"}},
+ rwe2Save:{owner:"js/canvas/066-aceil-wall-anchor-sync.js",order:["profileColor","autocount","colorAutosource","breaks","distance"],stages:{profileColor:"js/canvas/093-aceil-wall-profile-color.js",autocount:"js/nomenclature/140-aceil-universal-autocount.js",colorAutosource:"js/nomenclature/150-aceil-wall-color-autosource.js",breaks:"js/canvas/169-aceil-wall-placement-restore.js",distance:"js/canvas/185-aceil-wall-menu-simplify.js"}}
+};
+for(const [name,config]of Object.entries(wallPipelines)){
+ assert.ok(read(config.owner).includes('pipeline.define("'+name+'",{order:'+JSON.stringify(config.order)),name+" has one explicit owner/order");
+ for(const [stage,file]of Object.entries(config.stages)){
+  assert.ok(read(file).includes('stage("'+stage+'"'),file+" registers "+stage);
+  assert.ok(runtime.indexOf(config.owner)<=runtime.indexOf(file),"owner loads before stage "+stage);
+ }
+ for(const file of runtime)assert.ok(!new RegExp('window\\.'+name+'\\s*=\\s*(function|wrapped|rweSaveWrapped)').test(read(file)),file+" must not wrap "+name);
+}
 console.log("pipeline contract: OK");

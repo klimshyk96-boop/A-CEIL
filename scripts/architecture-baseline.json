@@ -61,19 +61,6 @@
    "js/canvas/169-aceil-wall-placement-restore.js",
    "js/canvas/185-aceil-wall-menu-simplify.js"
   ],
-  "openWallEditModal": [
-   "js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js",
-   "js/canvas/045-aceil-wall-full-side-color-presets.js",
-   "js/canvas/047-aceil-wall-preset-editor.js",
-   "js/canvas/051-aceil-wall-preset-storage.js",
-   "js/projects/059-aceil-dirty-state-delete-guards.js",
-   "js/canvas/066-aceil-wall-anchor-sync.js",
-   "js/canvas/068-aceil-wall-position-preview.js",
-   "js/canvas/069-aceil-wall-preset-toolbar.js",
-   "js/canvas/093-aceil-wall-profile-color.js",
-   "js/canvas/169-aceil-wall-placement-restore.js",
-   "js/canvas/185-aceil-wall-menu-simplify.js"
-  ],
   "handleWallTap": [
    "js/canvas/046-aceil-wall-presets.js",
    "js/canvas/130-aceil-wall-tap-menu.js"
@@ -81,16 +68,6 @@
   "rwe2Delete": [
    "js/canvas/047-aceil-wall-preset-editor.js",
    "js/projects/059-aceil-dirty-state-delete-guards.js"
-  ],
-  "rwe2Save": [
-   "js/canvas/047-aceil-wall-preset-editor.js",
-   "js/canvas/050-aceil-wall-edit-modal.js",
-   "js/canvas/051-aceil-wall-preset-storage.js",
-   "js/canvas/066-aceil-wall-anchor-sync.js",
-   "js/canvas/093-aceil-wall-profile-color.js",
-   "js/nomenclature/150-aceil-wall-color-autosource.js",
-   "js/canvas/169-aceil-wall-placement-restore.js",
-   "js/canvas/185-aceil-wall-menu-simplify.js"
   ],
   "getWallPresets": [
    "js/canvas/047-aceil-wall-preset-editor.js",

@@ -840,7 +840,9 @@ if(typeof oldBadge==="function"){
 /* Wall elements change without updateLightBadge(). Recalculate after their
    save/delete actions as well, otherwise a correctly selected wall source can
    keep the previous zero quantity until another unrelated action occurs. */
-["rwe2Save","saveWallEdit","deleteWallMarkFromEditor"].forEach(function(name){
+var wallSavePipeline=window.A·CEIL&&window.A·CEIL.pipeline&&window.A·CEIL.pipeline.get("rwe2Save");
+if(wallSavePipeline)wallSavePipeline.stage("autocount",{after:function(){schedule();}});
+["saveWallEdit","deleteWallMarkFromEditor"].forEach(function(name){
   var old=window[name];
   if(typeof old!=="function"||old.__v319WallAutocount)return;
   var wrapped=function(){
@@ -851,8 +853,7 @@ if(typeof oldBadge==="function"){
   wrapped.__v319WallAutocount=true;
   window[name]=wrapped;
   try{
-    if(name==="rwe2Save")rwe2Save=wrapped;
-    else if(name==="saveWallEdit")saveWallEdit=wrapped;
+    if(name==="saveWallEdit")saveWallEdit=wrapped;
     else if(name==="deleteWallMarkFromEditor")deleteWallMarkFromEditor=wrapped;
   }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 });
