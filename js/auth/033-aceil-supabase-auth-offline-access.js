@@ -38,6 +38,12 @@ window._initSupabase=function(){try{if(_sb)return;const noOpLock=async(name,acqu
     const localList=window.A·CEIL&&window.A·CEIL.ProjectRepository?window.A·CEIL.ProjectRepository.list():[],
       localActive=localList.find(p=>p&&[p.id,p._dbId,p._localId].some(v=>null!=v&&String(v)===activeId)),
       row=localActive&&data.find(r=>r&&String(r.id)===activeId);
+    // A clean active record is only a cache. Another browser/PWA may have
+    // added lighting since it was loaded; never replace that fresh cloud state.
+    const ids=localActive?[localActive.id,localActive._dbId,localActive._localId].filter(v=>v!=null).map(String):[],
+      queued=localActive&&typeof getPendingQueue==='function'&&getPendingQueue().some(op=>op&&op.type==='save'&&op.payload&&[op.payload.localId,op.payload.dbId].some(id=>id!=null&&ids.includes(String(id)))),
+      pending=localActive&&(localActive._dirty||localActive._localUpdatedAt||/^(pending|sync|upload|error|failed)/.test(String(localActive._syncStatus||''))||queued);
+    if(!pending)return;
     row&&(row.state="string"==typeof localActive.state?localActive.state:JSON.stringify(localActive.state||{}),row.area=localActive.area||row.area,row.per=localActive.per||row.per,row.in_corners=localActive.inC||row.in_corners,row.out_corners=localActive.outC||row.out_corners,row.thumb=localActive.thumb||row.thumb)
   }catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}
 }
