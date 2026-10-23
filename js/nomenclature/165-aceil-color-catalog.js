@@ -388,5 +388,145 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     rates[entry.texture]=Object.assign({},rates[entry.texture]||{});rates[entry.texture][band.priceKey]=price;
     window.ACEILSetFilmPricing(series,rates);
   };
+
+  /* ---------------------------------------------------------------
+     Ручні виробники / кольори / ширини (нові плівки без релізу коду).
+     Дані зберігаються локально (як ціни та «популярні») і підмішуються
+     у ті самі реєстри, що й MSD / KRALTON, тому потрапляють у
+     номенклатуру, варіанти кошторису та звіт без окремої логіки.
+     Ціна задається на фактуру + ширину в межах серії (priceKey "wNNN").
+     --------------------------------------------------------------- */
+  var CUSTOM_KEY="aceil_custom_film_v1";
+  var TEX_PREFIX={lak:"L",mat:"M",satin:"S"};
+  var TEX_LABEL={lak:"Глянець",mat:"Мат",satin:"Сатин"};
+  function loadCustom(){
+    try{
+      var v=JSON.parse(localStorage.getItem(CUSTOM_KEY)||"null");
+      if(v&&Array.isArray(v.series)&&Array.isArray(v.colors))return v;
+    }catch(_){}
+    return {v:1,series:[],colors:[]};
+  }
+  function persistCustom(data){
+    try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}
+    catch(_){throw new Error("Не вдалося зберегти: сховище браузера недоступне.");}
+  }
+  function priceKeyFor(nominal){return "w"+Math.round(Number(nominal)*100);}
+  function fmtW(v){return String(Math.round(Number(v)*100)/100).replace(".",",");}
+
+  var customIds=[];
+  function applyCustom(){
+    var data=loadCustom();
+    window.ACEIL_FILM_SERIES=window.ACEIL_FILM_SERIES.filter(function(s){return !(s&&s.custom);});
+    customIds.forEach(function(id){delete window.ACEIL_COLOR_CATALOG_BY_SERIES[id];delete window.ACEIL_FILM_PRICING_BY_SERIES[id];});
+    customIds=data.series.map(function(s){return s.id;});
+    data.series.forEach(function(s){
+      window.ACEIL_FILM_SERIES.push({id:s.id,name:s.name,manufacturer:s.manufacturer,active:true,custom:true});
+      window.ACEIL_COLOR_CATALOG_BY_SERIES[s.id]=[];
+      window.ACEIL_FILM_PRICING_BY_SERIES[s.id]={lak:{},mat:{},satin:{}};
+    });
+    data.colors.forEach(function(c){
+      var list=window.ACEIL_COLOR_CATALOG_BY_SERIES[c.seriesId];
+      if(!list)return;
+      var widths=(c.widths||[]).slice().sort(function(a,b){return a.nominal-b.nominal;});
+      list.push({
+        code:c.code,displayCode:c.display||c.code,baseCode:c.display||c.code.slice(1),colorName:c.colorName||"",texture:c.texture,label:TEX_LABEL[c.texture],
+        seriesId:c.seriesId,wide510:false,custom:true,swatch:c.swatch||undefined,
+        filmWidths:widths.map(function(w){return {nominal:w.nominal,max:w.max,priceKey:priceKeyFor(w.nominal)};})
+      });
+      var tex=window.ACEIL_FILM_PRICING_BY_SERIES[c.seriesId][c.texture];
+      widths.forEach(function(w){tex[priceKeyFor(w.nominal)]=w.price;});
+    });
+  }
+
+  function findSeries(data,manufacturer,collection){
+    var key=(manufacturer+"|"+collection).toLowerCase();
+    return data.series.find(function(s){return (s.manufacturer+"|"+(s.collection||"")).toLowerCase()===key;});
+  }
+  function cleanText(v,max){return String(v==null?"":v).replace(/\s+/g," ").trim().slice(0,max||60);}
+
+  window.ACEILFilmDisplayCode=function(seriesId,code){
+    var list=window.ACEIL_COLOR_CATALOG_BY_SERIES&&window.ACEIL_COLOR_CATALOG_BY_SERIES[seriesId];
+    var e=Array.isArray(list)&&list.find(function(c){return c&&c.code===code;});
+    return e&&e.displayCode||code;
+  };
+  window.ACEILCustomFilm={
+    displayCode:function(seriesId,code){
+      var c=loadCustom().colors.find(function(x){return x.seriesId===seriesId&&x.code===code;});
+      return c&&c.display?c.display:code;
+    },
+    isCustomSeries:function(id){return loadCustom().series.some(function(s){return s.id===id;});},
+    manufacturers:function(){return loadCustom().series.map(function(s){return s.manufacturer;}).filter(function(m,i,a){return a.indexOf(m)===i;});},
+    getColor:function(seriesId,code){
+      return loadCustom().colors.find(function(c){return c.seriesId===seriesId&&c.code===code;})||null;
+    },
+    /* input: {seriesId?, manufacturer, collection?, texture, digits, colorName?, swatch?, widths:[{nominal,max,price}]} */
+    saveColor:function(input){
+      var data=loadCustom(),texture=input&&input.texture;
+      if(!TEX_PREFIX[texture])throw new Error("Оберіть фактуру.");
+      var display=cleanText(input.display,20);
+      if(!display)throw new Error("Вкажіть код / назву кольору (наприклад A12 або PS-204).");
+      if(!/^[\p{L}\p{N}][\p{L}\p{N} .\-\/_]*$/u.test(display))throw new Error("Код може містити літери, цифри, пробіл та символи . - / _");
+      var series=input.seriesId?data.series.find(function(s){return s.id===input.seriesId;}):null;
+      if(!series){
+        var manufacturer=cleanText(input.manufacturer,40),collection=cleanText(input.collection,40);
+        if(!manufacturer)throw new Error("Вкажіть виробника.");
+        series=findSeries(data,manufacturer,collection);
+        if(!series){
+          series={id:"c"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),manufacturer:manufacturer,collection:collection,
+            name:collection?manufacturer+" "+collection:manufacturer};
+          data.series.push(series);
+        }
+      }
+      var seen={},widths=[];
+      (Array.isArray(input.widths)?input.widths:[]).forEach(function(w){
+        var nominal=Math.round(Number(String(w.nominal).replace(",","."))*100)/100;
+        var max=Math.round(Number(String(w.max===""||w.max==null?w.nominal:w.max).replace(",","."))*100)/100;
+        var price=Number(String(w.price===""||w.price==null?0:w.price).replace(",","."));
+        if(!(nominal>=0.5&&nominal<=10))throw new Error("Ширина полотна має бути від 0,5 до 10 м.");
+        if(!(max>=nominal&&max<=10))throw new Error("Макс. робоча ширина не може бути меншою за ширину полотна (і більшою за 10 м).");
+        if(!Number.isFinite(price)||price<0)throw new Error("Ціна має бути числом, не меншим за 0.");
+        if(seen[nominal])throw new Error("Ширина "+fmtW(nominal)+" м вказана двічі.");
+        seen[nominal]=true;widths.push({nominal:nominal,max:max,price:price});
+      });
+      if(!widths.length)throw new Error("Додайте хоча б одну ширину.");
+      var swatch=/^#[0-9a-f]{6}$/i.test(input.swatch||"")?input.swatch:"";
+      /* Внутрішній код (M/L/S + 3 цифри) потрібен решті програми для ідентифікації;
+         користувач бачить лише свій текст (display). */
+      var same=data.colors.find(function(c){return c.seriesId===series.id&&c.texture===texture&&String(c.display||"").toLowerCase()===display.toLowerCase();});
+      var original=input.originalCode&&input.seriesId===series.id?data.colors.find(function(c){return c.seriesId===series.id&&c.code===input.originalCode;}):null;
+      if(same&&original&&same!==original)throw new Error("Колір «"+display+"» (цієї фактури) вже є у виробника.");
+      var existing=original||same,code;
+      if(existing&&existing.texture===texture)code=existing.code;
+      else{
+        var used={};data.colors.forEach(function(c){if(c.seriesId===series.id)used[c.code]=true;});
+        for(var n=901;n<=999&&!code;n++)if(!used[TEX_PREFIX[texture]+n])code=TEX_PREFIX[texture]+n;
+        for(n=100;n<=900&&!code;n++)if(!used[TEX_PREFIX[texture]+n])code=TEX_PREFIX[texture]+n;
+        if(!code)throw new Error("Забагато кольорів у цього виробника.");
+      }
+      var row={seriesId:series.id,code:code,display:display,colorName:cleanText(input.colorName,40),texture:texture,swatch:swatch,widths:widths};
+      if(existing){data.colors[data.colors.indexOf(existing)]=row;}else data.colors.push(row);
+      persistCustom(data);applyCustom();
+      /* Ціни йдуть і в загальний реєстр тарифів серії, щоб не перекривались старими перевизначеннями. */
+      var rates=window.ACEILGetFilmPricing(series.id);
+      rates[texture]=Object.assign({},rates[texture]||{});
+      widths.forEach(function(w){rates[texture][priceKeyFor(w.nominal)]=w.price;});
+      window.ACEILSetFilmPricing(series.id,rates);
+      return {seriesId:series.id,code:code,texture:texture};
+    },
+    deleteColor:function(seriesId,code){
+      var data=loadCustom();
+      data.colors=data.colors.filter(function(c){return !(c.seriesId===seriesId&&c.code===code);});
+      persistCustom(data);applyCustom();
+      window.dispatchEvent(new CustomEvent("aceil:film-pricing-saved"));
+    },
+    deleteSeries:function(seriesId){
+      var data=loadCustom();
+      data.series=data.series.filter(function(s){return s.id!==seriesId;});
+      data.colors=data.colors.filter(function(c){return c.seriesId!==seriesId;});
+      persistCustom(data);applyCustom();
+      try{window.ACEILSetFilmPricing(seriesId,{});}catch(_){}
+    }
+  };
+  applyCustom();
 })();
 })();

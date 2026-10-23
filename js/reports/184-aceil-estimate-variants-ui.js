@@ -133,6 +133,7 @@ var FILM_GROUP_WORDS=['\u043F\u043B\u0456\u0432','\u043F\u043E\u043B\u043E\u0442
 var FILM_WIDTH_NARROW={nominal:3.6, max:3.6, priceKey:'narrow'};
 var FILM_WIDTH_WIDE={nominal:5.1, max:5.6, priceKey:'wide'};
 
+function filmDispCode(seriesId,code){ return typeof window.ACEILFilmDisplayCode==='function' ? window.ACEILFilmDisplayCode(seriesId,code) : code; }
 function filmSeriesRegistry(){ return Array.isArray(window.ACEIL_FILM_SERIES) ? window.ACEIL_FILM_SERIES : []; }
 function filmSeriesMeta(seriesId){ return filmSeriesRegistry().find(function(s){ return s && s.id===seriesId; }) || null; }
 function filmCatalogForSeries(seriesId){
@@ -253,21 +254,22 @@ function applyFilmChange(items, groups, change, room, warnings){
   var seriesMeta=filmSeriesMeta(change.seriesId);
   var seriesName=seriesMeta ? seriesMeta.name : change.seriesId;
   var entry=findFilmColorEntry(change.seriesId, change.code);
+  var cdisp=filmDispCode(change.seriesId, change.code);
   var roomName=(room && room.name) || '\u041A\u0456\u043C\u043D\u0430\u0442\u0430';
   if(!entry){
-    if(warnings) warnings.push('\u041A\u043E\u043B\u0456\u0440 '+change.code+' ('+seriesName+') \u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E \u0432 \u043A\u0430\u0442\u0430\u043B\u043E\u0437\u0456 \u2014 \u0431\u043B\u043E\u043A \u043F\u043B\u0456\u0432\u043A\u0438 \u0434\u043B\u044F \u00AB'+roomName+'\u00BB \u043D\u0435 \u0437\u043C\u0456\u043D\u0435\u043D\u043E.');
+    if(warnings) warnings.push('\u041A\u043E\u043B\u0456\u0440 '+cdisp+' ('+seriesName+') \u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E \u0432 \u043A\u0430\u0442\u0430\u043B\u043E\u0437\u0456 \u2014 \u0431\u043B\u043E\u043A \u043F\u043B\u0456\u0432\u043A\u0438 \u0434\u043B\u044F \u00AB'+roomName+'\u00BB \u043D\u0435 \u0437\u043C\u0456\u043D\u0435\u043D\u043E.');
     return;
   }
   var neededWidthM=requiredFilmWidthMetersFromRoom(room);
   var candidate=pickFilmWidthCandidate(entry, neededWidthM);
   if(!candidate){
     existing.forEach(function(it){ it.qty=0; });
-    if(warnings) warnings.push('\u00AB'+roomName+'\u00BB: \u0434\u043B\u044F '+seriesName+' '+change.code+' \u043D\u0435\u043C\u0430\u0454 \u0434\u043E\u0441\u0442\u0430\u0442\u043D\u044C\u043E\u0457 \u0440\u043E\u0431\u043E\u0447\u043E\u0457 \u0448\u0438\u0440\u0438\u043D\u0438 \u2014 \u0446\u0456\u043D\u0430 \u043D\u0435 \u0440\u043E\u0437\u0440\u0430\u0445\u043E\u0432\u0430\u043D\u0430.');
+    if(warnings) warnings.push('\u00AB'+roomName+'\u00BB: \u0434\u043B\u044F '+seriesName+' '+cdisp+' \u043D\u0435\u043C\u0430\u0454 \u0434\u043E\u0441\u0442\u0430\u0442\u043D\u044C\u043E\u0457 \u0440\u043E\u0431\u043E\u0447\u043E\u0457 \u0448\u0438\u0440\u0438\u043D\u0438 \u2014 \u0446\u0456\u043D\u0430 \u043D\u0435 \u0440\u043E\u0437\u0440\u0430\u0445\u043E\u0432\u0430\u043D\u0430.');
     return;
   }
   var pricing=filmPricingForSeries(change.seriesId)[entry.texture] || {narrow:0,wide:0};
   var selectedPrice=num(pricing[candidate.priceKey]);
-  if(!(selectedPrice>0) && warnings) warnings.push('\u00AB'+roomName+'\u00BB: для '+seriesName+' '+change.code+' не задано ціну за ширину '+filmDisplayWidthLabel(candidate.nominal)+' м. Відкрийте «Ціни плівки».');
+  if(!(selectedPrice>0) && warnings) warnings.push('\u00AB'+roomName+'\u00BB: для '+seriesName+' '+cdisp+' не задано ціну за ширину '+filmDisplayWidthLabel(candidate.nominal)+' м. Відкрийте «Ціни плівки».');
   var areaM2=roomAreaM2(room);
 
   for(var i=items.length-1;i>=0;i--){ if(existing.indexOf(items[i])>=0) items.splice(i,1); }
@@ -287,11 +289,11 @@ function applyFilmChange(items, groups, change, room, warnings){
     items.push({
       id:'filmv_'+String(room && room.id || 'r')+'_'+change.seriesId+'_'+change.code+'_'+String(width.nominal).replace('.','_'),
       groupId:gid, icon:'\uD83C\uDFA8',
-      name:change.code+' '+filmDisplayWidthLabel(width.nominal)+'\u043C',
+      name:filmDispCode(change.seriesId,change.code)+' '+filmDisplayWidthLabel(width.nominal)+'\u043C',
       qty:selected&&areaM2>0 ? Math.round(areaM2*100)/100 : 0,
       unit:'\u043C\u00B2', price:num(pricing[width.priceKey]),
       filmWidth:width.nominal, filmMaxWidth:width.max, filmSelected:selected,
-      colorCode:change.code, colorTexture:entry.texture, seriesId:change.seriesId,
+      colorCode:change.code, filmDisplayCode:(entry.displayCode&&entry.displayCode!==change.code?entry.displayCode:undefined), colorTexture:entry.texture, seriesId:change.seriesId,
       filmPickerManaged:true, roomScoped:true, roomScopedKind:'film-color'
     });
   });
@@ -311,7 +313,7 @@ function getRoomFilmInfoFromItems(items, requiredWidthM){
   return {
     seriesId:seriesId,
     seriesName: seriesMeta ? seriesMeta.name : seriesId,
-    code:first.colorCode||'',
+    code:filmDispCode(seriesId,first.colorCode||''),
     texture:first.colorTexture||'',
     textureLabel: filmTextureLabels()[first.colorTexture] || first.colorTexture || '',
     widthM:num(requiredWidthM)||num(first.displayFilmWidth)||num(first.filmWidth),
@@ -1625,7 +1627,7 @@ function openBulkModal(project, baseVariantId){
   function filmChipHtml(c){
     var marks=ENGINE.filmWidthCandidates(c).map(function(w){return Math.round(w.max*100);});
     var title=c.colorName?(' title="'+esc(c.colorName)+'"'):'';
-    return '<button type="button" class="aceilv-mode-btn aceilv-film-chip'+(c.code===filmState.code?' active':'')+'" data-code="'+esc(c.code)+'"'+title+'>'+esc(c.code)+(c.colorName?('<small style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c.colorName)+'</small>'):'')+'<small>'+marks.join('/')+'</small></button>';
+    return '<button type="button" class="aceilv-mode-btn aceilv-film-chip'+(c.code===filmState.code?' active':'')+'" data-code="'+esc(c.code)+'"'+title+'>'+esc(c.displayCode||c.code)+(c.colorName?('<small style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c.colorName)+'</small>'):'')+'<small>'+marks.join('/')+'</small></button>';
   }
   function bindFilmChips(host){
     host.querySelectorAll('[data-code]').forEach(function(btn){
@@ -1673,7 +1675,7 @@ function openBulkModal(project, baseVariantId){
     var colors=filmColorsForCurrentSeries();
     var q=(filmSearchInp.value||'').trim().toLowerCase();
     var list;
-    if(q) list=colors.filter(function(c){ return c.code.toLowerCase().indexOf(q)>=0 || String(c.colorName||'').toLowerCase().indexOf(q)>=0; });
+    if(q) list=colors.filter(function(c){ return c.code.toLowerCase().indexOf(q)>=0 || String(c.displayCode||'').toLowerCase().indexOf(q)>=0 || String(c.colorName||'').toLowerCase().indexOf(q)>=0; });
     else if(filmActiveTexture) list=colors.filter(function(c){ return c.texture===filmActiveTexture; });
     else list=[];
     if(!list.length){

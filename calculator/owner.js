@@ -16,14 +16,14 @@
  function isCornice(it){return /карниз|ніша|uno|уно|cornice/i.test(String(it.name||'')+' '+String(it.source||''));}
  function filmTariffs(){
   const filmCatalog={},filmOverrides={},raw=items();
-  for(const series of window.ACEIL_FILM_SERIES||[]){if(series.active===false)continue;const rates=window.ACEILGetFilmPricing?.(series.id)||{};filmCatalog[series.id]=rates;
+  for(const series of window.ACEIL_FILM_SERIES||[]){if(series.active===false||series.custom)continue;const rates=window.ACEILGetFilmPricing?.(series.id)||{};filmCatalog[series.id]=rates;
    for(const entry of window.ACEIL_COLOR_CATALOG_BY_SERIES?.[series.id]||[]){const bands=entry.filmWidths?.length?entry.filmWidths:[{nominal:3.6,priceKey:'narrow'},...(entry.wide510?[{nominal:5.1,priceKey:'wide'}]:[])];for(const w of bands){const item=raw.find(it=>it.colorCode===entry.code&&(it.seriesId||it.filmSeriesId||'premium')===series.id&&Math.abs(Number(it.filmWidth)-w.nominal)<1e-6);if(item&&Number(item.price)>0&&Number(item.price)!==Number(rates[entry.texture]?.[w.priceKey]||0))filmOverrides[series.id+':'+entry.code+':'+w.nominal]=Number(item.price);}}
   }
   return{filmCatalog,filmOverrides};
  }
  function catalogueItems(){
   const raw=items(),savedGroups=nomenGroups(),out=raw.filter(it=>!(Number(it&&it.filmWidth)>0&&it.colorCode)),series=window.ACEIL_FILM_SERIES||[];
-  series.filter(s=>s.active!==false).forEach(s=>{
+  series.filter(s=>s.active!==false&&!s.custom).forEach(s=>{
    const entries=window.ACEIL_COLOR_CATALOG_BY_SERIES?.[s.id]||[],prices=window.ACEILGetFilmPricing?.(s.id)||{};
    const codes=new Set(['M303','L303','S303',...raw.filter(it=>(it.seriesId||it.filmSeriesId||'premium')===s.id).map(it=>it.colorCode).filter(Boolean)]);
    entries.filter(e=>codes.has(e.code)).forEach(e=>{
