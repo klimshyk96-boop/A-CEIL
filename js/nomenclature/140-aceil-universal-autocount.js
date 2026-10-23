@@ -343,7 +343,7 @@ function profileRowIsChosen(source,item,variant){
   return !pool.length||String(pool[0].id)===String(item&&item.id);
 }
 function insertRowIsChosen(item){
-  var rows=getElemItems().filter(function(row){return row&&row.source==="white_insert"&&!row.manualQtyOverride;});
+  var rows=getElemItems().filter(function(row){return row&&row.source==="white_insert";});
   if(!rows.length)return true;
   var selected=rows.filter(function(row){return row.insertSelected===true;});
   if(selected.length>1)return false;
@@ -354,6 +354,18 @@ function insertRowIsChosen(item){
   }
   return !!chosen&&String(chosen.id)===String(item&&item.id);
 }
+function manualInsertExtraCm(ctx){
+  var groups={},extra=0;
+  getElemItems().forEach(function(row){
+    var family=contourSourceOfItem(row);
+    if(!row||!row.manualQtyOverride||!(Number(row.qty)>0)||! /^(shadow_profile|floating_profile)$/.test(family))return;
+    var variant=profileVariantOfItem(row),key=family+":"+variant;
+    if(!groups[key])groups[key]={family:family,variant:variant,cm:0};
+    groups[key].cm+=Number(row.qty)*100;
+  });
+  Object.keys(groups).forEach(function(key){var g=groups[key];if(!profileMarksFor(g.family,g.variant,ctx).length)extra+=g.cm;});
+  return extra;
+}
 function partialContourQty(source,item,ctx){
   var relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
   if(!relevant.test(source))return null;
@@ -361,7 +373,7 @@ function partialContourQty(source,item,ctx){
   var shadow=profileMarksFor("shadow_profile","",ctx),floating=profileMarksFor("floating_profile","",ctx),special=shadow.concat(floating);
   var specialCm=Math.min(perimeterCm,mergedProfileLengthCm(special,ctx));
   if(source==="main_profile")return Math.round(Math.max(0,perimeterCm-specialCm))/100;
-  if(source==="white_insert")return insertRowIsChosen(item)?Math.round(Math.max(0,perimeterCm-specialCm))/100:0;
+  if(source==="white_insert")return insertRowIsChosen(item)?Math.round(Math.max(0,perimeterCm-specialCm-manualInsertExtraCm(ctx)))/100:0;
   var family=source.indexOf("shadow_")===0?"shadow_profile":"floating_profile",variant=profileVariantOfItem(item);
   if(source===family){
     if(!profileRowIsChosen(source,item,variant))return 0;
@@ -423,6 +435,7 @@ window.aceilContourProfileColor=function(){var p=contourProfile();return p?p.col
 window.aceilWholeContourCompute=function(source,item,ctx){
   var selected=activeWholeContourProfile(item),profile=selected?{item:selected,source:contourSourceOfItem(selected)||selected.source}:null,relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
   if(!relevant.test(source))return null;
+  if(source==="white_insert"&&manualContourStyle(getElemItems()))return 0;
   if(!profile)return partialContourQty(source,item,ctx);
   var circle=typeof circleMode!=="undefined"&&circleMode;
   var ready=circle?typeof circleDiamCm!=="undefined"&&circleDiamCm>0:typeof closed!=="undefined"&&closed&&typeof pts!=="undefined"&&pts.length>=3;
@@ -435,6 +448,30 @@ window.aceilWholeContourCompute=function(source,item,ctx){
   var rows=getElemItems().filter(function(row){return row&&row.source===cornerSource&&!row.manualQtyOverride;});
   var chosen=rows.find(function(row){return (row.sourceVariant||"")===variant;})||rows.find(function(row){return !row.sourceVariant;});
   return source===cornerSource&&matching&&(!chosen||String(chosen.id)===String(item.id))?count:0;
+};
+// Manual replacement of H owns the insert even when AutoCount is disabled.
+// Remember a manually entered insert quantity so removing the replacement is reversible.
+window.A_CEIL_ReconcileContourInsert=function(){
+  var list=getElemItems(),suppress=!!manualContourStyle(list)||!!explicitContourProfile(list)||list.some(function(row){return row&&row.manualQtyOverride&&Number(row.qty)>0&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(row));}),changed=false;
+  list.forEach(function(row){
+    if(!row||row.source!=="white_insert")return;
+    if(suppress){
+      if(!row.contourInsertSuppressed){row.contourInsertSuppressed={qty:Number(row.qty)||0,manual:row.manualQtyOverride===true};changed=true;}
+      var qty=window.aceilWholeContourCompute("white_insert",row);
+      if(Number(row.qty)!==qty){row.qty=qty;changed=true;}
+      row.autoZero=!(Number(row.qty)>0);
+    }else if(row.contourInsertSuppressed){
+      var previous=row.contourInsertSuppressed;delete row.contourInsertSuppressed;
+      row.qty=previous.manual?previous.qty:window.aceilWholeContourCompute("white_insert",row);
+      row.autoZero=!(Number(row.qty)>0);changed=true;
+    }
+    if(changed&&typeof document!=="undefined"){
+      var el=document.getElementById("emrow_"+row.id),input=el&&el.querySelector(".em-qty-input");
+      if(input)input.value=Number(row.qty)>0?row.qty:"";
+      if(typeof updateLineTotalDOM==="function")updateLineTotalDOM(row);
+    }
+  });
+  return changed;
 };
 function computeSource(source,item,linearSummary){
   source=String(source||"");

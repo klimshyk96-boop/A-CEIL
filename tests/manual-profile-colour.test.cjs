@@ -9,6 +9,7 @@ async function scenario(browser,width,source,variant,family="floating"){
   elemGroups=[{id:'profiles',name:'Профілі'}];
   elemItems=[{id:'base',groupId:'profiles',name:'Профіль базовий',source:'main_profile',qty:16,unit:'м',price:200},{id:'floating',groupId:'profiles',name:(family==='floating'?'Парящий ':'Тіньовий ')+(variant==='black'?'чорний':'білий'),source,sourceVariant:variant,qty:0,unit:'м',price:750}];
   elemItems.push({id:'unused',groupId:'profiles',name:(family==='floating'?'Парящий ':'Тіньовий ')+(variant==='black'?'білий':'чорний'),source:family+'_profile',qty:0,unit:'м',price:800});
+  elemItems.push({id:'insert',groupId:'profiles',name:'Вставка біла',source:'white_insert',sourceVariant:'white',insertSelected:true,qty:16,unit:'м',price:60},{id:'insert-black',groupId:'profiles',name:'Вставка чорна',source:'white_insert',sourceVariant:'black',insertSelected:false,qty:0,unit:'м',price:60});
   window.__A·CEILNomenCatalogV339={items:structuredClone(elemItems),groups:structuredClone(elemGroups)};
   window.rwe2WallPresetWrite([{name:family==='floating'?'Парящий профіль':'Тіньовий профіль',color:'#ff9500'}]);
   const original=ctx.stroke;window.__profileStrokes=[];ctx.stroke=function(...args){window.__profileStrokes.push({color:this.strokeStyle,width:this.lineWidth,report:!!_reportMode});return original.apply(this,args)};
@@ -20,6 +21,7 @@ async function scenario(browser,width,source,variant,family="floating"){
  await page.locator('#emrow_floating .em-qty-input').fill('16');
  await page.waitForFunction(()=>window.__profileStrokes.some(x=>x.color==='#ff9500'&&x.width===3),null,{timeout:5000});
  assert.deepEqual(await page.evaluate(()=>({color:aceilContourProfileColor(),whole:aceilContourProfile().whole,source:aceilContourProfile().source,marks:wallMarks.length,quantities:elemItems.filter(x=>x.id==='base'||x.id==='floating').map(x=>x.qty)})),{color:'#ff9500',whole:true,source:family+'_profile',marks:0,quantities:[0,16]});
+ assert.deepEqual(await page.evaluate(()=>elemItems.filter(i=>i.source==='white_insert').map(i=>i.qty)),[0,0],'manual profile immediately removes insert, including with AutoCount off');
  const saved=await page.evaluate(()=>{saveState();return JSON.parse(localStorage.getItem('ceiling_v18'))});
  await page.evaluate(saved=>{elemItems=[];lengths=[100,100,100,100];const profile=aceilContourProfile(null,saved.elemItems,saved);window.__snapshotProfile={source:profile.source,color:profile.color,whole:profile.whole};elemItems=saved.elemItems;lengths=saved.lengths},saved);
  assert.deepEqual(await page.evaluate(()=>window.__snapshotProfile),{source:family+'_profile',color:'#ff9500',whole:true});
@@ -55,6 +57,7 @@ async function scenario(browser,width,source,variant,family="floating"){
  await page.evaluate(()=>{window.__profileStrokes=[]});await page.locator('#emrow_floating .em-qty-input').fill('0');
  await page.waitForFunction(()=>window.__profileStrokes.some(x=>x.color==='#1d1d1f'&&x.width===3),null,{timeout:5000});
  assert.equal(await page.evaluate(()=>aceilContourProfile().whole),false);
+ assert.deepEqual(await page.evaluate(()=>elemItems.filter(i=>i.source==='white_insert').map(i=>i.qty)),[16,0],'removing manual profile restores chosen insert');
  assert.deepEqual(errors,[]);await page.close();console.log('PASS real manual inputs repaint full contour, saved-state colour and manual profile selection '+width+'px '+source.split(':')[0]+' '+variant);
 }
 (async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.ACEIL_CHROMIUM_PATH||undefined});try{

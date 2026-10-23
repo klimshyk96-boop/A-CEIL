@@ -113,6 +113,7 @@ const dirtyCatalog=[
   {id:'white',name:'Вставка біла',source:'white_insert',sourceVariant:'white',insertSelected:false,qty:0},
   {id:'black',name:'Вставка чорна',source:'white_insert',sourceVariant:'black',insertSelected:true,qty:9}
 ];
+dirtyCatalog[1].contourInsertSuppressed={qty:9,manual:true};
 const currentRoom=JSON.parse(JSON.stringify(dirtyCatalog));
 const mergeCases=[
  ['js/auth/033-aceil-supabase-auth-offline-access.js','function _nomenV339Clone','async function saveNomenclatureToCloud','_nomenV339MergeCatalogWithRoom'],
@@ -127,13 +128,16 @@ for(const [file,start,end,name] of mergeCases){
  const fresh=context[name](dirtyCatalog,[]);
  assert.equal(fresh[0].insertSelected,true,file+': fresh room must default to white despite old cloud selection');
  assert.equal(fresh[1].insertSelected,false);
+ assert.equal(fresh[1].contourInsertSuppressed,undefined,'suppression is never a catalogue default');
  const restored=context[name](dirtyCatalog,currentRoom);
  assert.equal(restored[0].insertSelected,false,file+': sync must preserve this room\'s black choice');
  assert.equal(restored[1].insertSelected,true);
+ assert.equal(restored[1].contourInsertSuppressed.qty,9,'local suppression survives catalogue merge');
  if(context._nomenV339CatalogItems){
   const cleaned=context._nomenV339CatalogItems(currentRoom);
   assert.equal(cleaned[0].insertSelected,true,'cloud catalog must store white default');
   assert.equal(cleaned[1].insertSelected,false);
+  assert.equal(cleaned[1].contourInsertSuppressed,undefined,'cloud catalogue excludes room suppression');
   assert.equal(currentRoom[1].insertSelected,true,'cleaning must not mutate room');
  }
 }

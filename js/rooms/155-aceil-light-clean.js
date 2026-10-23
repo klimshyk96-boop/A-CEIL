@@ -4,6 +4,7 @@
 if(window.__rmLightClean353)return;window.__rmLightClean353=true;
 var S={mode:"one",qty:5,method:"room",orient:"auto",gridCols:4,gridRows:2,gridQ:8};
 var D={edge:50};
+var pick=null;
 function g(id){return document.getElementById(id)}
 function call(n){var f=window[n];if(typeof f==="function")return f.apply(window,[].slice.call(arguments,1))}
 function modeFromOld(){
@@ -97,6 +98,60 @@ function centerPoint(box){
  for(var n=0;n<=20;n++)for(var m=0;m<=20;m++){p={x:box.left+(box.right-box.left)*m/20,y:box.top+(box.bottom-box.top)*n/20};if(insideRoom(p,box))return p}
  return{x:(box.left+box.right)/2,y:(box.top+box.bottom)/2};
 }
+// Largest rectangular zone of an orthogonal room, independent of corner order.
+// A non-orthogonal/circular room uses its ordinary interior centre.
+function zoneCenter(box){
+ var poly=box.poly||[];
+ if(poly.length<4||poly.some(function(p,i){var b=poly[(i+1)%poly.length];return Math.abs(p.x-b.x)>.01&&Math.abs(p.y-b.y)>.01;}))return centerPoint(box);
+ var xs=Array.from(new Set(poly.map(function(p){return p.x;}))).sort(function(a,b){return a-b;}),ys=Array.from(new Set(poly.map(function(p){return p.y;}))).sort(function(a,b){return a-b;});
+ if(xs.length>60||ys.length>60)return centerPoint(box);
+ var best=null,bestArea=0;
+ for(var left=0;left<xs.length-1;left++){
+   var valid=ys.slice(1).map(function(){return true;});
+   for(var right=left+1;right<xs.length;right++){
+     var start=-1;
+     for(var y=0;y<ys.length-1;y++){
+       valid[y]=valid[y]&&insideRoom({x:(xs[right-1]+xs[right])/2,y:(ys[y]+ys[y+1])/2},box);
+       if(!valid[y]){start=-1;continue;}
+       if(start<0)start=y;
+       var area=(xs[right]-xs[left])*(ys[y+1]-ys[start]);
+       if(area>bestArea){bestArea=area;best={x:(xs[left]+xs[right])/2,y:(ys[start]+ys[y+1])/2};}
+     }
+   }
+ }
+ return best||centerPoint(box);
+}
+function cancelPointPlacement(){
+ pick=null;var hud=g("aceilPointPlacementHud");if(hud)hud.remove();call("clearLightMode");
+}
+function startPointPlacement(){
+ cancelPointPlacement();call("rmLfClose");call("setLightMode",placementType());
+ pick={first:null,room:typeof pts!=="undefined"?pts:null,type:placementType(),orientation:placementOrientation()};
+ var hud=document.createElement("div");hud.id="aceilPointPlacementHud";
+ hud.style.cssText="position:fixed;left:16px;right:16px;bottom:100px;z-index:2200;max-width:420px;margin:auto;background:#fff;border:1px solid #bfdbfe;border-radius:16px;padding:12px;box-shadow:0 8px 30px #0f172a22;display:flex;gap:12px;align-items:center;color:#172554;font-weight:700";
+ hud.innerHTML='<span style="flex:1">Вкажіть першу опорну точку</span><button type="button">Скасувати</button>';
+ hud.querySelector("button").onclick=cancelPointPlacement;document.body.appendChild(hud);
+}
+function pointPlacementActive(){
+ if(!pick)return false;
+ if((typeof pts!=="undefined"&&pts!==pick.room)||(typeof lightMode!=="undefined"&&lightMode!==pick.type)){cancelPointPlacement();return false;}
+ return true;
+}
+window.A_CEILLightPlacement={
+ active:pointPlacementActive,
+ handlePoint:function(x,y){
+   if(!pointPlacementActive())return false;
+   var p={x:x,y:y},box=roomBox();
+   // Corner references are allowed, but the resulting fixture must be inside.
+   if(!pick.first){pick.first=p;g("aceilPointPlacementHud").querySelector("span").textContent="Вкажіть другу точку — світильник стане посередині";return true;}
+   if(Math.hypot(p.x-pick.first.x,p.y-pick.first.y)<1)return true;
+   var mid={x:(p.x+pick.first.x)/2,y:(p.y+pick.first.y)/2};
+   if(!insideRoom(mid,box)){call("showToast","Середина між точками поза кімнатою — виберіть іншу точку");return true;}
+   window.__aceilLightPlacementType=pick.type;window.__aceilDoubleSpotOrientation=pick.orientation;
+   addOne(mid);cancelPointPlacement();return true;
+ }
+};
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&pick)cancelPointPlacement();});
 function buildByOffset(edgeCm,isAutomatic){
  var box=roomBox(),k=pxPerCm(),edge=Math.max(0,Number(edgeCm)||0)*k,points=[];
  var left=box.left+edge,right=box.right-edge,top=box.top+edge,bottom=box.bottom-edge;
@@ -143,7 +198,7 @@ function render(){
  if(S.mode==="grid")html+='<div class="rm353-gridcounts"><div class="rm353-countbox"><span>По ширині</span><div class="rm353-mini"><button data-grid-axis="cols" data-delta="-1">−</button><b>'+S.gridCols+'</b><button data-grid-axis="cols" data-delta="1">+</button></div></div><div class="rm353-countbox"><span>Рядів</span><div class="rm353-mini"><button data-grid-axis="rows" data-delta="-1">−</button><b>'+S.gridRows+'</b><button data-grid-axis="rows" data-delta="1">+</button></div></div></div>';
  html+='<div class="rm353-card"><div class="rm353-label">Спосіб розміщення</div><div class="rm353-methods">';
  if(S.mode==="one"){
-   html+=btn("◎ По центру кімнати","room",false)+btn("◉ По центру зони","zone",false)+btn("⌖ Вказати місце","manual",true);
+   html+=btn("◉ По центру зони","zone",false)+btn("◎ По центру кімнати","room",false)+btn("⌖ Вказати місце","manual",false)+btn("⌘ Вказати місце за точками<small>Дві точки — світильник посередині</small>","points",false);
  }else{
    html+=btn("✦ Вирівняти по ескізу<small>тикаєте приблизно — A·CEIL вирівнює</small>","sketch",true);
    html+=btn("◎ Автоматично","room",false)+btn("⌖ Відступ від стін","manual",false);
@@ -154,7 +209,7 @@ function render(){
  }
  html+=dimensionsHtml();
  var label=S.method==="sketch"?"Почати розстановку по ескізу":S.method==="manual"?"Створити з відступом":S.mode==="one"?"Поставити світильник":S.mode==="row"?"Створити ряд":"Створити сітку";
- html+='<button type="button" class="rm353-main" id="rm353Main">'+label+'</button>';
+ if(S.mode!=="one")html+='<button type="button" class="rm353-main" id="rm353Main">'+label+'</button>';
  host.innerHTML=html;
 }
 function ensure(){
@@ -173,14 +228,16 @@ function action(){
    /* Direct start: skip rmSa347Open(), because its dialog asks quantity again. */
    return call("rmSa347Start",q);
  }
+ if(S.mode==="one"&&S.method==="points")return startPointPlacement();
  if(S.method==="manual"){
    if(S.mode!=="one")return buildByOffset(D.edge,false);
    try{call("rmLfClose")}catch(_){};return call("setLightMode",placementType())
  }
  if(S.method==="room"&&(S.mode==="grid"||S.mode==="row"))return buildByOffset(50,true);
- if(S.mode==="one"&&S.method==="room"){
-   var box=roomBox(),p=centerPoint(box);
-   if(addOne(p)){try{call("rmLfClose")}catch(_){};try{showToast("Світильник поставлено по центру кімнати")}catch(_){} }
+ if(S.mode==="one"&&(S.method==="room"||S.method==="zone")){
+   var box=roomBox(),p=S.method==="zone"?zoneCenter(box):centerPoint(box);
+   call("clearLightMode");
+   if(addOne(p)){try{call("rmLfClose")}catch(_){};try{showToast(S.method==="zone"?"Світильник поставлено по центру основної зони":"Світильник поставлено по центру кімнати")}catch(_){} }
    return;
  }
  return call("rmLfApply");
@@ -190,7 +247,7 @@ document.addEventListener("click",function(e){
  var t=e.target.closest("button");if(!t)return;
  if(t.dataset.step){var d=Number(t.dataset.step)||0;S.qty=Math.max(2,Math.min(24,S.qty+d));syncOld();render();return}
  if(t.dataset.gridAxis){var axis=t.dataset.gridAxis,delta=Number(t.dataset.delta)||0;if(axis==="cols")S.gridCols=Math.max(1,Math.min(12,S.gridCols+delta));else S.gridRows=Math.max(1,Math.min(12,S.gridRows+delta));S.gridQ=S.gridCols*S.gridRows;syncOld();render();return}
- if(t.dataset.method){S.method=t.dataset.method;render();return}
+ if(t.dataset.method){S.method=t.dataset.method;if(S.mode==="one"){e.preventDefault();e.stopPropagation();action();}else render();return}
  if(t.dataset.orient){S.orient=t.dataset.orient;try{call("rmLfSetOrient",S.orient)}catch(_){};render();return}
  if(t.id==="rm353Main"){e.preventDefault();e.stopPropagation();action();return}
  if(t.closest("#rmLfTabs"))setTimeout(function(){S.mode=modeFromOld();S.method=S.mode==="one"?"room":"sketch";ensure()},0);

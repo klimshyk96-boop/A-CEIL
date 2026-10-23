@@ -26,7 +26,7 @@ function mergeCatalogWithRoomResults(catalog,current){
   var cur=Array.isArray(current)?current:[],scoped=cur.filter(function(it){return it&&it.filmPickerManaged===true&&it.roomScoped===true}),scopedGroups={};
   scoped.forEach(function(it){scopedGroups[String(it.groupId)]=true});
   var by={};cur.forEach(function(it){var k=nomItemKey(it);if(k)by[k]=it});
-  var roomFields=['qty','manualQtyOverride','autoFilled','autoZero','insertSelected','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount','price'];
+  var roomFields=['qty','manualQtyOverride','contourInsertSuppressed','autoFilled','autoZero','insertSelected','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount','price'];
   var out=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(scopedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0)}).map(function(src){
     var it=clone(src||{}),old=by[nomItemKey(src)];
     if(!it.unit)it.unit='шт';
@@ -34,7 +34,7 @@ function mergeCatalogWithRoomResults(catalog,current){
     if(it.price===undefined)it.price=0;
     if(!it.inputMode)it.inputMode='manual';
     if(!it.icon)it.icon='📦';
-    it.qty=0;it.manualQtyOverride=false;it.insertSelected=aceilDefaultInsertSelection(it);
+    it.qty=0;it.manualQtyOverride=false;delete it.contourInsertSuppressed;it.insertSelected=aceilDefaultInsertSelection(it);
     if(old){
       roomFields.forEach(function(k){
         if(Object.prototype.hasOwnProperty.call(old,k))it[k]=clone(old[k]);

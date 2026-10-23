@@ -12,6 +12,7 @@ function zeroResult(it){
   var c=clone(it||{});
   c.qty=0;
   c.manualQtyOverride=false;
+  delete c.contourInsertSuppressed;
   c.autoFilled=false;c.autoZero=true;
   /* A whole-contour replacement is a room decision, never a catalog default.
      Without clearing it here, choosing a shadow/floating contour in one room
@@ -57,7 +58,7 @@ function mergedRoomItems(room,catalog){
   var managed=roomFilmItems(saved),managedGroups=filmGroupSet(managed);
   var base=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(managedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0);});
   var bySaved={};saved.forEach(function(it){var k=key(it);if(k)bySaved[k]=it;var nk=nameKey(it);if(nk&&!bySaved[nk])bySaved[nk]=it;});
-  var ROOM_FIELDS=['qty','manualQtyOverride','autoFilled','autoZero','insertSelected','fullContourSelected','fullContourPresetName','fullContourColor','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount'];
+  var ROOM_FIELDS=['qty','manualQtyOverride','contourInsertSuppressed','autoFilled','autoZero','insertSelected','fullContourSelected','fullContourPresetName','fullContourColor','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount'];
   var out=[],seen={};
   base.forEach(function(cat){
     var k=key(cat);if(!k||seen[k])return;seen[k]=1;

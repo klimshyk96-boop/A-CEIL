@@ -21,7 +21,7 @@ function decorate(){
    if(b.querySelector("small"))return;
    var s=document.createElement("small");
    if(b.dataset.method==="room")s.textContent=m==="one"?"Світильник стане по центру кімнати":m==="row"?"Ряд стане по центру кімнати":"Автоматичне розміщення по зоні";
-   else if(b.dataset.method==="zone")s.textContent="Розміщення по центру виділеної зони";
+   else if(b.dataset.method==="zone")s.textContent="Автоматично по центру основної зони";
    else if(b.dataset.method==="manual")s.textContent=m==="one"?"Вкажіть точку вручну на плані":"Задати відступи та положення вручну";
    b.appendChild(s);
  });

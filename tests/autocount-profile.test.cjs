@@ -60,6 +60,7 @@ function makeRoom({ items, marks = [], lengths = [300, 300, 300, 300], presets =
       const item = items.find(row => row.id === id);
       return window.aceilWholeContourCompute(sourceKey, item);
     },
+    reconcileInsert() {return window.A_CEIL_ReconcileContourInsert();},
     recalculate() {
       window.rmUniversalAutoCountV319({ noSave: true });
     }
@@ -240,3 +241,19 @@ for(const family of ['shadow','floating'])for(const variant of ['black','white']
  assert.equal(items.find(i=>i.id==='insert').qty,9);
 }
 console.log('PASS black/white floating and shadow lengths without double counting');
+
+for(const family of ['floating','shadow'])for(const variant of ['black','white']){
+ const items=baseItems();Object.assign(items.find(i=>i.id==='base'),{qty:0,manualQtyOverride:true});
+ Object.assign(items.find(i=>i.id===family),{name:(family==='floating'?'Парящий':'Тіньовий')+' '+(variant==='black'?'чорний':'білий'),qty:3,manualQtyOverride:true,sourceVariant:variant});
+ const insert=items.find(i=>i.id==='insert');insert.qty=12;
+ const room=makeRoom({items});assert.equal(room.qty('white_insert','insert'),0,'manual whole contour excludes insert');room.reconcileInsert();assert.equal(insert.qty,0);
+ items.find(i=>i.id===family).qty=0;room.reconcileInsert();assert.equal(insert.qty,12,'ordinary contour restores insert');
+ items.find(i=>i.id==='base').qty=12;items.find(i=>i.id===family).qty=3;
+ assert.equal(room.qty('white_insert','insert'),9,'partial manual profile is deducted');room.reconcileInsert();assert.equal(insert.qty,9);
+}
+{
+ const items=baseItems();Object.assign(items.find(i=>i.id==='floating'),{qty:3,manualQtyOverride:true,sourceVariant:'black'});
+ const room=makeRoom({items,marks:[{...fullWall('same',0,'Парящий профіль'),profileColor:'black'}]});
+ assert.equal(room.qty('white_insert','insert'),9,'same marked and manual profile is deducted once');
+}
+console.log('PASS manual profiles suppress/restore insert and deduct partial lengths once');

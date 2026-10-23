@@ -24,10 +24,10 @@
     var cur=Array.isArray(current)?current:[],scoped=cur.filter(function(it){return it&&it.filmPickerManaged===true&&it.roomScoped===true}),scopedGroups={},by={};
     scoped.forEach(function(it){scopedGroups[String(it.groupId)]=true});
     cur.forEach(function(it){by[key(it)]=it});
-    var fields=["qty","manualQtyOverride","autoFilled","autoZero","price","filmSelected","insertSelected","optionalEstimateEnabled"];
+    var fields=["qty","manualQtyOverride","contourInsertSuppressed","autoFilled","autoZero","price","filmSelected","insertSelected","optionalEstimateEnabled"];
     var out=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(scopedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0)}).map(function(src){
       var it=clone(src||{}),old=by[key(src)];
-      it.insertSelected=aceilDefaultInsertSelection(it);
+      delete it.contourInsertSuppressed;it.insertSelected=aceilDefaultInsertSelection(it);
       if(old)fields.forEach(function(f){if(Object.prototype.hasOwnProperty.call(old,f))it[f]=clone(old[f])});
       return it;
     });
