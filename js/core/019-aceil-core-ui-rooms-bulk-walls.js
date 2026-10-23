@@ -661,7 +661,6 @@ function canvasCloseRadius(){
 }
 function handleInputEvent(clientX,clientY){
   const point=getCanvasPoint(clientX,clientY);let x=point.x,y=point.y;
-  if(window.A_CEILLightPlacement&&window.A_CEILLightPlacement.handlePoint(x,y))return;
   if(!closed&&!circleMode){
     if(pts.length>=3){
       const dx=x-pts[0].x,dy=y-pts[0].y;
@@ -918,7 +917,7 @@ cv.addEventListener("touchstart",function(e){
   }
 },{passive:false,capture:true});
 
-cv.addEventListener("touchstart",e=>{if(e.preventDefault(),longPressFired=!1,2===e.touches.length){const t1=e.touches[0],t2=e.touches[1];return pinchStartDist=touchDistance(t1,t2),pinchStartScale=viewScale,void(isPanning=!1)}if(1!==e.touches.length)return;viewScale>1&&(isPanning=!0,panStartX=e.touches[0].clientX-viewOffsetX,panStartY=e.touches[0].clientY-viewOffsetY);const touch=e.touches[0];if(window.A_CEILLightPlacement&&window.A_CEILLightPlacement.active()){handleInputEvent(touch.clientX,touch.clientY);return}if(lightMode){const p=getCanvasPoint(touch.clientX,touch.clientY),hit=findLightHit(p.x,p.y);return void(hit>=0?(_lightDragIndex=hit,_lightDragging=!1,selectedLightId=lightMarks[hit].id||null,requestDraw()):handleInputEvent(touch.clientX,touch.clientY))}
+cv.addEventListener("touchstart",e=>{if(e.preventDefault(),longPressFired=!1,2===e.touches.length){const t1=e.touches[0],t2=e.touches[1];return pinchStartDist=touchDistance(t1,t2),pinchStartScale=viewScale,void(isPanning=!1)}if(1!==e.touches.length)return;viewScale>1&&(isPanning=!0,panStartX=e.touches[0].clientX-viewOffsetX,panStartY=e.touches[0].clientY-viewOffsetY);const touch=e.touches[0];if(lightMode){const p=getCanvasPoint(touch.clientX,touch.clientY),hit=findLightHit(p.x,p.y);return void(hit>=0?(_lightDragIndex=hit,_lightDragging=!1,selectedLightId=lightMarks[hit].id||null,requestDraw()):handleInputEvent(touch.clientX,touch.clientY))}
 const _lightTouchPoint=getCanvasPoint(touch.clientX,touch.clientY),_lightTouchHit=findLightHitTouch(touch.clientX,touch.clientY);
 if(_lightTouchHit>=0){
   _wallTouchTapPending=null;

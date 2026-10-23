@@ -32,10 +32,17 @@ async function tap(page,p,touch){
      const tapPoint=expected;expected=await page.evaluate(p=>snapLightPoint(p.x,p.y),tapPoint);await tap(page,tapPoint,width===390);
     }
     if(method==='points'){
-     await tap(page,{x:shape.x,y:shape.y},width===390);
-     assert.equal(await page.evaluate(type=>lightMarks.filter(m=>m.type===type).length,type),count,'first reference creates no fixture');
-     await tap(page,{x:shape.x+shape.s,y:shape.y+shape.s},width===390);
-     assert.equal(await page.evaluate(()=>A_CEILLightPlacement.active()),false);
+     await page.locator('#aceilLightCoordinates').waitFor();
+     assert.equal(await page.locator('#aceilLightBase option').count(),4);
+     assert.equal(await page.locator('#aceilLightBase option').nth(1).textContent(),'B');
+     assert.equal(await page.evaluate(type=>lightMarks.filter(m=>m.type===type).length,type),count,'opening input creates no fixture');
+     await page.locator('[data-coordinate-apply]').click();
+     assert.equal(await page.evaluate(type=>lightMarks.filter(m=>m.type===type).length,type),count,'empty input creates no fixture');
+     await page.locator('#aceilLightBase').selectOption('1');
+     await page.locator('#aceilLightX').fill('20,5');await page.locator('#aceilLightY').fill('5000');await page.locator('[data-coordinate-apply]').click();
+     assert.equal(await page.evaluate(type=>lightMarks.filter(m=>m.type===type).length,type),count,'outside coordinates create no fixture');
+     await page.locator('#aceilLightY').fill('120');expected=await page.evaluate(()=>lightCoordsToCanvas(20.5,120,1));
+     await page.locator('[data-coordinate-apply]').click();
     }
     count++;
     await page.waitForFunction(({type,count})=>lightMarks.filter(m=>m.type===type).length===count,{type,count});
@@ -43,12 +50,13 @@ async function tap(page,p,touch){
     const actual=await page.evaluate(type=>{const a=lightMarks.filter(m=>m.type===type);return a[a.length-1]},type);
     assert.ok(Math.abs(actual.x-expected.x)<=2&&Math.abs(actual.y-expected.y)<=2,method+' coordinates '+JSON.stringify({actual,expected,shape}));
     if(type==='double_spot')assert.equal(actual.orientation,'vertical');
+    if(method==='points'){assert.equal(actual.baseIndex,1,'chosen B is preserved');assert.ok(Math.abs(actual.coordX-20.5)<1&&Math.abs(actual.coordY-120)<1);}
     assert.equal(await page.evaluate(()=>lightMarks.filter(m=>m.id==='camera-kept').length),1,'other fixtures survive');
     const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ceiling_v18')).lightMarks);
     assert.ok(saved.some(m=>m.id===actual.id&&m.type===type),'fixture saved immediately');
    }
-   await start(type);await page.locator('[data-method="points"]').click();await page.locator('#aceilPointPlacementHud button').click();
-   assert.equal(await page.evaluate(()=>A_CEILLightPlacement.active()),false);
+   await start(type);await page.locator('[data-method="points"]').click();await page.locator('[data-coordinate-cancel]').click();
+   assert.equal(await page.locator('#aceilLightCoordinates').count(),0);
    assert.equal(await page.evaluate(type=>lightMarks.filter(m=>m.type===type).length,type),count,'cancel adds nothing');
    // Existing row and grid paths retain their explicit creation button.
    for(const [mode,qty] of [['row',5],['grid',8]]){

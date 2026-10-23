@@ -4,7 +4,6 @@
 if(window.__rmLightClean353)return;window.__rmLightClean353=true;
 var S={mode:"one",qty:5,method:"room",orient:"auto",gridCols:4,gridRows:2,gridQ:8};
 var D={edge:50};
-var pick=null;
 function g(id){return document.getElementById(id)}
 function call(n){var f=window[n];if(typeof f==="function")return f.apply(window,[].slice.call(arguments,1))}
 function modeFromOld(){
@@ -72,14 +71,14 @@ function replaceSpots(points){
  try{if(typeof requestDraw==="function")requestDraw();else if(typeof draw==="function")draw()}catch(_){}
  return true;
 }
-function addOne(point){
+function addOne(point,baseIndex){
  var list=null;
  try{list=typeof lightMarks!=="undefined"&&Array.isArray(lightMarks)?lightMarks:null}catch(_){}
  if(!list)list=Array.isArray(window.lightMarks)?window.lightMarks:null;
  if(!list)return false;
  var mark={id:"light_one_"+Date.now(),type:placementType(),x:Math.round(point.x),y:Math.round(point.y)};
  if(mark.type==="double_spot")mark.orientation=placementOrientation();
- try{if(typeof _nearestLightBaseIndex==="function")mark.baseIndex=_nearestLightBaseIndex(mark.x,mark.y)}catch(_){}
+ try{if(Number.isInteger(baseIndex))mark.baseIndex=baseIndex;else if(typeof _nearestLightBaseIndex==="function")mark.baseIndex=_nearestLightBaseIndex(mark.x,mark.y)}catch(_){}
  try{if(typeof _updateLightCoords==="function")_updateLightCoords(mark)}catch(_){}
  list.push(mark);
  try{selectedLightId=mark.id}catch(_){window.selectedLightId=mark.id}
@@ -121,37 +120,31 @@ function zoneCenter(box){
  }
  return best||centerPoint(box);
 }
-function cancelPointPlacement(){
- pick=null;var hud=g("aceilPointPlacementHud");if(hud)hud.remove();call("clearLightMode");
-}
-function startPointPlacement(){
- cancelPointPlacement();call("rmLfClose");call("setLightMode",placementType());
- pick={first:null,room:typeof pts!=="undefined"?pts:null,type:placementType(),orientation:placementOrientation()};
- var hud=document.createElement("div");hud.id="aceilPointPlacementHud";
- hud.style.cssText="position:fixed;left:16px;right:16px;bottom:100px;z-index:2200;max-width:420px;margin:auto;background:#fff;border:1px solid #bfdbfe;border-radius:16px;padding:12px;box-shadow:0 8px 30px #0f172a22;display:flex;gap:12px;align-items:center;color:#172554;font-weight:700";
- hud.innerHTML='<span style="flex:1">Вкажіть першу опорну точку</span><button type="button">Скасувати</button>';
- hud.querySelector("button").onclick=cancelPointPlacement;document.body.appendChild(hud);
-}
-function pointPlacementActive(){
- if(!pick)return false;
- if((typeof pts!=="undefined"&&pts!==pick.room)||(typeof lightMode!=="undefined"&&lightMode!==pick.type)){cancelPointPlacement();return false;}
- return true;
-}
-window.A_CEILLightPlacement={
- active:pointPlacementActive,
- handlePoint:function(x,y){
-   if(!pointPlacementActive())return false;
-   var p={x:x,y:y},box=roomBox();
-   // Corner references are allowed, but the resulting fixture must be inside.
-   if(!pick.first){pick.first=p;g("aceilPointPlacementHud").querySelector("span").textContent="Вкажіть другу точку — світильник стане посередині";return true;}
-   if(Math.hypot(p.x-pick.first.x,p.y-pick.first.y)<1)return true;
-   var mid={x:(p.x+pick.first.x)/2,y:(p.y+pick.first.y)/2};
-   if(!insideRoom(mid,box)){call("showToast","Середина між точками поза кімнатою — виберіть іншу точку");return true;}
-   window.__aceilLightPlacementType=pick.type;window.__aceilDoubleSpotOrientation=pick.orientation;
-   addOne(mid);cancelPointPlacement();return true;
+function openCoordinatePlacement(){
+ call("rmLfClose");call("clearLightMode");
+ var room=typeof pts!=="undefined"?pts:[],type=placementType(),orientation=placementOrientation();
+ if(room.length<3){call("showToast","Для введення від точки потрібен контур із точками A, B, C…");return;}
+ var old=g("aceilLightCoordinates");if(old)old.remove();
+ var modal=document.createElement("div");modal.id="aceilLightCoordinates";modal.className="modal-overlay open";
+ var options=room.map(function(_,i){return '<option value="'+i+'">'+(typeof NL==="function"?NL(i):String.fromCharCode(65+i))+'</option>';}).join("");
+ modal.innerHTML='<div class="modal" style="max-width:430px"><h3>Розміщення світильника</h3><label class="rmle-label" for="aceilLightBase">Від точки</label><select id="aceilLightBase" class="rmle-select">'+options+'</select><div class="rmle-grid2"><label class="rmle-label">X уздовж стіни, см<input id="aceilLightX" class="rmle-input" type="text" inputmode="decimal" placeholder="Наприклад, 50"></label><label class="rmle-label">Y усередину, см<input id="aceilLightY" class="rmle-input" type="text" inputmode="decimal" placeholder="Наприклад, 50"></label></div><p id="aceilLightCoordinateError" role="alert" style="color:#b91c1c;font-size:13px"></p><div class="rmle-grid2"><button type="button" data-coordinate-cancel class="rmle-cancel">Скасувати</button><button type="button" data-coordinate-apply class="rmle-ok">Поставити світильник</button></div></div>';
+ function close(){modal.remove();}
+ modal.querySelector('[data-coordinate-cancel]').onclick=close;
+ modal.addEventListener("click",function(e){if(e.target===modal)close();});
+ modal.addEventListener("keydown",function(e){if(e.key==="Escape")close();if(e.key==="Enter"){e.preventDefault();apply();}});
+ function apply(){
+   var error=g("aceilLightCoordinateError"),base=Number(g("aceilLightBase").value),xs=g("aceilLightX").value.trim(),ys=g("aceilLightY").value.trim(),x=Number(xs.replace(",",".")),y=Number(ys.replace(",","."));
+   if(!xs||!ys||!isFinite(x)||!isFinite(y)){error.textContent="Введіть обидва відступи в сантиметрах";return;}
+   if(typeof pts==="undefined"||pts!==room){error.textContent="Кімната змінилася — відкрийте введення координат знову";return;}
+   var point=typeof lightCoordsToCanvas==="function"?lightCoordsToCanvas(x,y,base):null;
+   if(!point){error.textContent="Спочатку задайте довжину стіни від вибраної точки";return;}
+   if(!insideRoom(point,roomBox())){error.textContent="Ці координати виходять за межі кімнати";return;}
+   window.__aceilLightPlacementType=type;window.__aceilDoubleSpotOrientation=orientation;
+   if(addOne(point,base)){close();call("showToast","Світильник поставлено за координатами");}
  }
-};
-document.addEventListener("keydown",function(e){if(e.key==="Escape"&&pick)cancelPointPlacement();});
+ modal.querySelector('[data-coordinate-apply]').onclick=apply;
+ document.body.appendChild(modal);g("aceilLightX").focus();
+}
 function buildByOffset(edgeCm,isAutomatic){
  var box=roomBox(),k=pxPerCm(),edge=Math.max(0,Number(edgeCm)||0)*k,points=[];
  var left=box.left+edge,right=box.right-edge,top=box.top+edge,bottom=box.bottom-edge;
@@ -198,7 +191,7 @@ function render(){
  if(S.mode==="grid")html+='<div class="rm353-gridcounts"><div class="rm353-countbox"><span>По ширині</span><div class="rm353-mini"><button data-grid-axis="cols" data-delta="-1">−</button><b>'+S.gridCols+'</b><button data-grid-axis="cols" data-delta="1">+</button></div></div><div class="rm353-countbox"><span>Рядів</span><div class="rm353-mini"><button data-grid-axis="rows" data-delta="-1">−</button><b>'+S.gridRows+'</b><button data-grid-axis="rows" data-delta="1">+</button></div></div></div>';
  html+='<div class="rm353-card"><div class="rm353-label">Спосіб розміщення</div><div class="rm353-methods">';
  if(S.mode==="one"){
-   html+=btn("◉ По центру зони","zone",false)+btn("◎ По центру кімнати","room",false)+btn("⌖ Вказати місце","manual",false)+btn("⌘ Вказати місце за точками<small>Дві точки — світильник посередині</small>","points",false);
+   html+=btn("◉ По центру зони","zone",false)+btn("◎ По центру кімнати","room",false)+btn("⌖ Вказати місце","manual",false)+btn("⌘ Вказати місце за точками<small>Виберіть A/B/C… та введіть відступи</small>","points",false);
  }else{
    html+=btn("✦ Вирівняти по ескізу<small>тикаєте приблизно — A·CEIL вирівнює</small>","sketch",true);
    html+=btn("◎ Автоматично","room",false)+btn("⌖ Відступ від стін","manual",false);
@@ -228,7 +221,7 @@ function action(){
    /* Direct start: skip rmSa347Open(), because its dialog asks quantity again. */
    return call("rmSa347Start",q);
  }
- if(S.mode==="one"&&S.method==="points")return startPointPlacement();
+ if(S.mode==="one"&&S.method==="points")return openCoordinatePlacement();
  if(S.method==="manual"){
    if(S.mode!=="one")return buildByOffset(D.edge,false);
    try{call("rmLfClose")}catch(_){};return call("setLightMode",placementType())
