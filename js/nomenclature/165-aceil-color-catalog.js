@@ -483,13 +483,21 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
       data.colors.forEach(function(c){
         if(c.seriesId!==s.id)return;
         var tex=rates[c.texture];if(!tex)return;
+        var applied=false;
         (c.widths||[]).forEach(function(w){
           var k=priceKeyFor(w.nominal,c.code,c.texture),v=Number(tex[k]);
-          if(tex[k]===undefined||!Number.isFinite(v)||v<0||v===w.price)return;
+          if(tex[k]===undefined||!Number.isFinite(v)||v<0)return;
           if(dated&&stamp<Number(c.u||0))return;
-          w.price=v;touched=true;
-          if(dated)c.u=Math.max(Number(c.u||0),stamp);
+          applied=true;
+          if(v!==w.price){w.price=v;touched=true;}
         });
+        // An undated override is a real saved edit, including an override equal
+        // to the stored price. Version it once so a clean device cannot replace
+        // it with its unedited seed (u=0). The cleared override prevents restamping.
+        if(applied){
+          var next=dated?Math.max(Number(c.u||0),stamp):Math.max(Date.now(),Number(c.u||0)+1);
+          if(next!==Number(c.u||0)){c.u=next;touched=true;}
+        }
       });
       ov[s.id]={};dropped=true;
     });
