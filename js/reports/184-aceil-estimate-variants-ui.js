@@ -133,6 +133,7 @@ var FILM_GROUP_WORDS=['\u043F\u043B\u0456\u0432','\u043F\u043E\u043B\u043E\u0442
 var FILM_WIDTH_NARROW={nominal:3.6, max:3.6, priceKey:'narrow'};
 var FILM_WIDTH_WIDE={nominal:5.1, max:5.6, priceKey:'wide'};
 
+function filmDispCode(seriesId,code){ return typeof window.ACEILFilmDisplayCode==='function' ? window.ACEILFilmDisplayCode(seriesId,code) : code; }
 function filmSeriesRegistry(){ return Array.isArray(window.ACEIL_FILM_SERIES) ? window.ACEIL_FILM_SERIES : []; }
 function filmSeriesMeta(seriesId){ return filmSeriesRegistry().find(function(s){ return s && s.id===seriesId; }) || null; }
 function filmCatalogForSeries(seriesId){
@@ -240,9 +241,9 @@ function filmDisplayWidthLabel(nominal){
 function applyFilmChange(items, groups, change, room, warnings){
   if(!change) return;
   var groupId=findFilmGroupId(items, groups);
-  var existing=groupId!=null ? items.filter(function(it){
-    return it && String(it.groupId)===String(groupId) && (it.filmPickerManaged===true || num(it.filmWidth)>0);
-  }) : [];
+  var existing=items.filter(function(it){
+    return it && (it.roomScopedKind==='film-color' || it.filmPickerManaged===true || num(it.filmWidth)>0);
+  });
 
   if(change.mode==='remove'){
     existing.forEach(function(it){ it.qty=0; });
@@ -253,21 +254,22 @@ function applyFilmChange(items, groups, change, room, warnings){
   var seriesMeta=filmSeriesMeta(change.seriesId);
   var seriesName=seriesMeta ? seriesMeta.name : change.seriesId;
   var entry=findFilmColorEntry(change.seriesId, change.code);
+  var cdisp=filmDispCode(change.seriesId, change.code);
   var roomName=(room && room.name) || '\u041A\u0456\u043C\u043D\u0430\u0442\u0430';
   if(!entry){
-    if(warnings) warnings.push('\u041A\u043E\u043B\u0456\u0440 '+change.code+' ('+seriesName+') \u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E \u0432 \u043A\u0430\u0442\u0430\u043B\u043E\u0437\u0456 \u2014 \u0431\u043B\u043E\u043A \u043F\u043B\u0456\u0432\u043A\u0438 \u0434\u043B\u044F \u00AB'+roomName+'\u00BB \u043D\u0435 \u0437\u043C\u0456\u043D\u0435\u043D\u043E.');
+    if(warnings) warnings.push('\u041A\u043E\u043B\u0456\u0440 '+cdisp+' ('+seriesName+') \u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E \u0432 \u043A\u0430\u0442\u0430\u043B\u043E\u0437\u0456 \u2014 \u0431\u043B\u043E\u043A \u043F\u043B\u0456\u0432\u043A\u0438 \u0434\u043B\u044F \u00AB'+roomName+'\u00BB \u043D\u0435 \u0437\u043C\u0456\u043D\u0435\u043D\u043E.');
     return;
   }
   var neededWidthM=requiredFilmWidthMetersFromRoom(room);
   var candidate=pickFilmWidthCandidate(entry, neededWidthM);
   if(!candidate){
     existing.forEach(function(it){ it.qty=0; });
-    if(warnings) warnings.push('\u00AB'+roomName+'\u00BB: \u0434\u043B\u044F '+seriesName+' '+change.code+' \u043D\u0435\u043C\u0430\u0454 \u0434\u043E\u0441\u0442\u0430\u0442\u043D\u044C\u043E\u0457 \u0440\u043E\u0431\u043E\u0447\u043E\u0457 \u0448\u0438\u0440\u0438\u043D\u0438 \u2014 \u0446\u0456\u043D\u0430 \u043D\u0435 \u0440\u043E\u0437\u0440\u0430\u0445\u043E\u0432\u0430\u043D\u0430.');
+    if(warnings) warnings.push('\u00AB'+roomName+'\u00BB: \u0434\u043B\u044F '+seriesName+' '+cdisp+' \u043D\u0435\u043C\u0430\u0454 \u0434\u043E\u0441\u0442\u0430\u0442\u043D\u044C\u043E\u0457 \u0440\u043E\u0431\u043E\u0447\u043E\u0457 \u0448\u0438\u0440\u0438\u043D\u0438 \u2014 \u0446\u0456\u043D\u0430 \u043D\u0435 \u0440\u043E\u0437\u0440\u0430\u0445\u043E\u0432\u0430\u043D\u0430.');
     return;
   }
   var pricing=filmPricingForSeries(change.seriesId)[entry.texture] || {narrow:0,wide:0};
   var selectedPrice=num(pricing[candidate.priceKey]);
-  if(!(selectedPrice>0) && warnings) warnings.push('\u00AB'+roomName+'\u00BB: для '+seriesName+' '+change.code+' не задано ціну за ширину '+filmDisplayWidthLabel(candidate.nominal)+' м. Відкрийте «Ціни плівки».');
+  if(!(selectedPrice>0) && warnings) warnings.push('\u00AB'+roomName+'\u00BB: для '+seriesName+' '+cdisp+' не задано ціну за ширину '+filmDisplayWidthLabel(candidate.nominal)+' м. Відкрийте «Ціни плівки».');
   var areaM2=roomAreaM2(room);
 
   for(var i=items.length-1;i>=0;i--){ if(existing.indexOf(items[i])>=0) items.splice(i,1); }
@@ -287,11 +289,12 @@ function applyFilmChange(items, groups, change, room, warnings){
     items.push({
       id:'filmv_'+String(room && room.id || 'r')+'_'+change.seriesId+'_'+change.code+'_'+String(width.nominal).replace('.','_'),
       groupId:gid, icon:'\uD83C\uDFA8',
-      name:change.code+' '+filmDisplayWidthLabel(width.nominal)+'\u043C',
+      name:filmDispCode(change.seriesId,change.code)+' '+filmDisplayWidthLabel(width.nominal)+'\u043C',
       qty:selected&&areaM2>0 ? Math.round(areaM2*100)/100 : 0,
       unit:'\u043C\u00B2', price:num(pricing[width.priceKey]),
+      filmSwatch:entry.swatch, filmSeriesName:seriesName,
       filmWidth:width.nominal, filmMaxWidth:width.max, filmSelected:selected,
-      colorCode:change.code, colorTexture:entry.texture, seriesId:change.seriesId,
+      colorCode:change.code, filmDisplayCode:(entry.displayCode&&entry.displayCode!==change.code?entry.displayCode:undefined), colorTexture:entry.texture, seriesId:change.seriesId,
       filmPickerManaged:true, roomScoped:true, roomScopedKind:'film-color'
     });
   });
@@ -311,7 +314,7 @@ function getRoomFilmInfoFromItems(items, requiredWidthM){
   return {
     seriesId:seriesId,
     seriesName: seriesMeta ? seriesMeta.name : seriesId,
-    code:first.colorCode||'',
+    code:filmDispCode(seriesId,first.colorCode||''),
     texture:first.colorTexture||'',
     textureLabel: filmTextureLabels()[first.colorTexture] || first.colorTexture || '',
     widthM:num(requiredWidthM)||num(first.displayFilmWidth)||num(first.filmWidth),
@@ -1584,21 +1587,22 @@ function openBulkModal(project, baseVariantId){
   function filmColorsForCurrentSeries(){ return filmState.seriesId ? ENGINE.filmCatalogForSeries(filmState.seriesId) : []; }
   function renderFilmPriceEditor(){
     if(!filmState.seriesId){ filmPriceEditor.innerHTML=''; return; }
-    var colors=filmColorsForCurrentSeries();
+    var colors=filmColorsForCurrentSeries(),selected=colors.find(function(c){return c.code===filmState.code;});
+    if(selected&&selected.texture==='fabric')colors=[selected];
     var textures=[]; colors.forEach(function(c){ if(c&&textures.indexOf(c.texture)<0) textures.push(c.texture); });
     var pricing=ENGINE.filmPricingForSeries(filmState.seriesId);
     var keys=[];
     colors.forEach(function(c){ ENGINE.filmWidthCandidates(c).forEach(function(w){ if(!keys.some(function(x){return x.priceKey===w.priceKey;})) keys.push(w); }); });
     keys.sort(function(a,b){return a.max-b.max;});
-    var rows='<div style="display:grid;grid-template-columns:repeat('+Math.max(1,keys.length)+',minmax(74px,1fr));gap:6px;margin-bottom:9px">'+keys.map(function(w){
+    var rows='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:6px;margin-bottom:9px">'+keys.map(function(w){
       var value=0; for(var i=0;i<textures.length;i++){ value=num(pricing[textures[i]]&&pricing[textures[i]][w.priceKey]); if(value>0) break; }
       return '<label style="font-size:10px;font-weight:800;color:#64748b">до '+esc(String(w.max))+' м<input type="number" min="0" step="1" value="'+value+'" data-price-key="'+esc(w.priceKey)+'" style="width:100%;margin-top:3px;padding:8px;border:1px solid #cbd5e1;border-radius:9px;font-weight:800"> грн/м\u00B2</label>';
     }).join('')+'</div>';
     filmPriceEditor.innerHTML='<div style="font-size:12px;font-weight:900;margin-bottom:8px">\u0426\u0456\u043D\u0438 '+esc((ENGINE.filmSeriesRegistry().find(function(s){return s.id===filmState.seriesId;})||{}).name||filmState.seriesId)+'</div>'+rows+'<button type="button" id="aceilvFilmPricesSave" style="width:100%;padding:9px;border:0;border-radius:10px;background:#2563eb;color:white;font-weight:900">\u0417\u0431\u0435\u0440\u0435\u0433\u0442\u0438 \u0446\u0456\u043D\u0438</button><div style="font-size:10px;color:#64748b;margin-top:6px">\u0417\u0431\u0435\u0440\u0456\u0433\u0430\u044E\u0442\u044C\u0441\u044F \u043D\u0430 \u0446\u044C\u043E\u043C\u0443 \u043F\u0440\u0438\u0441\u0442\u0440\u043E\u0457.</div>';
     var saveBtn=document.getElementById('aceilvFilmPricesSave');
     if(saveBtn) saveBtn.onclick=function(){
-      var next={};
-      textures.forEach(function(t){ next[t]={}; });
+      var next=JSON.parse(JSON.stringify(ENGINE.filmPricingForSeries(filmState.seriesId)));
+      textures.forEach(function(t){ next[t]=next[t]||{}; });
       filmPriceEditor.querySelectorAll('[data-price-key]').forEach(function(inp){
         var k=inp.getAttribute('data-price-key'),value=Math.max(0,num(inp.value));
         textures.forEach(function(t){ next[t][k]=value; });
@@ -1625,7 +1629,7 @@ function openBulkModal(project, baseVariantId){
   function filmChipHtml(c){
     var marks=ENGINE.filmWidthCandidates(c).map(function(w){return Math.round(w.max*100);});
     var title=c.colorName?(' title="'+esc(c.colorName)+'"'):'';
-    return '<button type="button" class="aceilv-mode-btn aceilv-film-chip'+(c.code===filmState.code?' active':'')+'" data-code="'+esc(c.code)+'"'+title+'>'+esc(c.code)+(c.colorName?('<small style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c.colorName)+'</small>'):'')+'<small>'+marks.join('/')+'</small></button>';
+    return '<button type="button" class="aceilv-mode-btn aceilv-film-chip'+(c.code===filmState.code?' active':'')+'" data-code="'+esc(c.code)+'"'+title+'>'+esc(c.displayCode||c.code)+(c.colorName?('<small style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c.colorName)+'</small>'):'')+'<small>'+marks.join('/')+'</small></button>';
   }
   function bindFilmChips(host){
     host.querySelectorAll('[data-code]').forEach(function(btn){
@@ -1673,7 +1677,7 @@ function openBulkModal(project, baseVariantId){
     var colors=filmColorsForCurrentSeries();
     var q=(filmSearchInp.value||'').trim().toLowerCase();
     var list;
-    if(q) list=colors.filter(function(c){ return c.code.toLowerCase().indexOf(q)>=0 || String(c.colorName||'').toLowerCase().indexOf(q)>=0; });
+    if(q) list=colors.filter(function(c){ return c.code.toLowerCase().indexOf(q)>=0 || String(c.displayCode||'').toLowerCase().indexOf(q)>=0 || String(c.colorName||'').toLowerCase().indexOf(q)>=0; });
     else if(filmActiveTexture) list=colors.filter(function(c){ return c.texture===filmActiveTexture; });
     else list=[];
     if(!list.length){

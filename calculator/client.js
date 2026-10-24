@@ -121,7 +121,7 @@
    ];
    demo.items.cornice={...demo.options.cornice[0]};
   }
-  if(!payload)demo.filmCatalog=Object.fromEntries((window.ACEIL_FILM_SERIES||[]).filter(s=>s.active!==false).map(s=>[s.id,window.ACEILGetFilmPricing(s.id)]));
+  if(!payload)demo.filmCatalog=Object.fromEntries((window.ACEIL_FILM_SERIES||[]).filter(s=>s.active!==false&&!s.custom).map(s=>[s.id,window.ACEILGetFilmPricing(s.id)]));
   catalog=M.config(payload?payload.config:demo);if(catalog.catalogue){window.ACEILClientNomenclature.init({catalog,payload,cloudId});return;}productFields();rangeControls();P.init({catalog,form,calculate});restore(initial);
   let draft;try{draft=JSON.parse(sessionStorage.getItem('aceil-client-draft:'+M.encode(catalog))||'null');}catch(_){}
   const restored=payload&&payload.state||draft;restore(restored);P.defaultSelection(restored);for(const key of ['chandelier','spot','doubleSpot'])if(restored?.[key]==null&&catalog.items[key]?.requiresQuote)form.elements.namedItem(key).value='0';$('company').textContent=catalog.company;$('demoNotice').hidden=!catalog.demo;$('priceDate').textContent=(cloudId?'Актуальний прайс: ':'Збережений прайс: ')+(catalog.date||'дата не вказана')+'.';
