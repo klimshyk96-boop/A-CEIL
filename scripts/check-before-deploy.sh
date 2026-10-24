@@ -23,6 +23,7 @@ node tests/film-legacy-prices.test.cjs || exit 1
 node tests/film-legacy-price-sync.test.cjs || exit 1
 node tests/film-manual-regression.test.cjs || exit 1
 node tests/descor-catalog.test.cjs || exit 1
+node tests/nomenclature-material-filter.test.cjs || exit 1
 node tests/pending-sync-queue-browser.test.cjs || exit 1
 node tests/shared-project-save.test.cjs || exit 1
 node tests/project-save-context.test.cjs || exit 1

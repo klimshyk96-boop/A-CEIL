@@ -5,7 +5,7 @@
   let live=[];try{live=Array.isArray(elemItems)?elemItems:[];}catch(_){}
   const master=window['__A·CEILNomenCatalogV339']||{},merged=new Map(live.map(it=>[String(it.id),it]));(master.items||[]).forEach(it=>merged.set(String(it.id),it));
   const groups=new Map([...(master.groups||[]),...nomenGroups()].map(g=>[String(g.id),g]));
-  return [...merged.values()].map(it=>{
+  return [...merged.values()].filter(it=>!window.A_CEILColorPicker||window.A_CEILColorPicker.itemMaterialType(it,[...groups.values()])!=="fabric").map(it=>{
    if(!(Number(it.filmWidth)>0))return it;
    const group=groups.get(String(it.groupId))||{},name=String(it.name||'')+' '+String(group.name||''),match=String(it.name||'').toUpperCase().match(/\b[MLS]\d{3}\b/);
    const series=it.seriesId||it.filmSeriesId||group.filmSeriesId||group.seriesId||(/classic|класік|класик/i.test(name)?'classic':/kralton|кралтон/i.test(name)?'kralton':'premium');
