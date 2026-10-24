@@ -9,6 +9,7 @@ for(const width of [390,1440]){
  assert.ok(catalog.every(c=>c.texture==='fabric'&&c.filmWidths.every(w=>w.nominal===w.max)));assert.equal(new Set(catalog.flatMap(c=>c.filmWidths.map(w=>w.priceKey))).size,15);
  for(const c of catalog){assert.ok(fs.statSync(require('node:path').join(__dirname,'..',c.photo)).size>1000);}
  await page.evaluate(()=>{A_CEILColorPicker.open();__aceilColorPickerSeries('descor-premium');__aceilColorPickerTab('fabric');});
+ assert.equal(await page.locator('#acp2DelSeries').count(),0,'manufacturer deletion is absent from the picker');
  assert.equal(await page.locator('#acp2Grid .acp2-chip').count(),5);assert.equal(await page.locator('#acp2Grid img').count(),5);
  await page.locator('#acp2Grid .acp2-chip').last().scrollIntoViewIfNeeded();
  // Locally bundled supplier photographs load without external calls.
