@@ -370,10 +370,16 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     Object.keys(saved).forEach(function(texture){ if(!out[texture]) out[texture]=Object.assign({},saved[texture]); });
     return out;
   };
+  var PRICE_META_KEY="aceil_film_pricing_meta_v1";
+  function stampPricing(seriesId){
+    try{var m=JSON.parse(localStorage.getItem(PRICE_META_KEY)||"{}")||{};m[seriesId]=Date.now();localStorage.setItem(PRICE_META_KEY,JSON.stringify(m));}catch(_){}
+  }
   window.ACEILSetFilmPricing=function(seriesId,pricing){
     var all=readPriceOverrides(); all[seriesId]=pricing||{};
     localStorage.setItem(PRICE_KEY,JSON.stringify(all));
+    stampPricing(seriesId);
     window.dispatchEvent(new CustomEvent("aceil:film-pricing-saved"));
+    window.dispatchEvent(new CustomEvent("aceil:film-catalog-changed"));
     return window.ACEILGetFilmPricing(seriesId);
   };
   window.ACEILSaveFilmItemPrice=function(item,price){
@@ -427,6 +433,10 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     try{v=JSON.parse(localStorage.getItem(CUSTOM_KEY)||"null");}catch(_){}
     if(!v||!Array.isArray(v.series)||!Array.isArray(v.colors))v={v:1,series:[],colors:[]};
     v=seedDescor(v);
+    /* cid — стабільний ідентифікатор кольору між пристроями (переживає перейменування). */
+    var cidAdded=false;
+    v.colors.forEach(function(c){if(!c.cid){c.cid=c.seriesId==='descor-premium'?'seed:'+c.code:'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);cidAdded=true;}});
+    if(cidAdded){try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(v));}catch(_){}}
     v.reserved=v.reserved||[];v.colors.forEach(function(c){if(!v.reserved.some(function(r){return r.seriesId===c.seriesId&&r.code===c.code;}))v.reserved.push({seriesId:c.seriesId,code:c.code});});
     return v;
   }
@@ -435,6 +445,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     data.colors.forEach(function(c){if(!data.reserved.some(function(r){return r.seriesId===c.seriesId&&r.code===c.code;}))data.reserved.push({seriesId:c.seriesId,code:c.code});});
     try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}
     catch(_){throw new Error("Не вдалося зберегти: сховище браузера недоступне.");}
+    window.dispatchEvent(new CustomEvent("aceil:film-catalog-changed"));
   }
   function priceKeyFor(nominal,code,texture){return (texture==="fabric"?code+"_":"")+"w"+Math.round(Number(nominal)*100);}
   function fmtW(v){return String(Math.round(Number(v)*100)/100).replace(".",",");}
@@ -499,7 +510,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
         series=findSeries(data,manufacturer,collection);
         if(!series){
           series={id:"c"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),manufacturer:manufacturer,collection:collection,
-            name:collection?manufacturer+" "+collection:manufacturer};
+            name:collection?manufacturer+" "+collection:manufacturer,u:Date.now()};
           data.series.push(series);
         }
       }
@@ -525,11 +536,14 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
       if(existing&&existing.texture===texture)code=existing.code;
       else{
         var used={};(data.reserved||[]).concat(data.colors).forEach(function(c){if(c.seriesId===series.id)used[c.code]=true;});
-        for(var n=901;n<=999&&!code;n++)if(!used[TEX_PREFIX[texture]+n])code=TEX_PREFIX[texture]+n;
-        for(n=100;n<=900&&!code;n++)if(!used[TEX_PREFIX[texture]+n])code=TEX_PREFIX[texture]+n;
+        /* Випадковий вільний код: два пристрої, що додають кольори офлайн, майже ніколи не зіткнуться. */
+        var pool=[],n;
+        for(n=901;n<=999;n++)if(!used[TEX_PREFIX[texture]+n])pool.push(n);
+        if(!pool.length)for(n=100;n<=900;n++)if(!used[TEX_PREFIX[texture]+n])pool.push(n);
+        if(pool.length)code=TEX_PREFIX[texture]+pool[Math.floor(Math.random()*pool.length)];
         if(!code)throw new Error("Забагато кольорів у цього виробника.");
       }
-      var row={seriesId:series.id,code:code,display:display,colorName:cleanText(input.colorName,40),texture:texture,swatch:swatch,widths:widths,photo:existing&&existing.photo,sourceUrl:existing&&existing.sourceUrl};
+      var row={u:Date.now(),cid:existing&&existing.cid||'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,8),seriesId:series.id,code:code,display:display,colorName:cleanText(input.colorName,40),texture:texture,swatch:swatch,widths:widths,photo:existing&&existing.photo,sourceUrl:existing&&existing.sourceUrl};
       if(existing){data.colors[data.colors.indexOf(existing)]=row;}else data.colors.push(row);
       persistCustom(data);applyCustom();
       /* Ціни йдуть і в загальний реєстр тарифів серії, щоб не перекривались старими перевизначеннями. */
@@ -542,6 +556,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     deleteColor:function(seriesId,code){
       var data=loadCustom();
       data.colors=data.colors.filter(function(c){return !(c.seriesId===seriesId&&c.code===code);});
+      data.deleted=data.deleted||{};data.deleted["c:"+seriesId+":"+code]=Date.now();
       persistCustom(data);applyCustom();
       window.dispatchEvent(new CustomEvent("aceil:film-pricing-saved"));
     },
@@ -549,8 +564,32 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
       var data=loadCustom();
       data.series=data.series.filter(function(s){return s.id!==seriesId;});
       data.colors=data.colors.filter(function(c){return c.seriesId!==seriesId;});
+      data.deleted=data.deleted||{};data.deleted["s:"+seriesId]=Date.now();
       persistCustom(data);applyCustom();
       try{window.ACEILSetFilmPricing(seriesId,{});}catch(_){}
+    }
+  };
+  /* Внутрішній інтерфейс для синхронізації з хмарою (213-aceil-film-catalog-sync.js). */
+  window.ACEILFilmCatalogStore={
+    keys:{custom:CUSTOM_KEY,pricing:PRICE_KEY,pricingMeta:PRICE_META_KEY},
+    readCustom:function(){var d=loadCustom();return JSON.parse(JSON.stringify(d));},
+    /* Записує злитий документ без нової події «changed» (інакше цикл синку). */
+    writeCustom:function(data){
+      try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}catch(_){return false;}
+      applyCustom();window.dispatchEvent(new CustomEvent("aceil:film-pricing-saved"));return true;
+    },
+    readPricing:function(){
+      var rates={},meta={};
+      try{rates=JSON.parse(localStorage.getItem(PRICE_KEY)||"{}")||{};}catch(_){}
+      try{meta=JSON.parse(localStorage.getItem(PRICE_META_KEY)||"{}")||{};}catch(_){}
+      var out={};Object.keys(rates).forEach(function(id){out[id]={rates:rates[id],u:Number(meta[id])||0};});
+      return out;
+    },
+    writePricing:function(map){
+      var rates={},meta={};
+      Object.keys(map||{}).forEach(function(id){rates[id]=map[id].rates||{};meta[id]=Number(map[id].u)||0;});
+      try{localStorage.setItem(PRICE_KEY,JSON.stringify(rates));localStorage.setItem(PRICE_META_KEY,JSON.stringify(meta));}catch(_){return false;}
+      window.dispatchEvent(new CustomEvent("aceil:film-pricing-saved"));return true;
     }
   };
   applyCustom();
