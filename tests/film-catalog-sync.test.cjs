@@ -153,6 +153,57 @@ const colours=page=>page.evaluate(()=>{const s=window.ACEIL_FILM_SERIES.filter(x
  await C3.page.evaluate(()=>window.ACEILCustomFilm.deleteColor('s1',window.ACEIL_COLOR_CATALOG_BY_SERIES.s1.find(c=>c.cid==='k1').code));
  assert.ok(Object.keys(await C3.page.evaluate(()=>window.ACEILFilmCatalogStore.readCustom().deleted)).includes('k:k1'),'cid tombstone recorded');
  assert.deepEqual(C3.errors,[]);
+ // (5) OLD project: items saved before cids existed still follow their colour after a code collision
+ const C4=await device(browser,'u4');
+ db.u4={rev:1,data:{v:1,custom:{v:1,series:[{id:'s1',manufacturer:'Zed',collection:'',name:'Zed',u:1}],colors:[{cid:'k2',seriesId:'s1',code:'M902',display:'RED',texture:'mat',colorName:'',swatch:'#ff0000',widths:[{nominal:3.6,max:3.6,price:500}],u:1000}],reserved:[],deleted:{},descorLabellImported:true},pricing:{}}};
+ await C4.page.evaluate(()=>{
+  const st=window.ACEILFilmCatalogStore,d=st.readCustom();d.descorLabellImported=true;
+  d.series.push({id:'s1',manufacturer:'Zed',collection:'',name:'Zed',u:1});
+  d.colors.push({cid:'k1',seriesId:'s1',code:'M902',display:'BLUE',texture:'mat',colorName:'',swatch:'#0000ff',widths:[{nominal:3.6,max:3.6,price:480}],u:2000});
+  st.writeCustom(d);
+  window.__aceilColorPickerChoose('M902','mat','s1',true);
+  const it=elemItems.find(x=>x.filmDisplayCode==='BLUE'&&x.filmWidth===3.6);it.qty=12;it.manualQtyOverride=true;window.__blueId=it.id;
+  elemItems.forEach(x=>{delete x.filmCid});   // as saved by the previous app version
+ });
+ await sync(C4.page);await sync(C4.page);
+ const old=await C4.page.evaluate(()=>{
+  const list=window.ACEIL_COLOR_CATALOG_BY_SERIES.s1,blue=list.find(c=>c.cid==='k1'),it=elemItems.find(x=>x.id===window.__blueId),mat=window.A_CEILColorPicker.material();
+  return{blue:blue.code,itemCode:it.colorCode,cid:it.filmCid,qty:it.qty,matLabel:mat&&mat.label,swatch:mat&&mat.swatch,
+   other:elemItems.filter(x=>x.colorCode==='M902'&&x.filmWidth>0).map(x=>x.name+':'+x.qty)}});
+ assert.notEqual(old.blue,'M902');assert.equal(old.itemCode,old.blue,'old item (no cid) follows its colour');
+ assert.equal(old.cid,'k1');assert.equal(old.qty,12,'old project quantity is kept');
+ assert.match(old.matLabel,/^BLUE/);assert.match(old.swatch||'',/0000ff/i);
+ assert.deepEqual(C4.errors,[]);
+ // (6) fabric price set by the user survives the code being moved; legacy overrides are folded into the colour
+ const C5=await device(browser,'u5');
+ db.u5={rev:1,data:{v:1,custom:{v:1,series:[{id:'s9',manufacturer:'Fab',collection:'',name:'Fab',u:1}],colors:[{cid:'f2',seriesId:'s9',code:'M951',display:'OTHER',texture:'fabric',colorName:'',swatch:'#999999',widths:[{nominal:3.1,max:3.1,price:700}],u:1000}],reserved:[],deleted:{},descorLabellImported:true},pricing:{}}};
+ const fab=await C5.page.evaluate(()=>{
+  const st=window.ACEILFilmCatalogStore,d=st.readCustom();d.descorLabellImported=true;
+  d.series.push({id:'s9',manufacturer:'Fab',collection:'',name:'Fab',u:1});
+  d.colors.push({cid:'f1',seriesId:'s9',code:'M951',display:'MINE',texture:'fabric',colorName:'',swatch:'#112233',widths:[{nominal:3.1,max:3.1,price:800}],u:2000});
+  st.writeCustom(d);
+  // price edited through the estimate-variants / nomenclature price path
+  window.ACEILSetFilmPricing('s9',{fabric:{M951_w310:975}});
+  return{price:window.ACEILGetFilmPricing('s9').fabric.M951_w310,overrides:JSON.parse(localStorage.getItem('aceil_film_pricing_overrides_v1')||'{}').s9||{}}});
+ assert.equal(fab.price,975);assert.deepEqual(fab.overrides,{},'custom series prices live in the colour, not in a code-keyed override');
+ await sync(C5.page);await sync(C5.page);
+ const moved=await C5.page.evaluate(()=>{
+  const list=window.ACEIL_COLOR_CATALOG_BY_SERIES.s9,mine=list.find(c=>c.cid==='f1'),other=list.find(c=>c.cid==='f2'),p=window.ACEILGetFilmPricing('s9').fabric;
+  return{mine:mine.code,other:other.code,minePrice:p[mine.code+'_w310'],otherPrice:p[other.code+'_w310']}});
+ assert.notEqual(moved.mine,'M951');assert.equal(moved.other,'M951');
+ assert.equal(moved.minePrice,975,'price follows the colour to its new code');assert.equal(moved.otherPrice,700,'the other colour keeps its own price');
+ // legacy: an old code-keyed override is folded into the colour on load
+ const legacy=await C5.page.evaluate(()=>{
+  const st=window.ACEILFilmCatalogStore,k=st.keys,d=st.readCustom(),c=d.colors.find(x=>x.cid==='f1');
+  c.widths[0].price=800;c.u=1;st.writeCustom(d);
+  localStorage.setItem(k.pricing,JSON.stringify({s9:{fabric:{[c.code+'_w310']:990}}}));localStorage.setItem(k.pricingMeta,JSON.stringify({s9:Date.now()}));
+  st.writeCustom(st.readCustom());
+  return{price:window.ACEILGetFilmPricing('s9').fabric[c.code+'_w310'],ov:JSON.parse(localStorage.getItem(k.pricing)).s9}});
+ assert.equal(legacy.price,990);assert.deepEqual(legacy.ov,{});
+ // the price reached the cloud with the colour
+ await sync(C5.page);
+ assert.equal(db.u5.data.custom.colors.find(c=>c.cid==='f1').widths[0].price,990,'price is stored with the colour in the cloud');
+ assert.deepEqual(C5.errors,[]);
  // backend not installed -> app keeps working locally
  await B.page.evaluate(()=>{window._sb={rpc:()=>Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find the function'}}),channel:()=>({on(){return this},subscribe(){return this}}),removeChannel(){}};try{_sb=window._sb}catch(_){}});
  assert.equal(await sync(B.page),'unavailable');

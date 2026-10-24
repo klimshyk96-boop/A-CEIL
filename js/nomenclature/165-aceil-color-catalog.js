@@ -375,7 +375,11 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     try{var m=JSON.parse(localStorage.getItem(PRICE_META_KEY)||"{}")||{};m[seriesId]=Date.now();localStorage.setItem(PRICE_META_KEY,JSON.stringify(m));}catch(_){}
   }
   window.ACEILSetFilmPricing=function(seriesId,pricing){
-    var all=readPriceOverrides(); all[seriesId]=pricing||{};
+    var all=readPriceOverrides();
+    /* Ціни ручних серій зберігаються у самих кольорах (переживають зміну коду й синхронізацію),
+       а не в окремих перевизначеннях за ключем із кодом. */
+    if(isCustomSeriesId(seriesId)){writePricesIntoColours(seriesId,pricing||{});all[seriesId]={};}
+    else all[seriesId]=pricing||{};
     localStorage.setItem(PRICE_KEY,JSON.stringify(all));
     stampPricing(seriesId);
     window.dispatchEvent(new CustomEvent("aceil:film-pricing-saved"));
@@ -451,7 +455,43 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
   function fmtW(v){return String(Math.round(Number(v)*100)/100).replace(".",",");}
 
   var customIds=[];
+  function isCustomSeriesId(id){return loadCustom().series.some(function(s){return s.id===id;});}
+  function writePricesIntoColours(seriesId,pricing){
+    var data=loadCustom(),touched=false,now=Date.now();
+    data.colors.forEach(function(c){
+      if(c.seriesId!==seriesId)return;
+      var tex=pricing[c.texture];if(!tex)return;
+      (c.widths||[]).forEach(function(w){
+        var k=priceKeyFor(w.nominal,c.code,c.texture),v=Number(tex[k]);
+        if(tex[k]!==undefined&&Number.isFinite(v)&&v>=0&&v!==w.price){w.price=v;c.u=now;touched=true;}
+      });
+    });
+    if(touched){try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}catch(_){}}
+    applyCustom();
+  }
+  /* Старі перевизначення цін ручних серій (за ключем із кодом) переносимо в самі кольори один раз. */
+  function foldOverrides(){
+    var ov=readPriceOverrides(),meta={};
+    try{meta=JSON.parse(localStorage.getItem(PRICE_META_KEY)||"{}")||{};}catch(_){}
+    var data=loadCustom(),touched=false,dropped=false;
+    data.series.forEach(function(s){
+      var rates=ov[s.id];if(!rates||!Object.keys(rates).length)return;
+      var stamp=Number(meta[s.id])||0;
+      data.colors.forEach(function(c){
+        if(c.seriesId!==s.id)return;
+        var tex=rates[c.texture];if(!tex)return;
+        (c.widths||[]).forEach(function(w){
+          var k=priceKeyFor(w.nominal,c.code,c.texture),v=Number(tex[k]);
+          if(tex[k]!==undefined&&Number.isFinite(v)&&v>=0&&v!==w.price&&stamp>Number(c.u||0)){w.price=v;c.u=stamp;touched=true;}
+        });
+      });
+      ov[s.id]={};dropped=true;
+    });
+    if(touched){try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}catch(_){}}
+    if(dropped){try{localStorage.setItem(PRICE_KEY,JSON.stringify(ov));}catch(_){}}
+  }
   function applyCustom(){
+    foldOverrides();
     var data=loadCustom();
     window.ACEIL_FILM_SERIES=window.ACEIL_FILM_SERIES.filter(function(s){return !(s&&s.custom);});
     customIds.forEach(function(id){delete window.ACEIL_COLOR_CATALOG_BY_SERIES[id];delete window.ACEIL_FILM_PRICING_BY_SERIES[id];});

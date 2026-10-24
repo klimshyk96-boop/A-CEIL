@@ -40,8 +40,21 @@ function healFilmCid(it){
   if(e&&it.colorCode!==e.code){it.colorCode=e.code;if(e.displayCode&&e.displayCode!==e.code)it.filmDisplayCode=e.displayCode;return true}
   return false;
  }
- var code=String(it.colorCode||'').toUpperCase(),entry=code&&list.find(function(c){return c&&c.custom&&c.cid&&c.code===code});
- if(entry&&it.filmDisplayCode&&it.filmDisplayCode===entry.displayCode){it.filmCid=entry.cid;return true}
+ /* Позиція зі старого проєкту (без cid): колір визначаємо за назвою, яку вона зберегла. */
+ if(!(it.filmPickerManaged===true||Number(it.filmWidth)>0))return false;
+ var customs=list.filter(function(c){return c&&c.custom&&c.cid});if(!customs.length)return false;
+ var disp=String(it.filmDisplayCode||'').trim().toLowerCase();
+ if(!disp){
+  var nm=String(it.name||'').toLowerCase(),best='';
+  customs.forEach(function(c){var d=String(c.displayCode||'').toLowerCase();if(d&&nm.indexOf(d+' ')===0&&d.length>best.length)best=d});
+  disp=best;
+ }
+ if(!disp)return false;
+ var code=String(it.colorCode||'').toUpperCase(),here=customs.find(function(c){return c.code===code});
+ if(here&&String(here.displayCode||'').toLowerCase()===disp){it.filmCid=here.cid;if(!it.filmDisplayCode&&here.displayCode!==here.code)it.filmDisplayCode=here.displayCode;return true}
+ /* Код тепер означає інший колір (або зник): шукаємо колір, для якого позицію створено. */
+ var tex=it.colorTexture,cand=customs.filter(function(c){return String(c.displayCode||'').toLowerCase()===disp&&(!tex||c.texture===tex)});
+ if(cand.length===1){it.colorCode=cand[0].code;it.filmCid=cand[0].cid;it.filmDisplayCode=cand[0].displayCode;return true}
  return false;
 }
 function prepareFilmItem(it){var healed=healFilmCid(it),changed=prepareFilmItemBase(it);return healed||changed}

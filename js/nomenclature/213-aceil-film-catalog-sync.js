@@ -153,8 +153,9 @@ function readSyncState(){return readJson(STATE_KEY,{dirty:false,uid:null,rev:0})
 function writeSyncState(s){writeJson(STATE_KEY,s)}
 function applyDoc(doc){
   var st=store();if(!st)return false;
-  var ok=st.writeCustom(doc.custom);
-  return st.writePricing(doc.pricing)&&ok;
+  /* Спершу тарифи, потім каталог: writeCustom переносить ціни ручних серій у самі кольори. */
+  var ok=st.writePricing(doc.pricing);
+  return st.writeCustom(doc.custom)&&ok;
 }
 /* Робочий вигляд для порівняння: без службових полів, що розрізняються між пристроями. */
 function comparable(doc){
