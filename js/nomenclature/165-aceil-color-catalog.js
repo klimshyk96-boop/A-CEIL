@@ -543,7 +543,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
         if(pool.length)code=TEX_PREFIX[texture]+pool[Math.floor(Math.random()*pool.length)];
         if(!code)throw new Error("Забагато кольорів у цього виробника.");
       }
-      var row={u:Date.now(),cid:existing&&existing.cid||'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,8),seriesId:series.id,code:code,display:display,colorName:cleanText(input.colorName,40),texture:texture,swatch:swatch,widths:widths,photo:existing&&existing.photo,sourceUrl:existing&&existing.sourceUrl};
+      var row={u:Date.now(),mv:existing&&existing.mv||undefined,cid:existing&&existing.cid||'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,8),seriesId:series.id,code:code,display:display,colorName:cleanText(input.colorName,40),texture:texture,swatch:swatch,widths:widths,photo:existing&&existing.photo,sourceUrl:existing&&existing.sourceUrl};
       if(existing){data.colors[data.colors.indexOf(existing)]=row;}else data.colors.push(row);
       persistCustom(data);applyCustom();
       /* Ціни йдуть і в загальний реєстр тарифів серії, щоб не перекривались старими перевизначеннями. */

@@ -30,16 +30,24 @@ assert.equal(new Set(m.custom.colors.map(c=>c.code)).size,2);
 assert.equal(m.custom.colors.find(c=>c.cid==='x1').code,'M902','earlier colour keeps its code');
 m=merge(doc([S('a',1)],[K(C('a','M902',5),'x1')]),doc([S('a',1)],[K(Object.assign(C('a','M902',9),{display:'RENAMED'}),'x1')]));
 assert.equal(m.custom.colors.length,1,'rename of the same colour is not a collision');assert.equal(m.custom.colors[0].display,'RENAMED');
+{ // two devices + a stale third copy keep exchanging a collision: count must stay 2
+ const x1=K(C('a','M902',5),'x1'),x2=K(Object.assign(C('a','M902',6),{display:'OTHER'}),'x2');
+ let P=doc([S('a',1)],[x1]),Q=doc([S('a',1)],[x2]),R=doc([S('a',1)],[x2]); // R is a stale holder of x2@M902
+ for(let i=0;i<5;i++){P=merge(P,Q);Q=merge(Q,P);R=merge(R,Q);P=merge(P,R);Q=merge(Q,R);}
+ for(const d of[P,Q,R]){assert.equal(d.custom.colors.length,2,'collision does not multiply colours');assert.equal(new Set(d.custom.colors.map(c=>c.cid)).size,2);}
+ assert.equal(canon(P),canon(Q));assert.equal(canon(Q),canon(R));
+}
 assert.equal(canon(merge(m,m)),canon(m),'merge is idempotent');
 
 /* ---------- 2. два «пристрої» та сервер як у SQL ---------- */
 const db={};
 function server(uid,name,args){
- if(name==='aceil_get_film_catalog')return db[uid]?{data:db[uid].data,rev:db[uid].rev}:null;
+ if(name==='aceil_get_film_catalog')return db[uid]?{data:db[uid].data,rev:db[uid].rev,uid}:{data:null,rev:0,uid};
  if(name==='aceil_save_film_catalog'){
+  if(args.p_data.uid!==uid){const e=new Error('film_catalog_user_changed');e.code='42501';throw e}
   const row=db[uid];
   if(row&&row.rev!==(args.p_base_rev||0)){const e=new Error('film_catalog_conflict');e.code='40001';throw e}
-  db[uid]={data:args.p_data,rev:(row?row.rev:0)+1};return db[uid].rev;
+  const d=JSON.parse(JSON.stringify(args.p_data));delete d.uid;db[uid]={data:d,rev:(row?row.rev:0)+1};return db[uid].rev;
  }
  const e=new Error('could not find the function');e.code='PGRST202';throw e;
 }
@@ -76,8 +84,35 @@ const colours=page=>page.evaluate(()=>{const s=window.ACEIL_FILM_SERIES.filter(x
  // a different account in the same browser never inherits or uploads this catalogue
  await B.page.evaluate(()=>{window.__fakeUid='u2';window._sbUser={id:'u2'};try{_sbUser={id:'u2'}}catch(_){}});
  await sync(B.page);
- assert.equal(db.u2,undefined,'foreign local catalogue is not uploaded');
+ assert.ok(!JSON.stringify(db.u2||{}).includes('Novum'),'foreign local catalogue is not uploaded');
  assert.deepEqual(await colours(B.page),[]);
+ // (1) a change made while the cloud copy is loading must survive and be uploaded
+ await B.page.evaluate(()=>{window.__fakeUid='u1';window._sbUser={id:'u1'};try{_sbUser={id:'u1'}}catch(_){}});
+ await sync(B.page); // settle ownership: this device now belongs to u1
+ await B.page.evaluate(()=>{window.__gate=new Promise(r=>{window.__open=r});const c=window._sb;const orig=c.rpc;
+  window._sb=c;try{_sb=c}catch(_){}c.rpc=(n,a)=>n==='aceil_get_film_catalog'?window.__gate.then(()=>orig(n,a)):orig(n,a)});
+ const p1=B.page.evaluate(()=>window.ACEILFilmCatalogSync.sync().then(s=>s.state));
+ await B.page.waitForTimeout(150);
+ await save(B.page,'DURING-LOAD',321);
+ await B.page.evaluate(()=>window.__open());await p1;await sync(B.page);
+ assert.ok((await colours(B.page)).includes('DURING-LOAD'),'change made during load is kept locally');
+ assert.ok(db.u1.data.custom.colors.some(c=>c.display==='DURING-LOAD'),'and reaches the cloud');
+ // (3) switching account while a request is in flight never writes the first account's catalogue to the second
+ await B.page.evaluate(()=>{window.__gate=new Promise(r=>{window.__open=r});});
+ const before=JSON.stringify(db.u2||null);const revBefore=db.u2&&db.u2.rev;
+ const p3=B.page.evaluate(()=>window.ACEILFilmCatalogSync.sync().then(s=>s.state));
+ await B.page.waitForTimeout(150);
+ await save(B.page,'ONLY-U1',111);
+ await B.page.evaluate(()=>{window.__fakeUid='u2';window._sbUser={id:'u2'};try{_sbUser={id:'u2'}}catch(_){}});
+ await B.page.evaluate(()=>window.__open());await p3;
+ assert.equal(JSON.stringify(db.u2||null),before,'second account row untouched by the first account');
+ await sync(B.page);
+ assert.ok(!(db.u2&&JSON.stringify(db.u2).includes('ONLY-U1')),'first account data never reaches second account');
+ assert.ok(!(await colours(B.page)).includes('ONLY-U1'),'second account does not see first account local catalogue');
+ // switching back restores the first account's own unsynced work
+ await B.page.evaluate(()=>{window.__fakeUid='u1';window._sbUser={id:'u1'};try{_sbUser={id:'u1'}}catch(_){}});
+ await sync(B.page);
+ assert.ok(db.u1.data.custom.colors.some(c=>c.display==='ONLY-U1'),'first account change is not lost after a switch');
  // backend not installed -> app keeps working locally
  await B.page.evaluate(()=>{window._sb={rpc:()=>Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find the function'}}),channel:()=>({on(){return this},subscribe(){return this}}),removeChannel(){}};try{_sb=window._sb}catch(_){}});
  assert.equal(await sync(B.page),'unavailable');

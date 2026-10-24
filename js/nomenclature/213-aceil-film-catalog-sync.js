@@ -9,9 +9,17 @@ window.__aceilFilmCatalogSync=true;
    видалення передаються «надгробками» (custom.deleted). Без мережі зміни лишаються
    в черзі (dirty) і відправляються пізніше. Потрібна міграція
    supabase/migrations/20261024120000_film_catalog_sync.sql; доки її немає, застосунок
-   працює локально як раніше. */
+   працює локально як раніше.
 
-var STATE_KEY="aceil_film_sync_v1";
+   Правила безпеки (усе, що йде після await, перевіряється заново):
+   - локальна копія читається ПІСЛЯ відповіді хмари і одразу, без await, зливається й записується,
+     тому зміна, зроблена під час завантаження, не губиться;
+   - прапорець «є зміни» скидається лише якщо за час запиту нових змін не було (лічильник changeSeq);
+   - якщо за час запиту змінився акаунт — результат відкидається, нічого не пишеться ні локально,
+     ні в хмару; сервер додатково звіряє uid у документі з auth.uid();
+   - незавершені зміни іншого акаунта відкладаються в «схованку» й повертаються при його поверненні. */
+
+var STATE_KEY="aceil_film_sync_v1",STASH_KEY="aceil_film_sync_stash_v1";
 var DEBOUNCE_MS=1500,RETRY_MS=60000,MAX_BYTES=90000;
 
 /* ---------- чисте злиття (без DOM/мережі) ---------- */
@@ -23,6 +31,7 @@ function canon(v){
   return JSON.stringify(v===undefined?null:v);
 }
 function emptyCustom(){return{v:1,series:[],colors:[],reserved:[],deleted:{},descorLabellImported:false}}
+function emptyDoc(){return{v:1,custom:emptyCustom(),pricing:{}}}
 function normCustom(c){
   c=c&&typeof c==="object"?clone(c):emptyCustom();
   c.series=Array.isArray(c.series)?c.series:[];
@@ -33,6 +42,25 @@ function normCustom(c){
   return c;
 }
 function newer(a,b){return num(b&&b.u)>num(a&&a.u)}
+function identity(c){return c.cid||(c.seriesId+"|"+String(c.display||"").toLowerCase()+"|"+c.texture+"|"+c.code)}
+
+/* Той самий колір (за cid) міг потрапити під різні коди — після розв'язання колізії.
+   Позицію (код, mv) бере копія з більшим mv, а вміст — найновіша за u. */
+function collapseByIdentity(list){
+  var groups={};
+  list.forEach(function(c){
+    if(!c||!c.seriesId||!c.code)return;
+    var id=c.seriesId+"#"+identity(c);(groups[id]=groups[id]||[]).push(c);
+  });
+  return Object.keys(groups).sort().map(function(id){
+    var g=groups[id];
+    var place=g.slice().sort(function(x,y){return num(y.mv)-num(x.mv)||num(y.u)-num(x.u)||(String(x.code)<String(y.code)?-1:1)})[0];
+    var content=g.slice().sort(function(x,y){return num(y.u)-num(x.u)||num(y.mv)-num(x.mv)})[0];
+    var out=clone(content);out.code=place.code;
+    if(num(place.mv)>0)out.mv=num(place.mv);else delete out.mv;
+    return out;
+  });
+}
 
 function mergeCustom(local,remote){
   var a=normCustom(local),b=normCustom(remote),out=emptyCustom();
@@ -47,42 +75,37 @@ function mergeCustom(local,remote){
     if(!cur||newer(cur,s))series[s.id]=s;
   });
   Object.keys(series).forEach(function(id){
-    if(num(dead["s:"+id])>=num(series[id].u)&&dead["s:"+id]!==undefined)return;
+    if(dead["s:"+id]!==undefined&&num(dead["s:"+id])>=num(series[id].u))return;
     out.series.push(series[id]);
   });
   var alive={};out.series.forEach(function(s){alive[s.id]=true});
-  /* Кольори: ключ = серія + внутрішній код. Якщо два пристрої незалежно дали той самий код
-     РІЗНИМ кольорам, переможець (раніший u) лишає код, інший отримує новий вільний. */
-  var byKey={};
-  a.colors.concat(b.colors).forEach(function(c){
-    if(!c||!c.seriesId||!c.code)return;
-    var k=c.seriesId+":"+c.code,id=c.cid||String(c.display||"").toLowerCase()+"|"+c.texture;
-    var slot=byKey[k]||(byKey[k]={});
-    if(!slot[id]||newer(slot[id],c))slot[id]=c;
-  });
-  var colors=[],usedCodes={};
+
+  /* Кольори. Спершу зводимо копії одного кольору (cid) в одну; потім, якщо два РІЗНІ кольори
+     претендують на той самий код, переможець (раніший u) лишає код, інший отримує новий вільний
+     і позначку mv — щоб застарілі копії на інших пристроях не воскресили старий код. */
+  var unique=collapseByIdentity(a.colors.concat(b.colors)).filter(function(c){return alive[c.seriesId]});
+  var usedCodes={};
   out.series.forEach(function(s){usedCodes[s.id]={}});
   a.reserved.concat(b.reserved).forEach(function(r){if(r&&usedCodes[r.seriesId])usedCodes[r.seriesId][r.code]=true});
-  Object.keys(byKey).forEach(function(k){Object.keys(byKey[k]).forEach(function(id){var c=byKey[k][id];if(usedCodes[c.seriesId])usedCodes[c.seriesId][c.code]=true})});
+  unique.forEach(function(c){usedCodes[c.seriesId][c.code]=true});
+  var byKey={};
+  unique.forEach(function(c){(byKey[c.seriesId+":"+c.code]=byKey[c.seriesId+":"+c.code]||[]).push(c)});
   Object.keys(byKey).sort().forEach(function(k){
-    var ids=Object.keys(byKey[k]),list=ids.map(function(id){return byKey[k][id]});
-    list.sort(function(x,y){return num(x.u)-num(y.u)||(String(x.display)<String(y.display)?-1:1)});
+    var list=byKey[k].sort(function(x,y){return num(x.u)-num(y.u)||(String(identity(x))<String(identity(y))?-1:1)});
     list.forEach(function(c,i){
-      if(!alive[c.seriesId])return;
-      var t=dead["c:"+k];
       if(i===0){
+        var t=dead["c:"+k];
         if(t!==undefined&&num(t)>=num(c.u))return;
-        colors.push(c);return;
+        out.colors.push(c);return;
       }
-      var prefix=String(c.code).charAt(0),n=901,code;
-      for(n=901;n<=999;n++)if(!usedCodes[c.seriesId][prefix+n]){code=prefix+n;break}
-      if(!code)for(n=100;n<=900;n++)if(!usedCodes[c.seriesId][prefix+n]){code=prefix+n;break}
+      var prefix=String(c.code).charAt(0),code,n;
+      for(n=901;n<=999&&!code;n++)if(!usedCodes[c.seriesId][prefix+n])code=prefix+n;
+      for(n=100;n<=900&&!code;n++)if(!usedCodes[c.seriesId][prefix+n])code=prefix+n;
       if(!code)return;
       usedCodes[c.seriesId][code]=true;
-      var moved=clone(c);moved.code=code;colors.push(moved);
+      var moved=clone(c);moved.code=code;moved.mv=num(c.mv)+1;out.colors.push(moved);
     });
   });
-  colors.forEach(function(c){out.colors.push(c)});
   var seen={};
   a.reserved.concat(b.reserved).forEach(function(r){
     if(!r||!alive[r.seriesId])return;
@@ -119,11 +142,13 @@ function readLocalDoc(){
   var st=store();if(!st)return null;
   return{v:1,custom:st.readCustom(),pricing:st.readPricing()};
 }
-function readSyncState(){
-  try{var v=JSON.parse(localStorage.getItem(STATE_KEY)||"null");if(v&&typeof v==="object")return v}catch(_){}
-  return{dirty:false,uid:null,rev:0};
+function readJson(key,fallback){
+  try{var v=JSON.parse(localStorage.getItem(key)||"null");if(v&&typeof v==="object")return v}catch(_){}
+  return fallback;
 }
-function writeSyncState(s){try{localStorage.setItem(STATE_KEY,JSON.stringify(s))}catch(_){}}
+function writeJson(key,v){try{localStorage.setItem(key,JSON.stringify(v))}catch(_){}}
+function readSyncState(){return readJson(STATE_KEY,{dirty:false,uid:null,rev:0})}
+function writeSyncState(s){writeJson(STATE_KEY,s)}
 function applyDoc(doc){
   var st=store();if(!st)return false;
   var ok=st.writeCustom(doc.custom);
@@ -131,7 +156,7 @@ function applyDoc(doc){
 }
 /* Робочий вигляд для порівняння: без службових полів, що розрізняються між пристроями. */
 function comparable(doc){
-  var d=clone(doc);if(d&&d.custom){delete d.custom.reserved}
+  var d=clone(doc);if(d){delete d.uid;if(d.custom)delete d.custom.reserved}
   return canon(d);
 }
 
@@ -141,12 +166,11 @@ function user(){try{return(typeof _sbUser!=="undefined"&&_sbUser)||window._sbUse
 function diag(e){try{window.__diagSilent&&window.__diagSilent(e)}catch(_){}}
 function toast(m){try{if(typeof showToast==="function")showToast(m,2600)}catch(_){}}
 
-var running=false,again=false,timer=null,retryTimer=null,lastRun=0;
+var running=false,again=false,timer=null,retryTimer=null,lastRun=0,changeSeq=0;
 var status={state:"idle",error:null,at:0};
 function setStatus(state,error){status={state:state,error:error||null,at:Date.now()};try{window.dispatchEvent(new CustomEvent("aceil:film-sync-status",{detail:status}))}catch(_){}}
 
-async function rpc(name,args){
-  var c=client();if(!c)throw new Error("no client");
+async function rpc(c,name,args){
   var r=await c.rpc(name,args||{});
   if(r.error)throw r.error;
   return r.data;
@@ -156,36 +180,60 @@ function isMissingBackend(e){
   return(e&&(e.code==="PGRST202"||e.code==="42883"))||/could not find the function|does not exist/i.test(m);
 }
 function isConflict(e){return!!e&&(e.code==="40001"||/film_catalog_conflict/.test(String(e.message||"")))}
+function isUserChanged(e){return/film_catalog_user_changed/.test(String(e&&e.message||""))}
+/* Той самий акаунт і той самий клієнт, що були на початку циклу? */
+function same(u,c){var cu=user();return!!cu&&cu.id===u.id&&client()===c}
+
+/* Схованка: незавершена робота акаунта, який на цьому пристрої перестав бути активним. */
+function stashRead(uid){var s=readJson(STASH_KEY,{});return s[uid]||null}
+function stashWrite(uid,entry){var s=readJson(STASH_KEY,{});if(entry)s[uid]=entry;else delete s[uid];writeJson(STASH_KEY,s)}
 
 async function runOnce(){
   var u=user(),c=client();
   if(!u||!c||!store())return"skip";
   if(typeof navigator!=="undefined"&&navigator.onLine===false)return"offline";
-  var st=readSyncState();
-  var local=readLocalDoc();
-  /* Інший обліковий запис у цьому ж браузері: чужий локальний каталог у хмару не вантажимо. */
-  var foreign=st.uid&&st.uid!==u.id;
-  var remoteRow=await rpc("aceil_get_film_catalog");
+
+  var remoteRow=await rpc(c,"aceil_get_film_catalog");
+  if(!same(u,c))return"switched";
+  if(remoteRow&&remoteRow.uid&&remoteRow.uid!==u.id)return"switched";
+
+  /* ---- далі БЕЗ await до запису локальних даних: ніхто не встигне змінити каталог між читанням і записом ---- */
+  var st=readSyncState(),seq0=changeSeq;
   var remote=remoteRow&&remoteRow.data?remoteRow.data:null,rev=num(remoteRow&&remoteRow.rev);
-  var base=foreign?{v:1,custom:emptyCustom(),pricing:{}}:local;
+  var local=readLocalDoc();
+  var foreign=!!st.uid&&st.uid!==u.id,dirty=!!st.dirty,base=local;
+  if(foreign){
+    stashWrite(st.uid,{doc:local,dirty:dirty,at:Date.now()});
+    var mine=stashRead(u.id);
+    base=mine&&mine.doc?mine.doc:emptyDoc();dirty=!!(mine&&mine.dirty);
+    stashWrite(u.id,null);
+    st={dirty:dirty,uid:u.id,rev:0};writeSyncState(st);
+    applyDoc(base);
+  }
   var merged=remote?mergeDocs(base,remote):base;
-  if(foreign&&!remote)merged={v:1,custom:emptyCustom(),pricing:{}};
-  var changedLocal=comparable(merged)!==comparable(local);
+  var changedLocal=comparable(merged)!==comparable(readLocalDoc());
   if(changedLocal){applyDoc(merged);merged=readLocalDoc();}
-  var needPush=!foreign&&(!remote||st.dirty||comparable(merged)!==comparable(remote));
+  var needPush=!remote||dirty||comparable(merged)!==comparable(remote);
+  var pushed=false;
   if(needPush){
     var body=canon(merged);
     if(body.length>MAX_BYTES)throw new Error("Каталог плівок завеликий для синхронізації.");
+    var doc=clone(merged);doc.uid=u.id;
     try{
-      var newRev=await rpc("aceil_save_film_catalog",{p_data:merged,p_base_rev:rev});
-      rev=num(newRev);
+      rev=num(await rpc(c,"aceil_save_film_catalog",{p_data:doc,p_base_rev:rev}));
+      pushed=true;
     }catch(e){
       if(isConflict(e))return"conflict";
+      if(isUserChanged(e))return"switched";
       throw e;
     }
   }
-  writeSyncState({dirty:false,uid:u.id,rev:rev,at:Date.now()});
-  return changedLocal&&remote?"pulled":"ok";
+  if(!same(u,c))return"switched";
+  /* Зміни, зроблені за час запиту, не відправлені — лишаємо dirty і запускаємо ще цикл. */
+  var late=changeSeq!==seq0;
+  writeSyncState({dirty:late,uid:u.id,rev:rev,at:Date.now()});
+  if(late)again=true;
+  return changedLocal&&remote?"pulled":(pushed?"ok":"ok");
 }
 
 async function cycle(){
@@ -193,10 +241,10 @@ async function cycle(){
   try{
     setStatus("syncing");
     var result,tries=0;
-    do{result=await runOnce();tries++}while(result==="conflict"&&tries<3);
+    do{result=await runOnce();tries++}while((result==="conflict"||result==="switched")&&tries<3);
     if(result==="skip"){setStatus("idle")}
     else if(result==="offline"){setStatus("offline");scheduleRetry()}
-    else if(result==="conflict"){setStatus("error","conflict");scheduleRetry()}
+    else if(result==="conflict"||result==="switched"){setStatus("error",result);scheduleRetry()}
     else{setStatus("ok");if(result==="pulled")toast("☁️ Каталог плівок оновлено з хмари")}
   }catch(e){
     if(isMissingBackend(e)){setStatus("unavailable",e.message)}
@@ -225,6 +273,7 @@ function scheduleRetry(){
 }
 
 function markDirty(){
+  changeSeq++;
   var s=readSyncState();s.dirty=true;writeSyncState(s);
   schedulePush();
 }

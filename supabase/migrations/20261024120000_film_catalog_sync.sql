@@ -18,10 +18,11 @@ begin
   raise exception 'Authentication required' using errcode='42501';
  end if;
  select * into r from public.aceil_film_catalog where user_id=auth.uid();
- if not found then return null; end if;
- return jsonb_build_object('data',r.data,'rev',r.rev,'updated_at',r.updated_at);
+ if not found then return jsonb_build_object('data',null,'rev',0,'uid',auth.uid()); end if;
+ return jsonb_build_object('data',r.data,'rev',r.rev,'updated_at',r.updated_at,'uid',auth.uid());
 end; $$;
 
+-- p_data.uid — id акаунта, для якого клієнт збудував документ (захист від зміни акаунта під час запиту).
 -- p_base_rev: ревізія, на основі якої клієнт будував документ (0 — якщо запису ще немає).
 -- Якщо за цей час запис змінили з іншого пристрою — помилка 40001, клієнт перечитує й зливає.
 create or replace function public.aceil_save_film_catalog(p_data jsonb, p_base_rev bigint)
@@ -38,6 +39,11 @@ begin
     or octet_length(p_data::text)>250000 then
   raise exception 'Invalid film catalog' using errcode='22023';
  end if;
+ -- Клієнт вказує, для якого акаунта збудований документ; якщо сесія змінилась під час запиту — відмова.
+ if p_data->>'uid' is distinct from auth.uid()::text then
+  raise exception 'film_catalog_user_changed' using errcode='42501';
+ end if;
+ p_data := p_data - 'uid';
  select rev into cur from public.aceil_film_catalog where user_id=auth.uid() for update;
  if found then
   if cur is distinct from coalesce(p_base_rev,0) then
