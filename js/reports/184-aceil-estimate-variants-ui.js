@@ -573,7 +573,7 @@ function groupsForState(state){
      helper is ever unavailable at call time. */
   var items=(state && Array.isArray(state.elemItems))?state.elemItems:[];
   var groups=(state && Array.isArray(state.elemGroups))?state.elemGroups:[];
-  var active=items.filter(function(i){ return num(i.qty)>0; });
+  var active=(window.A_CEILColorPicker?window.A_CEILColorPicker.applicableItems(items,groups,state):items).filter(function(i){ return num(i.qty)>0; });
   var used={}, out=[];
   groups.forEach(function(g){
     var arr=active.filter(function(i){ return String(i.groupId||'')===String(g.id||''); });
@@ -1358,6 +1358,9 @@ function renderActiveVariantNomenclature(){
   var activeId=ENGINE.getActiveId(project); if(activeId==null) return;
   var room=currentRoomForVariantProject(project); if(!room) return;
   var result=ENGINE.computeRoomItems(project,room,activeId), items=result.items||[], groups=result.groups||[];
+  if(window.A_CEILColorPicker)items=window.A_CEILColorPicker.applicableItems(items,groups,{elemItems:items,elemGroups:groups});
+  groups=groups.filter(function(g){return items.some(function(it){return String(it.groupId||'')===String(g.id||'')});});
+  var materialFilter=document.getElementById('elemMaterialFilter');if(materialFilter)materialFilter.hidden=true;
   var variant=ENGINE.findVariant(project,activeId), modal=document.getElementById('elementsModal'), list=document.getElementById('elemList');
   if(!modal||!list) return;
   modal.setAttribute('data-aceilv-readonly','1');

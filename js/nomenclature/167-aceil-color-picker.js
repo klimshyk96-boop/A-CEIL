@@ -90,10 +90,63 @@ function captureFilmDefinitions(){
   if(group&&!catalog.groups.some(function(g){return g&&String(g.id)===String(group.id)})){var copy=JSON.parse(JSON.stringify(group));delete copy.roomScoped;delete copy.roomScopedKind;catalog.groups.push(copy);}
  });return catalog;
 }
+// One material policy for the list, live total, stored-room reports and variants.
+// Unknown catalogue entries stay shared; explicit item/group settings take precedence.
+function validCeilingMaterial(value){return ['pvc','fabric','shared'].indexOf(value)>=0?value:''}
+function itemCeilingMaterial(it,allGroups){
+ if(!it)return 'shared';
+ var group=(allGroups||groups()).find(function(g){return g&&String(g.id)===String(it.groupId)});
+ if(it.filmPickerManaged===true||Number(it.filmWidth)>0){
+  var entry=catalogEntry(itemFilmCode(it),it.seriesId||it.filmSeriesId||group&&group.filmSeriesId||'premium');
+  var texture=it.colorTexture||entry&&entry.texture;
+  if(texture)return texture==='fabric'?'fabric':'pvc';
+ }
+ var explicit=validCeilingMaterial(it.ceilingMaterial)||validCeilingMaterial(group&&group.ceilingMaterial);
+ if(explicit)return explicit;
+ function named(value){
+  var name=String(value||'').toLowerCase();
+  if(/захист|захисн|укрит|накрит|пакув|карниз|люстр|світиль|шинопров|світлов.*ліні|камер|датчик|витяж|вентиляц|робота на висот|прибиран|достав/.test(name))return 'shared';
+  if(/тканин|тканев|текстил|descor|дескор|clipso|кліпсо|cerutti|черутті/.test(name))return 'fabric';
+  if(/плівк|пленк|пвх|pvc|гарпун|маскувальн|вставк|парящ|тіньов|тенев|алюм[іи]н.*проф|проф[іи]л.*\bh\b/.test(name))return 'pvc';
+  return '';
+ }
+ var own=named(it.name),inGroup=named(group&&group.name);
+ if(own)return own;
+ if(inGroup)return inGroup;
+ if(['main_profile','white_insert','floating_profile','shadow_profile','floating_corners','shadow_corners'].indexOf(it.source)>=0)return 'pvc';
+ return 'shared';
+}
+function ceilingKind(state){var material=filmMaterial(state);return material&&material.texture==='fabric'?'fabric':'pvc'}
+function applicableItems(list,allGroups,state){
+ list=Array.isArray(list)?list:items();allGroups=Array.isArray(allGroups)?allGroups:groups();
+ var kind=ceilingKind(state||{elemItems:list,elemGroups:allGroups});
+ return list.filter(function(it){var type=itemCeilingMaterial(it,allGroups);return type==='shared'||type===kind});
+}
+var _showAllCeilingMaterials=false,_filterCeilingKind=null;
+function updateMaterialFilter(kind,hiddenCount){
+ var bar=gid('elemMaterialFilter'),label=gid('elemMaterialFilterLabel'),toggle=gid('elemMaterialFilterToggle'),hint=gid('elemMaterialFilterHint');
+ if(!bar)return;
+ bar.hidden=!items().length;
+ if(label)label.textContent=(kind==='fabric'?'Тканинна стеля':'Стеля ПВХ')+(hiddenCount?' · '+hiddenCount+' поз. іншого типу':'');
+ if(toggle){toggle.textContent=_showAllCeilingMaterials?'Лише для цієї стелі':'Показати все';toggle.setAttribute('aria-pressed',String(_showAllCeilingMaterials));}
+ if(hint)hint.hidden=!(_showAllCeilingMaterials&&hiddenCount);
+}
+function resetMaterialFilter(){_showAllCeilingMaterials=false;_filterCeilingKind=null}
+function toggleMaterialFilter(){_showAllCeilingMaterials=!_showAllCeilingMaterials;if(typeof renderElemList==='function')renderElemList()}
 function filmView(){
- var cur=currentFilm(),all=items();if(!cur.code)return {items:all,groups:groups()};
- var visible=all.filter(function(it){return !it||!(it.filmPickerManaged===true||Number(it.filmWidth)>0)||!/^[MLS]\d{3}$/.test(itemFilmCode(it))||itemFilmCode(it)===cur.code&&itemFilmSeries(it)===cur.seriesId});
- return {items:visible,groups:groups().filter(function(group){var own=all.filter(function(it){return it&&String(it.groupId)===String(group.id)});if(own.length)return own.some(function(it){return visible.indexOf(it)>=0});return !group.filmCode||group.filmCode===cur.code&&group.filmSeriesId===cur.seriesId})};
+ var cur=currentFilm(),all=items(),allGroups=groups(),kind=ceilingKind();
+ if(_filterCeilingKind!==kind){_showAllCeilingMaterials=false;_filterCeilingKind=kind;}
+ var visible=all.filter(function(it){return !cur.code||!it||!(it.filmPickerManaged===true||Number(it.filmWidth)>0)||!/^[MLS]\d{3}$/.test(itemFilmCode(it))||itemFilmCode(it)===cur.code&&itemFilmSeries(it)===cur.seriesId});
+ var compatible=applicableItems(visible,allGroups,{elemItems:all,elemGroups:allGroups});
+ updateMaterialFilter(kind,visible.length-compatible.length);
+ if(!_showAllCeilingMaterials)visible=compatible;
+ return {items:visible,groups:allGroups.filter(function(group){
+  var own=all.filter(function(it){return it&&String(it.groupId)===String(group.id)});
+  if(own.length)return own.some(function(it){return visible.indexOf(it)>=0});
+  if(group.filmCode)return group.filmCode===cur.code&&group.filmSeriesId===cur.seriesId;
+  var type=validCeilingMaterial(group.ceilingMaterial)||itemCeilingMaterial({groupId:group.id},allGroups);
+  return _showAllCeilingMaterials||type==='shared'||type===kind;
+ })};
 }
 
 
@@ -114,7 +167,7 @@ function filmMaterial(state){
  if(!chosen)return null;
  var code=itemFilmCode(chosen),series=chosen.seriesId||chosen.filmSeriesId||'premium',entry=catalogEntry(code,series),texture=chosen.colorTexture||entry&&entry.texture||'',textureLabel=texLabels()[texture]||texture;
  var display=chosen.filmDisplayCode||dispCode(series,code),seriesName=chosen.filmSeriesName||seriesById(series).name;
- return {code:code,displayCode:display,seriesId:series,textureLabel:textureLabel,label:[display,textureLabel,seriesName].filter(Boolean).join(' · '),swatch:chosen.filmSwatch||entry&&entry.swatch||null};
+ return {code:code,displayCode:display,seriesId:series,texture:texture,textureLabel:textureLabel,label:[display,textureLabel,seriesName].filter(Boolean).join(' · '),swatch:chosen.filmSwatch||entry&&entry.swatch||null};
 }
 function swatchFill(ctx,swatch,x,y,width){
  var colors=String(swatch||'').match(/#[0-9a-f]{6}/ig);if(!colors||!colors.length)return '#e5e7eb';
@@ -263,6 +316,6 @@ function installCornerHeader(){(function(p){if(p)p.stage("cornerHeader",{after:f
 function installRoomHooks(){var oldLoad=window._loadRoomToCanvas||((typeof _loadRoomToCanvas==="function")?_loadRoomToCanvas:null);if(typeof oldLoad==="function"&&!oldLoad.__colorPickerV3){var loadWrap=function(){var r=oldLoad.apply(this,arguments);scheduleAutoRefresh();updateCornerHeader();return r};loadWrap.__colorPickerV3=true;window._loadRoomToCanvas=loadWrap;try{_loadRoomToCanvas=loadWrap}catch(_){}}var areaNode=gid("area");if(areaNode&&typeof MutationObserver==="function"&&!window.__aceilColorPickerAreaObs){window.__aceilColorPickerAreaObs=new MutationObserver(scheduleAutoRefresh);window.__aceilColorPickerAreaObs.observe(areaNode,{childList:true,characterData:true,subtree:true})}}
 var _autoRefreshTimer=null;function recalculateFilm(){if(typeof window.A_CEIL_NormalizeFilmGroups==='function')window.A_CEIL_NormalizeFilmGroups();ensureDefaultFilm();ensureCompleteFilmWidthSet();pinFilmGroupFirst();if(autoCountEnabled()){try{if(typeof autoFillNomenclature==="function")autoFillNomenclature({silent:true})}catch(_){window.__diagSilent&&window.__diagSilent(_)}pinFilmGroupFirst();enforceSmallestFilmRoll()}syncFilmDisplayWidth();updateButton()}function scheduleAutoRefresh(){clearTimeout(_autoRefreshTimer);_autoRefreshTimer=setTimeout(recalculateFilm,80)}
 function boot(){if(!buildButton())return;installRoomHooks();installCornerHeader();recalculateFilm();setTimeout(recalculateFilm,500);setTimeout(recalculateFilm,1500)}
-window.A_CEILColorPicker={view:filmView,material:filmMaterial,swatchFill:swatchFill,prepareItem:prepareFilmItem,captureDefinitions:captureFilmDefinitions,open:openPicker,close:closePicker,select:function(code,seriesId){seriesId=seriesId||"premium";var c=catalogEntry(String(code||"").toUpperCase(),seriesId);if(c)chooseColor(c.code,c.texture,seriesId)},current:currentFilm,audit:function(){var cur=currentFilm(),entry=catalogEntry(cur.code,cur.seriesId),need=requiredWidthCm();return{code:cur.code,seriesId:cur.seriesId,neededWidthCm:need,widths:widthCandidates(entry),items:currentColorItems().map(function(it){return{name:it.name,seriesId:it.seriesId,filmWidth:it.filmWidth,filmMaxWidth:it.filmMaxWidth,qty:it.qty,price:it.price}})}}};
+window.A_CEILColorPicker={view:filmView,applicableItems:applicableItems,itemMaterialType:itemCeilingMaterial,ceilingKind:ceilingKind,resetMaterialFilter:resetMaterialFilter,toggleMaterialFilter:toggleMaterialFilter,material:filmMaterial,swatchFill:swatchFill,prepareItem:prepareFilmItem,captureDefinitions:captureFilmDefinitions,open:openPicker,close:closePicker,select:function(code,seriesId){seriesId=seriesId||"premium";var c=catalogEntry(String(code||"").toUpperCase(),seriesId);if(c)chooseColor(c.code,c.texture,seriesId)},current:currentFilm,audit:function(){var cur=currentFilm(),entry=catalogEntry(cur.code,cur.seriesId),need=requiredWidthCm();return{code:cur.code,seriesId:cur.seriesId,neededWidthCm:need,widths:widthCandidates(entry),items:currentColorItems().map(function(it){return{name:it.name,seriesId:it.seriesId,filmWidth:it.filmWidth,filmMaxWidth:it.filmMaxWidth,qty:it.qty,price:it.price}})}}};
 window.addEventListener("keydown",function(e){if(e.key==="Escape")closePicker()});if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();var _bootTries=0,_bootTimer=setInterval(function(){_bootTries++;if(gid("aceilColorPickerBtn")||_bootTries>20){clearInterval(_bootTimer);return}boot()},250);
 })();

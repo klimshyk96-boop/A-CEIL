@@ -74,7 +74,8 @@ window.A·CEIL.pipeline.get("openReportSettings").stage("discountAdvance",{aroun
     try { setTimeout(injectDiscountAdvanceUI, 30); } catch(e){window.__diagSilent&&window.__diagSilent(e)}
     return r;}});
 // --- 3. Compute totals ---
-function sumElemItems(items){
+function sumElemItems(items,groups){
+  if(window.A_CEILColorPicker)items=window.A_CEILColorPicker.applicableItems(items||[],groups||[],{elemItems:items||[],elemGroups:groups||[]});
   var total = 0;
   (items || []).forEach(function(it){
     var qty = parseFloat(it && it.qty) || 0;
@@ -95,7 +96,7 @@ function computeRawTotal(){
         obj.rooms.forEach(function(room){
           try {
             var st = (typeof room.state === "string") ? JSON.parse(room.state) : (room.state || {});
-            sum += sumElemItems(st.elemItems);
+            sum += sumElemItems(st.elemItems,st.elemGroups);
           } catch(e){window.__diagSilent&&window.__diagSilent(e)}
         });
         return sum;
@@ -103,7 +104,7 @@ function computeRawTotal(){
     }
   } catch(e){window.__diagSilent&&window.__diagSilent(e)}
   try {
-    if (typeof elemItems !== "undefined") return sumElemItems(elemItems);
+    if (typeof elemItems !== "undefined") return sumElemItems(elemItems,typeof elemGroups!=="undefined"?elemGroups:[]);
   } catch(e){window.__diagSilent&&window.__diagSilent(e)}
   return 0;
 }

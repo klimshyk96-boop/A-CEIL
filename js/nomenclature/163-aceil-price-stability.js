@@ -12,15 +12,17 @@ function parseState(v){
   try{return typeof v==="string"?JSON.parse(v||"{}"):(v&&typeof v==="object"?v:{});}
   catch(_){return{};}
 }
-function itemTotal(items){
-  return (Array.isArray(items)?items:[]).reduce(function(sum,it){
+function itemTotal(items,groups){
+  var list=Array.isArray(items)?items:[];
+  if(window.A_CEILColorPicker)list=window.A_CEILColorPicker.applicableItems(list,groups||[],{elemItems:list,elemGroups:groups||[]});
+  return list.reduce(function(sum,it){
     return sum + num(it&&it.qty)*num(it&&it.price);
   },0);
 }
 function liveRoomTotal(){
   try{
     var items=(typeof elemItems!=="undefined"&&Array.isArray(elemItems))?elemItems:(window.elemItems||[]);
-    return itemTotal(items);
+    return itemTotal(items,typeof elemGroups!=="undefined"?elemGroups:window.elemGroups||[]);
   }catch(_){return 0;}
 }
 function projectList(){
@@ -44,7 +46,7 @@ function activeObject(){
 }
 function savedRoomTotal(room){
   var st=parseState(room&&room.state);
-  return itemTotal(st.elemItems);
+  return itemTotal(st.elemItems,st.elemGroups);
 }
 
 /*
