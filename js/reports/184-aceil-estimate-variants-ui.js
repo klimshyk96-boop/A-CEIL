@@ -241,9 +241,9 @@ function filmDisplayWidthLabel(nominal){
 function applyFilmChange(items, groups, change, room, warnings){
   if(!change) return;
   var groupId=findFilmGroupId(items, groups);
-  var existing=groupId!=null ? items.filter(function(it){
-    return it && String(it.groupId)===String(groupId) && (it.filmPickerManaged===true || num(it.filmWidth)>0);
-  }) : [];
+  var existing=items.filter(function(it){
+    return it && (it.roomScopedKind==='film-color' || it.filmPickerManaged===true || num(it.filmWidth)>0);
+  });
 
   if(change.mode==='remove'){
     existing.forEach(function(it){ it.qty=0; });
@@ -292,6 +292,7 @@ function applyFilmChange(items, groups, change, room, warnings){
       name:filmDispCode(change.seriesId,change.code)+' '+filmDisplayWidthLabel(width.nominal)+'\u043C',
       qty:selected&&areaM2>0 ? Math.round(areaM2*100)/100 : 0,
       unit:'\u043C\u00B2', price:num(pricing[width.priceKey]),
+      filmSwatch:entry.swatch, filmSeriesName:seriesName,
       filmWidth:width.nominal, filmMaxWidth:width.max, filmSelected:selected,
       colorCode:change.code, filmDisplayCode:(entry.displayCode&&entry.displayCode!==change.code?entry.displayCode:undefined), colorTexture:entry.texture, seriesId:change.seriesId,
       filmPickerManaged:true, roomScoped:true, roomScopedKind:'film-color'

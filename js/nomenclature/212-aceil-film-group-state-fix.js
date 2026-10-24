@@ -35,7 +35,7 @@
   function filmIdentity(item, allGroups) {
     if(!item||!(item.filmPickerManaged===true||Number(item.filmWidth)>0))return null;
     var named=String(item.name||'').toUpperCase().match(/\b[MLS]\d{3}\b/);
-    var code=named?named[0]:String(item.colorCode||'').toUpperCase();
+    var code=item.filmDisplayCode&&/^[MLS]\d{3}$/.test(String(item.colorCode||''))?String(item.colorCode).toUpperCase():named?named[0]:String(item.colorCode||'').toUpperCase();
     if(!/^[MLS]\d{3}$/.test(code))return null;
     var group=allGroups.find(function(g){return g&&String(g.id)===String(item.groupId);});
     var series=item.filmSeriesId||item.seriesId||group&&group.filmSeriesId||'premium';

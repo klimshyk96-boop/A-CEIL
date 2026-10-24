@@ -402,11 +402,16 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
   function loadCustom(){
     try{
       var v=JSON.parse(localStorage.getItem(CUSTOM_KEY)||"null");
-      if(v&&Array.isArray(v.series)&&Array.isArray(v.colors))return v;
+      if(v&&Array.isArray(v.series)&&Array.isArray(v.colors)){
+        v.reserved=v.reserved||[];v.colors.forEach(function(c){if(!v.reserved.some(function(r){return r.seriesId===c.seriesId&&r.code===c.code;}))v.reserved.push({seriesId:c.seriesId,code:c.code});});
+        return v;
+      }
     }catch(_){}
     return {v:1,series:[],colors:[]};
   }
   function persistCustom(data){
+    data.reserved=data.reserved||[];
+    data.colors.forEach(function(c){if(!data.reserved.some(function(r){return r.seriesId===c.seriesId&&r.code===c.code;}))data.reserved.push({seriesId:c.seriesId,code:c.code});});
     try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}
     catch(_){throw new Error("Не вдалося зберегти: сховище браузера недоступне.");}
   }
@@ -498,7 +503,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
       var existing=original||same,code;
       if(existing&&existing.texture===texture)code=existing.code;
       else{
-        var used={};data.colors.forEach(function(c){if(c.seriesId===series.id)used[c.code]=true;});
+        var used={};(data.reserved||[]).concat(data.colors).forEach(function(c){if(c.seriesId===series.id)used[c.code]=true;});
         for(var n=901;n<=999&&!code;n++)if(!used[TEX_PREFIX[texture]+n])code=TEX_PREFIX[texture]+n;
         for(n=100;n<=900&&!code;n++)if(!used[TEX_PREFIX[texture]+n])code=TEX_PREFIX[texture]+n;
         if(!code)throw new Error("Забагато кольорів у цього виробника.");

@@ -525,7 +525,7 @@ async function alphaSingle(rs){
   await plan(c,LX,planY,LW,PLAN_H,!1!==rs.drawing?_modernCaptureCurrentDrawing(rs):null,titles.plan);
   let ry=planY;
   const rows=!1!==rs.area?[["Площа полотна",st.area+" м²"],["Периметр",st.per+" м"]]:[];
-  const material=reportFilmMaterial();if(material)rows.push(["Колір стелі",material.code+" · "+material.textureLabel,material.swatch]);
+  const material=reportFilmMaterial();if(material)rows.push(["Колір стелі",(material.displayCode||material.code)+" · "+material.textureLabel,material.swatch]);
   const od=_overallDims(st,rs);od&&rows.push(["Габаритні розміри",od]);
   ry+=info(c,RX,ry,RW,rows,titles.info)+12;
   ry+=lines(c,RX,ry,RW,titles.placement,wallLines,"Елементи не задані")+12;
@@ -627,7 +627,7 @@ async function alphaObject(obj,rs){
     const rows=!1!==rs.area?[["Площа полотна",(rd.r.area||"—")+" м²"],["Периметр",(rd.r.per||"—")+" м"]]:[];
     const _od=_overallDims(rd.st,rs);_od&&rows.push(["Габаритні розміри",_od]);
     const material=reportFilmMaterial(rd.st);
-    if(material)rows.push(["Колір стелі",material.code+" · "+material.textureLabel,material.swatch]);
+    if(material)rows.push(["Колір стелі",(material.displayCode||material.code)+" · "+material.textureLabel,material.swatch]);
     else if(rd.r.ceilingColor)rows.push(["Колір стелі",rd.r.ceilingColor,rd.r.ceilingSwatch]);
     rs.harpoonColor&&rows.push(["Колір гарпуна","black"===rs.harpoonColor?"ЧОРНИЙ":"БІЛИЙ","black"===rs.harpoonColor?"#111827":"#ffffff"]);
     ry+=info(c,RX,ry,RW,rows,titles.info)+12;
