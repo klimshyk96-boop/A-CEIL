@@ -476,13 +476,19 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     var data=loadCustom(),touched=false,dropped=false;
     data.series.forEach(function(s){
       var rates=ov[s.id];if(!rates||!Object.keys(rates).length)return;
-      var stamp=Number(meta[s.id])||0;
+      /* Старі версії зберігали перевизначення БЕЗ мітки часу, і воно завжди перемагало стандартну ціну
+         кольору — так само беремо його й тепер. Датоване перевизначення застосовуємо лише якщо воно
+         не старіше за останню правку самого кольору. */
+      var stamp=Number(meta[s.id])||0,dated=stamp>0;
       data.colors.forEach(function(c){
         if(c.seriesId!==s.id)return;
         var tex=rates[c.texture];if(!tex)return;
         (c.widths||[]).forEach(function(w){
           var k=priceKeyFor(w.nominal,c.code,c.texture),v=Number(tex[k]);
-          if(tex[k]!==undefined&&Number.isFinite(v)&&v>=0&&v!==w.price&&stamp>Number(c.u||0)){w.price=v;c.u=stamp;touched=true;}
+          if(tex[k]===undefined||!Number.isFinite(v)||v<0||v===w.price)return;
+          if(dated&&stamp<Number(c.u||0))return;
+          w.price=v;touched=true;
+          if(dated)c.u=Math.max(Number(c.u||0),stamp);
         });
       });
       ov[s.id]={};dropped=true;
