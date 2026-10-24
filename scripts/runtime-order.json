@@ -158,6 +158,7 @@
   "js/reports/201-aceil-report-links.js",
   "js/projects/210-aceil-project-crm.js",
   "js/nomenclature/212-aceil-film-group-state-fix.js",
+  "js/nomenclature/213-aceil-film-catalog-sync.js",
   "js/canvas/193-aceil-finger-draw.js",
   "js/reports/223-aceil-installer-share.js",
   "js/reports/224-aceil-report-diagonals-menu-fix.js",
