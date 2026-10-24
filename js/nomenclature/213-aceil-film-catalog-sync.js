@@ -88,16 +88,18 @@ function mergeCustom(local,remote){
   out.series.forEach(function(s){usedCodes[s.id]={}});
   a.reserved.concat(b.reserved).forEach(function(r){if(r&&usedCodes[r.seriesId])usedCodes[r.seriesId][r.code]=true});
   unique.forEach(function(c){usedCodes[c.seriesId][c.code]=true});
+  /* Видалений колір не повертається зі старою копією: надгробок діє і за cid, і за кодом. */
+  unique=unique.filter(function(c){
+    var byCid=c.cid&&dead["k:"+c.cid]!==undefined,byCode=dead["c:"+c.seriesId+":"+c.code]!==undefined;
+    if(!byCid&&!byCode)return true;
+    return num(Math.max(byCid?num(dead["k:"+c.cid]):0,byCode?num(dead["c:"+c.seriesId+":"+c.code]):0))<num(c.u);
+  });
   var byKey={};
   unique.forEach(function(c){(byKey[c.seriesId+":"+c.code]=byKey[c.seriesId+":"+c.code]||[]).push(c)});
   Object.keys(byKey).sort().forEach(function(k){
     var list=byKey[k].sort(function(x,y){return num(x.u)-num(y.u)||(String(identity(x))<String(identity(y))?-1:1)});
     list.forEach(function(c,i){
-      if(i===0){
-        var t=dead["c:"+k];
-        if(t!==undefined&&num(t)>=num(c.u))return;
-        out.colors.push(c);return;
-      }
+      if(i===0){out.colors.push(c);return}
       var prefix=String(c.code).charAt(0),code,n;
       for(n=901;n<=999&&!code;n++)if(!usedCodes[c.seriesId][prefix+n])code=prefix+n;
       for(n=100;n<=900&&!code;n++)if(!usedCodes[c.seriesId][prefix+n])code=prefix+n;
@@ -181,6 +183,17 @@ function isMissingBackend(e){
 }
 function isConflict(e){return!!e&&(e.code==="40001"||/film_catalog_conflict/.test(String(e.message||"")))}
 function isUserChanged(e){return/film_catalog_user_changed/.test(String(e&&e.message||""))}
+/* Після застосування каталогу позиції у відкритій кімнаті звіряються з кольорами за cid
+   (код кольору міг змінитися): колір не підміняється, кількість зберігається. */
+function healLive(){
+  try{
+    if(typeof window.A_CEIL_NormalizeFilmGroups==="function"&&window.A_CEIL_NormalizeFilmGroups()){
+      if(typeof renderElemList==="function")renderElemList();
+      if(typeof recalcElemTotal==="function")recalcElemTotal();
+      if(typeof saveState==="function")saveState();
+    }
+  }catch(e){diag(e)}
+}
 /* Той самий акаунт і той самий клієнт, що були на початку циклу? */
 function same(u,c){var cu=user();return!!cu&&cu.id===u.id&&client()===c}
 
@@ -212,7 +225,7 @@ async function runOnce(){
   }
   var merged=remote?mergeDocs(base,remote):base;
   var changedLocal=comparable(merged)!==comparable(readLocalDoc());
-  if(changedLocal){applyDoc(merged);merged=readLocalDoc();}
+  if(changedLocal){applyDoc(merged);merged=readLocalDoc();healLive();}
   var needPush=!remote||dirty||comparable(merged)!==comparable(remote);
   var pushed=false;
   if(needPush){

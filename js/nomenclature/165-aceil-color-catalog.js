@@ -466,7 +466,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
       if(!list)return;
       var widths=(c.widths||[]).slice().sort(function(a,b){return a.nominal-b.nominal;});
       list.push({
-        code:c.code,displayCode:c.display||c.code,baseCode:c.display||c.code.slice(1),colorName:c.colorName||"",texture:c.texture,label:TEX_LABEL[c.texture],
+        code:c.code,cid:c.cid||undefined,displayCode:c.display||c.code,baseCode:c.display||c.code.slice(1),colorName:c.colorName||"",texture:c.texture,label:TEX_LABEL[c.texture],
         seriesId:c.seriesId,wide510:false,custom:true,swatch:c.swatch||undefined,photo:c.photo||undefined,sourceUrl:c.sourceUrl||undefined,
         filmWidths:widths.map(function(w){return {nominal:w.nominal,max:w.max,priceKey:priceKeyFor(w.nominal,c.code,c.texture)};})
       });
@@ -554,9 +554,11 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
       return {seriesId:series.id,code:code,texture:texture};
     },
     deleteColor:function(seriesId,code){
-      var data=loadCustom();
+      var data=loadCustom(),gone=data.colors.find(function(c){return c.seriesId===seriesId&&c.code===code;});
       data.colors=data.colors.filter(function(c){return !(c.seriesId===seriesId&&c.code===code);});
+      /* Видалення запам'ятовуємо і за кодом, і за cid: код кольору міг змінитися при розв'язанні колізії. */
       data.deleted=data.deleted||{};data.deleted["c:"+seriesId+":"+code]=Date.now();
+      if(gone&&gone.cid)data.deleted["k:"+gone.cid]=Date.now();
       persistCustom(data);applyCustom();
       window.dispatchEvent(new CustomEvent("aceil:film-pricing-saved"));
     },

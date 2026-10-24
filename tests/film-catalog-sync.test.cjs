@@ -37,6 +37,16 @@ assert.equal(m.custom.colors.length,1,'rename of the same colour is not a collis
  for(const d of[P,Q,R]){assert.equal(d.custom.colors.length,2,'collision does not multiply colours');assert.equal(new Set(d.custom.colors.map(c=>c.cid)).size,2);}
  assert.equal(canon(P),canon(Q));assert.equal(canon(Q),canon(R));
 }
+{ // colour deleted after its code was moved: a stale copy under the OLD code must not come back
+ const stale=doc([S('a',1)],[K(C('a','M902',5),'x2')]);
+ const afterDelete=doc([S('a',1)],[],{'c:a:M903':50,'k:x2':50});
+ assert.equal(merge(stale,afterDelete).custom.colors.length,0,'deleted colour is not resurrected by a stale copy');
+ assert.equal(merge(afterDelete,stale).custom.colors.length,0);
+ const legacy=doc([S('a',1)],[],{'c:a:M902':50});
+ assert.equal(merge(stale,legacy).custom.colors.length,0,'code tombstone still works');
+ const edited=doc([S('a',1)],[K(C('a','M902',90),'x2')]);
+ assert.equal(merge(edited,afterDelete).custom.colors.length,1,'an edit made after the deletion wins');
+}
 assert.equal(canon(merge(m,m)),canon(m),'merge is idempotent');
 
 /* ---------- 2. два «пристрої» та сервер як у SQL ---------- */
@@ -113,6 +123,36 @@ const colours=page=>page.evaluate(()=>{const s=window.ACEIL_FILM_SERIES.filter(x
  await B.page.evaluate(()=>{window.__fakeUid='u1';window._sbUser={id:'u1'};try{_sbUser={id:'u1'}}catch(_){}});
  await sync(B.page);
  assert.ok(db.u1.data.custom.colors.some(c=>c.display==='ONLY-U1'),'first account change is not lost after a switch');
+ // (2) code collision: the project keeps the BLUE colour, qty stays, nothing turns RED
+ const C3=await device(browser,'u3');
+ db.u3={rev:1,data:{v:1,custom:{v:1,series:[{id:'s1',manufacturer:'Zed',collection:'',name:'Zed',u:1}],colors:[{cid:'k2',seriesId:'s1',code:'M902',display:'RED',texture:'mat',colorName:'',swatch:'#ff0000',widths:[{nominal:3.6,max:3.6,price:500}],u:1000}],reserved:[],deleted:{},descorLabellImported:true},pricing:{}}};
+ await C3.page.evaluate(()=>{
+  const st=window.ACEILFilmCatalogStore,d=st.readCustom();d.descorLabellImported=true;
+  d.series.push({id:'s1',manufacturer:'Zed',collection:'',name:'Zed',u:1});
+  d.colors.push({cid:'k1',seriesId:'s1',code:'M902',display:'BLUE',texture:'mat',colorName:'',swatch:'#0000ff',widths:[{nominal:3.6,max:3.6,price:480}],u:2000});
+  st.writeCustom(d);
+  window.__aceilColorPickerChoose('M902','mat','s1',true);
+  const it=elemItems.find(x=>x.filmDisplayCode==='BLUE'&&x.filmWidth===3.6);it.qty=12;it.manualQtyOverride=true;window.__blueId=it.id;
+ });
+ assert.equal(await C3.page.evaluate(()=>elemItems.find(x=>x.id===window.__blueId).filmCid),'k1','items remember the colour cid');
+ await sync(C3.page);await sync(C3.page);
+ const after=await C3.page.evaluate(()=>{
+  const list=window.ACEIL_COLOR_CATALOG_BY_SERIES.s1,blue=list.find(c=>c.cid==='k1'),red=list.find(c=>c.cid==='k2');
+  const it=elemItems.find(x=>x.id===window.__blueId),mat=window.A_CEILColorPicker.material();
+  return{n:list.length,blue:blue.code,red:red.code,itemCode:it.colorCode,qty:it.qty,name:it.name,matLabel:mat&&mat.label,matCode:mat&&mat.code,swatch:mat&&mat.swatch,
+   reds:elemItems.filter(x=>x.filmDisplayCode==='RED'||/RED/.test(x.name||'')).length}});
+ assert.equal(after.n,2,'no duplicated colours after repeated syncs');
+ assert.equal(after.red,'M902','earlier colour keeps its code');assert.notEqual(after.blue,'M902');
+ assert.equal(after.itemCode,after.blue,'project item follows the colour to its new code');
+ assert.equal(after.qty,12,'quantity is kept');assert.match(after.name,/^BLUE /);
+ assert.equal(after.matCode,after.blue);assert.match(after.matLabel,/^BLUE/);assert.match(after.swatch||'', /0000ff/i);assert.equal(after.reds,0,'the project did not switch to RED');
+ // the same project opened later from a stale item snapshot (saved before the move) is healed on load
+ const healed=await C3.page.evaluate(([old,id])=>{const it=elemItems.find(x=>x.id===id);it.colorCode=old;const changed=window.A_CEIL_NormalizeFilmGroups();return{changed,code:elemItems.find(x=>x.id===id).colorCode}},['M902',await C3.page.evaluate(()=>window.__blueId)]);
+ assert.equal(healed.code,after.blue,'stale saved item is healed by cid');
+ // (4) deletion writes a cid tombstone
+ await C3.page.evaluate(()=>window.ACEILCustomFilm.deleteColor('s1',window.ACEIL_COLOR_CATALOG_BY_SERIES.s1.find(c=>c.cid==='k1').code));
+ assert.ok(Object.keys(await C3.page.evaluate(()=>window.ACEILFilmCatalogStore.readCustom().deleted)).includes('k:k1'),'cid tombstone recorded');
+ assert.deepEqual(C3.errors,[]);
  // backend not installed -> app keeps working locally
  await B.page.evaluate(()=>{window._sb={rpc:()=>Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find the function'}}),channel:()=>({on(){return this},subscribe(){return this}}),removeChannel(){}};try{_sb=window._sb}catch(_){}});
  assert.equal(await sync(B.page),'unavailable');
