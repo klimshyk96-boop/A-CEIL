@@ -39,7 +39,7 @@
     if(!/^[MLS]\d{3}$/.test(code))return null;
     var group=allGroups.find(function(g){return g&&String(g.id)===String(item.groupId);});
     var series=item.filmSeriesId||item.seriesId||group&&group.filmSeriesId||'premium';
-    return {code:code,series:series,texture:code[0]==='S'?'satin':code[0]==='L'?'lak':'mat',key:series+':'+code};
+    return {code:code,series:series,texture:item.colorTexture==='fabric'?'fabric':code[0]==='S'?'satin':code[0]==='L'?'lak':'mat',key:series+':'+code};
   }
 
   function normalizeFilmGroups(options) {

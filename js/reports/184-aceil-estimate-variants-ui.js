@@ -1587,21 +1587,22 @@ function openBulkModal(project, baseVariantId){
   function filmColorsForCurrentSeries(){ return filmState.seriesId ? ENGINE.filmCatalogForSeries(filmState.seriesId) : []; }
   function renderFilmPriceEditor(){
     if(!filmState.seriesId){ filmPriceEditor.innerHTML=''; return; }
-    var colors=filmColorsForCurrentSeries();
+    var colors=filmColorsForCurrentSeries(),selected=colors.find(function(c){return c.code===filmState.code;});
+    if(selected&&selected.texture==='fabric')colors=[selected];
     var textures=[]; colors.forEach(function(c){ if(c&&textures.indexOf(c.texture)<0) textures.push(c.texture); });
     var pricing=ENGINE.filmPricingForSeries(filmState.seriesId);
     var keys=[];
     colors.forEach(function(c){ ENGINE.filmWidthCandidates(c).forEach(function(w){ if(!keys.some(function(x){return x.priceKey===w.priceKey;})) keys.push(w); }); });
     keys.sort(function(a,b){return a.max-b.max;});
-    var rows='<div style="display:grid;grid-template-columns:repeat('+Math.max(1,keys.length)+',minmax(74px,1fr));gap:6px;margin-bottom:9px">'+keys.map(function(w){
+    var rows='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:6px;margin-bottom:9px">'+keys.map(function(w){
       var value=0; for(var i=0;i<textures.length;i++){ value=num(pricing[textures[i]]&&pricing[textures[i]][w.priceKey]); if(value>0) break; }
       return '<label style="font-size:10px;font-weight:800;color:#64748b">до '+esc(String(w.max))+' м<input type="number" min="0" step="1" value="'+value+'" data-price-key="'+esc(w.priceKey)+'" style="width:100%;margin-top:3px;padding:8px;border:1px solid #cbd5e1;border-radius:9px;font-weight:800"> грн/м\u00B2</label>';
     }).join('')+'</div>';
     filmPriceEditor.innerHTML='<div style="font-size:12px;font-weight:900;margin-bottom:8px">\u0426\u0456\u043D\u0438 '+esc((ENGINE.filmSeriesRegistry().find(function(s){return s.id===filmState.seriesId;})||{}).name||filmState.seriesId)+'</div>'+rows+'<button type="button" id="aceilvFilmPricesSave" style="width:100%;padding:9px;border:0;border-radius:10px;background:#2563eb;color:white;font-weight:900">\u0417\u0431\u0435\u0440\u0435\u0433\u0442\u0438 \u0446\u0456\u043D\u0438</button><div style="font-size:10px;color:#64748b;margin-top:6px">\u0417\u0431\u0435\u0440\u0456\u0433\u0430\u044E\u0442\u044C\u0441\u044F \u043D\u0430 \u0446\u044C\u043E\u043C\u0443 \u043F\u0440\u0438\u0441\u0442\u0440\u043E\u0457.</div>';
     var saveBtn=document.getElementById('aceilvFilmPricesSave');
     if(saveBtn) saveBtn.onclick=function(){
-      var next={};
-      textures.forEach(function(t){ next[t]={}; });
+      var next=JSON.parse(JSON.stringify(ENGINE.filmPricingForSeries(filmState.seriesId)));
+      textures.forEach(function(t){ next[t]=next[t]||{}; });
       filmPriceEditor.querySelectorAll('[data-price-key]').forEach(function(inp){
         var k=inp.getAttribute('data-price-key'),value=Math.max(0,num(inp.value));
         textures.forEach(function(t){ next[t][k]=value; });

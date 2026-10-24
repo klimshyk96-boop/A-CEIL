@@ -19,6 +19,7 @@ node tests/pullsky-palette.test.cjs || exit 1
 node tests/film-colour-output.test.cjs || exit 1
 node tests/film-manual-catalog.test.cjs || exit 1
 node tests/film-manual-regression.test.cjs || exit 1
+node tests/descor-catalog.test.cjs || exit 1
 node tests/pending-sync-queue-browser.test.cjs || exit 1
 node tests/shared-project-save.test.cjs || exit 1
 node tests/project-save-context.test.cjs || exit 1

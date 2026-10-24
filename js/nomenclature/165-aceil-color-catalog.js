@@ -285,7 +285,7 @@ window.ACEIL_FILM_PRICING={
   mat:{narrow:380,wide:420,extraWide:420},
   satin:{narrow:380,wide:420}
 };
-window.ACEIL_TEXTURE_LABELS={lak:"Глянець",mat:"Мат",satin:"Сатин"};
+window.ACEIL_TEXTURE_LABELS={lak:"Глянець",mat:"Мат",satin:"Сатин",fabric:"Тканина"};
 window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
 
 /* ---------------------------------------------------------------
@@ -397,17 +397,38 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
      Ціна задається на фактуру + ширину в межах серії (priceKey "wNNN").
      --------------------------------------------------------------- */
   var CUSTOM_KEY="aceil_custom_film_v1";
-  var TEX_PREFIX={lak:"L",mat:"M",satin:"S"};
-  var TEX_LABEL={lak:"Глянець",mat:"Мат",satin:"Сатин"};
+  var TEX_PREFIX={lak:"L",mat:"M",satin:"S",fabric:"M"};
+  var TEX_LABEL=window.ACEIL_TEXTURE_LABELS;
+  // LABELL positions 5–9, imported 2026-10-24. Swatches are approximate;
+  // the supplier photographs are kept locally. No stretch allowance was supplied.
+  var descorRows=[
+    ["WEISS 450","Білий — холодний відтінок","#ffffff",[3.1,3.5,4.1,4.5,5.05],"450"],
+    ["NATURWEISS 469","Білий — теплий відтінок","#f5f1e8",[3.1,3.5,4.1,4.5,5.05],"469"],
+    ["SCHWARZ 264","Чорний","#191919",[3.1,4.1,5.05],"264"],
+    ["STAR GRAU ALU 167","Сірий блиск","#8c8c8c",[5.05],"167"],
+    ["STAR SHWARZ 164","Чорний блиск","#242424",[5.05],"164"]
+  ];
+  function seedDescor(data){
+    if(data.descorLabellImported)return data;
+    var series=data.series.find(function(s){return String(s.manufacturer).toLowerCase()==='descor'&&String(s.collection||'').toLowerCase()==='premium';});
+    if(!series){series={id:'descor-premium',manufacturer:'DESCOR',collection:'Premium',name:'DESCOR Premium'};data.series.push(series);}
+    descorRows.forEach(function(row,index){
+      var existing=data.colors.find(function(c){return c.seriesId===series.id&&String(c.display).toUpperCase()===row[0];});
+      if(existing){if(!existing.photo)existing.photo='/assets/materials/descor/'+row[4]+'.jpg';if(!existing.sourceUrl)existing.sourceUrl='https://price-labell.online/tkanunni';return;}
+      var n=951+index;while(data.colors.concat(data.reserved||[]).some(function(c){return c.seriesId===series.id&&c.code==='M'+n;}))n++;
+      data.colors.push({seriesId:series.id,code:'M'+n,display:row[0],texture:'fabric',colorName:row[1],swatch:row[2],photo:'/assets/materials/descor/'+row[4]+'.jpg',sourceUrl:'https://price-labell.online/tkanunni',widths:row[3].map(function(w){return {nominal:w,max:w,price:0};})});
+    });
+    data.descorLabellImported=true;
+    try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}catch(_){}
+    return data;
+  }
   function loadCustom(){
-    try{
-      var v=JSON.parse(localStorage.getItem(CUSTOM_KEY)||"null");
-      if(v&&Array.isArray(v.series)&&Array.isArray(v.colors)){
-        v.reserved=v.reserved||[];v.colors.forEach(function(c){if(!v.reserved.some(function(r){return r.seriesId===c.seriesId&&r.code===c.code;}))v.reserved.push({seriesId:c.seriesId,code:c.code});});
-        return v;
-      }
-    }catch(_){}
-    return {v:1,series:[],colors:[]};
+    var v;
+    try{v=JSON.parse(localStorage.getItem(CUSTOM_KEY)||"null");}catch(_){}
+    if(!v||!Array.isArray(v.series)||!Array.isArray(v.colors))v={v:1,series:[],colors:[]};
+    v=seedDescor(v);
+    v.reserved=v.reserved||[];v.colors.forEach(function(c){if(!v.reserved.some(function(r){return r.seriesId===c.seriesId&&r.code===c.code;}))v.reserved.push({seriesId:c.seriesId,code:c.code});});
+    return v;
   }
   function persistCustom(data){
     data.reserved=data.reserved||[];
@@ -415,7 +436,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}
     catch(_){throw new Error("Не вдалося зберегти: сховище браузера недоступне.");}
   }
-  function priceKeyFor(nominal){return "w"+Math.round(Number(nominal)*100);}
+  function priceKeyFor(nominal,code,texture){return (texture==="fabric"?code+"_":"")+"w"+Math.round(Number(nominal)*100);}
   function fmtW(v){return String(Math.round(Number(v)*100)/100).replace(".",",");}
 
   var customIds=[];
@@ -427,7 +448,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     data.series.forEach(function(s){
       window.ACEIL_FILM_SERIES.push({id:s.id,name:s.name,manufacturer:s.manufacturer,active:true,custom:true});
       window.ACEIL_COLOR_CATALOG_BY_SERIES[s.id]=[];
-      window.ACEIL_FILM_PRICING_BY_SERIES[s.id]={lak:{},mat:{},satin:{}};
+      window.ACEIL_FILM_PRICING_BY_SERIES[s.id]={lak:{},mat:{},satin:{},fabric:{}};
     });
     data.colors.forEach(function(c){
       var list=window.ACEIL_COLOR_CATALOG_BY_SERIES[c.seriesId];
@@ -435,11 +456,11 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
       var widths=(c.widths||[]).slice().sort(function(a,b){return a.nominal-b.nominal;});
       list.push({
         code:c.code,displayCode:c.display||c.code,baseCode:c.display||c.code.slice(1),colorName:c.colorName||"",texture:c.texture,label:TEX_LABEL[c.texture],
-        seriesId:c.seriesId,wide510:false,custom:true,swatch:c.swatch||undefined,
-        filmWidths:widths.map(function(w){return {nominal:w.nominal,max:w.max,priceKey:priceKeyFor(w.nominal)};})
+        seriesId:c.seriesId,wide510:false,custom:true,swatch:c.swatch||undefined,photo:c.photo||undefined,sourceUrl:c.sourceUrl||undefined,
+        filmWidths:widths.map(function(w){return {nominal:w.nominal,max:w.max,priceKey:priceKeyFor(w.nominal,c.code,c.texture)};})
       });
       var tex=window.ACEIL_FILM_PRICING_BY_SERIES[c.seriesId][c.texture];
-      widths.forEach(function(w){tex[priceKeyFor(w.nominal)]=w.price;});
+      widths.forEach(function(w){tex[priceKeyFor(w.nominal,c.code,c.texture)]=w.price;});
     });
   }
 
@@ -508,13 +529,13 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
         for(n=100;n<=900&&!code;n++)if(!used[TEX_PREFIX[texture]+n])code=TEX_PREFIX[texture]+n;
         if(!code)throw new Error("Забагато кольорів у цього виробника.");
       }
-      var row={seriesId:series.id,code:code,display:display,colorName:cleanText(input.colorName,40),texture:texture,swatch:swatch,widths:widths};
+      var row={seriesId:series.id,code:code,display:display,colorName:cleanText(input.colorName,40),texture:texture,swatch:swatch,widths:widths,photo:existing&&existing.photo,sourceUrl:existing&&existing.sourceUrl};
       if(existing){data.colors[data.colors.indexOf(existing)]=row;}else data.colors.push(row);
       persistCustom(data);applyCustom();
       /* Ціни йдуть і в загальний реєстр тарифів серії, щоб не перекривались старими перевизначеннями. */
       var rates=window.ACEILGetFilmPricing(series.id);
       rates[texture]=Object.assign({},rates[texture]||{});
-      widths.forEach(function(w){rates[texture][priceKeyFor(w.nominal)]=w.price;});
+      widths.forEach(function(w){rates[texture][priceKeyFor(w.nominal,code,texture)]=w.price;});
       window.ACEILSetFilmPricing(series.id,rates);
       return {seriesId:series.id,code:code,texture:texture};
     },

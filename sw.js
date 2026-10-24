@@ -1,10 +1,15 @@
 /* A·CEIL offline shell — fast activation and versioned runtime cache, 2026-10-16 */
 "use strict";
 
-const BUILD_ID="20261024-film-manual-fixes1";
-const SHELL_CACHE="aceil-shell-20261024-film-manual-fixes1";
+const BUILD_ID="20261024-descor-catalog1";
+const SHELL_CACHE="aceil-shell-20261024-descor-catalog1";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
+  "/assets/materials/descor/450.jpg",
+  "/assets/materials/descor/469.jpg",
+  "/assets/materials/descor/264.jpg",
+  "/assets/materials/descor/167.jpg",
+  "/assets/materials/descor/164.jpg",
   "/index.html",
   "/assets/app.css?v="+BUILD_ID,
   "/assets/theme.css?v="+BUILD_ID,
