@@ -78,14 +78,14 @@ function mergeCustom(local,remote){
     if(dead["s:"+id]!==undefined&&num(dead["s:"+id])>=num(series[id].u))return;
     out.series.push(series[id]);
   });
-  var alive={};out.series.forEach(function(s){alive[s.id]=true});
+  var alive={premium:true,classic:true,kralton:true};out.series.forEach(function(s){alive[s.id]=true});
 
   /* Кольори. Спершу зводимо копії одного кольору (cid) в одну; потім, якщо два РІЗНІ кольори
      претендують на той самий код, переможець (раніший u) лишає код, інший отримує новий вільний
      і позначку mv — щоб застарілі копії на інших пристроях не воскресили старий код. */
   var unique=collapseByIdentity(a.colors.concat(b.colors)).filter(function(c){return alive[c.seriesId]});
   var usedCodes={};
-  out.series.forEach(function(s){usedCodes[s.id]={}});
+  Object.keys(alive).forEach(function(id){usedCodes[id]={}});
   a.reserved.concat(b.reserved).forEach(function(r){if(r&&usedCodes[r.seriesId])usedCodes[r.seriesId][r.code]=true});
   unique.forEach(function(c){usedCodes[c.seriesId][c.code]=true});
   /* Видалений колір не повертається зі старою копією: надгробок діє і за cid, і за кодом. */

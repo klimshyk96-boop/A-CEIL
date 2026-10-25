@@ -4,6 +4,7 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
  const {page,errors}=await open(browser,390);await reveal(page);await page.waitForTimeout(2600);
  await page.evaluate(()=>{localStorage.removeItem('aceil_custom_film_v1');window.__A·CEILNomenCatalogV339={items:[],groups:[]};elemItems=[];elemGroups=[];});
  await page.evaluate(()=>window.A_CEILColorPicker.open());
+ await page.locator('#acp2Manage').click();
  await page.locator('#acp2ManualAdd').click();
  // Validation: no manufacturer
  await page.locator('#acp2FCode').fill('PS-204');await page.locator('#acp2Form [data-act="save"]').click();
