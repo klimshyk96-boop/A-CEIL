@@ -441,14 +441,36 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}catch(_){}
     return data;
   }
+  // EURO films from the supplier price list (2026-10-25). Widths are the maximum roll widths;
+  // prices are intentionally empty until the user fills them in.
+  var euroRows=[
+    ["Teqtum euro","Білий","#ffffff",[3.6,4.5]],
+    ["Teqtum KM2","Білий","#ffffff",[3.2,5]],
+    ["Lumfer","Білий","#ffffff",[3.05,4.5]]
+  ];
+  function seedEuro(data){
+    if(data.euroImported)return data;
+    var series=data.series.find(function(s){return s.id==='euro'||String(s.manufacturer).toLowerCase()==='euro'&&!s.collection;});
+    if(!series){series={id:'euro',manufacturer:'EURO',collection:'',name:'EURO'};data.series.push(series);}
+    euroRows.forEach(function(row,index){
+      var existing=data.colors.find(function(c){return c.seriesId===series.id&&String(c.display).toUpperCase()===row[0].toUpperCase();});
+      if(existing)return;
+      var n=961+index;while(data.colors.concat(data.reserved||[]).some(function(c){return c.seriesId===series.id&&c.code==='M'+n;}))n++;
+      data.colors.push({seriesId:series.id,code:'M'+n,display:row[0],texture:'fabric',colorName:row[1],swatch:row[2],widths:row[3].map(function(w){return {nominal:w,max:w,price:0};})});
+    });
+    data.euroImported=true;
+    try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}catch(_){}
+    return data;
+  }
   function loadCustom(){
     var v;
     try{v=JSON.parse(localStorage.getItem(CUSTOM_KEY)||"null");}catch(_){}
     if(!v||!Array.isArray(v.series)||!Array.isArray(v.colors))v={v:1,series:[],colors:[]};
     v=seedDescor(v);
+    v=seedEuro(v);
     /* cid — стабільний ідентифікатор кольору між пристроями (переживає перейменування). */
     var cidAdded=false;
-    v.colors.forEach(function(c){if(!c.cid){c.cid=c.seriesId==='descor-premium'?'seed:'+c.code:'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);cidAdded=true;}});
+    v.colors.forEach(function(c){if(!c.cid){c.cid=c.seriesId==='descor-premium'||c.seriesId==='euro'?'seed:'+(c.seriesId==='euro'?'euro:':'')+c.code:'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);cidAdded=true;}});
     if(cidAdded){try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(v));}catch(_){}}
     v.reserved=v.reserved||[];v.colors.forEach(function(c){if(!v.reserved.some(function(r){return r.seriesId===c.seriesId&&r.code===c.code;}))v.reserved.push({seriesId:c.seriesId,code:c.code});});
     return v;
