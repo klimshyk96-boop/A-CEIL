@@ -333,6 +333,15 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     {nominal:3.6,max:3.6,priceKey:"narrow"},{nominal:5.0,max:5.0,priceKey:"mid"},{nominal:6.0,max:6.0,priceKey:"wide"}
   ]});
 
+  // Use the same screen samples as Premium, matched by exact code and texture.
+  // Keep Kralton's names, widths, working maxima and prices independent.
+  kraltonCatalog.forEach(function(entry){
+    var sample=window.ACEIL_COLOR_CATALOG.find(function(c){return c.code===entry.code&&c.texture===entry.texture;});
+    if(!sample)return;
+    if(sample.swatch){entry.swatch=sample.swatch;entry.swatchSource="Premium";}
+    if(sample.photo)entry.photo=sample.photo;
+  });
+
   window.ACEIL_COLOR_CATALOG_BY_SERIES = {
     premium: window.ACEIL_COLOR_CATALOG,
     classic: classicCatalog,
