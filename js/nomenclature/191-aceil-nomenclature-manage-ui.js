@@ -234,6 +234,41 @@
     "label": "Фіксація кута",
     "color": "#3159c9",
     "shape": "<path d=\"M4 3h5v12h12v6H4z\" fill=\"currentColor\" fill-opacity=\".12\"/><circle cx=\"6.5\" cy=\"7\" r=\"1\"/><circle cx=\"6.5\" cy=\"17.5\" r=\"1\"/><circle cx=\"17\" cy=\"18\" r=\"1\"/><path d=\"M13 5h6v6m-5-1 5-5\"/>"
+  },
+  {
+    "key": "selected-cornice-hidden",
+    "set": "selected",
+    "label": "Прихований карниз",
+    "color": "#3159c9",
+    "shape": "<path d=\"M2 3h20\"/><path d=\"M5 3v7h14V3\" fill=\"currentColor\" fill-opacity=\".1\"/><path d=\"M8 6.5h8\"/><path d=\"M7 10c1.6 3-1.6 6 0 10M12 10c1.6 3-1.6 6 0 10M17 10c1.6 3-1.6 6 0 10\"/>"
+  },
+  {
+    "key": "selected-cornice-hidden-wide",
+    "set": "selected",
+    "label": "Прихований широкий",
+    "color": "#3159c9",
+    "shape": "<path d=\"M2 3h20\"/><path d=\"M3 3v8h18V3\" fill=\"currentColor\" fill-opacity=\".1\"/><path d=\"M6 6h12M6 8.5h12\"/><path d=\"M6 11c1.4 3-1.4 6 0 9M12 11c1.4 3-1.4 6 0 9M18 11c1.4 3-1.4 6 0 9\"/>"
+  },
+  {
+    "key": "selected-cornice-single",
+    "set": "selected",
+    "label": "Однорядний карниз",
+    "color": "#3159c9",
+    "shape": "<path d=\"M2 3h20\"/><path d=\"M6 3v6h12V3\" fill=\"currentColor\" fill-opacity=\".1\"/><path d=\"M9 6h6\"/><circle cx=\"8\" cy=\"12.5\" r=\"1.2\"/><circle cx=\"12\" cy=\"12.5\" r=\"1.2\"/><circle cx=\"16\" cy=\"12.5\" r=\"1.2\"/><path d=\"M8 14v6M12 14v6M16 14v6\"/>"
+  },
+  {
+    "key": "selected-cornice-surface",
+    "set": "selected",
+    "label": "Накладний карниз",
+    "color": "#3159c9",
+    "shape": "<path d=\"M2 3h20M7 3v3M17 3v3\"/><rect x=\"3\" y=\"6\" width=\"18\" height=\"4\" rx=\"1.5\" fill=\"currentColor\" fill-opacity=\".1\"/><path d=\"M7 10c1.6 3-1.6 6 0 10M12 10c1.6 3-1.6 6 0 10M17 10c1.6 3-1.6 6 0 10\"/>"
+  },
+  {
+    "key": "selected-cornice-uno",
+    "set": "selected",
+    "label": "Карниз UNO",
+    "color": "#3159c9",
+    "shape": "<path d=\"M2 3h20\"/><path d=\"M4 3v8h16V3\" fill=\"currentColor\" fill-opacity=\".1\"/><path d=\"M12 3v8M7.5 7h2M14.5 7h2\"/><path d=\"M8 11c1.6 3-1.6 6 0 9M16 11c1.6 3-1.6 6 0 9\"/>"
   }
 ]);
 
@@ -268,7 +303,7 @@
       if(/floating_profile/.test(source))return "floating-profile";
       if(/main_profile|profile_beam|walltype:/.test(source))return "profile";
       if(/white_insert/.test(source))return "insert";
-      if(/hidden_curtain|ceilingcornice:/.test(source))return "cornice";
+      if(/hidden_curtain|ceilingcornice:/.test(source)&&!/карниз/i.test(String(item&&item.name||"")))return "cornice";
       if(/spot_light|lighttype:spot/.test(source))return "spot";
       if(/chandelier|lighttype:.*люстр/.test(source))return "chandelier";
       if(/ventilation|lighttype:.*vent/.test(source))return "ventilation";
@@ -281,7 +316,7 @@
       [/магніт.*(трек|шин)/,"magnetic-track"],[/вмонт.*(трек|шин)/,"recessed-track"],
       [/треков.*світиль/,"track-light"],[/(трек|шинопров)/,"track"],[/світл.*ліні|led/,"light-line"],[/люстр/,"chandelier"],
       [/світиль|точков|ламп/,"spot"],[/витяж|вентил/,"ventilation"],[/труб/,"pipe"],
-      [/тіньов/,"shadow-profile"],[/парящ/,"floating-profile"],[/карниз/,"cornice"],
+      [/тіньов/,"shadow-profile"],[/парящ/,"floating-profile"],[/обрив.*карниз|карниз.*обрив/,"selected-cornice-end"],[/карниз.*uno|uno.*карниз/,"selected-cornice-uno"],[/карниз.*накладн|накладн.*карниз/,"selected-cornice-surface"],[/карниз.*однорядн/,"selected-cornice-single"],[/карниз.*(широк)/,"selected-cornice-hidden-wide"],[/карниз.*прихован|прихован.*карниз/,"selected-cornice-hidden"],[/карниз/,"cornice"],
       [/обрив|різан|підріз/,"break"],[/встав/,"insert"],[/кут/,"corner"],[/гарпун/,"harpoon"],[/плів|полотн/,"film"],
       [/площ/,"area"],[/периметр/,"perimeter"],[/довжин|метр погон/,"length"],[/криволін|дуг/,"curve"],
       [/блок|трансформ|контрол/,"controller"],[/кріп|саморіз|дюбел/,"fastener"],[/монтаж|робот/,"tool"],
