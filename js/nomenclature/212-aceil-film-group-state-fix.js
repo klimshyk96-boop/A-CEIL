@@ -94,11 +94,11 @@
           if(score(item)>score(previous)){remove.add(previous);seen.set(key,item);}else remove.add(item);
         });
         // A saved width definition (non-managed row) that repeats a managed row of the same
-        // width is the same roll shown twice (same price): keep the managed row, carry over its quantity.
+        // width is the same roll shown twice: keep the managed row, carry over its quantity.
         bucket.rows.forEach(function(item){
           if(item.filmPickerManaged===true||item.filmWidthDefinition!==true||remove.has(item))return;
           var twin=bucket.rows.find(function(row){return row!==item&&row.filmPickerManaged===true&&!remove.has(row)&&Math.abs(Number(row.filmWidth)-Number(item.filmWidth))<1e-6;});
-          if(!twin||Number(twin.price)!==Number(item.price))return; // different prices are the user's data: keep both
+          if(!twin)return; // one row per width; the price can be edited afterwards
           if(!(Number(twin.qty)>0)&&Number(item.qty)>0){twin.qty=item.qty;if(item.manualQtyOverride===true)twin.manualQtyOverride=true;}
           remove.add(item);
         });

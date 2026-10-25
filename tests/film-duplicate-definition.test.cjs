@@ -11,6 +11,6 @@ for(const width of [390,1440]){
  assert.equal(r.length,3,JSON.stringify(r));assert.ok(r.every(x=>x.m));
  assert.equal(r.find(x=>x.w===5.8).p,440);
  const diff=await page.evaluate(()=>{elemItems.push({id:'x',groupId:elemItems.find(i=>i.filmPickerManaged).groupId,icon:'svg:layers',name:'M303 5.8м',filmWidth:5.8,price:999,qty:0,unit:'м²',colorCode:'M303',seriesId:'premium',filmWidthDefinition:true});A_CEIL_NormalizeFilmGroups();return elemItems.filter(i=>i.filmWidth===5.8&&/M303/.test(i.name)).map(i=>i.price).sort()});
- assert.deepEqual(diff,[440,999]);
+ assert.equal(diff.length,1,'one row per width even when prices differ');
  console.log('PASS saved width definition is not shown twice next to the picker rows '+width+'px');}
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});
