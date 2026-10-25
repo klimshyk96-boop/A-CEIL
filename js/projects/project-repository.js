@@ -1,4 +1,3 @@
-
 (function(){
   'use strict';
   window.A·CEIL = window.A·CEIL || {};
@@ -367,9 +366,19 @@
   });
   window.A·CEIL.ProjectRepository = api;
   window.A·CEILProjectRepository = api;
-  window.getProjects = function(){ return api.list(); };
-  window.setProjects = function(projects){ return api.replaceAll(projects); };
-  try { getProjects = window.getProjects; setProjects = window.setProjects; } catch(_){window.__diagSilent&&window.__diagSilent(_)}
+
+  /* Avoid clobbering legacy globals during multi-module startup. This keeps the
+     canonical API but preserves any older function value already registered. */
+  const assignGlobalAlias = (name, value) => {
+    const current = typeof window[name] === 'function' ? window[name] : null;
+    if(current && current !== value){
+      window['__legacy_' + name] = current;
+    }
+    window[name] = value;
+  };
+
+  assignGlobalAlias('getProjects', function(){ return api.list(); });
+  assignGlobalAlias('setProjects', function(projects){ return api.replaceAll(projects); });
 
   window.addEventListener('aceil:user-storage-changed',function(){
     memoryCache=null;
@@ -480,7 +489,6 @@
       };
       wrapped.__preserveAllCanonical=true;
       window.A·CEILMergeCloudProjects=wrapped;
-      try{A·CEILMergeCloudProjects=wrapped;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     }
     window.A·CEILRestoreProjectsBackup=function(){
       try{
