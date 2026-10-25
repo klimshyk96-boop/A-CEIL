@@ -8,7 +8,7 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
   assert.deepEqual(await page.locator('[data-nom-icon-set]').allTextContents(),['Нові','Лаконічний','Технічний','Інші SVG']);
   const selected=page.locator('[data-nom-icon-panel=selected]');
   assert.equal(await selected.isVisible(),true);
-  assert.equal(await selected.locator('button').count(),18);
+  assert.equal(await selected.locator('button').count(),23);
   for(const key of ['light-recessed','chandelier','led-strip','ceiling-light-outline','magnetic-vent','camera','sensor','height-work','double-spot','curved-wall','round-vent','wall-protection','floor-protection','pipe-bypass','film-removal','cornice-end','film-roll','corner-fix']){
    await selected.locator('button[onclick="selectNomenclatureSvgIcon(\'selected-'+key+'\')"]').click();
    assert.equal(await page.evaluate(()=>elemItems[0].icon),'svg:selected-'+key);
