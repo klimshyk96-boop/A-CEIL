@@ -47,6 +47,11 @@ assert.equal(m.custom.colors.length,1,'rename of the same colour is not a collis
  const edited=doc([S('a',1)],[K(C('a','M902',90),'x2')]);
  assert.equal(merge(edited,afterDelete).custom.colors.length,1,'an edit made after the deletion wins');
 }
+{ // equal timestamps must resolve identically on every device (no 975 <-> 0 ping-pong)
+ const p1=doc([S('a',1)],[K(C('a','M902',7,975),'t1')],{},{a:{rates:{mat:{w360:1}},u:4}}),p2=doc([S('a',1)],[K(C('a','M902',7,0),'t1')],{},{a:{rates:{mat:{w360:2}},u:4}});
+ assert.equal(canon(merge(p1,p2)),canon(merge(p2,p1)),'merge is commutative on equal timestamps');
+ let x=p1,y=p2;for(let i=0;i<4;i++){x=merge(x,y);y=merge(y,x)}assert.equal(canon(x),canon(y),'two devices converge');
+}
 assert.equal(canon(merge(m,m)),canon(m),'merge is idempotent');
 
 /* ---------- 2. два «пристрої» та сервер як у SQL ---------- */
@@ -61,8 +66,8 @@ function server(uid,name,args){
  }
  const e=new Error('could not find the function');e.code='PGRST202';throw e;
 }
-async function device(browser,uid){
- const {page,errors}=await open(browser,390);await reveal(page);await page.waitForTimeout(800);
+async function device(browser,uid,init){
+ const {page,errors}=await open(browser,390,1,undefined,init?async p=>{await p.addInitScript(init)}:undefined);await reveal(page);await page.waitForTimeout(800);
  await page.exposeFunction('__srv',(u,n,a)=>{try{return {data:server(u,n,a),error:null}}catch(e){return {data:null,error:{code:e.code,message:e.message}}}});
  await page.evaluate(id=>{window.__fakeUid=id;const ch={on(){return ch},subscribe(){return ch},unsubscribe(){}},c={rpc:(n,a)=>window.__srv(window.__fakeUid,n,a),channel:()=>ch,removeChannel(){}};window._sb=c;window._sbUser={id};try{_sb=c}catch(_){}try{_sbUser={id}}catch(_){}},uid);
  return {page,errors};
@@ -204,6 +209,21 @@ const colours=page=>page.evaluate(()=>{const s=window.ACEIL_FILM_SERIES.filter(x
  await sync(C5.page);
  assert.equal(db.u5.data.custom.colors.find(c=>c.cid==='f1').widths[0].price,990,'price is stored with the colour in the cloud');
  assert.deepEqual(C5.errors,[]);
+ // (7) two devices, one with a pre-update price (975) and one with the default (0): the price must stick, not alternate
+ const legacyCustom=JSON.stringify({v:1,descorLabellImported:true,series:[{id:'descor-premium',manufacturer:'DESCOR',collection:'Premium',name:'DESCOR Premium'}],
+  colors:[{cid:'seed:M951',seriesId:'descor-premium',code:'M951',display:'WEISS 450',texture:'fabric',colorName:'',swatch:'#ffffff',widths:[{nominal:3.1,max:3.1,price:0}]}],reserved:[{seriesId:'descor-premium',code:'M951'}]});
+ const initA=`if(!localStorage.getItem('__seeded')){localStorage.setItem('__seeded','1');localStorage.setItem('aceil_custom_film_v1',${JSON.stringify(legacyCustom)});localStorage.setItem('aceil_film_pricing_overrides_v1',JSON.stringify({'descor-premium':{fabric:{M951_w310:975}}}))}`;
+ const initB=`if(!localStorage.getItem('__seeded')){localStorage.setItem('__seeded','1');localStorage.setItem('aceil_custom_film_v1',${JSON.stringify(legacyCustom)})}`;
+ const D1=await device(browser,'u7',initA),D2=await device(browser,'u7',initB);
+ const price=pg=>pg.evaluate(()=>window.ACEILGetFilmPricing('descor-premium').fabric.M951_w310);
+ assert.equal(await price(D1.page),975);assert.equal(await price(D2.page),0);
+ for(let i=0;i<4;i++){
+  await sync(D1.page);assert.equal(db.u7.data.custom.colors[0].widths[0].price,975,'device 1 keeps/pushes 975 in round '+i);
+  await sync(D2.page);assert.equal(db.u7.data.custom.colors[0].widths[0].price,975,'device 2 does not overwrite it with 0 in round '+i);
+ }
+ assert.equal(await price(D1.page),975);assert.equal(await price(D2.page),975,'device 2 received the price');
+ const rev=db.u7.rev;await sync(D1.page);await sync(D2.page);assert.equal(db.u7.rev,rev,'stable: further syncs change nothing');
+ assert.deepEqual(D1.errors.concat(D2.errors),[]);
  // backend not installed -> app keeps working locally
  await B.page.evaluate(()=>{window._sb={rpc:()=>Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find the function'}}),channel:()=>({on(){return this},subscribe(){return this}}),removeChannel(){}};try{_sb=window._sb}catch(_){}});
  assert.equal(await sync(B.page),'unavailable');
