@@ -30,7 +30,7 @@ function canon(v){
   if(v&&typeof v==="object")return"{"+Object.keys(v).sort().map(function(k){return JSON.stringify(k)+":"+canon(v[k])}).join(",")+"}";
   return JSON.stringify(v===undefined?null:v);
 }
-function emptyCustom(){return{v:1,series:[],colors:[],reserved:[],deleted:{},descorLabellImported:false,euroImported:false}}
+function emptyCustom(){return{v:1,series:[],colors:[],reserved:[],deleted:{},descorLabellImported:false,teqtumImported:false}}
 function emptyDoc(){return{v:1,custom:emptyCustom(),pricing:{}}}
 function normCustom(c){
   c=c&&typeof c==="object"?clone(c):emptyCustom();
@@ -39,7 +39,7 @@ function normCustom(c){
   c.reserved=Array.isArray(c.reserved)?c.reserved:[];
   c.deleted=c.deleted&&typeof c.deleted==="object"?c.deleted:{};
   c.descorLabellImported=c.descorLabellImported===true;
-  c.euroImported=c.euroImported===true;
+  c.teqtumImported=c.teqtumImported===true;
   return c;
 }
 function newer(a,b){return num(b&&b.u)>num(a&&a.u)}
@@ -66,7 +66,7 @@ function collapseByIdentity(list){
 function mergeCustom(local,remote){
   var a=normCustom(local),b=normCustom(remote),out=emptyCustom();
   out.descorLabellImported=a.descorLabellImported||b.descorLabellImported;
-  out.euroImported=a.euroImported||b.euroImported;
+  out.teqtumImported=a.teqtumImported||b.teqtumImported;
   var dead={};
   [a.deleted,b.deleted].forEach(function(d){Object.keys(d).forEach(function(k){dead[k]=Math.max(num(dead[k]),num(d[k]))})});
   out.deleted=dead;
