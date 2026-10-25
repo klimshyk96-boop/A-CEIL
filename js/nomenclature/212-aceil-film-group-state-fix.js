@@ -100,6 +100,7 @@
           var twin=bucket.rows.find(function(row){return row!==item&&row.filmPickerManaged===true&&!remove.has(row)&&Math.abs(Number(row.filmWidth)-Number(item.filmWidth))<1e-6;});
           if(!twin)return; // one row per width; the price can be edited afterwards
           if(!(Number(twin.qty)>0)&&Number(item.qty)>0){twin.qty=item.qty;if(item.manualQtyOverride===true)twin.manualQtyOverride=true;}
+          if(item.iconUserSelected===true&&twin.iconUserSelected!==true&&item.icon){twin.icon=item.icon;twin.iconUserSelected=true;}
           remove.add(item);
         });
         if(remove.size){for(var i=allItems.length-1;i>=0;i--)if(remove.has(allItems[i]))allItems.splice(i,1);changed=true;}
