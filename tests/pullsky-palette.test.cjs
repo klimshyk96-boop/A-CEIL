@@ -14,10 +14,10 @@ assert.equal(context.window.ACEIL_FILM_PRICING.mat.narrow,380);assert.equal(cont
 (async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.ACEIL_CHROMIUM_PATH});try{
  for(const width of [390,1440]){
   const {page,errors}=await open(browser,width);await reveal(page);await page.evaluate(()=>window.A_CEILColorPicker.open());
-  await page.locator('#acp2Tabs button').filter({hasText:'Глянець'}).click();assert.equal(await page.locator('#acp2Grid .acp2-swatch').count(),78);
+  await page.locator('#acp2Tabs button').filter({hasText:'Глянець'}).click();assert.equal(await page.locator('#acp2Grid .acp2-swatch').count(),premium.filter(c=>c.texture==='lak').length);
   const spans=await page.locator('#acp2Grid .acp2-swatch').evaluateAll(nodes=>nodes.every(n=>getComputedStyle(n).backgroundColor!=='rgba(0, 0, 0, 0)'||getComputedStyle(n).backgroundImage!=='none'));assert.ok(spans);
   await page.locator('#acp2Search').fill('L180');assert.equal(await page.locator('#acp2Grid .acp2-chip').count(),1);assert.ok((await page.locator('#acp2Grid .acp2-swatch').evaluate(n=>getComputedStyle(n).backgroundImage)).includes('56, 64, 103'));
-  await page.locator('#acp2Grid .acp2-chip').click();assert.equal(await page.evaluate(()=>window.A_CEILColorPicker.current().code),'L180');
+  await page.locator('#acp2Grid .acp2-chip').click();await page.locator('#acp2Confirm').click();assert.equal(await page.evaluate(()=>window.A_CEILColorPicker.current().code),'L180');
   await page.evaluate(()=>{closed=true;realPts=[{x:0,y:0},{x:450,y:0},{x:450,y:600},{x:0,y:600}];lengths=[450,600,450,600];document.getElementById('area').textContent='27';window.A_CEILColorPicker.select('L315','premium')});
   const counted=await page.evaluate(()=>window.A_CEILColorPicker.audit().items.filter(x=>x.qty>0));assert.equal(counted.length,1);assert.equal(counted[0].filmWidth,5);assert.equal(counted[0].qty,27);assert.equal(counted[0].price,420);
   await page.evaluate(()=>window.A_CEILColorPicker.open());await page.locator('#acp2Tabs button').filter({hasText:'Глянець'}).click();await page.screenshot({path:'/tmp/aceil-pullsky-'+width+'.png'});

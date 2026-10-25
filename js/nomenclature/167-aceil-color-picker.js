@@ -145,15 +145,70 @@ function ensureCompleteFilmWidthSet(){var cur=currentFilm();if(!cur.code)return;
 function buildButton(){var host=document.querySelector(".canvas-container");if(!host)return false;if(gid("aceilColorPickerBtn"))return true;var btn=document.createElement("button");btn.type="button";btn.id="aceilColorPickerBtn";btn.innerHTML='<span class="acpb-icon">🎨</span><span class="acpb-code" id="acpbCode">Колір</span><span class="acpb-width" id="acpbWidth">обрати</span>';btn.addEventListener("click",openPicker);host.appendChild(btn);return true}
 function updateButton(){var codeEl=gid("acpbCode"),widthEl=gid("acpbWidth"),btn=gid("aceilColorPickerBtn");if(!codeEl||!widthEl||!btn)return;var cur=currentFilm();if(!cur.code){codeEl.textContent="Колір";widthEl.textContent="обрати";btn.classList.remove("acpb-error");updateButtonSwatch(btn,widthEl,null);return}var meta=seriesById(cur.seriesId);codeEl.textContent=(meta.name==="Premium"?"":meta.name+" ")+dispCode(cur.seriesId,cur.code);var need=requiredWidthCm(),entry=catalogEntry(cur.code,cur.seriesId),w=selectedWidth(entry,need);updateButtonSwatch(btn,widthEl,entry);if(need<=0){widthEl.textContent="AUTO";btn.classList.remove("acpb-error")}else if(w){widthEl.textContent=formatMeters(need/100)+" м";btn.classList.remove("acpb-error")}else{widthEl.textContent="немає ширини";btn.classList.add("acpb-error")}}
 
-function installPickerStyles(){if(gid("aceilFilmSeriesPickerStyles"))return;var s=document.createElement("style");s.id="aceilFilmSeriesPickerStyles";s.textContent="#aceilColorPickerModalV2 .acp2-series{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 12px}#aceilColorPickerModalV2 .acp2-series button{min-width:0;padding:9px 4px;border:1px solid #dbe4f0;border-radius:11px;background:#f8fafc;color:#475569;font-size:12px;font-weight:900;box-shadow:none}#aceilColorPickerModalV2 .acp2-series button.active{background:#dbeafe;border-color:#60a5fa;color:#1d4ed8}#aceilColorPickerModalV2 .acp2-chip{min-width:0;overflow:hidden}#aceilColorPickerModalV2 .acp2-star{background:#fff;border:1px solid #dbe4f0;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center}#aceilColorPickerModalV2 .acp2-swatch{display:block;height:42px;width:100%;margin-bottom:7px;border:1px solid rgba(15,23,42,.16);border-radius:7px;box-sizing:border-box}#aceilColorPickerModalV2 .acp2-source{margin:12px 0 0;font-size:11px;color:#64748b}#aceilColorPickerModalV2 .acp2-source a{color:inherit}#aceilColorPickerModalV2 .acp2-photo{display:block;width:100%;height:90px;object-fit:cover;border-radius:7px;margin-bottom:6px}#aceilColorPickerModalV2 .acp2-chip:has(.acp2-photo) .acp2-chip-code{white-space:normal;overflow-wrap:anywhere;font-size:12px;min-height:29px}#aceilColorPickerModalV2 .acp2-chip-marks{flex-wrap:wrap}#aceilColorPickerModalV2 .acp2-chip-code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}";document.head.appendChild(s)}
-function buildModal(){if(gid("aceilColorPickerModalV2"))return;installPickerStyles();var modal=document.createElement("div");modal.id="aceilColorPickerModalV2";modal.innerHTML='<div class="acp2-card"><div class="acp2-head"><div><div class="acp2-title">Плівка / полотно</div><div class="acp2-sub" id="acp2Sub"></div></div><button type="button" class="acp2-x" id="acp2Close">×</button></div><div class="acp2-body"><div class="acp2-label">Серія</div><div class="acp2-series" id="acp2Series"></div><div class="acp2-label acp2-pop-label"><span>Популярні</span><small>★ оберіть до 4</small></div><div class="acp2-popular" id="acp2Popular"></div><label class="acp2-search"><span>⌕</span><input id="acp2Search" type="text" inputmode="search" placeholder="Пошук: 303, глянець, мат…" autocomplete="off" autocapitalize="off" spellcheck="false"></label><div class="acp2-tabs" id="acp2Tabs"></div><div class="acp2-grid" id="acp2Grid"></div></div></div>';document.body.appendChild(modal);gid("acp2Close").addEventListener("click",closePicker);gid("acp2Search").addEventListener("input",function(){_searchQuery=this.value;_activeTexture="";renderTabs();renderGrid()});modal.addEventListener("click",function(e){if(e.target===modal)closePicker()});installManualUi()}
-function renderSeries(){var host=gid("acp2Series");if(!host)return;host.innerHTML=seriesList().map(function(s){return'<button type="button" class="'+(s.id===_activeSeries?'active':'')+'" onclick="window.__aceilColorPickerSeries(\''+esc(s.id)+'\')">'+esc(s.name)+'</button>'}).join("");var meta=seriesById(_activeSeries),sub=gid("acp2Sub");if(sub)sub.textContent=(meta.manufacturer||"")+" · "+catalog(_activeSeries).length+" кольорів/фактур"}
-function renderPopular(){var host=gid("acp2Popular");if(!host)return;var current=currentFilm(),list=catalog(_activeSeries).filter(function(c){return popularCodes().indexOf(c.code)!==-1});host.innerHTML=list.length?list.map(function(c){return'<button type="button" class="acp2-pop-btn'+(c.code===current.code&&current.seriesId===_activeSeries?' active':'')+'" onclick="window.__aceilColorPickerChoose(\''+c.code+'\',\''+c.texture+'\',\''+_activeSeries+'\')">'+esc(c.displayCode||c.code)+'</button>'}).join(""):'<span style="font-size:11px;color:#94a3b8">Позначте кольори зірочкою</span>'}
-function renderTabs(){var host=gid("acp2Tabs");if(!host)return;var labels=texLabels();host.innerHTML=["lak","mat","satin","fabric"].map(function(t){var count=catalog(_activeSeries).filter(function(c){return c.texture===t}).length;if(!count)return"";return'<button type="button" class="acp2-tab'+(t===_activeTexture?' active':'')+'" onclick="window.__aceilColorPickerTab(\''+t+'\')">'+esc(labels[t]||t)+' <span>'+count+'</span></button>'}).join("")}
+var _pendingFilm=null,_catalogOpen=false;
+function buildModal(){
+ if(gid("aceilColorPickerModalV2"))return;
+ var modal=document.createElement("div");modal.id="aceilColorPickerModalV2";
+ modal.innerHTML='<div class="acp2-card" role="dialog" aria-modal="true" aria-label="Плівка / полотно"><div class="acp2-head"><div><div class="acp2-title">Плівка / полотно</div><div class="acp2-sub" id="acp2Sub"></div></div><button type="button" class="acp2-x" id="acp2Close" aria-label="Закрити">×</button></div><div class="acp2-body"><button type="button" class="acp2-manage" id="acp2Manage">⚙ Керування каталогом</button><div class="acp2-selectors"><label>Виробник<select id="acp2Manufacturer"></select></label><label>Серія<select id="acp2Series"></select></label></div><label class="acp2-search"><span aria-hidden="true">⌕</span><input id="acp2Search" type="search" placeholder="Пошук кольору або коду" autocomplete="off" aria-label="Пошук кольору або коду"></label><div class="acp2-tabs" id="acp2Tabs"></div><div class="acp2-label acp2-pop-label"><span>Обрані</span><small>★ до 4 кольорів</small></div><div class="acp2-popular" id="acp2Popular"></div><div class="acp2-label">Кольори</div><div class="acp2-grid" id="acp2Grid"></div></div><div class="acp2-footer" id="acp2Footer"><div id="acp2Selection"></div><button type="button" id="acp2Confirm">Обрати</button></div></div>';
+ document.body.appendChild(modal);installManualUi();
+ gid("acp2Close").addEventListener("click",closePicker);
+ gid("acp2Manage").addEventListener("click",function(){_catalogOpen=true;renderCatalogManager();showPickerPanel()});
+ gid("acp2Manufacturer").addEventListener("change",function(){var man=this.value,first=seriesList().find(function(x){return (x.manufacturer||x.name)===man});if(first)window.__aceilColorPickerSeries(first.id)});
+ gid("acp2Series").addEventListener("change",function(){window.__aceilColorPickerSeries(this.value)});
+ gid("acp2Confirm").addEventListener("click",function(){if(_pendingFilm)chooseColor(_pendingFilm.code,_pendingFilm.texture,_pendingFilm.seriesId)});
+ gid("acp2Search").addEventListener("input",function(){_searchQuery=this.value;renderGrid()});
+ modal.addEventListener("click",function(e){if(e.target===modal)closePicker()});
+}
+function renderSeries(){
+ var meta=seriesById(_activeSeries),man=meta.manufacturer||meta.name,makers=[];
+ seriesList().forEach(function(s){var m=s.manufacturer||s.name;if(makers.indexOf(m)<0)makers.push(m)});
+ gid("acp2Manufacturer").innerHTML=makers.map(function(m){return '<option'+(m===man?' selected':'')+'>'+esc(m)+'</option>'}).join('');
+ gid("acp2Series").innerHTML=seriesList().filter(function(s){return(s.manufacturer||s.name)===man}).map(function(s){var name=s.name.indexOf(man+' ')===0?s.name.slice(man.length+1):s.name;return '<option value="'+esc(s.id)+'"'+(s.id===_activeSeries?' selected':'')+'>'+esc(name)+'</option>'}).join('');
+ gid("acp2Sub").textContent=man+' · '+catalog(_activeSeries).length+' кольорів / фактур';
+}
+function previewFilm(code,texture,seriesId){_pendingFilm={code:code,texture:texture,seriesId:seriesId};renderPopular();renderGrid();renderSelection()}
+function renderSelection(){
+ var c=_pendingFilm&&catalogEntry(_pendingFilm.code,_pendingFilm.seriesId),host=gid('acp2Selection');if(!host)return;
+ host.innerHTML=c?'<span class="acp2-selected-swatch" style="background:'+esc(c.swatch||'repeating-linear-gradient(135deg,#f8fafc 0 6px,#e2e8f0 6px 7px)')+'"></span><span><b>'+esc(c.displayCode||c.code)+'</b><small>'+esc(c.colorName||texLabels()[c.texture]||'Тканина')+'</small></span>':'Оберіть колір';
+ gid('acp2Confirm').disabled=!c;
+}
+function renderPopular(){
+ var host=gid("acp2Popular");if(!host)return;
+ var current=_pendingFilm||currentFilm(),list=catalog(_activeSeries).filter(function(c){return popularCodes().indexOf(c.code)!==-1});host.innerHTML=list.length?list.map(function(c){return '<button type="button" class="acp2-pop-btn'+(c.code===current.code&&current.seriesId===_activeSeries?' active':'')+'" data-code="'+esc(c.code)+'"><span style="background:'+esc(c.swatch||'repeating-linear-gradient(135deg,#f8fafc 0 6px,#e2e8f0 6px 7px)')+'"></span>'+esc(c.displayCode||c.code)+'</button>'}).join(''):'<span class="acp2-muted">Позначте кольори зірочкою</span>';
+ host.querySelectorAll('[data-code]').forEach(function(btn){btn.onclick=function(){var c=catalogEntry(btn.dataset.code,_activeSeries);if(c)previewFilm(c.code,c.texture,_activeSeries)}});
+}
+function renderTabs(){var host=gid("acp2Tabs");if(!host)return;var labels=texLabels();host.innerHTML=["mat","satin","lak","fabric"].map(function(t){var count=catalog(_activeSeries).filter(function(c){return c.texture===t}).length;if(!count)return"";return '<button type="button" class="acp2-tab'+(t===_activeTexture?' active':'')+'" aria-pressed="'+(t===_activeTexture)+'" onclick="window.__aceilColorPickerTab(\''+t+'\')">'+esc(labels[t]||'Тканина')+' <span>'+count+'</span></button>'}).join('')}
 var TEXTURE_WORDS={"глянець":"lak","глянц":"lak","лак":"lak","мат":"mat","матов":"mat","сатин":"satin"};
-function renderGrid(){var host=gid("acp2Grid");if(!host)return;var q=norm(_searchQuery).replace(/\s+/g,""),list,all=catalog(_activeSeries);if(q){var wt="";Object.keys(TEXTURE_WORDS).forEach(function(w){if(q.indexOf(w)===0)wt=TEXTURE_WORDS[w]});list=all.filter(function(c){return c.code.toLowerCase().indexOf(q)!==-1||norm(c.displayCode).replace(/\s+/g,"").indexOf(q)!==-1||norm(c.colorName).replace(/\s+/g,"").indexOf(q)!==-1||(wt&&c.texture===wt)})}else if(_activeTexture)list=all.filter(function(c){return c.texture===_activeTexture});else list=[];if(!list.length){host.innerHTML='<div class="acp2-empty">'+(q?'Нічого не знайдено':(all.length?'Оберіть фактуру вище або скористайтесь пошуком':'Для цього виробника ще немає кольорів — натисніть «Додати вручну»'))+'</div>';return}var current=currentFilm(),favorites=popularCodes();host.innerHTML=list.map(function(c){var marks=widthCandidates(c).map(function(w){return'<span>'+Math.round(w.max*100)+'</span>'}).join(""),tex=q?'<div class="acp2-chip-tex">'+esc(c.colorName||texLabels()[c.texture]||"")+'</div>':"";return'<button type="button" class="acp2-chip'+(c.code===current.code&&current.seriesId===_activeSeries?' active':'')+'" onclick="window.__aceilColorPickerChoose(\''+c.code+'\',\''+c.texture+'\',\''+_activeSeries+'\')"><span class="acp2-star'+(favorites.indexOf(c.code)>=0?' active':'')+'" role="button" onclick="event.preventDefault();event.stopPropagation();window.__aceilColorPickerTogglePopular(\''+c.code+'\');return false">'+(favorites.indexOf(c.code)>=0?'★':'☆')+'</span>'+(c.photo?'<img class="acp2-photo" src="'+esc(c.photo)+'" alt="'+esc(c.displayCode||c.code)+' — фото полотна" loading="lazy">':'')+(c.swatch?'<span class="acp2-swatch" style="background:'+esc(c.swatch)+'" aria-hidden="true"></span>':'')+(c.custom?'<span class="acp2-edit" role="button" title="Редагувати" onclick="event.preventDefault();event.stopPropagation();window.__aceilColorPickerManual(\''+esc(c.code)+'\');return false">✎</span>':'')+'<div class="acp2-chip-code">'+esc(c.displayCode||c.code)+'</div>'+(!q&&c.colorName?'<div class="acp2-chip-tex">'+esc(c.colorName)+'</div>':'')+tex+'<div class="acp2-chip-marks">'+marks+'</div></button>'}).join("")}
-function openPicker(e){if(e){e.preventDefault();e.stopPropagation()}buildModal();var cur=currentFilm();_activeSeries=seriesList().some(function(s){return s.id===cur.seriesId})?cur.seriesId:"premium";_searchQuery="";_activeTexture="";var input=gid("acp2Search");if(input)input.value="";renderSeries();renderPopular();renderTabs();renderGrid();gid("aceilColorPickerModalV2").classList.add("open");if(input)setTimeout(function(){input.focus()},180);return false}
-function closePicker(){var m=gid("aceilColorPickerModalV2");if(m)m.classList.remove("open");if(typeof closeManualForm==="function"&&gid("acp2Form"))closeManualForm()}
+function renderGrid(){
+ var host=gid('acp2Grid');if(!host)return;
+ var q=norm(_searchQuery).replace(/\s+/g,''),all=catalog(_activeSeries),wt='';
+ Object.keys(TEXTURE_WORDS).forEach(function(w){if(q.indexOf(w)===0)wt=TEXTURE_WORDS[w]});
+ var list=all.filter(function(c){return q?(norm(c.code+c.displayCode+c.colorName).replace(/\s+/g,'').indexOf(q)!==-1||(wt&&c.texture===wt)):!_activeTexture||c.texture===_activeTexture});
+ if(!list.length){host.innerHTML='<div class="acp2-empty">'+(q?'Нічого не знайдено':'Для цієї серії ще немає кольорів. Додайте їх у «Керуванні каталогом».')+'</div>';return}
+ var cur=_pendingFilm||currentFilm(),fav=popularCodes();
+ host.innerHTML=list.map(function(c){var active=c.code===cur.code&&cur.seriesId===_activeSeries;return '<div class="acp2-color-card'+(active?' active':'')+'"><button type="button" class="acp2-chip" data-code="'+esc(c.code)+'" aria-pressed="'+active+'"><span class="acp2-swatch" style="background:'+esc(c.swatch||'repeating-linear-gradient(135deg,#f8fafc 0 6px,#e2e8f0 6px 7px)')+'">'+(c.photo?'<img src="'+esc(c.photo)+'" alt="Фото полотна" loading="lazy">':'')+(active?'<span class="acp2-check">✓</span>':'')+'</span><span class="acp2-chip-code">'+esc(c.displayCode||c.code)+'</span><span class="acp2-chip-tex">'+esc(c.colorName||texLabels()[c.texture]||'Тканина')+'</span><span class="acp2-chip-marks">'+widthCandidates(c).map(function(w){return '<span>'+formatMeters(w.nominal)+' м</span>'}).join('')+'</span></button><button type="button" class="acp2-star'+(fav.indexOf(c.code)>=0?' active':'')+'" data-star="'+esc(c.code)+'" aria-label="Обраний колір '+esc(c.displayCode||c.code)+'" aria-pressed="'+(fav.indexOf(c.code)>=0)+'">'+(fav.indexOf(c.code)>=0?'★':'☆')+'</button></div>'}).join('');
+ host.querySelectorAll('[data-code]').forEach(function(b){b.onclick=function(){var c=catalogEntry(b.dataset.code,_activeSeries);if(c)previewFilm(c.code,c.texture,_activeSeries)}});
+ host.querySelectorAll('[data-star]').forEach(function(b){b.onclick=function(){togglePopular(b.dataset.star)}});
+}
+function showPickerPanel(){
+ var modal=gid('aceilColorPickerModalV2');if(!modal)return;
+ modal.classList.toggle('acp2-managing',_catalogOpen);
+ var form=gid('acp2Form'),editing=form&&form.classList.contains('open');
+ modal.querySelector('.acp2-body').style.display=_catalogOpen||editing?'none':'';
+ modal.querySelector('.acp2-card > .acp2-head').style.display=_catalogOpen||editing?'none':'';
+ gid('acp2Footer').style.display=_catalogOpen||editing?'none':'';
+ gid('acp2Manager').hidden=!_catalogOpen||editing;
+}
+function renderCatalogManager(){
+ var host=gid('acp2Manager');if(!host)return;
+ host.innerHTML='<div class="acp2-head"><div class="acp2-title">Керування каталогом</div><button type="button" class="acp2-x" data-back aria-label="Назад до вибору">×</button></div><button type="button" class="acp2-manual-add" id="acp2ManualAdd">+ Додати</button><details><summary>Виробники та серії</summary><div class="acp2-manager-list">'+seriesList().map(function(s){return '<div><b>'+esc(s.manufacturer||s.name)+'</b><small>'+esc(s.name)+'</small></div>'}).join('')+'</div></details><details open><summary>Кольори та фактури</summary><label class="acp2-manager-series">Серія<select id="acp2ManagerSeries">'+seriesList().map(function(s){return '<option value="'+esc(s.id)+'"'+(s.id===_activeSeries?' selected':'')+'>'+esc(s.name)+'</option>'}).join('')+'</select></label><div class="acp2-manager-list">'+catalog(_activeSeries).filter(function(c){return c.custom}).map(function(c){return '<button type="button" class="acp2-manager-edit" data-edit="'+esc(c.code)+'"><span class="acp2-selected-swatch" style="background:'+esc(c.swatch||'repeating-linear-gradient(135deg,#f8fafc 0 6px,#e2e8f0 6px 7px)')+'"></span><span><b>'+esc(c.displayCode||c.code)+'</b><small>'+esc(c.colorName||texLabels()[c.texture]||'Тканина')+'</small></span><span aria-hidden="true">✎</span></button>'}).join('')+(manualApi()&&!manualApi().isCustomSeries(_activeSeries)?'<p class="acp2-muted">Стандартні кольори збережені в каталозі. Новий колір можна створити кнопкою «Додати».</p>':'')+'</div></details><details><summary>Ширини та ціни</summary><p class="acp2-muted">Оберіть власний колір вище — у його картці доступні всі ширини, робочі максимуми та ціни. Ціни стандартних позицій змінюються в номенклатурі.</p></details>';
+ host.querySelector('[data-back]').onclick=function(){_catalogOpen=false;showPickerPanel();renderSeries();renderPopular();renderTabs();renderGrid();renderSelection();gid('acp2Manage').focus()};
+ gid('acp2ManualAdd').onclick=function(){openManualForm()};
+ gid('acp2ManagerSeries').onchange=function(){_activeSeries=this.value;renderCatalogManager()};
+ host.querySelectorAll('[data-edit]').forEach(function(b){b.onclick=function(){openManualForm(b.dataset.edit)}});
+}
+function openPicker(e){if(e){e.preventDefault();e.stopPropagation()}buildModal();closeManualForm();_catalogOpen=false;var cur=currentFilm();_activeSeries=seriesList().some(function(s){return s.id===cur.seriesId})?cur.seriesId:'premium';_pendingFilm=cur.code?{code:cur.code,seriesId:_activeSeries,texture:(catalogEntry(cur.code,_activeSeries)||{}).texture}:null;_searchQuery='';_activeTexture=(_pendingFilm&&_pendingFilm.texture)||((catalog(_activeSeries)[0]||{}).texture)||'mat';gid('acp2Search').value='';renderSeries();renderPopular();renderTabs();renderGrid();renderSelection();showPickerPanel();gid('aceilColorPickerModalV2').classList.add('open');gid('acp2Close').focus();return false}
+function closePicker(){var m=gid('aceilColorPickerModalV2');if(m)m.classList.remove('open');_catalogOpen=false;_pendingFilm=null;if(gid('acp2Form'))closeManualForm()}
 
 /* ===== Ручне додавання: виробник / колір / ширина ===== */
 var _form=null;
@@ -161,8 +216,7 @@ function manualApi(){return window.ACEILCustomFilm||null}
 function installManualStyles(){
  if(gid("aceilManualFilmStyles"))return;
  var s=document.createElement("style");s.id="aceilManualFilmStyles";
- s.textContent="#aceilColorPickerModalV2 .acp2-manual-add{width:100%;margin:14px 0 0;padding:12px;border:1.5px dashed #93c5fd;border-radius:14px;background:#eff6ff;color:#1d4ed8;font-size:13px;font-weight:900;box-shadow:none}"
- +"#aceilColorPickerModalV2 .acp2-edit{position:absolute;left:5px;top:5px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#fff;border:1px solid #dbe4f0;color:#475569;font-size:11px}"
+ s.textContent=""
  +"#aceilColorPickerModalV2 .acp2-form{display:none}#aceilColorPickerModalV2 .acp2-form.open{display:block}"
  +"#aceilColorPickerModalV2 .acp2-f-lbl{display:block;margin:0 0 10px;font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.03em}"
  +"#aceilColorPickerModalV2 .acp2-f-lbl input,#aceilColorPickerModalV2 .acp2-f-lbl select{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:10px;border:1.5px solid #dbe4f0;border-radius:11px;background:#fff;color:#0f172a;font-size:15px;font-weight:800;text-transform:none;letter-spacing:0}"
@@ -173,7 +227,7 @@ function installManualStyles(){
  +"#aceilColorPickerModalV2 .acp2-wrow button{height:38px;border:0;border-radius:10px;background:#fee2e2;color:#b91c1c;font-weight:900;padding:0;box-shadow:none}"
  +"#aceilColorPickerModalV2 .acp2-f-hint{margin:0 0 10px;font-size:11px;color:#64748b;line-height:1.35}#aceilColorPickerModalV2 .acp2-f-err{display:none;margin:0 0 10px;padding:9px 11px;border-radius:10px;background:#fee2e2;color:#991b1b;font-size:12px;font-weight:800}"
  +"#aceilColorPickerModalV2 .acp2-f-actions{display:flex;gap:8px;margin-top:6px}#aceilColorPickerModalV2 .acp2-f-actions button{flex:1;padding:12px;border-radius:12px;border:0;font-size:14px;font-weight:900;box-shadow:none}"
- +"#aceilColorPickerModalV2 .acp2-f-save{background:linear-gradient(135deg,#2563eb,#0ea5e9);color:#fff}#aceilColorPickerModalV2 .acp2-f-cancel{background:#f1f5f9;color:#475569}#aceilColorPickerModalV2 .acp2-f-del{flex:0 0 auto!important;background:#fee2e2;color:#b91c1c}"
+ +"#aceilColorPickerModalV2 .acp2-f-save{background:#2563eb;color:#fff}#aceilColorPickerModalV2 .acp2-f-cancel{background:#f1f5f9;color:#475569}#aceilColorPickerModalV2 .acp2-f-del{flex:0 0 auto!important;background:#fee2e2;color:#b91c1c}"
  +"#aceilColorPickerModalV2 .acp2-addw{width:100%;padding:9px;border:1.5px dashed #cbd5e1;border-radius:11px;background:#f8fafc;color:#475569;font-size:12px;font-weight:900;box-shadow:none;margin-bottom:12px}";
  document.head.appendChild(s);
 }
@@ -181,9 +235,7 @@ function installManualUi(){
  var card=document.querySelector("#aceilColorPickerModalV2 .acp2-card"),body=document.querySelector("#aceilColorPickerModalV2 .acp2-body");
  if(!card||!body||gid("acp2Form"))return;
  installManualStyles();
- var add=document.createElement("button");add.type="button";add.className="acp2-manual-add";add.id="acp2ManualAdd";add.textContent="＋ Додати вручну: виробник / колір / ширина";
- add.addEventListener("click",function(){openManualForm()});
- body.appendChild(add);
+ var manager=document.createElement('div');manager.id='acp2Manager';manager.hidden=true;card.appendChild(manager);
  var form=document.createElement("div");form.className="acp2-form";form.id="acp2Form";card.appendChild(form);
  form.addEventListener("click",onFormClick);
 }
@@ -215,16 +267,16 @@ function openManualForm(code){
   +'<div class="acp2-label">Ширини полотна</div><p class="acp2-f-hint">«Макс. роб.» — до якої ширини кімнати це полотно можна використати (наприклад, 5,1 → 5,6). Якщо порожньо — дорівнює ширині. Для тканини ціна задається окремо для кожного кольору й ширини; для плівки — для фактури й ширини серії.</p>'
   +'<div id="acp2FWidths">'+widths.map(widthRowHtml).join("")+'</div><button type="button" class="acp2-addw" data-act="addw">＋ Ще ширина</button>'
   +'<div class="acp2-f-err" id="acp2FErr"></div>'
-  +'<div class="acp2-f-actions">'+(editing?'<button type="button" class="acp2-f-del" data-act="del">🗑</button>':'')+'<button type="button" class="acp2-f-cancel" data-act="cancel">Скасувати</button><button type="button" class="acp2-f-save" data-act="save">Зберегти й обрати</button></div>';
+  +'<div class="acp2-f-actions">'+(editing?'<button type="button" class="acp2-f-del" data-act="del">Видалити</button>':'')+'<button type="button" class="acp2-f-cancel" data-act="cancel">Скасувати</button><button type="button" class="acp2-f-save" data-act="save">Зберегти й обрати</button></div>';
  var form=gid("acp2Form");form.innerHTML=h;form.classList.add("open");
  var body=document.querySelector("#aceilColorPickerModalV2 .acp2-body"),head=document.querySelector("#aceilColorPickerModalV2 .acp2-card > .acp2-head");
- if(body)body.style.display="none";if(head)head.style.display="none";
+ if(body)body.style.display="none";if(head)head.style.display="none";showPickerPanel();
  gid("aceilColorPickerModalV2").classList.add("open");
 }
 function closeManualForm(){
  var form=gid("acp2Form");if(form){form.classList.remove("open");form.innerHTML=""}
  var body=document.querySelector("#aceilColorPickerModalV2 .acp2-body"),head=document.querySelector("#aceilColorPickerModalV2 .acp2-card > .acp2-head");
- if(body)body.style.display="";if(head)head.style.display="";_form=null;
+ if(body)body.style.display="";if(head)head.style.display="";_form=null;if(_catalogOpen)renderCatalogManager();showPickerPanel();
 }
 function showFormError(msg){var el=gid("acp2FErr");if(!el)return;el.textContent=msg;el.style.display="block";try{el.scrollIntoView({block:"nearest"})}catch(_){}}
 function onFormClick(e){
@@ -254,7 +306,7 @@ function onFormClick(e){
 }
 window.__aceilColorPickerManual=function(code){openManualForm(code)};
 window.__aceilColorPickerChoose=chooseColor;window.__aceilColorPickerTogglePopular=togglePopular;
-window.__aceilColorPickerSeries=function(id){_activeSeries=id;_activeTexture="";_searchQuery="";var input=gid("acp2Search");if(input)input.value="";renderSeries();renderPopular();renderTabs();renderGrid()};
+window.__aceilColorPickerSeries=function(id){_activeSeries=id;_activeTexture=(catalog(id)[0]||{}).texture||"mat";_searchQuery="";var input=gid("acp2Search");if(input)input.value="";renderSeries();renderPopular();renderTabs();renderGrid()};
 window.__aceilColorPickerTab=function(t){_activeTexture=t;_searchQuery="";var input=gid("acp2Search");if(input)input.value="";renderTabs();renderGrid()};
 
 function totalCorners(){var inner=parseInt((gid("inCorners")||{}).textContent,10)||0,outer=parseInt((gid("outCorners")||{}).textContent,10)||0,n=inner+outer;if(!n)try{var p=(typeof pts!=="undefined"&&Array.isArray(pts))?pts:window.pts;if(Array.isArray(p))n=p.length}catch(_){window.__diagSilent&&window.__diagSilent(_)}return n}
