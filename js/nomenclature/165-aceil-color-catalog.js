@@ -454,6 +454,8 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
   function priceKeyFor(nominal,code,texture){return (texture==="fabric"?code+"_":"")+"w"+Math.round(Number(nominal)*100);}
   function fmtW(v){return String(Math.round(Number(v)*100)/100).replace(".",",");}
 
+  var builtinCatalogs={};
+  ['premium','classic','kralton'].forEach(function(id){builtinCatalogs[id]=JSON.parse(JSON.stringify(window.ACEIL_COLOR_CATALOG_BY_SERIES[id]||[]));});
   var customIds=[];
   function isCustomSeriesId(id){return loadCustom().series.some(function(s){return s.id===id;});}
   function writePricesIntoColours(seriesId,pricing){
@@ -507,6 +509,10 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
   function applyCustom(){
     foldOverrides();
     var data=loadCustom();
+    Object.keys(builtinCatalogs).forEach(function(id){
+      var list=window.ACEIL_COLOR_CATALOG_BY_SERIES[id],fresh=builtinCatalogs[id].filter(function(c){var edit=data.colors.find(function(x){return x.builtin===true&&x.seriesId===id&&x.code===c.code;});return !(Number((data.deleted||{})['c:'+id+':'+c.code])>=Number(edit&&edit.u||0));}).map(function(c){var row=JSON.parse(JSON.stringify(c)),edit=data.colors.find(function(x){return x.builtin===true&&x.seriesId===id&&x.code===c.code;});if(edit){row.displayCode=edit.display;row.colorName=edit.colorName;row.swatch=edit.swatch;row.userAppearance=true;}return row;});
+      list.splice.apply(list,[0,list.length].concat(fresh));
+    });
     window.ACEIL_FILM_SERIES=window.ACEIL_FILM_SERIES.filter(function(s){return !(s&&s.custom);});
     customIds.forEach(function(id){delete window.ACEIL_COLOR_CATALOG_BY_SERIES[id];delete window.ACEIL_FILM_PRICING_BY_SERIES[id];});
     customIds=data.series.map(function(s){return s.id;});
@@ -516,6 +522,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
       window.ACEIL_FILM_PRICING_BY_SERIES[s.id]={lak:{},mat:{},satin:{},fabric:{}};
     });
     data.colors.forEach(function(c){
+      if(c.builtin===true)return;
       var list=window.ACEIL_COLOR_CATALOG_BY_SERIES[c.seriesId];
       if(!list)return;
       var widths=(c.widths||[]).slice().sort(function(a,b){return a.nominal-b.nominal;});
@@ -549,6 +556,14 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     manufacturers:function(){return loadCustom().series.map(function(s){return s.manufacturer;}).filter(function(m,i,a){return a.indexOf(m)===i;});},
     getColor:function(seriesId,code){
       return loadCustom().colors.find(function(c){return c.seriesId===seriesId&&c.code===code;})||null;
+    },
+    saveAppearance:function(seriesId,code,input){
+      if(!builtinCatalogs[seriesId]||!builtinCatalogs[seriesId].some(function(c){return c.code===code;}))throw new Error('Колір не знайдено.');
+      var display=cleanText(input.display,20);if(!display)throw new Error('Вкажіть код / назву кольору.');
+      var data=loadCustom(),existing=data.colors.find(function(c){return c.builtin===true&&c.seriesId===seriesId&&c.code===code;}),base=builtinCatalogs[seriesId].find(function(c){return c.code===code;});
+      var row={builtin:true,cid:'builtin:'+seriesId+':'+code,seriesId:seriesId,code:code,display:display,colorName:cleanText(input.colorName,40),texture:base.texture,swatch:/^#[0-9a-f]{6}$/i.test(input.swatch||'')?input.swatch:base.swatch,u:Math.max(Date.now(),Number(existing&&existing.u||0)+1,Number((data.deleted||{})['c:'+seriesId+':'+code]||0)+1)};
+      if(existing)data.colors[data.colors.indexOf(existing)]=row;else data.colors.push(row);
+      persistCustom(data);applyCustom();return {seriesId:seriesId,code:code,texture:base.texture};
     },
     /* input: {seriesId?, manufacturer, collection?, texture, digits, colorName?, swatch?, widths:[{nominal,max,price}]} */
     saveColor:function(input){
