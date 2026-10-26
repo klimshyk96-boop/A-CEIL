@@ -4,7 +4,7 @@
 if(window.__A·CEILSmartAlignV347)return;
 window.__A·CEILSmartAlignV347=true;
 
-var S={active:false,qty:5,taps:[],previewAligned:[],aligned:[],groups:[],canvas:null,suppressUntil:0};
+var S={active:false,type:"spot",qty:5,taps:[],previewAligned:[],aligned:[],groups:[],canvas:null,suppressUntil:0};
 
 function gid(x){return document.getElementById(x)}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
@@ -640,13 +640,16 @@ function canvasCapture(e){
     gid("rmSaConfirm347").classList.add("open");
   }
 }
-window.rmSa347Open=function(){
+window.rmSa347Open=function(type){
+  S.type=type==="chandelier"?"chandelier":window.__aceilLightPlacementType==="double_spot"?"double_spot":"spot";
+  var label=gid("rmSmartAlign347").querySelector(".rm-sa-qty b");if(label)label.textContent=S.type==="chandelier"?"Скільки люстр?":"Скільки світильників?";
   try{if(typeof rmLfClose==="function")rmLfClose()}catch(_){}
   var P=poly();if(P.length<3){try{showToast("Спочатку замкніть контур кімнати")}catch(_){}return}
   gid("rmSmartAlign347").classList.add("open");
 };
 window.rmSa347Close=function(){gid("rmSmartAlign347").classList.remove("open")};
 window.rmSa347Start=function(requestedQty){
+  if(!gid("rmSmartAlign347").classList.contains("open"))S.type=window.__aceilLightPlacementType==="double_spot"?"double_spot":"spot";
   var qtyInput=gid("rmSaQty347"),qty=parseInt(requestedQty,10);
   if(!isFinite(qty))qty=parseInt(qtyInput&&qtyInput.value,10);
   S.qty=clamp(qty||5,2,24);if(qtyInput)qtyInput.value=String(S.qty);S.taps=[];S.previewAligned=[];S.aligned=[];S.groups=[];
@@ -661,7 +664,7 @@ window.rmSa347Apply=function(){
   try{
     var base=Date.now();
     S.aligned.forEach(function(p,i){
-      var __pt=window.__aceilLightPlacementType==="double_spot"?"double_spot":"spot";var m={id:"light_smartalign_"+base+"_"+i,type:__pt,x:Math.round(p.x),y:Math.round(p.y),smartAligned:true,smartWallOffsetCm:Number.isFinite(+p.wallOffsetCm)?+p.wallOffsetCm:null};if(__pt==="double_spot")m.orientation=window.__aceilDoubleSpotOrientation==="vertical"?"vertical":"horizontal";
+      var __pt=S.type;var m={id:"light_smartalign_"+base+"_"+i,type:__pt,x:Math.round(p.x),y:Math.round(p.y),smartAligned:true,smartWallOffsetCm:Number.isFinite(+p.wallOffsetCm)?+p.wallOffsetCm:null};if(__pt==="double_spot")m.orientation=window.__aceilDoubleSpotOrientation==="vertical"?"vertical":"horizontal";
       try{m.baseIndex=Number.isFinite(+p.baseIndex)?+p.baseIndex:nearestWallIndex(m,poly())}catch(_){try{if(typeof _nearestLightBaseIndex==="function")m.baseIndex=_nearestLightBaseIndex(m.x,m.y)}catch(__){}}
       try{if(typeof _updateLightCoords==="function")_updateLightCoords(m)}catch(_){}
       lightMarks.push(m);
