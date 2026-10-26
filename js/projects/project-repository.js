@@ -2,10 +2,15 @@
 (function(){
   'use strict';
   window.A·CEIL = window.A·CEIL || {};
-  window.A·CEIL.VERSION = '2026.10.15-stability2';
+  window.A·CEIL.VERSION = '20261026-repository-cleanup1';
+  const reportNonFatal = (error, operation) => {
+    try{
+      if(typeof window.__diagSilent==='function')window.__diagSilent(error,operation||'project-repository');
+      else if(window.console&&typeof window.console.warn==='function')console.warn('[A·CEIL] '+(operation||'project-repository'),error);
+    }catch(_){}
+  };
 
-  /* Canonical Safari storage repair. Several later modules use this API, so it
-     must live before ProjectRepository and must not be supplied by a late patch. */
+  /* Shared localStorage quota handling for the project repository and saves. */
   if(!window.A·CEIL.StorageRepair){
     const quotaError = error => !!error && (
       error.name === 'QuotaExceededError' ||
@@ -19,7 +24,7 @@
           const key=localStorage.key(i);
           if(key!=null)out[key]=2*(String(key).length+String(localStorage.getItem(key)||'').length);
         }
-      }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      }catch(_){reportNonFatal(_)}
       return out;
     };
     const storageBytes = () => Object.values(keyBytes()).reduce((sum,size)=>sum+size,0);
@@ -53,7 +58,7 @@
       try{
         const value=JSON.parse(localStorage.getItem(key)||'[]');
         if(Array.isArray(value)&&value.length>limit)localStorage.setItem(key,JSON.stringify(value.slice(-limit)));
-      }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      }catch(_){reportNonFatal(_)}
     };
     const trimDiagnostics = limit => {
       const n=Math.max(0,Number(limit)||8);
@@ -65,7 +70,7 @@
       const before=storageBytes(),aggressive=!!(options&&options.aggressive),force=!!(options&&options.force),removed=[];
       if(!force && before<2300000)return {beforeBytes:before,afterBytes:before,removed:removed};
       try{
-        try{const sc=window.A·CEIL&&window.A·CEIL.StorageCleanup;if(sc){if(typeof sc.removeDeadCache==='function')sc.removeDeadCache();if(typeof sc.cleanLegacy==='function')sc.cleanLegacy();}}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+        try{const sc=window.A·CEIL&&window.A·CEIL.StorageCleanup;if(sc){if(typeof sc.removeDeadCache==='function')sc.removeDeadCache();if(typeof sc.cleanLegacy==='function')sc.cleanLegacy();}}catch(_){reportNonFatal(_)}
         duplicateCacheKeys.forEach(key=>{
           if(localStorage.getItem(key)!=null){localStorage.removeItem(key);removed.push(key);}
         });
@@ -73,7 +78,7 @@
         if(force && storageBytes()>4200000)diagnosticKeys.forEach(key=>{
           if(localStorage.getItem(key)!=null){localStorage.removeItem(key);removed.push(key);}
         });
-      }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      }catch(_){reportNonFatal(_)}
       return {beforeBytes:before,afterBytes:storageBytes(),removed:removed};
     };
     let lastError=null;
@@ -126,8 +131,8 @@
   };
   function activeIds(){
     const ids=[];
-    try{if(typeof _activeObjectId!=='undefined'&&_activeObjectId!=null)ids.push(String(_activeObjectId));}catch(_){window.__diagSilent&&window.__diagSilent(_)}
-    try{if(typeof _currentProjectId!=='undefined'&&_currentProjectId!=null)ids.push(String(_currentProjectId));}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    try{if(typeof _activeObjectId!=='undefined'&&_activeObjectId!=null)ids.push(String(_activeObjectId));}catch(_){reportNonFatal(_)}
+    try{if(typeof _currentProjectId!=='undefined'&&_currentProjectId!=null)ids.push(String(_currentProjectId));}catch(_){reportNonFatal(_)}
     return ids;
   }
   function isUnsynced(project){
@@ -150,7 +155,7 @@
     try{
       const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
       if(repair&&typeof repair.stripThumbs==='function')p=repair.stripThumbs(p);
-    }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    }catch(_){reportNonFatal(_)}
     if(Array.isArray(p.rooms)){
       p.rooms.forEach(room=>{
         if(!room||typeof room!=='object')return;
@@ -168,7 +173,7 @@
           delete st.rooms;
           p.state=typeof p.state==='string'?JSON.stringify(st):st;
         }
-      }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      }catch(_){reportNonFatal(_)}
     }
     return p;
   }
@@ -254,7 +259,7 @@
           });
         }
       }
-    }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    }catch(_){reportNonFatal(_)}
   }
   function list(options){
     const projects=ensureMemory();
@@ -347,7 +352,7 @@
   try{
     const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
     if(repair&&typeof repair.freeSpace==='function')repair.freeSpace({aggressive:true});
-  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  }catch(_){reportNonFatal(_)}
 
   const api = Object.freeze({
     STORAGE_KEY,
@@ -369,20 +374,17 @@
   window.A·CEILProjectRepository = api;
   window.getProjects = function(){ return api.list(); };
   window.setProjects = function(projects){ return api.replaceAll(projects); };
-  try { getProjects = window.getProjects; setProjects = window.setProjects; } catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  try { getProjects = window.getProjects; setProjects = window.setProjects; } catch(_){reportNonFatal(_)}
 
   window.addEventListener('aceil:user-storage-changed',function(){
     memoryCache=null;
     memoryUserId='';
     ensureMemory();
-    try{if(typeof renderProjects==='function')renderProjects();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    try{if(typeof renderProjects==='function')renderProjects();}catch(_){reportNonFatal(_)}
   });
 
-  /* Canonical local persistence lives with the repository.
-     This matches the final runtime behavior that previously arrived much later
-     from save-memory-roomprice-fix-v1. */
+  /* Shared persistence used by autosave and explicit project saves. */
   window.A·CEIL.ProjectPersistence = Object.freeze({
-    /* Shared save preparation replaces the late saveProject interception. */
     prepareSave: function(force){
       try{
         const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
@@ -393,7 +395,7 @@
           if(typeof repair.trimDiagnostics==='function')repair.trimDiagnostics(8);
           window.setPendingQueue(window.getPendingQueue());
         }
-      }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      }catch(_){reportNonFatal(_)}
     },
     /* Both autosave and room saves commit locally before calling this method.
        Always resolve the latest repository record; never write an old caller snapshot. */
@@ -419,7 +421,7 @@
       const current=find();
       const waiting=current&&window.getPendingQueue().some(op=>op.payload&&projectKeys(current).some(id=>[op.payload.localId,op.payload.dbId].filter(v=>v!=null).map(String).includes(id)));
       const ok=!!current&&!waiting&&!current._dirty&&!String(current._syncStatus||'').startsWith('pending');
-      try{if(document.getElementById('projectsModal')?.classList.contains('open')&&typeof renderProjects==='function')renderProjects();}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      try{if(document.getElementById('projectsModal')?.classList.contains('open')&&typeof renderProjects==='function')renderProjects();}catch(_){reportNonFatal(_)}
       return ok;
     },
     saveProjects: async function(nextProjects, meta){
@@ -432,13 +434,10 @@
     }
   });
 
-  /* Preserve unsynced local projects during cloud hydration.
-     This replaces the late project-preservation-v35 override while keeping
-     the same backup key and restore API for compatibility. */
-  (function installProjectPreservation(){
-    if(window.__A·CEILProjectPreservationCanonical) return;
-    window.__A·CEILProjectPreservationCanonical=true;
-    const BACKUP_KEY='ceiling_projects_backup_v35';
+  /* Recovery snapshots protect unsynced projects while cloud data is merged. */
+  (function installProjectRecovery(){
+    const BACKUP_KEY='aceil_project_recovery';
+    const LEGACY_BACKUP_KEY='ceiling_projects_backup_v35';
     const cloneSafe=value=>{try{return clone(value);}catch(_){return value;}};
     const strip=value=>{
       try{
@@ -446,6 +445,19 @@
         return repair&&typeof repair.stripThumbs==='function'?repair.stripThumbs(value):cloneSafe(value);
       }catch(_){return cloneSafe(value);}
     };
+    const migrateLegacyBackup=()=>{
+      try{
+        if(localStorage.getItem(BACKUP_KEY)!=null)return;
+        const legacy=localStorage.getItem(LEGACY_BACKUP_KEY);
+        if(legacy==null)return;
+        const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
+        const copied=repair&&typeof repair.retrySetItem==='function'
+          ? repair.retrySetItem(BACKUP_KEY,legacy)
+          : (localStorage.setItem(BACKUP_KEY,legacy),true);
+        if(copied&&localStorage.getItem(BACKUP_KEY)===legacy)localStorage.removeItem(LEGACY_BACKUP_KEY);
+      }catch(error){reportNonFatal(error,'recovery-migration');}
+    };
+    migrateLegacyBackup();
     const backup=(projects,reason)=>{
       try{
         const risky=(Array.isArray(projects)?projects:[]).filter(isUnsynced).map(strip);
@@ -454,7 +466,7 @@
         const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
         if(repair&&typeof repair.retrySetItem==='function')repair.retrySetItem(BACKUP_KEY,payload);
         else localStorage.setItem(BACKUP_KEY,payload);
-      }catch(_){window.__diagSilent&&window.__diagSilent(_);}
+      }catch(_){reportNonFatal(_);}
     };
     const union=(base,incoming)=>{
       const out=cloneSafe(Array.isArray(base)?base:[]);
@@ -466,23 +478,22 @@
       });
       return out;
     };
-    const oldMerge=window.A·CEILMergeCloudProjects;
-    if(typeof oldMerge==='function'&&!oldMerge.__preserveAllCanonical){
+    const mergeCloudProjects=window.A·CEILMergeCloudProjects;
+    if(typeof mergeCloudProjects==='function'){
       const wrapped=function(incoming){
         const before=api.list({clone:true});
         backup(before,'before_cloud_merge');
         let result;
-        try{result=oldMerge.apply(this,arguments);}catch(e){api.replaceAll(before);throw e;}
+        try{result=mergeCloudProjects.apply(this,arguments);}catch(e){api.replaceAll(before);throw e;}
         const after=api.list({clone:true});
         const preserved=union(before,after);
         if(JSON.stringify(after)!==JSON.stringify(preserved))api.replaceAll(preserved);
         return preserved;
       };
-      wrapped.__preserveAllCanonical=true;
       window.A·CEILMergeCloudProjects=wrapped;
-      try{A·CEILMergeCloudProjects=wrapped;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      try{A·CEILMergeCloudProjects=wrapped;}catch(_){reportNonFatal(_)}
     }
-    window.A·CEILRestoreProjectsBackup=function(){
+    const restore=function(){
       try{
         const b=JSON.parse(localStorage.getItem(BACKUP_KEY)||'null');
         if(!b||!Array.isArray(b.projects))return {ok:false,reason:'backup_not_found'};
@@ -491,6 +502,7 @@
         return {ok:true,count:merged.length,backupAt:b.at||null};
       }catch(e){return {ok:false,reason:String(e&&e.message||e)};}
     };
+    window.A·CEIL.ProjectRecovery=Object.freeze({backup:backup,restore:restore,storageKey:BACKUP_KEY});
     window.addEventListener('pagehide',function(){backup(api.list({clone:true}),'pagehide');});
   })();
 })();

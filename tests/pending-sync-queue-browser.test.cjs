@@ -6,7 +6,7 @@ const {chromium}=require('playwright'),{open}=require('./browser-review.cjs');
  await page.evaluate(()=>{
   const id='11111111-1111-4111-8111-111111111111';
   window.__queueRequests=[];
-  const fake={from(){let payload,dbId;const query={update(value){payload=value;return query},eq(key,value){dbId=value;return query},select(){return query},single(){return new Promise(resolve=>window.__queueRequests.push({payload,dbId,resolve}))}};return query}};
+  const fake={channel(){return {on(){return this},subscribe(){return this}}},removeChannel:async()=>{},from(){let payload,dbId;const query={update(value){payload=value;return query},eq(key,value){dbId=value;return query},select(){return query},single(){return new Promise(resolve=>window.__queueRequests.push({payload,dbId,resolve}))}};return query}};
   _sb=fake;window._sb=fake;_sbUser={id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'};window._sbUser=_sbUser;
   window['A·CEIL'].ProjectRepository.replaceAll([{id,_dbId:id,name:'Стара назва',state:'{}',_dirty:true}]);
   setPendingQueue([]);addToPendingQueue({type:'save',payload:{localId:id},addedAt:1});

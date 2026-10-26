@@ -1,4 +1,4 @@
-# Current architecture — 2026-10-18
+# Поточна архітектура A·CEIL
 
 ## Карта модулів
 
@@ -8,7 +8,7 @@
 Нові файли отримують наступний вільний номер і ім'я `NNN-aceil-<призначення>.js`.
 Спільні сервіси лежать у `core/`: `A·CEILUtils` (011), `A·CEILGeometry` (098), `A·CEIL.pipeline` (007), `A·CEIL.API` (225), стан (121).
 
-## Canvas — 2026-10-16
+## Canvas
 
 - `js/canvas/viewport.js`: logical dimensions, backing-store resolution, draw hooks.
 - `js/canvas/renderer.js`: the sole `draw()` entry point and room scene.
@@ -20,7 +20,7 @@
 - CSS: app.css (base), theme.css (UI/theme/admin), layout.css (later layout sections).
   Keep their placement in index.html: runtime-injected styles depend on that cascade order.
 - `scripts/runtime-order.json` records the remaining legacy load order. Review dependencies before changing it.
-- Build id `20261018-structure2` is shared by local asset queries, the service-worker cache,
+- Build id із `VERSION` є спільним для локальних asset-запитів, service-worker cache,
   the PWA reload key and service-worker registration. `scripts/check-before-deploy.sh` enforces this.
 - The service worker precaches only the essential shell. Versioned local JS/CSS use cache-first
   runtime caching; a build-id change is the only supported way to publish changed assets.
@@ -41,18 +41,18 @@ preview. Both paths must publish the same structured drawing and stable project 
 
 Older cleanup notes are historical, not a statement of the current file counts.
 
-## Архітектурний запобіжник — 2026-10-17
+## Архітектурний запобіжник
 
 - Файли з історичними назвами `*-inline.js` перейменовано за їх реальною відповідальністю; порядок виконання не змінено.
 - `js/core/225-aceil-public-api.js` створює `window["A·CEIL"].API` — стабільний вхід для нового коду й тестів. Усередині він поки делегує виклики чинним реалізаціям.
 - `scripts/check-architecture.cjs` блокує повернення анонімних назв, дубльованих номерів, динамічного коду, непідключених файлів, нових ланцюгів обгорток і неконтрольованого росту великих файлів.
-- `scripts/architecture-baseline.json` фіксує поточний борг: 105 ланцюгів обгорток. Цей показник може лише зменшуватись; після перевіреного скорочення базу оновлюють командою `node scripts/check-architecture.cjs --update`.
+- `scripts/architecture-baseline.json` фіксує поточний борг: 72 ланцюги обгорток. Цей показник може лише зменшуватись; після перевіреного скорочення базу оновлюють командою `node scripts/check-architecture.cjs --update`.
 - `scripts/run-all-tests.sh` запускає статичні, модульні та браузерні перевірки й завершується помилкою при будь-якому падінні. Повідомлення `ALL OK` виводиться тільки після успіху всіх тестів.
 - `scripts/prune-superseded-layers.cjs` є лише діагностичним інструментом. Без `--apply` він нічого не змінює; видалення шарів допускається тільки після браузерної регресії.
 
 Безпечний порядок подальшої консолідації: спочатку зафіксувати поведінку golden-тестом, потім злити один ланцюг у файл-власник, виконати `bash scripts/run-all-tests.sh` і лише після успіху оновити архітектурну базу. Перейменування позицій номенклатури не може бути джерелом типу або автопрорахунку — використовуються стабільні ID/source.
 
-## Конвеєр автопрорахунку — 2026-10-17
+## Конвеєр автопрорахунку
 
 - `js/nomenclature/105-aceil-autofill-pipeline.js` є єдиним власником
   `window.autoFillNomenclature`.
@@ -64,12 +64,6 @@ Older cleanup notes are historical, not a statement of the current file counts.
 - Необов'язкові «вусаті» роботи та захист підлоги залишаються вимкненими за замовчуванням
   і керуються власним чекбоксом. Автопрорахунок не скидає ручний вибір.
 - Подальші ланцюги зливаються лише по одному після окремого порівняння збірок.
-
-## Verified cleanup, 2026-10-19
-
-Removed superseded global assignments and moved empty fresh-wall cleanup into
-the owner of `rwe2Close` (047). The measured straight/curved geometry remains
-from current main. The architecture ratchet now records 79 chains.
 
 `node scripts/diff-global-surface.cjs <baseline-dir> [candidate-dir]`
 fails on unexpected function source/type differences, page errors in either

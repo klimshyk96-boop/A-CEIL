@@ -9,11 +9,12 @@ var NS="A\u00b7CEIL";
 var MARK="::user:";
 var KEY_CLOUD_CACHE="A\u00b7CEIL_cloud_cache_v330";
 var KEY_PROJECTS="ceiling_projects";
-var KEY_BACKUP="ceiling_projects_backup_v35";
+var KEY_BACKUP="aceil_project_recovery";
+var KEY_LEGACY_BACKUP="ceiling_projects_backup_v35";
 var KEY_STATE="ceiling_v18";
 var WARN_KB=3800,QUOTA_KB=5000,WARN_FLAG="aceil_storage_warn_v1";
 var NAMES={};
-NAMES[KEY_PROJECTS]="проєкти";NAMES[KEY_BACKUP]="резерв";NAMES[KEY_CLOUD_CACHE]="хмарний кеш";NAMES[KEY_STATE]="поточний малюнок";
+NAMES[KEY_PROJECTS]="проєкти";NAMES[KEY_BACKUP]="резерв";NAMES[KEY_LEGACY_BACKUP]="старий резерв";NAMES[KEY_CLOUD_CACHE]="хмарний кеш";NAMES[KEY_STATE]="поточний малюнок";
 
 function root(){return window[NS]||(window[NS]={});}
 function us(){return window.A_CEIL_UserStorage||null;}
@@ -67,15 +68,16 @@ function cleanLegacy(){
   if(uid!==u.primaryOwnerId){out.skipped="not_primary_owner";return out;}
   var scopedProjects=listOf(rawGet(KEY_PROJECTS+MARK+uid));
   var scopedBackup=listOf(rawGet(KEY_BACKUP+MARK+uid))||[];
-  [KEY_PROJECTS,KEY_BACKUP,KEY_CLOUD_CACHE,KEY_STATE].forEach(function(base){
-    var legacy=rawGet(base),scoped=rawGet(base+MARK+uid);
-    if(legacy==null||scoped==null)return;
+  [KEY_PROJECTS,KEY_BACKUP,KEY_LEGACY_BACKUP,KEY_CLOUD_CACHE,KEY_STATE].forEach(function(base){
+    var legacy=rawGet(base),scoped=rawGet((base===KEY_LEGACY_BACKUP?KEY_BACKUP:base)+MARK+uid);
+    if(legacy==null)return;
+    if(scoped==null){if(base===KEY_LEGACY_BACKUP)out.kept.push(base);return;}
     var safe=false;
     if(base===KEY_PROJECTS){
       var l=listOf(legacy);
       safe=Array.isArray(l)&&Array.isArray(scopedProjects)&&scopedProjects.length>0;
       if(safe&&!covered(l,[scopedProjects]))out.projectCoverage="cloud_cache_is_authoritative";
-    }else if(base===KEY_BACKUP){
+    }else if(base===KEY_BACKUP||base===KEY_LEGACY_BACKUP){
       var lb=listOf(legacy);
       safe=Array.isArray(lb)&&Array.isArray(scopedProjects)&&covered(lb,[scopedProjects,scopedBackup]);
     }else if(base===KEY_STATE){

@@ -1,8 +1,8 @@
 /* A·CEIL offline shell — fast activation and versioned runtime cache, 2026-10-16 */
 "use strict";
 
-const BUILD_ID="20261026-film-label1";
-const SHELL_CACHE="aceil-shell-20261026-film-label1";
+const BUILD_ID="20261026-repository-cleanup1";
+const SHELL_CACHE="aceil-shell-20261026-repository-cleanup1";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
   "/assets/materials/descor/450.jpg",

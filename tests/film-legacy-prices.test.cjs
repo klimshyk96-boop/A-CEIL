@@ -24,7 +24,7 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
   const g=id=>window.ACEILGetFilmPricing(id),col=(sid,code)=>window.ACEIL_COLOR_CATALOG_BY_SERIES[sid].find(c=>c.code===code);
   return{fabric:g('old1').fabric.M951_w310,fabricUntouched:g('old1').fabric.M951_w450,mat:g('old2').mat.w360,lak:g('old2').lak.w360,
    premium:g('premium').mat,
-   stored:JSON.parse(localStorage.getItem('aceil_custom_film_v1')).colors.map(c=>c.code+':'+c.widths.map(w=>w.price).join('/')),
+   stored:JSON.parse(localStorage.getItem('aceil_custom_film_v1')).colors.filter(c=>c.seriesId==='old1'||c.seriesId==='old2').map(c=>c.code+':'+c.widths.map(w=>w.price).join('/')),
    ov:JSON.parse(localStorage.getItem('aceil_film_pricing_overrides_v1'))}});
  assert.equal(r.fabric,975,'fabric price set before the update is kept');
  assert.equal(r.fabricUntouched,800,'other widths keep their price');

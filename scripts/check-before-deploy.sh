@@ -32,6 +32,7 @@ node tests/pending-sync-queue-browser.test.cjs || exit 1
 node tests/shared-project-save.test.cjs || exit 1
 node tests/project-save-context.test.cjs || exit 1
 node tests/projects-opening.test.cjs || exit 1
+node tests/project-recovery.test.cjs || exit 1
 node tests/room-save-canonical.test.cjs || exit 1
 node tests/room-load-consolidation.test.cjs || exit 1
 node tests/wall-state-restore.test.cjs || exit 1

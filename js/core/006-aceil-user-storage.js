@@ -11,6 +11,7 @@
   var listeners=[];
   var tenantKeys={
     'ceiling_projects':true,
+    'aceil_project_recovery':true,
     'ceiling_projects_backup_v35':true,
     'ceiling_pendingSync':true,
     'A_CEIL_nomenclature_offline_v1':true,
