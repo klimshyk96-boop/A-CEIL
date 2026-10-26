@@ -444,33 +444,46 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
   // TEQTUM (2026-10-25). One brand, two varieties: Euro (gloss / matt / satin, RAL-dyed) and KM2 (matt only).
   // Lumfer comes from the same price list. Widths are maximum roll widths; prices stay empty until the user sets them.
   // Swatches of the Euro colours are sampled from the supplier sample sheet.
+  // Names, RAL codes and finishes follow the official catalogue (teqtum.ua/catalog). Swatches are the RAL Design values
+  // converted to sRGB. Third item: finishes the colour is made in (L gloss, M matt, S satin).
   var teqtumEuroColours=[
-    ["Біла білизна","RAL 110 96 02","#fcfcf9"],["Жовто-бежевий","RAL 080 80 30","#f8d49a"],["Біла морська троянда","RAL 080 80 30","#f7e4d0"],
-    ["Темно-сірий","RAL 110 96 02","#6d6d6a"],["Білий креповий шовк","RAL 080 80 30","#fbf2ea"],["Біла тінь","RAL 080 80 30","#e3e3e3"],
-    ["Бежева макадамія","RAL 110 96 02","#fbe9c3"],["Коричнева ніч","RAL 080 80 30","#55290b"],["Білий атлас","RAL 080 80 30","#f7f0dd"],
-    ["Помірно сірий","RAL 110 96 02","#9c9799"],["Бежевий сандал","RAL 080 80 30","#f9e0b9"],["Чорнильно чорний","RAL 080 80 30","#0d0d0d"]
+    ["Білий шовковий креп","RAL 095 93 05","#eeebe1","LMS"],["Білий атлас","RAL 095 90 10","#e9e2cf","LM"],
+    ["Біла лілія","RAL 075 85 10","#e1d2c2","LM"],["Бежевий макадамія","RAL 080 90 20","#f8dfbd","LM"],
+    ["Бежевий сандал","RAL 070 85 20","#efcfb1","LM"],["Жовто-бежевий","RAL 080 80 30","#e3c190","LM"],
+    ["Білосніжний","RAL 110 96 02","#f4f4f0","LMS"],["Тіньовий білий","RAL 000 85 00","#d4d4d4","LM"],
+    ["Середній сірий","RAL 000 55 00","#848484","LM"],["Темно-сірий","RAL 000 40 00","#5e5e5e","LM"],
+    ["Нічний коричневий","RAL 050 20 16","#442a1f","LM"],["Чорнильний чорний","RAL 000 15 00","#262626","LM"]
   ];
   var teqtumKm2Codes=["M303","M305","M347","M501"];
   function widthList(list){return list.map(function(w){return {nominal:w,max:w,price:0};});}
   function seedTeqtum(data){
-    if(data.teqtumImported)return data;
+    if(data.teqtumRev>=3)return data;
     // Remove the provisional "EURO" series of the first draft when nothing was priced in it.
     var oldIdx=data.series.findIndex(function(x){return x.id==='euro';});
     if(oldIdx>=0){
       var untouched=data.colors.filter(function(c){return c.seriesId==='euro';}).every(function(c){return (c.widths||[]).every(function(w){return !(Number(w.price)>0);});});
       if(untouched){data.series.splice(oldIdx,1);data.colors=data.colors.filter(function(c){return c.seriesId!=='euro';});data.deleted=data.deleted||{};data.deleted['s:euro']=Date.now();}
     }
+    // Earlier drafts of TEQTUM Euro (codes 901-912, 921-933 incl. black satin) used the sample-sheet colours: drop its unpriced rows.
+    data.deleted=data.deleted||{};
+    data.colors=data.colors.filter(function(c){
+      if(c.seriesId!=='teqtum-euro'||!/^[LMS]9(0[1-9]|1[0-2]|2[1-9]|3[0-3])$/.test(c.code))return true;
+      if((c.widths||[]).some(function(w){return Number(w.price)>0;}))return true;
+      data.deleted['c:teqtum-euro:'+c.code]=Date.now();if(c.cid)data.deleted['k:'+c.cid]=Date.now();return false;
+    });
     function ensureSeries(id,manufacturer,collection,name){var x=data.series.find(function(s){return s.id===id;});if(!x){x={id:id,manufacturer:manufacturer,collection:collection,name:name};data.series.push(x);}return x;}
     function has(seriesId,code,display){return data.colors.some(function(c){return c.seriesId===seriesId&&(c.code===code||String(c.display).toUpperCase()===String(display).toUpperCase()&&c.texture===({L:'lak',M:'mat',S:'satin'}[code[0]]));});}
     var lumfer=ensureSeries('lumfer','Lumfer','','Lumfer');
     if(!has(lumfer.id,'M961','Lumfer'))data.colors.push({seriesId:lumfer.id,code:'M961',display:'Lumfer',texture:'fabric',colorName:'Білий',swatch:'#ffffff',widths:widthList([3.05,4.5])});
     // Seeded in the same order the catalogue sync sorts records (series id, then code).
     var euro=ensureSeries('teqtum-euro','TEQTUM','Euro','TEQTUM Euro');
-    [["L","lak"],["M","mat"],["S","satin"]].forEach(function(t){
+    var texOf={L:'lak',M:'mat',S:'satin'};
+    ["L","M","S"].forEach(function(t){
       teqtumEuroColours.forEach(function(row,index){
-        var code=t[0]+(901+index);
+        if(row[3].indexOf(t)<0)return;
+        var code=t+(921+index);
         if(has(euro.id,code,row[0]))return;
-        data.colors.push({seriesId:euro.id,code:code,display:row[0],texture:t[1],colorName:row[1],swatch:row[2],widths:widthList([3.6,4.5])});
+        data.colors.push({seriesId:euro.id,code:code,display:row[0],texture:texOf[t],colorName:row[1],swatch:row[2],widths:widthList([3.6,4.5])});
       });
     });
     var km2=ensureSeries('teqtum-km2','TEQTUM','KM2','TEQTUM KM2');
@@ -479,7 +492,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
       var base=(window.ACEIL_COLOR_CATALOG||[]).find(function(c){return c.code===code;});
       data.colors.push({seriesId:km2.id,code:code,display:code,texture:'mat',swatch:base&&base.swatch||'#ffffff',widths:widthList([3.2,5])});
     });
-    data.teqtumImported=true;
+    data.teqtumImported=true;data.teqtumRev=3;
     try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}catch(_){}
     return data;
   }
