@@ -441,14 +441,127 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}catch(_){}
     return data;
   }
+  // TEQTUM (2026-10-25). One brand, two varieties: Euro (gloss / matt / satin, RAL-dyed) and KM2 (matt only).
+  // Lumfer comes from the same price list and is a PVC film (not a fabric). Names, RAL codes and finishes follow
+  // the official catalogue (teqtum.ua/catalog); swatches are RAL Design values converted to sRGB. Widths are maximum
+  // roll widths; prices stay empty until the user sets them. Third item: finishes (L gloss, M matt, S satin).
+  var teqtumEuroColours=[
+    ["Білий шовковий креп","RAL 095 93 05","#eeebe1","LMS"],["Білий атлас","RAL 095 90 10","#e9e2cf","LM"],
+    ["Біла лілія","RAL 075 85 10","#e1d2c2","LM"],["Бежевий макадамія","RAL 080 90 20","#f8dfbd","LM"],
+    ["Бежевий сандал","RAL 070 85 20","#efcfb1","LM"],["Жовто-бежевий","RAL 080 80 30","#e3c190","LM"],
+    ["Білосніжний","RAL 110 96 02","#f4f4f0","LMS"],["Тіньовий білий","RAL 000 85 00","#d4d4d4","LM"],
+    ["Середній сірий","RAL 000 55 00","#848484","LM"],["Темно-сірий","RAL 000 40 00","#5e5e5e","LM"],
+    ["Нічний коричневий","RAL 050 20 16","#442a1f","LM"],["Чорнильний чорний","RAL 000 15 00","#262626","LM"]
+  ];
+  var teqtumKm2Codes=["M303","M305","M347","M501"];
+  // Exact content of the rows that earlier drafts of this seed created. A row is removed by the migration only when it
+  // still equals its draft byte for byte (zero price, nothing renamed, no other swatch or widths): any edit keeps it.
+  var teqtumDraft2Euro=[
+    ["Біла білизна","RAL 110 96 02","#fcfcf9"],["Жовто-бежевий","RAL 080 80 30","#f8d49a"],["Біла морська троянда","RAL 080 80 30","#f7e4d0"],
+    ["Темно-сірий","RAL 110 96 02","#6d6d6a"],["Білий креповий шовк","RAL 080 80 30","#fbf2ea"],["Біла тінь","RAL 080 80 30","#e3e3e3"],
+    ["Бежева макадамія","RAL 110 96 02","#fbe9c3"],["Коричнева ніч","RAL 080 80 30","#55290b"],["Білий атлас","RAL 080 80 30","#f7f0dd"],
+    ["Помірно сірий","RAL 110 96 02","#9c9799"],["Бежевий сандал","RAL 080 80 30","#f9e0b9"],["Чорнильно чорний","RAL 080 80 30","#0d0d0d"]
+  ];
+  var teqtumDraft1=[["M961","Teqtum euro",[3.6,4.5]],["M962","Teqtum KM2",[3.2,5]],["M963","Lumfer",[3.05,4.5]]];
+  function widthList(list){return list.map(function(w){return {nominal:w,max:w,price:0};});}
+  function sameRow(c,def){
+    if(!c||String(c.display||"")!==def.display||c.texture!==def.texture||String(c.colorName||"")!==def.colorName||String(c.swatch||"")!==def.swatch)return false;
+    if(c.photo||c.sourceUrl)return false;
+    var w=c.widths||[];if(w.length!==def.widths.length)return false;
+    return def.widths.every(function(n){return w.some(function(x){return Number(x.nominal)===n&&Number(x.max)===n&&!(Number(x.price)>0);});});
+  }
+  function seedTeqtum(data){
+    if(data.teqtumRev>=5)return data;
+    var now=Date.now(),texOf={L:"lak",M:"mat",S:"satin"},ov=readPriceOverrides(),ovTouched=false;
+    data.deleted=data.deleted||{};
+    function priced(seriesId){var r=ov[seriesId];return !!r&&Object.keys(r).some(function(t){return r[t]&&Object.keys(r[t]).length;});}
+    function forget(c){data.deleted["c:"+c.seriesId+":"+c.code]=now;if(c.cid)data.deleted["k:"+c.cid]=now;}
+    // Rev 3 could mark a seeded row as deleted and recreate it under the same identity.
+    // Repair only a row still present locally. Missing rows remain deleted; never infer
+    // that an absent colour should be resurrected. Explicit user deletions always win.
+    data.colors.forEach(function(c){
+      if(c.seriesId!=="teqtum-euro"||!/^([LM]9(2[1-9]|3[0-2])|S92[17])$/.test(c.code))return;
+      if(c.cid&&c.cid!=="seed:teqtum-euro:"+c.code)return;
+      var key="c:"+c.seriesId+":"+c.code,cidKey="k:"+(c.cid||"seed:teqtum-euro:"+c.code);
+      var dead=Math.max(Number(data.deleted[key]||0),Number(data.deleted[cidKey]||0));
+      if(!dead||Number(data.deleted["user:"+key]||0)||Number(c.u||0)>dead)return;
+      c.u=Math.max(now,dead+1); // keep the tombstone: a stale device cannot undo the repair
+    });
+    function deletedSeed(seriesId,code){
+      return !!(data.deleted["s:"+seriesId]||data.deleted["c:"+seriesId+":"+code]||data.deleted["k:seed:"+seriesId+":"+code]);
+    }
+
+    // 1. First draft: a separate "EURO" series. Dropped only if it is still exactly what the draft created.
+    var old1=data.series.find(function(x){return x.id==="euro";});
+    if(old1){
+      var rows1=data.colors.filter(function(c){return c.seriesId==="euro";});
+      var pristine1=old1.manufacturer==="EURO"&&!old1.collection&&old1.name==="EURO"&&!priced("euro")&&rows1.length===teqtumDraft1.length&&
+        teqtumDraft1.every(function(d){var c=rows1.find(function(x){return x.code===d[0];});return sameRow(c,{display:d[1],texture:"fabric",colorName:"Білий",swatch:"#ffffff",widths:d[2]});});
+      if(pristine1){
+        data.series=data.series.filter(function(x){return x.id!=="euro";});data.colors=data.colors.filter(function(c){return c.seriesId!=="euro";});
+        data.deleted["s:euro"]=now;rows1.forEach(forget);
+      }
+    }
+    // 2. Second draft: photo-sheet colours with codes 901-912. These codes are never used again, so a removed
+    //    row cannot collide with a new one. Rows the user touched stay as they are.
+    data.colors=data.colors.filter(function(c){
+      var m=c.seriesId==="teqtum-euro"&&/^([LMS])9(0[1-9]|1[0-2])$/.exec(c.code);if(!m)return true;
+      var def=teqtumDraft2Euro[Number(c.code.slice(1))-901];
+      if(!def||priced("teqtum-euro")||!sameRow(c,{display:def[0],texture:texOf[m[1]],colorName:def[1],swatch:def[2],widths:[3.6,4.5]}))return true;
+      forget(c);return false;
+    });
+    // 3. Third draft: the black satin row (S933) was never part of the official list.
+    data.colors=data.colors.filter(function(c){
+      if(!(c.seriesId==="teqtum-euro"&&c.code==="S933")||priced("teqtum-euro")||!sameRow(c,{display:"Чорний сатин",texture:"satin",colorName:"",swatch:"#1c1c1c",widths:[4.5]}))return true;
+      forget(c);return false;
+    });
+    // 4. Lumfer is PVC film, not fabric. Fix a record created as fabric in place (same code, cid, widths and prices);
+    //    a price entered before the update is still stored under the fabric key, so carry it over first.
+    data.colors.forEach(function(c){
+      if(c.seriesId!=="lumfer"||c.code!=="M961"||c.display!=="Lumfer"||c.texture!=="fabric")return;
+      var fab=ov.lumfer&&ov.lumfer.fabric;
+      (c.widths||[]).forEach(function(w){
+        var k=priceKeyFor(w.nominal,c.code,"fabric");
+        if(fab&&fab[k]!==undefined){var v=Number(fab[k]);if(Number.isFinite(v)&&v>=0)w.price=v;delete fab[k];ovTouched=true;}
+      });
+      c.texture="mat";if(!c.colorName||c.colorName==="Білий")c.colorName="ПВХ";c.u=Math.max(now,Number(c.u||0)+1);
+    });
+    function ensureSeries(id,manufacturer,collection,name){var x=data.series.find(function(s){return s.id===id;});if(!x&&!data.deleted["s:"+id]){x={id:id,manufacturer:manufacturer,collection:collection,name:name};data.series.push(x);}return x;}
+    // A colour counts as present when a row with the same code exists, or the same name in the same finish.
+    function has(seriesId,code,display){return data.colors.some(function(c){return c.seriesId===seriesId&&(c.code===code||String(c.display).toUpperCase()===String(display).toUpperCase()&&c.texture===texOf[code[0]]);});}
+    // Seeded in the order the catalogue sync sorts records (series id, then code).
+    var lumfer=ensureSeries("lumfer","Lumfer","","Lumfer");
+    if(lumfer&&!deletedSeed(lumfer.id,"M961")&&!data.colors.some(function(c){return c.seriesId==="lumfer"&&c.code==="M961";})&&!has(lumfer.id,"M961","Lumfer"))
+      data.colors.push({seriesId:lumfer.id,code:"M961",display:"Lumfer",texture:"mat",colorName:"ПВХ",swatch:"#ffffff",widths:widthList([3.05,4.5])});
+    var euro=ensureSeries("teqtum-euro","TEQTUM","Euro","TEQTUM Euro");
+    ["L","M","S"].forEach(function(t){
+      teqtumEuroColours.forEach(function(row,index){
+        if(row[3].indexOf(t)<0)return;
+        var code=t+(921+index);
+        if(!euro||has(euro.id,code,row[0])||deletedSeed(euro.id,code))return;
+        data.colors.push({seriesId:euro.id,code:code,display:row[0],texture:texOf[t],colorName:row[1],swatch:row[2],widths:widthList([3.6,4.5])});
+      });
+    });
+    var km2=ensureSeries("teqtum-km2","TEQTUM","KM2","TEQTUM KM2");
+    teqtumKm2Codes.forEach(function(code){
+      if(!km2||deletedSeed(km2.id,code)||has(km2.id,code,code))return;
+      var base=(window.ACEIL_COLOR_CATALOG||[]).find(function(c){return c.code===code;});
+      data.colors.push({seriesId:km2.id,code:code,display:code,texture:"mat",swatch:base&&base.swatch||"#ffffff",widths:widthList([3.2,5])});
+    });
+    if(ovTouched){try{localStorage.setItem(PRICE_KEY,JSON.stringify(ov));}catch(_){}}
+    data.teqtumImported=true;data.teqtumRev=5;
+    try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}catch(_){}
+    return data;
+  }
   function loadCustom(){
     var v;
     try{v=JSON.parse(localStorage.getItem(CUSTOM_KEY)||"null");}catch(_){}
     if(!v||!Array.isArray(v.series)||!Array.isArray(v.colors))v={v:1,series:[],colors:[]};
     v=seedDescor(v);
+    v=seedTeqtum(v);
     /* cid — стабільний ідентифікатор кольору між пристроями (переживає перейменування). */
     var cidAdded=false;
-    v.colors.forEach(function(c){if(!c.cid){c.cid=c.seriesId==='descor-premium'?'seed:'+c.code:'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);cidAdded=true;}});
+    v.colors.forEach(function(c){if(!c.cid){c.cid=c.seriesId==='descor-premium'?'seed:'+c.code:/^(teqtum-|lumfer)/.test(c.seriesId)?'seed:'+c.seriesId+':'+c.code:'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);cidAdded=true;}});
     if(cidAdded){try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(v));}catch(_){}}
     v.reserved=v.reserved||[];v.colors.forEach(function(c){if(!v.reserved.some(function(r){return r.seriesId===c.seriesId&&r.code===c.code;}))v.reserved.push({seriesId:c.seriesId,code:c.code});});
     return v;
@@ -635,7 +748,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
       var data=loadCustom(),gone=data.colors.find(function(c){return c.seriesId===seriesId&&c.code===code;});
       data.colors=data.colors.filter(function(c){return !(c.seriesId===seriesId&&c.code===code);});
       /* Видалення запам'ятовуємо і за кодом, і за cid: код кольору міг змінитися при розв'язанні колізії. */
-      data.deleted=data.deleted||{};data.deleted["c:"+seriesId+":"+code]=Date.now();
+      data.deleted=data.deleted||{};data.deleted["c:"+seriesId+":"+code]=Date.now();data.deleted["user:c:"+seriesId+":"+code]=data.deleted["c:"+seriesId+":"+code];
       if(gone&&gone.cid)data.deleted["k:"+gone.cid]=Date.now();
       persistCustom(data);applyCustom();
       window.dispatchEvent(new CustomEvent("aceil:film-pricing-saved"));

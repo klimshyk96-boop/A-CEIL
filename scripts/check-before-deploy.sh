@@ -23,6 +23,8 @@ node tests/film-catalog-sync.test.cjs || exit 1
 node tests/film-legacy-prices.test.cjs || exit 1
 node tests/film-legacy-price-sync.test.cjs || exit 1
 node tests/film-manual-regression.test.cjs && node tests/film-duplicate-definition.test.cjs || exit 1
+node tests/euro-catalog.test.cjs || exit 1
+node tests/teqtum-migration.test.cjs || exit 1
 node tests/cornice-icons.test.cjs || exit 1
 node tests/descor-catalog.test.cjs || exit 1
 node tests/pending-sync-queue-browser.test.cjs || exit 1

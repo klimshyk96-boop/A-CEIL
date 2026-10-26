@@ -30,7 +30,7 @@ function canon(v){
   if(v&&typeof v==="object")return"{"+Object.keys(v).sort().map(function(k){return JSON.stringify(k)+":"+canon(v[k])}).join(",")+"}";
   return JSON.stringify(v===undefined?null:v);
 }
-function emptyCustom(){return{v:1,series:[],colors:[],reserved:[],deleted:{},descorLabellImported:false}}
+function emptyCustom(){return{v:1,series:[],colors:[],reserved:[],deleted:{},descorLabellImported:false,teqtumImported:false,teqtumRev:0}}
 function emptyDoc(){return{v:1,custom:emptyCustom(),pricing:{}}}
 function normCustom(c){
   c=c&&typeof c==="object"?clone(c):emptyCustom();
@@ -39,9 +39,16 @@ function normCustom(c){
   c.reserved=Array.isArray(c.reserved)?c.reserved:[];
   c.deleted=c.deleted&&typeof c.deleted==="object"?c.deleted:{};
   c.descorLabellImported=c.descorLabellImported===true;
+  c.teqtumImported=c.teqtumImported===true;c.teqtumRev=num(c.teqtumRev);
   return c;
 }
-function newer(a,b){return num(b&&b.u)>num(a&&a.u)}
+/* b новіший за a? При рівних мітках — детермінований вибір за вмістом, однаковий на всіх пристроях:
+   інакше кожен лишає свою копію і значення «перекидаються» при кожній синхронізації. */
+function newer(a,b){
+  var ua=num(a&&a.u),ub=num(b&&b.u);
+  if(ub!==ua)return ub>ua;
+  return canon(b)>canon(a);
+}
 function identity(c){return c.cid||(c.seriesId+"|"+String(c.display||"").toLowerCase()+"|"+c.texture+"|"+c.code)}
 
 /* Той самий колір (за cid) міг потрапити під різні коди — після розв'язання колізії.
@@ -55,7 +62,7 @@ function collapseByIdentity(list){
   return Object.keys(groups).sort().map(function(id){
     var g=groups[id];
     var place=g.slice().sort(function(x,y){return num(y.mv)-num(x.mv)||num(y.u)-num(x.u)||(String(x.code)<String(y.code)?-1:1)})[0];
-    var content=g.slice().sort(function(x,y){return num(y.u)-num(x.u)||num(y.mv)-num(x.mv)})[0];
+    var content=g.slice().sort(function(x,y){return num(y.u)-num(x.u)||num(y.mv)-num(x.mv)||(canon(y)>canon(x)?1:canon(y)<canon(x)?-1:0)})[0];
     var out=clone(content);out.code=place.code;
     if(num(place.mv)>0)out.mv=num(place.mv);else delete out.mv;
     return out;
@@ -65,6 +72,7 @@ function collapseByIdentity(list){
 function mergeCustom(local,remote){
   var a=normCustom(local),b=normCustom(remote),out=emptyCustom();
   out.descorLabellImported=a.descorLabellImported||b.descorLabellImported;
+  out.teqtumImported=a.teqtumImported||b.teqtumImported;out.teqtumRev=Math.max(a.teqtumRev,b.teqtumRev);
   var dead={};
   [a.deleted,b.deleted].forEach(function(d){Object.keys(d).forEach(function(k){dead[k]=Math.max(num(dead[k]),num(d[k]))})});
   out.deleted=dead;
@@ -124,7 +132,7 @@ function mergePricing(local,remote,dead){
   var out={},a=local||{},b=remote||{};
   Object.keys(a).concat(Object.keys(b)).forEach(function(id){
     if(out[id])return;
-    var x=a[id],y=b[id],pick=x&&(!y||num(x.u)>=num(y.u))?x:y;
+    var x=a[id],y=b[id],pick=x&&(!y||!newer(x,y))?x:y;
     /* ціни видаленої ручної серії не зберігаємо */
     if(dead&&dead["s:"+id]!==undefined)return;
     out[id]={rates:clone(pick.rates)||{},u:num(pick.u)};
