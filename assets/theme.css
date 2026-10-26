@@ -915,12 +915,14 @@ body:has(#sideInputModal.open) #recoveryBanner{display:none!important;}
   background:rgba(255,255,255,.96);color:#273253;
   box-shadow:0 8px 22px rgba(15,23,42,.15);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
-  cursor:pointer;white-space:nowrap;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  cursor:pointer;white-space:nowrap;overflow:hidden;box-sizing:border-box;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   touch-action:manipulation
 ;}
+#aceilColorPickerBtn.acpb-long{width:112px;max-width:calc(100% - 72px);height:50px;min-height:50px;gap:2px;}
+#aceilColorPickerBtn.acpb-long .acpb-code{flex-shrink:0;line-height:1.15;}
 #aceilColorPickerBtn:active{transform:scale(.94);}
 #aceilColorPickerBtn .acpb-icon{font-size:10px;line-height:1;}
-#aceilColorPickerBtn .acpb-code{font-size:8.5px;font-weight:950;line-height:1;letter-spacing:-.02em;}
+#aceilColorPickerBtn .acpb-code{width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-size:8.5px;font-weight:950;line-height:1;letter-spacing:-.02em;}
 #aceilColorPickerBtn .acpb-width{opacity:1;font-size:7px;font-weight:850;line-height:1.05;color:#2563eb;}
 #aceilColorPickerBtn.acpb-error{background:#fff7ed;border-color:#fb923c;}
 #aceilColorPickerBtn.acpb-error .acpb-width{color:#c2410c;}
