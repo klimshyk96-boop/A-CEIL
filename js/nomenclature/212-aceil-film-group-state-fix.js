@@ -107,7 +107,12 @@
           if(!allItems.some(function(item){return item&&String(item.groupId)===String(group.id);})){allGroups.splice(allGroups.indexOf(group),1);changed=true;}
         });
       });
-      var first=allGroups.filter(function(group){return assigned.has(group);}).sort(function(a,b){return scoreFilmGroup(b,allItems)-scoreFilmGroup(a,allItems);})[0];
+      // The selected room film stays first, even if a hidden, previously used film
+      // has more roll widths. Catalogue merges can put room-scoped groups at the end.
+      var current=window.A_CEILColorPicker&&window.A_CEILColorPicker.current?window.A_CEILColorPicker.current():null;
+      var filmGroups=allGroups.filter(function(group){return assigned.has(group);});
+      var first=current&&filmGroups.find(function(group){return group.filmCode===current.code&&group.filmSeriesId===current.seriesId;});
+      if(!first)first=filmGroups.sort(function(a,b){return scoreFilmGroup(b,allItems)-scoreFilmGroup(a,allItems);})[0];
       var index=allGroups.indexOf(first);if(index>0){allGroups.splice(index,1);allGroups.unshift(first);changed=true;}
       if(options&&options.expand)allGroups.filter(isFilmGroup).forEach(function(group){if(group.collapsed){group.collapsed=false;changed=true;}});
       return changed;
