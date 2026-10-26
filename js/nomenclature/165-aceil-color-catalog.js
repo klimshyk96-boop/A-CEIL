@@ -471,11 +471,26 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
     return def.widths.every(function(n){return w.some(function(x){return Number(x.nominal)===n&&Number(x.max)===n&&!(Number(x.price)>0);});});
   }
   function seedTeqtum(data){
-    if(data.teqtumRev>=4)return data;
+    if(data.teqtumRev>=5)return data;
     var now=Date.now(),texOf={L:"lak",M:"mat",S:"satin"},ov=readPriceOverrides(),ovTouched=false;
     data.deleted=data.deleted||{};
     function priced(seriesId){var r=ov[seriesId];return !!r&&Object.keys(r).some(function(t){return r[t]&&Object.keys(r[t]).length;});}
     function forget(c){data.deleted["c:"+c.seriesId+":"+c.code]=now;if(c.cid)data.deleted["k:"+c.cid]=now;}
+    // Rev 3 could mark a seeded row as deleted and recreate it under the same identity.
+    // Repair only a row still present locally. Missing rows remain deleted; never infer
+    // that an absent colour should be resurrected. Explicit user deletions always win.
+    data.colors.forEach(function(c){
+      if(c.seriesId!=="teqtum-euro"||!/^([LM]9(2[1-9]|3[0-2])|S92[17])$/.test(c.code))return;
+      if(c.cid&&c.cid!=="seed:teqtum-euro:"+c.code)return;
+      var key="c:"+c.seriesId+":"+c.code,cidKey="k:"+(c.cid||"seed:teqtum-euro:"+c.code);
+      var dead=Math.max(Number(data.deleted[key]||0),Number(data.deleted[cidKey]||0));
+      if(!dead||Number(data.deleted["user:"+key]||0)||Number(c.u||0)>dead)return;
+      c.u=Math.max(now,dead+1); // keep the tombstone: a stale device cannot undo the repair
+    });
+    function deletedSeed(seriesId,code){
+      return !!(data.deleted["s:"+seriesId]||data.deleted["c:"+seriesId+":"+code]||data.deleted["k:seed:"+seriesId+":"+code]);
+    }
+
     // 1. First draft: a separate "EURO" series. Dropped only if it is still exactly what the draft created.
     var old1=data.series.find(function(x){return x.id==="euro";});
     if(old1){
@@ -511,30 +526,30 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
       });
       c.texture="mat";if(!c.colorName||c.colorName==="Білий")c.colorName="ПВХ";c.u=Math.max(now,Number(c.u||0)+1);
     });
-    function ensureSeries(id,manufacturer,collection,name){var x=data.series.find(function(s){return s.id===id;});if(!x){x={id:id,manufacturer:manufacturer,collection:collection,name:name};data.series.push(x);}return x;}
+    function ensureSeries(id,manufacturer,collection,name){var x=data.series.find(function(s){return s.id===id;});if(!x&&!data.deleted["s:"+id]){x={id:id,manufacturer:manufacturer,collection:collection,name:name};data.series.push(x);}return x;}
     // A colour counts as present when a row with the same code exists, or the same name in the same finish.
     function has(seriesId,code,display){return data.colors.some(function(c){return c.seriesId===seriesId&&(c.code===code||String(c.display).toUpperCase()===String(display).toUpperCase()&&c.texture===texOf[code[0]]);});}
     // Seeded in the order the catalogue sync sorts records (series id, then code).
     var lumfer=ensureSeries("lumfer","Lumfer","","Lumfer");
-    if(!data.colors.some(function(c){return c.seriesId==="lumfer"&&c.code==="M961";})&&!has(lumfer.id,"M961","Lumfer"))
+    if(lumfer&&!deletedSeed(lumfer.id,"M961")&&!data.colors.some(function(c){return c.seriesId==="lumfer"&&c.code==="M961";})&&!has(lumfer.id,"M961","Lumfer"))
       data.colors.push({seriesId:lumfer.id,code:"M961",display:"Lumfer",texture:"mat",colorName:"ПВХ",swatch:"#ffffff",widths:widthList([3.05,4.5])});
     var euro=ensureSeries("teqtum-euro","TEQTUM","Euro","TEQTUM Euro");
     ["L","M","S"].forEach(function(t){
       teqtumEuroColours.forEach(function(row,index){
         if(row[3].indexOf(t)<0)return;
         var code=t+(921+index);
-        if(has(euro.id,code,row[0]))return;
+        if(!euro||has(euro.id,code,row[0])||deletedSeed(euro.id,code))return;
         data.colors.push({seriesId:euro.id,code:code,display:row[0],texture:texOf[t],colorName:row[1],swatch:row[2],widths:widthList([3.6,4.5])});
       });
     });
     var km2=ensureSeries("teqtum-km2","TEQTUM","KM2","TEQTUM KM2");
     teqtumKm2Codes.forEach(function(code){
-      if(has(km2.id,code,code))return;
+      if(!km2||deletedSeed(km2.id,code)||has(km2.id,code,code))return;
       var base=(window.ACEIL_COLOR_CATALOG||[]).find(function(c){return c.code===code;});
       data.colors.push({seriesId:km2.id,code:code,display:code,texture:"mat",swatch:base&&base.swatch||"#ffffff",widths:widthList([3.2,5])});
     });
     if(ovTouched){try{localStorage.setItem(PRICE_KEY,JSON.stringify(ov));}catch(_){}}
-    data.teqtumImported=true;data.teqtumRev=4;
+    data.teqtumImported=true;data.teqtumRev=5;
     try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(data));}catch(_){}
     return data;
   }
@@ -733,7 +748,7 @@ window.ACEIL_POPULAR_CODES=["M303","L303","S303","M347"];
       var data=loadCustom(),gone=data.colors.find(function(c){return c.seriesId===seriesId&&c.code===code;});
       data.colors=data.colors.filter(function(c){return !(c.seriesId===seriesId&&c.code===code);});
       /* Видалення запам'ятовуємо і за кодом, і за cid: код кольору міг змінитися при розв'язанні колізії. */
-      data.deleted=data.deleted||{};data.deleted["c:"+seriesId+":"+code]=Date.now();
+      data.deleted=data.deleted||{};data.deleted["c:"+seriesId+":"+code]=Date.now();data.deleted["user:c:"+seriesId+":"+code]=data.deleted["c:"+seriesId+":"+code];
       if(gone&&gone.cid)data.deleted["k:"+gone.cid]=Date.now();
       persistCustom(data);applyCustom();
       window.dispatchEvent(new CustomEvent("aceil:film-pricing-saved"));

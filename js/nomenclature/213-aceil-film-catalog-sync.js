@@ -42,7 +42,13 @@ function normCustom(c){
   c.teqtumImported=c.teqtumImported===true;c.teqtumRev=num(c.teqtumRev);
   return c;
 }
-function newer(a,b){return num(b&&b.u)>num(a&&a.u)}
+/* b новіший за a? При рівних мітках — детермінований вибір за вмістом, однаковий на всіх пристроях:
+   інакше кожен лишає свою копію і значення «перекидаються» при кожній синхронізації. */
+function newer(a,b){
+  var ua=num(a&&a.u),ub=num(b&&b.u);
+  if(ub!==ua)return ub>ua;
+  return canon(b)>canon(a);
+}
 function identity(c){return c.cid||(c.seriesId+"|"+String(c.display||"").toLowerCase()+"|"+c.texture+"|"+c.code)}
 
 /* Той самий колір (за cid) міг потрапити під різні коди — після розв'язання колізії.
@@ -56,7 +62,7 @@ function collapseByIdentity(list){
   return Object.keys(groups).sort().map(function(id){
     var g=groups[id];
     var place=g.slice().sort(function(x,y){return num(y.mv)-num(x.mv)||num(y.u)-num(x.u)||(String(x.code)<String(y.code)?-1:1)})[0];
-    var content=g.slice().sort(function(x,y){return num(y.u)-num(x.u)||num(y.mv)-num(x.mv)})[0];
+    var content=g.slice().sort(function(x,y){return num(y.u)-num(x.u)||num(y.mv)-num(x.mv)||(canon(y)>canon(x)?1:canon(y)<canon(x)?-1:0)})[0];
     var out=clone(content);out.code=place.code;
     if(num(place.mv)>0)out.mv=num(place.mv);else delete out.mv;
     return out;
@@ -126,7 +132,7 @@ function mergePricing(local,remote,dead){
   var out={},a=local||{},b=remote||{};
   Object.keys(a).concat(Object.keys(b)).forEach(function(id){
     if(out[id])return;
-    var x=a[id],y=b[id],pick=x&&(!y||num(x.u)>=num(y.u))?x:y;
+    var x=a[id],y=b[id],pick=x&&(!y||!newer(x,y))?x:y;
     /* ціни видаленої ручної серії не зберігаємо */
     if(dead&&dead["s:"+id]!==undefined)return;
     out[id]={rates:clone(pick.rates)||{},u:num(pick.u)};

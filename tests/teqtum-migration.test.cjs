@@ -77,5 +77,27 @@ function check(s,where){
  assert.equal(await sync(A),'ok');assert.equal(await sync(B),'ok');
  check(await snap(A),'A after reload+sync');check(await snap(B),'B after reload+sync');
  assert.equal(db.u1.rev,rev,'reload and sync do not change the cloud copy');
- console.log('PASS TEQTUM migration: upgrade, two-device sync and reload keep seeded colours and user edits');
+ // Revision 3 recreated a live row with a tombstone for its very same identity.
+ const dead=1720000000000,broken={v:1,teqtumRev:3,teqtumImported:true,descorLabellImported:true,
+  series:[{id:'teqtum-euro',manufacturer:'TEQTUM',collection:'Euro',name:'TEQTUM Euro'}],
+  colors:[{cid:'seed:teqtum-euro:M921',seriesId:'teqtum-euro',code:'M921',display:'Білий шовковий креп',texture:'mat',swatch:'#eeebe1',widths:[{nominal:3.6,max:3.6,price:0},{nominal:4.5,max:4.5,price:0}]}],
+  deleted:{'c:teqtum-euro:M921':dead,'k:seed:teqtum-euro:M921':dead}};
+ const R=await device(browser,'repair',broken),T=await device(browser,'repair',null);
+ const row=pg=>pg.evaluate(()=>ACEILFilmCatalogStore.readCustom().colors.find(c=>c.seriesId==='teqtum-euro'&&c.code==='M921')||null);
+ assert.ok((await row(R)).u>dead,'live row is versioned past the accidental tombstone');
+ for(let i=0;i<3;i++){await sync(R);await sync(T);assert.ok(await row(R));assert.ok(await row(T));}
+ assert.equal((await row(R)).cid,'seed:teqtum-euro:M921','identity is preserved');
+ await R.reload();await link(R,'repair');await sync(R);assert.ok(await row(R),'repair survives reload');
+ // An explicit deletion must still remove the repaired row on both devices.
+ await R.evaluate(()=>ACEILCustomFilm.deleteColor('teqtum-euro','M921'));await sync(R);await sync(T);
+ assert.equal(await row(R),null);assert.equal(await row(T),null);
+ await R.evaluate(()=>{const d=ACEILFilmCatalogStore.readCustom();d.teqtumRev=4;localStorage.setItem('aceil_custom_film_v1',JSON.stringify(d));});
+ await R.reload();await link(R,'repair');await sync(R);await sync(T);
+ assert.equal(await row(R),null,'upgrade never resurrects an explicitly deleted colour');assert.equal(await row(T),null);
+ // Legacy absent records have no safe proof of an accidental deletion: preserve them as deleted.
+ const gone=JSON.parse(JSON.stringify(broken));gone.colors=[];
+ const G=await device(browser,'gone',gone);assert.equal(await row(G),null);await sync(G);assert.equal(await row(G),null);
+ const goneSeries=JSON.parse(JSON.stringify(gone));goneSeries.series=[];goneSeries.deleted['s:teqtum-euro']=dead;
+ const GS=await device(browser,'gone-series',goneSeries);assert.ok(!(await snap(GS)).ids.includes('teqtum-euro'),'deleted series stays deleted');
+ console.log('PASS TEQTUM migration and repair: two-device convergence, reload, explicit and legacy deletions preserved');
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});
