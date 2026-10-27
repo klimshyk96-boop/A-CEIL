@@ -2,7 +2,7 @@
 "use strict";
 
 const BUILD_ID="20261027-report-direct1";
-const SHELL_CACHE="aceil-shell-20261027-report-direct1";
+const SHELL_CACHE="aceil-shell-20261027-report-document-cache1";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
   "/index.html",
@@ -98,7 +98,7 @@ async function versionedAssetResponse(request){
 async function ordinaryAssetResponse(request){
   if(isReportRequest(request)){
     try{ return await fetch(request,{cache:"no-store"}); }
-    catch(_){ return await caches.match(request)||Response.error(); }
+    catch(_){ return Response.error(); }
   }
   try{
     const response=await Promise.race([
