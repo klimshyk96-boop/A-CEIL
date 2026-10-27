@@ -24,6 +24,9 @@ const roomFlow=read("js/rooms/087-aceil-multiroom-simple-flow.js");
 const wallUi=read("js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js")+read("js/canvas/045-aceil-wall-full-side-color-presets.js");
 const pendingSync=read("js/projects/032-aceil-pending-sync-queue.js");
 const accessClean=read("js/admin/159-aceil-access-clean.js");
+const forcedReportSettings=read("js/reports/053-aceil-report-settings-force-modern.js");
+const reportGenerator=read("js/reports/037-aceil-report-settings-generator.js");
+const projectRepository=read("js/projects/project-repository.js");
 
 assert.match(links,/new Uint8Array\(10\)/,"new report URLs must retain 80 random bits");
 assert.match(links,/function expandCompactToken\(/,"short report tokens must expand to the existing server format");
@@ -40,6 +43,12 @@ assert.match(mobilePreview,/publishPayload\(payload,\{projectId:activeProjectRef
 assert.match(mobilePreview,/presentation:"generated-report"/,"mobile links must request the approved generated report view");
 assert.match(mobilePreview,/payload\.image=dataUrl\|\|canvas\.toDataURL/,"mobile links must carry the exact generated report image");
 assert.match(classicPreview,/presentation:"generated-report"/,"classic links must request the approved generated report view");
+assert.match(forcedReportSettings,/reportStyle="classic"/,"stored mobile report settings must migrate to the document style");
+assert.doesNotMatch(forcedReportSettings,/reportStyle="modern"/,"report settings bootstrap must not force the mobile style");
+assert.doesNotMatch(reportGenerator,/rs\.reportStyle="modern"/,"report generation must not re-force the mobile style");
+assert.match(reportGenerator,/rs\.reportStyle="classic"/,"report generation must use the canonical document style");
+assert.match(classicPreview,/3e5/,"large report canvases must have a bounded short-lived preview registry");
+assert.doesNotMatch(classicPreview,/18e5/,"large report canvases must not remain retained for 30 minutes");
 assert.match(classicPreview,/payload\.image=r\.previewImage\|\|r\.canvas\.toDataURL/,"classic links must carry the exact generated report image");
 assert.match(links,/optimized\.presentation === "generated-report" && optimized\.image/,"cloud publishing must preserve generated report presentation");
 assert.match(links,/delete optimized\.structured/,"generated report links must not fall back to a mobile reconstruction");
@@ -55,6 +64,13 @@ assert.match(index,/159-aceil-access-clean\.js\?cloudsync=1&v=/,"project refresh
 assert.match(sw,/const cached=await cache\.match\(request\);\s*if\(cached\)return cached;/,"versioned assets must be cache-first");
 assert.doesNotMatch(sw,/src\|href.+exec\(html\)/,"service-worker install must not parse and prefetch every runtime script");
 assert.match(sw,/CORE_SHELL=/,"service-worker install must still keep an offline shell");
+assert.match(sw,/aceil-shell-20261027-report-document-cache1/,"service worker must rotate the previous Safari cache");
+assert.match(sw,/isReportRequest\(request\)[\s\S]*?fetch\(request,\{cache:"no-store"\}\)/,"report/export requests must always bypass Cache Storage");
+assert.doesNotMatch(sw,/isReportRequest\(request\)[\s\S]{0,180}caches\.match\(request\)/,"report/export failures must never resurrect stale cached output");
+assert.doesNotMatch(pendingSync,/retryAttempt\s*>=\s*4/,"cloud retries must not stop permanently after four failures");
+assert.match(pendingSync,/Math\.min\(60000/,"cloud retries must use a capped long-lived backoff");
+assert.match(projectRepository,/const CACHE_LIMIT = 4/,"Safari local project caching must remain bounded");
+assert.match(projectRepository,/const persisted=readRaw\(\)/,"recovery storage must avoid duplicating already persisted unsynced projects");
 
 const headerSources=(vercel.headers||[]).map(item=>item.source);
 assert(headerSources.includes("/js/(.*)"),"Vercel must mark versioned JavaScript as immutable");
