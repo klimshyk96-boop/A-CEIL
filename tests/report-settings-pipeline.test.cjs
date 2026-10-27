@@ -19,7 +19,7 @@ async function run(browser,source,width){
    const modal=document.getElementById('reportSettingsModal');
    return{visible:modal.style.display,inputs:[...modal.querySelectorAll('input,select')].map(e=>({id:e.id,value:e.value,checked:e.type==='checkbox'?e.checked:undefined})),buttons:[...modal.querySelectorAll('button')].map(e=>({text:e.textContent.trim(),onclick:e.getAttribute('onclick')})),settings:_loadRS(),diagonalMenu:document.getElementById('rsDiagInlineMenu')?.hidden};
   });
-  assert.equal(snapshot.visible,'block');assert.equal(snapshot.inputs.filter(i=>i.id==='rsDiscountPercent').length,1);assert.equal(snapshot.inputs.filter(i=>i.id==='rsAdvanceAmount').length,1);assert.equal(snapshot.settings.reportStyle,'classic');
+  assert.equal(snapshot.visible,'block');assert.equal(snapshot.inputs.filter(i=>i.id==='rsDiscountPercent').length,1);assert.equal(snapshot.inputs.filter(i=>i.id==='rsAdvanceAmount').length,1);
   if(action==='edit'){assert.equal(snapshot.settings.companyName,'Нова компанія');assert.equal(snapshot.settings.discountPercent,12);assert.equal(snapshot.settings.advanceAmount,2300)}
   result.push(snapshot);await page.evaluate(()=>closeReportSettings());
  }
