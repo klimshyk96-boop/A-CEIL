@@ -1,8 +1,8 @@
 /* A·CEIL offline shell — fast activation and versioned runtime cache. */
 "use strict";
 
-const BUILD_ID="20261027-report-direct1";
-const SHELL_CACHE="aceil-shell-20261027-report-direct1";
+const BUILD_ID="20261027-report-safari-sync8";
+const SHELL_CACHE="aceil-shell-20261027-report-safari-sync8";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
   "/index.html",
@@ -39,6 +39,12 @@ async function putIfUsable(cache,request,response){
   return response;
 }
 
+async function purgeCachedReports(){
+  const cache=await caches.open(SHELL_CACHE);
+  const requests=await cache.keys();
+  await Promise.all(requests.filter(isReportRequest).map(request=>cache.delete(request)));
+}
+
 async function precacheCoreShell(){
   const cache=await caches.open(SHELL_CACHE);
   await Promise.all(CORE_SHELL.map(async url=>{
@@ -58,6 +64,7 @@ self.addEventListener("activate",event=>{
   event.waitUntil((async()=>{
     const keys=await caches.keys();
     await Promise.all(keys.filter(key=>key.startsWith("aceil-shell-")&&key!==SHELL_CACHE).map(key=>caches.delete(key)));
+    await purgeCachedReports();
     await self.clients.claim();
     const clients=await self.clients.matchAll({type:"window",includeUncontrolled:true});
     clients.forEach(client=>client.postMessage({type:"A_CEIL_UPDATE_READY",cache:SHELL_CACHE}));
@@ -98,7 +105,7 @@ async function versionedAssetResponse(request){
 async function ordinaryAssetResponse(request){
   if(isReportRequest(request)){
     try{ return await fetch(request,{cache:"no-store"}); }
-    catch(_){ return await caches.match(request)||Response.error(); }
+    catch(_){ return Response.error(); }
   }
   try{
     const response=await Promise.race([

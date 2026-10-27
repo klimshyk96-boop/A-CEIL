@@ -32,6 +32,20 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
   });
   assert.equal(calculated.current.code,'S303');assert.deepEqual(calculated.positive,[{name:'S303 5,8м',width:5.8,qty:42,price:451}]);
   assert.equal(calculated.catalogSelected,false);assert.equal(calculated.newRoomSelected,false);
+  const persistence=await page.evaluate(async()=>{
+   window.__A·CEILReportRendering=false;
+   window.A_CEILColorPicker.select('M303','premium');
+   const state=()=>({schemaVersion:3,projectType:'room',pts:structuredClone(pts),realPts:structuredClone(realPts),lengths:structuredClone(lengths),closed,diagonals:[],diagonalOverrides:{},circleMode:false,circleDiamCm:0,notes:[],elemItems:structuredClone(elemItems),elemGroups:structuredClone(elemGroups),lightMarks:[],wallMarks:[],linearElements:[],wallTypes:[],arcPoints:[]});
+   const first=state(),second=state();
+   window['A·CEIL'].ProjectRepository.replaceAll([{id:'film-save-test',_localId:'film-save-test',name:'Film persistence',multiRoom:true,rooms:[{id:'film-room-a',name:'A',state:JSON.stringify(first)},{id:'film-room-b',name:'B',state:JSON.stringify(second)}],state:'{}'}]);
+   _activeObjectId='film-save-test';_activeRoomIdx=null;window._activeRoomId=null;openRoom(0);
+   window.A_CEILColorPicker.select('S303','premium');
+   const saved=await window.saveCurrentRoom({silent:true,skipCloud:true});
+   const project=window['A·CEIL'].ProjectRepository.list().find(x=>x.id==='film-save-test'),savedState=JSON.parse(project.rooms[0].state);
+   openRoom(1);openRoom(0);
+   return{saved,dirty:project._dirty,syncStatus:project._syncStatus,savedSelected:savedState.elemItems.filter(x=>x.filmRoomSelected===true).map(x=>x.colorCode),savedPositive:savedState.elemItems.filter(x=>Number(x.filmWidth)>0&&Number(x.qty)>0).map(x=>x.colorCode),restored:window.A_CEILColorPicker.current(),material:window.A_CEILColorPicker.material()};
+  });
+  assert.equal(persistence.saved,true);assert.equal(persistence.dirty,true);assert.equal(persistence.syncStatus,'pending_create');assert.ok(persistence.savedSelected.length>0);assert.ok(persistence.savedSelected.every(code=>code==='S303'));assert.ok(persistence.savedPositive.length>0);assert.ok(persistence.savedPositive.every(code=>code==='S303'));assert.equal(persistence.restored.code,'S303');assert.equal(persistence.material.textureLabel,'Сатин');
   assert.deepEqual(errors,[]);await page.close();console.log('PASS M303, manually added S303 5.8 and orphan L303 5.8 keep separate film identities '+width+'px');
  }
 }finally{await browser.close()}})().catch(error=>{console.error(error);process.exit(1)});
