@@ -30,12 +30,17 @@ assert.match(links,/compactToken\(value\)/,"stored compatible tokens must return
 assert.match(links,/https:\/\/a-ceil\.pp\.ua\/r\//,"new public reports must use the compact /r/ route");
 assert.match(publicPage,/\(\?:r\|report\)/,"both compact and legacy public report routes must remain readable");
 assert.match(publicPage,/p_token: lookupToken/,"public report lookup must expand a short URL token before the RPC call");
+assert.match(publicPage,/data\.presentation === "generated-report" && data\.image/,"public links must prefer the exact generated report over a mobile reconstruction");
 
 assert.match(mobilePreview,/function useInAppReport\(/,"mobile Safari and PWA must share the in-app report path");
 assert.match(mobilePreview,/structured\.drawing=window\.A_CEIL_cloudPlanImage\(canvas\)/,"mobile cloud report must carry its structured plan drawing");
 assert.match(mobilePreview,/publishPayload\(payload,\{projectId:activeProjectReference\(\)\}\)/,"mobile report must publish against the active project ID");
-assert.match(classicPreview,/structured&&structured\.drawing\|\|\(payload\.image=/,"structured web reports must not create a duplicate full-page image");
-assert.match(mobilePreview,/if\(!\(structured&&structured\.drawing\)\)payload\.image=/,"structured mobile reports must not attach a duplicate full-page image");
+assert.match(mobilePreview,/presentation:"generated-report"/,"mobile links must request the approved generated report view");
+assert.match(mobilePreview,/payload\.image=dataUrl\|\|canvas\.toDataURL/,"mobile links must carry the exact generated report image");
+assert.match(classicPreview,/presentation:"generated-report"/,"classic links must request the approved generated report view");
+assert.match(classicPreview,/payload\.image=r\.previewImage\|\|r\.canvas\.toDataURL/,"classic links must carry the exact generated report image");
+assert.match(links,/optimized\.presentation === "generated-report" && optimized\.image/,"cloud publishing must preserve generated report presentation");
+assert.match(links,/delete optimized\.structured/,"generated report links must not fall back to a mobile reconstruction");
 
 assert.match(sw,/function versionedAssetResponse\(/,"versioned JS/CSS must use the runtime cache");
 assert.match(sw,/const cached=await cache\.match\(request\);\s*if\(cached\)return cached;/,"versioned assets must be cache-first");
@@ -78,6 +83,6 @@ assert.doesNotMatch(wallUi,/_prevOpenWallModalForInit/,
 const versions=[...index.matchAll(/(?:src|href)="[^"]+\.(?:js|css)\?v=([^"]+)"/g)].map(match=>match[1]);
 assert(versions.length>150,"runtime asset list unexpectedly shrank");
 assert.strictEqual(new Set(versions).size,1,"all runtime assets must share one build ID");
-assert.strictEqual(versions[0],"20261027-acute-satin1","unexpected stability build ID");
+assert.strictEqual(versions[0],"20261027-report-direct1","unexpected stability build ID");
 
 console.log("Stability regression tests: OK");

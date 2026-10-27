@@ -177,7 +177,15 @@
   async function optimizePayload(payload, options) {
     options = options || {};
     var optimized = Object.assign({}, payload || {});
-    if (optimized.structured && optimized.structured.drawing) {
+    if (optimized.presentation === "generated-report" && optimized.image) {
+      // Public links show the already approved report 1:1. Structured data is
+      // intentionally removed here so the viewer cannot replace that report
+      // with its separately responsive/mobile reconstruction.
+      if (!options.backgroundSafe) {
+        optimized.image = await optimizeImage(optimized.image, 1600, 6500000, 0.90);
+      }
+      delete optimized.structured;
+    } else if (optimized.structured && optimized.structured.drawing) {
       optimized.structured = Object.assign({}, optimized.structured);
       // Safari pauses requestAnimationFrame/Image/canvas work in the opener as
       // soon as the report popup becomes the active tab. In that case keep the

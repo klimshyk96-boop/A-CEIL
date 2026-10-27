@@ -46,8 +46,8 @@ async function publishImageReport(canvas,fileName,dataUrl){
   if(structured&&structured.type==="single"&&typeof window.A_CEIL_cloudPlanImage==="function"){
     try{structured.drawing=window.A_CEIL_cloudPlanImage(canvas)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
-  var payload={version:2,createdAt:new Date().toISOString(),meta:structured&&structured.meta||currentMeta(fileName),location:activeLocation(),structured:structured};
-  if(!(structured&&structured.drawing))payload.image=dataUrl||canvas.toDataURL("image/png");
+  var payload={version:2,createdAt:new Date().toISOString(),meta:structured&&structured.meta||currentMeta(fileName),location:activeLocation(),structured:structured,presentation:"generated-report"};
+  payload.image=dataUrl||canvas.toDataURL("image/png");
   return window.A_CEIL_ReportLinks.publishPayload(payload,{projectId:activeProjectReference()});
 }
 function openReportInsideApp(canvas,fileName){

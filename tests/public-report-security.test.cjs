@@ -67,6 +67,14 @@ const read=f=>fs.readFileSync(path.join(root,f),'utf8');
    assert.equal(await page.evaluate(()=>localStorage.getItem('report-xss')),null);
    await page.close();
   }
+  {
+   const exact='data:image/png;base64,iVBORw0KGgo=';
+   const page=await serve({presentation:'generated-report',meta:{name:'Exact report'},image:exact,structured:{rooms:[{name:'Mobile reconstruction'}]}});
+   await page.locator('#rprReportImage').waitFor();
+   assert.equal(await page.locator('#rprReportImage').getAttribute('src'),exact);
+   assert.equal(await page.locator('.chr-shell').count(),0,'an approved report must not reopen as the reconstructed mobile layout');
+   await page.close();
+  }
   console.log('PASS unsafe route schemes blocked; HTTPS route preserved');
   // Exercise the actual vendored SDKs, unlike the editor's offline auth stub.
   const vendor=await browser.newPage();

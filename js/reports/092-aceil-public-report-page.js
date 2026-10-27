@@ -294,7 +294,7 @@
       frame.srcdoc = /<\/head\s*>/i.test(html) ? html.replace(/<\/head\s*>/i, hiddenControls + "</head>") : hiddenControls + html;
       return;
     }
-    if (data && data.structured && typeof window.A_CEIL_renderStructuredCloudReport === "function") {
+    if (data && data.structured && !(data.presentation === "generated-report" && data.image) && typeof window.A_CEIL_renderStructuredCloudReport === "function") {
       window.A_CEIL_renderStructuredCloudReport(overlay, data);
       return;
     }
