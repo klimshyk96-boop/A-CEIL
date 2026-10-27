@@ -56,6 +56,20 @@
   async function securePayload() {
     if (!window.supabase || !baseUrl() || !anonKey()) throw new Error("Сервіс звітів тимчасово недоступний");
     var client = window.supabase.createClient(baseUrl(), anonKey(), { auth: { persistSession: false, autoRefreshToken: false } });
+    // Snapshot lookup keeps every generated URL immutable, including several
+    // estimate variants of the same project. Fall back to the historical
+    // single-link RPC for reports created before the migration.
+    var snapshot = await client.rpc("aceil_get_public_report_snapshot", { p_token: lookupToken });
+    var snapshotUnavailable = snapshot.error && (
+      snapshot.error.code === "PGRST202" ||
+      /aceil_get_public_report_snapshot|schema cache|function/i.test(String(snapshot.error.message || snapshot.error))
+    );
+    if (snapshot.error && !snapshotUnavailable) throw snapshot.error;
+    var snapshotData = snapshot.data || {};
+    if (snapshotData.status === "active" && snapshotData.payload) return snapshotData.payload;
+    if (snapshotData.status === "revoked") throw new Error("Посилання закрито власником");
+    if (snapshotData.status === "expired") throw new Error("Термін дії посилання закінчився");
+
     var result = await client.rpc("aceil_get_public_report", { p_token: lookupToken });
     if (result.error) throw result.error;
     var data = result.data || {};
