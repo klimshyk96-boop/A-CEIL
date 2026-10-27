@@ -64,7 +64,7 @@ assert.match(index,/159-aceil-access-clean\.js\?cloudsync=1&v=/,"project refresh
 assert.match(sw,/const cached=await cache\.match\(request\);\s*if\(cached\)return cached;/,"versioned assets must be cache-first");
 assert.doesNotMatch(sw,/src\|href.+exec\(html\)/,"service-worker install must not parse and prefetch every runtime script");
 assert.match(sw,/CORE_SHELL=/,"service-worker install must still keep an offline shell");
-assert.match(sw,/aceil-shell-20261027-report-document-cache1/,"service worker must rotate the previous Safari cache");
+assert.match(sw,/async function purgeCachedReports\(\)/,"service worker activation must purge stale report entries");
 assert.match(sw,/isReportRequest\(request\)[\s\S]*?fetch\(request,\{cache:"no-store"\}\)/,"report/export requests must always bypass Cache Storage");
 assert.doesNotMatch(sw,/isReportRequest\(request\)[\s\S]{0,180}caches\.match\(request\)/,"report/export failures must never resurrect stale cached output");
 assert.doesNotMatch(pendingSync,/retryAttempt\s*>=\s*4/,"cloud retries must not stop permanently after four failures");
