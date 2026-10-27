@@ -175,6 +175,7 @@ function renderSeries(){
  gid("acp2Sub").textContent=man+' · '+catalog(_activeSeries).length+' кольорів / фактур';
 }
 function previewFilm(code,texture,seriesId){_pendingFilm={code:code,texture:texture,seriesId:seriesId};renderPopular();renderGrid();renderSelection()}
+function applyFilmFromTap(entry){if(!entry)return;previewFilm(entry.code,entry.texture,_activeSeries);var coarse=false;try{coarse=!!(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches)||Number(navigator.maxTouchPoints)>0}catch(_){window.__diagSilent&&window.__diagSilent(_)}if(coarse)chooseColor(entry.code,entry.texture,_activeSeries)}
 function renderSelection(){
  var c=_pendingFilm&&catalogEntry(_pendingFilm.code,_pendingFilm.seriesId),host=gid('acp2Selection');if(!host)return;
  host.innerHTML=c?'<span class="acp2-selected-swatch" style="background:'+esc(textureSwatch(c))+'"></span><span><b>'+esc(c.displayCode||c.code)+'</b><small>'+esc(materialCaption(c)||'Тканина')+'</small></span>':'Оберіть колір';
@@ -183,7 +184,7 @@ function renderSelection(){
 function renderPopular(){
  var host=gid("acp2Popular");if(!host)return;
  var current=_pendingFilm||currentFilm(),list=catalog(_activeSeries).filter(function(c){return popularCodes().indexOf(c.code)!==-1});host.innerHTML=list.length?list.map(function(c){return '<button type="button" class="acp2-pop-btn'+(c.code===current.code&&current.seriesId===_activeSeries?' active':'')+'" data-code="'+esc(c.code)+'"><span style="background:'+esc(textureSwatch(c))+'"></span>'+esc(c.displayCode||c.code)+'</button>'}).join(''):'<span class="acp2-muted">Позначте кольори зірочкою</span>';
- host.querySelectorAll('[data-code]').forEach(function(btn){btn.onclick=function(){var c=catalogEntry(btn.dataset.code,_activeSeries);if(c)previewFilm(c.code,c.texture,_activeSeries)}});
+ host.querySelectorAll('[data-code]').forEach(function(btn){btn.onclick=function(){var c=catalogEntry(btn.dataset.code,_activeSeries);if(c)applyFilmFromTap(c)}});
 }
 function renderTabs(){var host=gid("acp2Tabs");if(!host)return;var labels=texLabels();host.innerHTML=["mat","satin","lak","fabric"].map(function(t){var count=catalog(_activeSeries).filter(function(c){return c.texture===t}).length;if(!count)return"";return '<button type="button" class="acp2-tab'+(t===_activeTexture?' active':'')+'" aria-pressed="'+(t===_activeTexture)+'" onclick="window.__aceilColorPickerTab(\''+t+'\')">'+esc(labels[t]||'Тканина')+' <span>'+count+'</span></button>'}).join('')}
 var TEXTURE_WORDS={"глянець":"lak","глянц":"lak","лак":"lak","мат":"mat","матов":"mat","сатин":"satin"};
@@ -195,7 +196,7 @@ function renderGrid(){
  if(!list.length){host.innerHTML='<div class="acp2-empty">'+(q?'Нічого не знайдено':'Для цієї серії ще немає кольорів. Додайте їх у «Керуванні каталогом».')+'</div>';return}
  var cur=_pendingFilm||currentFilm(),fav=popularCodes();
  host.innerHTML=list.map(function(c){var active=c.code===cur.code&&cur.seriesId===_activeSeries;return '<div class="acp2-color-card'+(active?' active':'')+'"><button type="button" class="acp2-chip" data-code="'+esc(c.code)+'" aria-pressed="'+active+'"><span class="acp2-swatch" style="background:'+esc(textureSwatch(c))+'">'+(c.photo?'<img src="'+esc(c.photo)+'" alt="Фото полотна" loading="lazy">':'')+(active?'<span class="acp2-check">✓</span>':'')+'</span><span class="acp2-chip-code">'+esc(c.displayCode||c.code)+'</span><span class="acp2-chip-tex">'+esc(materialCaption(c)||'Тканина')+'</span><span class="acp2-chip-marks">'+widthCandidates(c).map(function(w){return '<span>'+formatMeters(w.nominal)+' м</span>'}).join('')+'</span></button><button type="button" class="acp2-star'+(fav.indexOf(c.code)>=0?' active':'')+'" data-star="'+esc(c.code)+'" aria-label="Обраний колір '+esc(c.displayCode||c.code)+'" aria-pressed="'+(fav.indexOf(c.code)>=0)+'">'+(fav.indexOf(c.code)>=0?'★':'☆')+'</button></div>'}).join('');
- host.querySelectorAll('[data-code]').forEach(function(b){b.onclick=function(){var c=catalogEntry(b.dataset.code,_activeSeries);if(c)previewFilm(c.code,c.texture,_activeSeries)}});
+ host.querySelectorAll('[data-code]').forEach(function(b){b.onclick=function(){var c=catalogEntry(b.dataset.code,_activeSeries);if(c)applyFilmFromTap(c)}});
  host.querySelectorAll('[data-star]').forEach(function(b){b.onclick=function(){togglePopular(b.dataset.star)}});
 }
 function showPickerPanel(){

@@ -1,5 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.cjs');
+const pickerSource=fs.readFileSync('js/nomenclature/167-aceil-color-picker.js','utf8');assert.match(pickerSource,/function applyFilmFromTap/);assert.match(pickerSource,/pointer:coarse/);assert.equal((pickerSource.match(/if\(c\)applyFilmFromTap\(c\)/g)||[]).length,2,'touch applies grid and favourite selections immediately');
 const context={window:{}};vm.createContext(context);vm.runInContext(fs.readFileSync('js/nomenclature/165-aceil-color-catalog.js','utf8'),context);
 const registry=context.window.ACEIL_COLOR_CATALOG_BY_SERIES,premium=registry.premium;
 assert.equal(premium.length,137);assert.equal(new Set(premium.map(x=>x.code)).size,137);
