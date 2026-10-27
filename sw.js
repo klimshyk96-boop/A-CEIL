@@ -5,16 +5,20 @@ const BUILD_ID="20261027-report-direct1";
 const SHELL_CACHE="aceil-shell-20261027-report-direct1";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
-  "/assets/materials/descor/450.jpg",
-  "/assets/materials/descor/469.jpg",
-  "/assets/materials/descor/264.jpg",
-  "/assets/materials/descor/167.jpg",
-  "/assets/materials/descor/164.jpg",
   "/index.html",
   "/assets/app.css?v="+BUILD_ID,
   "/assets/theme.css?v="+BUILD_ID,
   "/assets/layout.css?v="+BUILD_ID
 ];
+
+function isReportRequest(request){
+  try{
+    const url=new URL(request.url);
+    return /\/(?:reports?|export|pdf|print|download|share|public|cloud)/i.test(url.pathname)
+      || url.searchParams.has("report")
+      || url.searchParams.has("view");
+  }catch(_){return false}
+}
 
 function isStaticAsset(request){
   if(STATIC_DESTINATIONS.has(request.destination))return true;
@@ -61,6 +65,11 @@ self.addEventListener("activate",event=>{
 });
 
 async function navigationResponse(request){
+  if(isReportRequest(request)){
+    try{ return await fetch(request,{cache:"no-store"}); }
+    catch(_){ return Response.error(); }
+  }
+
   const cache=await caches.open(SHELL_CACHE);
   const path=new URL(request.url).pathname;
   const isAppEntry=path==="/"||path==="/index.html";
@@ -87,6 +96,10 @@ async function versionedAssetResponse(request){
 }
 
 async function ordinaryAssetResponse(request){
+  if(isReportRequest(request)){
+    try{ return await fetch(request,{cache:"no-store"}); }
+    catch(_){ return await caches.match(request)||Response.error(); }
+  }
   try{
     const response=await Promise.race([
       fetch(request),
@@ -103,6 +116,11 @@ self.addEventListener("fetch",event=>{
 
   if(request.mode==="navigate"){
     event.respondWith(navigationResponse(request));
+    return;
+  }
+
+  if(isReportRequest(request)){
+    event.respondWith(ordinaryAssetResponse(request));
     return;
   }
 
