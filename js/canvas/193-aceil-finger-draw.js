@@ -23,9 +23,8 @@
     if(mode==='finger'&&!active&&!closed&&!circleMode)enable();
   }
   function direction(x,y){
-    if(Math.abs(y)<=Math.abs(x)*.577)return{x:Math.sign(x),y:0};
-    if(Math.abs(x)<=Math.abs(y)*.577)return{x:0,y:Math.sign(y)};
-    return{x:Math.sign(x)*Math.SQRT1_2,y:Math.sign(y)*Math.SQRT1_2};
+    var length=Math.hypot(x,y);
+    return length?{x:x/length,y:y/length}:{x:0,y:0};
   }
   function createStroke(p){return{corners:[p],tip:p,dir:null,closed:false,history:[p],candidate:null};}
   function intersect(a,u,b,v){

@@ -2,7 +2,7 @@
 (function(){
   'use strict';
   window.A·CEIL = window.A·CEIL || {};
-  window.A·CEIL.VERSION = '20261026-repository-cleanup1';
+  window.A·CEIL.VERSION = '20261027-acute-satin1';
   const reportNonFatal = (error, operation) => {
     try{
       if(typeof window.__diagSilent==='function')window.__diagSilent(error,operation||'project-repository');
