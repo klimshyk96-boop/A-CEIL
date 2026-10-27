@@ -100,7 +100,7 @@
   }
 
   const STORAGE_KEY = 'ceiling_projects';
-  const CACHE_LIMIT = 8; /* Останні хмарні проєкти лишаються доступними без інтернету. */
+  const CACHE_LIMIT = 4; /* Менший Safari-safe офлайн-кеш останніх хмарних проєктів. */
   const schema = window.A·CEILProjectSchema || null;
   const isObject = value => !!value && typeof value === 'object' && !Array.isArray(value);
   const normalize = projects => schema && typeof schema.migrateProjects === 'function'
@@ -223,7 +223,7 @@
   let lastWriteMeta=null;
   function writePersistent(fullProjects){
     const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
-    const limits=[CACHE_LIMIT,5,2,0];
+    const limits=[CACHE_LIMIT,2,0];
     for(let i=0;i<limits.length;i++){
       try{
         const persistent=persistentSubset(fullProjects,limits[i]);
@@ -460,7 +460,16 @@
     migrateLegacyBackup();
     const backup=(projects,reason)=>{
       try{
-        const risky=(Array.isArray(projects)?projects:[]).filter(isUnsynced).map(strip);
+        const persisted=readRaw();
+        const risky=(Array.isArray(projects)?projects:[]).filter(isUnsynced).filter(project=>{
+          const cached=persisted.find(item=>sameProject(item,project));
+          if(!cached)return true;
+          /* The primary project cache already contains this unsynced revision.
+             Do not duplicate its full room state in Safari localStorage. */
+          return String(cached._localUpdatedAt||'')!==String(project._localUpdatedAt||'')
+            || String(cached._syncStatus||'')!==String(project._syncStatus||'')
+            || !!cached._dirty!==!!project._dirty;
+        }).map(strip);
         if(!risky.length){localStorage.removeItem(BACKUP_KEY);return;}
         const payload=JSON.stringify({at:Date.now(),reason:reason||'',projects:risky});
         const repair=window.A·CEIL&&window.A·CEIL.StorageRepair;
