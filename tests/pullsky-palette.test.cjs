@@ -16,6 +16,7 @@ assert.equal(context.window.ACEIL_FILM_PRICING.mat.narrow,380);assert.equal(cont
 (async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.ACEIL_CHROMIUM_PATH});try{
  for(const width of [390,1440]){
   const {page,errors}=await open(browser,width);await reveal(page);await page.evaluate(()=>window.A_CEILColorPicker.open());
+  await page.locator('#acp2Tabs button').filter({hasText:'Сатин'}).click();assert.equal(await page.locator('#acp2Popular [data-code="M303"]').count(),0,'matte white favourite must not remain on the satin tab');assert.ok(await page.locator('#acp2Popular [data-code]').evaluateAll(nodes=>nodes.every(n=>String(n.dataset.code||'').startsWith('S'))),'favourites follow the active texture');
   await page.locator('#acp2Tabs button').filter({hasText:'Глянець'}).click();assert.equal(await page.locator('#acp2Grid .acp2-swatch').count(),premium.filter(c=>c.texture==='lak').length);
   const spans=await page.locator('#acp2Grid .acp2-swatch').evaluateAll(nodes=>nodes.every(n=>getComputedStyle(n).backgroundColor!=='rgba(0, 0, 0, 0)'||getComputedStyle(n).backgroundImage!=='none'));assert.ok(spans);
   await page.locator('#acp2Search').fill('L180');assert.equal(await page.locator('#acp2Grid .acp2-chip').count(),1);assert.ok((await page.locator('#acp2Grid .acp2-swatch').evaluate(n=>getComputedStyle(n).backgroundImage)).includes('56, 64, 103'));
