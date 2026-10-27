@@ -22,6 +22,8 @@ const universalAutocount=read("js/nomenclature/140-aceil-universal-autocount.js"
 const autocountMenu=read("js/nomenclature/170-aceil-autocount-menu.js");
 const roomFlow=read("js/rooms/087-aceil-multiroom-simple-flow.js");
 const wallUi=read("js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js")+read("js/canvas/045-aceil-wall-full-side-color-presets.js");
+const pendingSync=read("js/projects/032-aceil-pending-sync-queue.js");
+const accessClean=read("js/admin/159-aceil-access-clean.js");
 
 assert.match(links,/new Uint8Array\(10\)/,"new report URLs must retain 80 random bits");
 assert.match(links,/function expandCompactToken\(/,"short report tokens must expand to the existing server format");
@@ -43,6 +45,13 @@ assert.match(links,/optimized\.presentation === "generated-report" && optimized\
 assert.match(links,/delete optimized\.structured/,"generated report links must not fall back to a mobile reconstruction");
 
 assert.match(sw,/function versionedAssetResponse\(/,"versioned JS/CSS must use the runtime cache");
+assert.match(pendingSync,/refreshSession\(\)/,"pending project saves must refresh an expired cloud session");
+assert.match(pendingSync,/function sendWithRecovery\(/,"pending project saves must retry recoverable cloud failures");
+assert.match(pendingSync,/\[1800, 5000, 10000\]/,"saved Safari queues must resume after a normal reload");
+assert.match(accessClean,/await flushPendingQueue\(\)/,"opening projects must flush local saves independently of list refresh");
+assert.match(accessClean,/if\(!a\)\{a=offlineAccess\(u\)/,"the owner must retain cached access when the access RPC returns no row");
+assert.match(index,/032-aceil-pending-sync-queue\.js\?cloudsync=1&v=/,"cloud-sync queue changes must bypass stale browser caches");
+assert.match(index,/159-aceil-access-clean\.js\?cloudsync=1&v=/,"project refresh changes must bypass stale browser caches");
 assert.match(sw,/const cached=await cache\.match\(request\);\s*if\(cached\)return cached;/,"versioned assets must be cache-first");
 assert.doesNotMatch(sw,/src\|href.+exec\(html\)/,"service-worker install must not parse and prefetch every runtime script");
 assert.match(sw,/CORE_SHELL=/,"service-worker install must still keep an offline shell");
