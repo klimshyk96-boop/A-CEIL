@@ -1,4 +1,4 @@
-/* A·CEIL offline shell — fast activation and versioned runtime cache, 2026-10-16 */
+/* A·CEIL offline shell — fast activation and versioned runtime cache. */
 "use strict";
 
 const BUILD_ID="20261026-repository-cleanup1";
