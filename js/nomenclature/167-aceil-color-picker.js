@@ -7,7 +7,8 @@ function gid(x){return document.getElementById(x)}
 function items(){try{if(typeof elemItems!=="undefined"&&Array.isArray(elemItems))return elemItems}catch(_){window.__diagSilent&&window.__diagSilent(_)}return Array.isArray(window.elemItems)?window.elemItems:[]}
 function groups(){try{if(typeof elemGroups!=="undefined"&&Array.isArray(elemGroups))return elemGroups}catch(_){window.__diagSilent&&window.__diagSilent(_)}return Array.isArray(window.elemGroups)?window.elemGroups:[]}
 function esc(s){try{if(typeof escapeHtml==="function")return escapeHtml(s)}catch(_){window.__diagSilent&&window.__diagSilent(_)}return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
-function norm(v){return String(v||"").trim().toLowerCase()}\nfunction activeObjectId(){try{if(typeof _activeObjectId!=="undefined")return _activeObjectId}catch(_){window.__diagSilent&&window.__diagSilent(_)}return window._activeObjectId}
+function norm(v){return String(v||"").trim().toLowerCase()}
+function activeObjectId(){try{if(typeof _activeObjectId!=="undefined")return _activeObjectId}catch(_){window.__diagSilent&&window.__diagSilent(_)}return window._activeObjectId}
 function autoCountEnabled(){try{return !window.A_CEIL_AutoCount||typeof window.A_CEIL_AutoCount.isEnabled!=="function"||window.A_CEIL_AutoCount.isEnabled()}catch(_){return true}}
 function seriesList(){return(Array.isArray(window.ACEIL_FILM_SERIES)?window.ACEIL_FILM_SERIES:[]).filter(function(s){return s&&s.active!==false})}
 function seriesById(id){return seriesList().find(function(s){return s.id===id})||{id:"premium",name:"Premium",manufacturer:"MSD"}}
