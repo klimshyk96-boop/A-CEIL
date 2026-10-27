@@ -4,6 +4,7 @@ const PENDING_KEY = "ceiling_pendingSync";
   "use strict";
   const memory = new Map(), flights = new Map();
   let sequence = 0;
+  let retryTimer = null, retryAttempt = 0;
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
   function client() { return (typeof _sb !== "undefined" && _sb) || window._sb || null; }
@@ -117,6 +118,65 @@ const PENDING_KEY = "ceiling_pendingSync";
     const current = user();
     return owner() === session.owner && current && String(current.id) === session.uid && client() === session.client;
   }
+  function errorMessage(error) {
+    return String(error && (error.message || error.error_description || error.details || error.hint) || error || "");
+  }
+  function isAuthError(error) {
+    const status = Number(error && (error.status || error.statusCode) || 0);
+    return status === 401 || /jwt|token|session|not authenticated|auth session missing/i.test(errorMessage(error));
+  }
+  function isTransientError(error) {
+    const status = Number(error && (error.status || error.statusCode) || 0);
+    return !navigator.onLine || status === 0 || status === 408 || status === 425 || status === 429 || status >= 500 ||
+      /load failed|failed to fetch|networkerror|network request failed|timeout|timed out|таймаут/i.test(errorMessage(error));
+  }
+  function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+  async function refreshAuth(session) {
+    try {
+      if (!sameSession(session) || !session.client.auth || typeof session.client.auth.refreshSession !== "function") return false;
+      const result = await session.client.auth.refreshSession();
+      return !!(result && !result.error && result.data && result.data.session);
+    } catch (_) { return false; }
+  }
+  async function sendOperation(session, op, local) {
+    const p = op.payload || {};
+    if (op.type === "save") {
+      const sentSignature = signature(local, p, session.uid);
+      const payload = payloadFor(local, p, session.uid), dbId = local._dbId || p.dbId;
+      const query = dbId ? session.client.from("projects").update(payload).eq("id", dbId) : session.client.from("projects").insert(payload);
+      const result = await query.select().single();
+      if (result.error) throw result.error;
+      if (!result.data || !result.data.id) throw new Error("Сервер не підтвердив збереження");
+      return {row: result.data, sentSignature};
+    }
+    if (op.type === "delete" && p.dbId) {
+      const result = await session.client.from("projects").delete().eq("id", p.dbId);
+      if (result.error) throw result.error;
+    }
+    return {};
+  }
+  async function sendWithRecovery(session, op, local) {
+    let lastError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try { return await sendOperation(session, op, local); }
+      catch (error) {
+        lastError = error;
+        if (!sameSession(session)) throw error;
+        if (attempt === 0 && isAuthError(error) && await refreshAuth(session)) continue;
+        if (attempt < 2 && isTransientError(error)) { await wait(700 * (attempt + 1)); continue; }
+        throw error;
+      }
+    }
+    throw lastError || new Error("Не вдалося синхронізувати проєкт");
+  }
+  function scheduleRetry() {
+    if (retryTimer || !navigator.onLine || !read().length || retryAttempt >= 4) return;
+    const delay = Math.min(30000, 2500 * Math.pow(2, retryAttempt++));
+    retryTimer = setTimeout(() => {
+      retryTimer = null;
+      flush().then(ok => { if (ok) retryAttempt = 0; else scheduleRetry(); }).catch(scheduleRetry);
+    }, delay);
+  }
   function acceptSave(op, local, row, sentSignature, session) {
     // Bind later edits/deletions to the newly inserted cloud ID without changing
     // their revision identity. In particular, a second save must UPDATE, not INSERT.
@@ -159,26 +219,19 @@ const PENDING_KEY = "ceiling_pendingSync";
         if (op.type === "save") {
           const local = findLocal(p);
           if (!local) { acknowledge(op); continue; }
-          const sentSignature = signature(local, p, session.uid);
-          const payload = payloadFor(local, p, session.uid), dbId = local._dbId || p.dbId;
-          const query = dbId ? session.client.from("projects").update(payload).eq("id", dbId) : session.client.from("projects").insert(payload);
-          const result = await query.select().single();
+          const result = await sendWithRecovery(session, op, local);
           if (!sameSession(session)) return false;
-          if (result.error) throw result.error;
-          if (!result.data || !result.data.id) throw new Error("Сервер не підтвердив збереження");
-          acceptSave(op, local, result.data, sentSignature, session);
+          acceptSave(op, local, result.row, result.sentSignature, session);
           acknowledge(op);
         } else if (op.type === "delete") {
-          if (p.dbId) {
-            const result = await session.client.from("projects").delete().eq("id", p.dbId);
-            if (!sameSession(session)) return false;
-            if (result.error) throw result.error;
-          }
+          await sendWithRecovery(session, op, null);
+          if (!sameSession(session)) return false;
           acknowledge(op);
         }
       } catch (error) {
         // Leave the failed revision in place; later revisions can still be sent.
         if (!sameSession(session)) return false;
+        window.__A_CEIL_LAST_CLOUD_ERROR = {at: Date.now(), message: errorMessage(error)};
         if (window.__diagSilent) window.__diagSilent(error);
       }
     }
@@ -189,6 +242,7 @@ const PENDING_KEY = "ceiling_pendingSync";
       el.title = remaining ? "Є зміни, які очікують синхронізації." : "";
     }
     if (typeof hideSync === "function") hideSync();
+    if (remaining) scheduleRetry(); else retryAttempt = 0;
     return remaining === 0;
   }
   function flush() {
@@ -207,5 +261,16 @@ const PENDING_KEY = "ceiling_pendingSync";
   window.removeFromPendingQueue = remove;
   window._updatePendingBadge = badge;
   window.flushPendingQueue = flush;
-  window.addEventListener("online", () => { if (user() && read().length) flush().catch(error => { if (window.__diagSilent) window.__diagSilent(error); }); });
+  function retryNow() {
+    retryAttempt = 0;
+    if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+    if (user() && read().length) flush().catch(error => { if (window.__diagSilent) window.__diagSilent(error); });
+  }
+  window.addEventListener("online", retryNow);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && navigator.onLine) retryNow(); });
+  // Existing Safari queues must resume after a normal page reload too; neither
+  // an `online` nor a visibility event is guaranteed during authentication.
+  [1800, 5000, 10000].forEach(delay => setTimeout(() => {
+    if (navigator.onLine && read().length) retryNow();
+  }, delay));
 })();
