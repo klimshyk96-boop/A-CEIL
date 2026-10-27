@@ -466,9 +466,9 @@
           if(!cached)return true;
           /* The primary project cache already contains this unsynced revision.
              Do not duplicate its full room state in Safari localStorage. */
-          return String(cached._localUpdatedAt||'')!==String(project._localUpdatedAt||'')
-            || String(cached._syncStatus||'')!==String(project._syncStatus||'')
-            || !!cached._dirty!==!!project._dirty;
+          try{
+            return JSON.stringify(stripLocalHeavyData(cached))!==JSON.stringify(stripLocalHeavyData(project));
+          }catch(_){return true;}
         }).map(strip);
         if(!risky.length){localStorage.removeItem(BACKUP_KEY);return;}
         const payload=JSON.stringify({at:Date.now(),reason:reason||'',projects:risky});
