@@ -170,8 +170,10 @@ const PENDING_KEY = "ceiling_pendingSync";
     throw lastError || new Error("Не вдалося синхронізувати проєкт");
   }
   function scheduleRetry() {
-    if (retryTimer || !navigator.onLine || !read().length || retryAttempt >= 4) return;
-    const delay = Math.min(30000, 2500 * Math.pow(2, retryAttempt++));
+    if (retryTimer || !navigator.onLine || !read().length) return;
+    /* Keep the queue alive after transient Safari/network failures. Backoff is
+       capped so retries continue without creating a tight background loop. */
+    const delay = Math.min(60000, 2500 * Math.pow(2, Math.min(retryAttempt++, 5)));
     retryTimer = setTimeout(() => {
       retryTimer = null;
       flush().then(ok => { if (ok) retryAttempt = 0; else scheduleRetry(); }).catch(scheduleRetry);
