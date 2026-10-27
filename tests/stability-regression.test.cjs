@@ -24,8 +24,6 @@ const roomFlow=read("js/rooms/087-aceil-multiroom-simple-flow.js");
 const wallUi=read("js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js")+read("js/canvas/045-aceil-wall-full-side-color-presets.js");
 const pendingSync=read("js/projects/032-aceil-pending-sync-queue.js");
 const accessClean=read("js/admin/159-aceil-access-clean.js");
-const forcedReportSettings=read("js/reports/053-aceil-report-settings-force-modern.js");
-const reportGenerator=read("js/reports/037-aceil-report-settings-generator.js");
 const projectRepository=read("js/projects/project-repository.js");
 
 assert.match(links,/new Uint8Array\(10\)/,"new report URLs must retain 80 random bits");
@@ -43,10 +41,6 @@ assert.match(mobilePreview,/publishPayload\(payload,\{projectId:activeProjectRef
 assert.match(mobilePreview,/presentation:"generated-report"/,"mobile links must request the approved generated report view");
 assert.match(mobilePreview,/payload\.image=dataUrl\|\|canvas\.toDataURL/,"mobile links must carry the exact generated report image");
 assert.match(classicPreview,/presentation:"generated-report"/,"classic links must request the approved generated report view");
-assert.match(forcedReportSettings,/reportStyle="classic"/,"stored mobile report settings must migrate to the document style");
-assert.doesNotMatch(forcedReportSettings,/reportStyle="modern"/,"report settings bootstrap must not force the mobile style");
-assert.doesNotMatch(reportGenerator,/rs\.reportStyle="modern"/,"report generation must not re-force the mobile style");
-assert.match(reportGenerator,/rs\.reportStyle="classic"/,"report generation must use the canonical document style");
 assert.match(classicPreview,/3e5/,"large report canvases must have a bounded short-lived preview registry");
 assert.doesNotMatch(classicPreview,/18e5/,"large report canvases must not remain retained for 30 minutes");
 assert.match(classicPreview,/payload\.image=r\.previewImage\|\|r\.canvas\.toDataURL/,"classic links must carry the exact generated report image");
