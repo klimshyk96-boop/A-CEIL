@@ -20,7 +20,7 @@ function offlineAccess(u){
   try{var row=JSON.parse(localStorage.getItem(ACCESS_CACHE_KEY)||'null');return row&&String(row.userId)===String(u.id)&&row.access?row.access:null}catch(e){return null}
 }
 function enterOffline(u){window.__A_CEIL_OFFLINE_ACTIVE=true;try{if(typeof window.A_CEIL_enterOfflineMode==='function')window.A_CEIL_enterOfflineMode(u)}catch(e){window.__diagSilent&&window.__diagSilent(e)}var el=document.getElementById('cloudStatus');if(el)el.textContent='⚠️ офлайн · локальні дані'}
-async function rights(){var c=sb(),u=usr();if(!u)return null;if(!navigator.onLine){var cached=offlineAccess(u);if(cached){ACCESS=cached;window.A_CEIL_MY_ACCESS=cached}return cached}if(!c)return offlineAccess(u);try{var r=await("function"==typeof withTimeout?withTimeout(c.rpc('get_my_access'),6000,"Перевірка доступу"):c.rpc('get_my_access'));if(!usr()||usr().id!==u.id||sb()!==c)return null;if(r.error)throw r.error;var a=Array.isArray(r.data)?r.data[0]:r.data;if(!a)return null;ACCESS=a;window.A_CEIL_MY_ACCESS=a;saveAccessSnapshot(a,u);applyNomGate(a);return a}catch(e){if(!usr()||usr().id!==u.id||sb()!==c)return null;var fallback=offlineAccess(u);if(fallback){ACCESS=fallback;window.A_CEIL_MY_ACCESS=fallback}if(isTransientNetworkError(e)||/таймаут/i.test(String(e&&e.message||"")))return fallback;throw e}}
+async function rights(){var c=sb(),u=usr();if(!u)return null;if(!navigator.onLine){var cached=offlineAccess(u);if(cached){ACCESS=cached;window.A_CEIL_MY_ACCESS=cached}return cached}if(!c)return offlineAccess(u);try{var r=await("function"==typeof withTimeout?withTimeout(c.rpc('get_my_access'),6000,"Перевірка доступу"):c.rpc('get_my_access'));if(!usr()||usr().id!==u.id||sb()!==c)return null;if(r.error)throw r.error;var a=Array.isArray(r.data)?r.data[0]:r.data;if(!a){a=offlineAccess(u);if(!a)return null}ACCESS=a;window.A_CEIL_MY_ACCESS=a;saveAccessSnapshot(a,u);applyNomGate(a);return a}catch(e){if(!usr()||usr().id!==u.id||sb()!==c)return null;var fallback=offlineAccess(u);if(fallback){ACCESS=fallback;window.A_CEIL_MY_ACCESS=fallback}if(isTransientNetworkError(e)||/таймаут/i.test(String(e&&e.message||"")))return fallback;throw e}}
 function nomItemKey(it){if(!it)return'';if(it.id!=null)return'id:'+String(it.id);return'n:'+String(it.name||'').trim().toLowerCase()+'|g:'+String(it.groupId==null?'':it.groupId)+'|u:'+String(it.unit||'')}
 function currentNomItems(){try{return clone(typeof elemItems!=='undefined'&&Array.isArray(elemItems)?elemItems:(window.elemItems||[]))}catch(e){return clone(window.elemItems||[])}}
 function mergeCatalogWithRoomResults(catalog,current){
@@ -75,6 +75,8 @@ function refreshProjectsInBackground(){
   setTimeout(async function(){
     function current(){return projectsRefresh===request&&sb()===c&&usr()&&usr().id===request.uid;}
     try{
+      if(!current())return;
+      if(typeof flushPendingQueue==='function'&&typeof getPendingQueue==='function'&&getPendingQueue().length){try{await flushPendingQueue()}catch(syncError){window.__diagSilent&&window.__diagSilent(syncError)}}
       if(!current())return;
       var a=await rights();if(!current())return;
       var loaded=await loadProjects(a);if(!current())return;
