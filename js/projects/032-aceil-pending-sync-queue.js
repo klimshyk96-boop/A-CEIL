@@ -67,11 +67,28 @@ const PENDING_KEY = "ceiling_pendingSync";
       return true;
     } catch (_) { return false; }
   }
+  function activeProject(){
+    const all=projects(),ids=[];
+    try{if(typeof _activeObjectId!=="undefined"&&_activeObjectId!=null)ids.push(String(_activeObjectId));}catch(_){}
+    try{if(typeof _currentProjectId!=="undefined"&&_currentProjectId!=null)ids.push(String(_currentProjectId));}catch(_){}
+    return all.find(project=>ids.some(id=>matches(project,id)))||null;
+  }
   function badge() {
     const n = read().length, el = document.getElementById("cloudStatus");
-    if (el && n) {
+    if (!el) return;
+    if (n) {
       el.textContent = "⏳ " + n + " не збережено";
-      el.title = "Є зміни, які очікують синхронізації.";
+      el.title = "Є зміни, які збережені на пристрої та очікують хмару.";
+      return;
+    }
+    const project=activeProject(),at=Number(project&&project._cloudSavedAt)||0;
+    if(at){
+      const time=new Date(at).toLocaleTimeString("uk-UA",{hour:"2-digit",minute:"2-digit"});
+      el.textContent="☁️ у хмарі о "+time;
+      el.title="Сервер підтвердив останнє збереження цього проєкту.";
+    }else{
+      el.textContent="📱 тільки на пристрої";
+      el.title="Для цього проєкту ще немає підтвердженого хмарного збереження.";
     }
   }
   function add(value) {
@@ -150,8 +167,10 @@ const PENDING_KEY = "ceiling_pendingSync";
       return {row: result.data, sentSignature};
     }
     if (op.type === "delete" && p.dbId) {
-      const result = await session.client.from("projects").delete().eq("id", p.dbId);
+      const result = await session.client.from("projects").delete().eq("id", p.dbId).select("id");
       if (result.error) throw result.error;
+      const rows=Array.isArray(result.data)?result.data:(result.data?[result.data]:[]);
+      if(!rows.some(row=>row&&String(row.id)===String(p.dbId)))throw new Error("Сервер не підтвердив видалення проєкту");
     }
     return {};
   }
@@ -193,7 +212,7 @@ const PENDING_KEY = "ceiling_pendingSync";
     const changed = signature(current, op.payload, session.uid) !== sentSignature;
     const newer = pending.some(x => x._queueId !== op._queueId && related(x.payload, op.payload));
     if (current._localId == null) current._localId = current.id;
-    current.id = row.id; current._dbId = row.id;
+    current.id = row.id; current._dbId = row.id; current._cloudSavedAt=Date.now();
     // Keep the open object attached to its assigned cloud ID, unless the user
     // has already navigated to another project while the request was pending.
     if (typeof _currentProjectId !== "undefined" && matches(local, _currentProjectId)) _currentProjectId = row.id;
@@ -238,11 +257,9 @@ const PENDING_KEY = "ceiling_pendingSync";
       }
     }
     if (!sameSession(session)) return false;
-    const remaining = read().length, el = document.getElementById("cloudStatus");
-    if (el) {
-      el.textContent = remaining ? "⏳ " + remaining + " не збережено" : "☁️ синхронізовано";
-      el.title = remaining ? "Є зміни, які очікують синхронізації." : "";
-    }
+    const remaining = read().length;
+    badge();
+    try{window.dispatchEvent(new CustomEvent("aceil:sync-status-change",{detail:{pending:remaining}}));}catch(_){}
     if (typeof hideSync === "function") hideSync();
     if (remaining) scheduleRetry(); else retryAttempt = 0;
     return remaining === 0;
@@ -275,4 +292,6 @@ const PENDING_KEY = "ceiling_pendingSync";
   [1800, 5000, 10000].forEach(delay => setTimeout(() => {
     if (navigator.onLine && read().length) retryNow();
   }, delay));
+  window.addEventListener("aceil:project-recovered",badge);
+  setTimeout(badge,0);
 })();

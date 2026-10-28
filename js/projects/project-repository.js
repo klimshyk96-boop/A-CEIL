@@ -112,6 +112,82 @@
 
   let memoryCache = null;
   let memoryUserId = '';
+  let lastReadMeta={state:'unknown',at:0};
+  const SAFETY_DB='aceil-project-safety-v1';
+  const SAFETY_STORE='snapshots';
+  const SAFETY_TTL=30*24*60*60*1000;
+  let safetyDbPromise=null,safetyTimer=null,safetyPending=null,safetyChain=Promise.resolve();
+
+  function safetyUser(){return currentStorageUser()||'guest';}
+  function safetyHash(text){
+    let h=2166136261;
+    for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619);}
+    return (h>>>0).toString(16)+':'+text.length;
+  }
+  function openSafetyDb(){
+    if(safetyDbPromise)return safetyDbPromise;
+    if(!window.indexedDB)return Promise.resolve(null);
+    safetyDbPromise=new Promise((resolve,reject)=>{
+      const request=window.indexedDB.open(SAFETY_DB,1);
+      request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains(SAFETY_STORE))db.createObjectStore(SAFETY_STORE,{keyPath:'key'});};
+      request.onsuccess=()=>resolve(request.result);
+      request.onerror=()=>reject(request.error||new Error('indexeddb_open_failed'));
+      request.onblocked=()=>reject(new Error('indexeddb_blocked'));
+    }).catch(error=>{reportNonFatal(error,'safety-db-open');return null;});
+    return safetyDbPromise;
+  }
+  async function safetyGet(key){
+    const db=await openSafetyDb();if(!db)return null;
+    return new Promise(resolve=>{
+      try{const request=db.transaction(SAFETY_STORE,'readonly').objectStore(SAFETY_STORE).get(key);request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>resolve(null);}
+      catch(error){reportNonFatal(error,'safety-db-read');resolve(null);}
+    });
+  }
+  async function safetyPut(value){
+    const db=await openSafetyDb();if(!db)return false;
+    return new Promise(resolve=>{
+      try{const tx=db.transaction(SAFETY_STORE,'readwrite');tx.objectStore(SAFETY_STORE).put(value);tx.oncomplete=()=>resolve(true);tx.onerror=()=>resolve(false);tx.onabort=()=>resolve(false);}
+      catch(error){reportNonFatal(error,'safety-db-write');resolve(false);}
+    });
+  }
+  function safeSnapshotProjects(projects){return normalize(projects).map(stripLocalHeavyData);}
+  function commitSafetySnapshot(payload){
+    safetyChain=safetyChain.then(async()=>{
+      const projects=safeSnapshotProjects(payload.projects),serialized=JSON.stringify(projects),hash=safetyHash(serialized);
+      const key=payload.user+':current',current=await safetyGet(key);
+      if(current&&current.hash===hash)return true;
+      if(current)await safetyPut(Object.assign({},current,{key:payload.user+':previous',rotatedAt:Date.now()}));
+      return safetyPut({key:key,user:payload.user,at:Date.now(),reason:payload.reason||'replace',hash:hash,projects:projects});
+    }).catch(error=>{reportNonFatal(error,'safety-snapshot');return false;});
+    return safetyChain;
+  }
+  function queueSafetySnapshot(projects,reason,immediate){
+    safetyPending={user:safetyUser(),projects:clone(Array.isArray(projects)?projects:[]),reason:reason||'replace'};
+    if(safetyTimer){clearTimeout(safetyTimer);safetyTimer=null;}
+    if(immediate){const next=safetyPending;safetyPending=null;return commitSafetySnapshot(next);}
+    safetyTimer=setTimeout(()=>{safetyTimer=null;const next=safetyPending;safetyPending=null;if(next)commitSafetySnapshot(next);},180);
+    return Promise.resolve(true);
+  }
+  function flushSafetySnapshot(){
+    if(safetyTimer){clearTimeout(safetyTimer);safetyTimer=null;}
+    const next=safetyPending;safetyPending=null;
+    return next?commitSafetySnapshot(next):safetyChain;
+  }
+  function stashRemoved(projects,reason){
+    const removed=clone(Array.isArray(projects)?projects:[]).map(stripLocalHeavyData);
+    if(!removed.length)return Promise.resolve(false);
+    const user=safetyUser(),key=user+':trash';
+    safetyChain=safetyChain.then(async()=>{
+      const old=await safetyGet(key),now=Date.now(),entries=old&&Array.isArray(old.entries)?old.entries.filter(x=>x&&x.deletedAt>now-SAFETY_TTL):[];
+      removed.forEach(project=>{
+        const ids=projectKeys(project),index=entries.findIndex(row=>row&&row.project&&projectKeys(row.project).some(id=>ids.includes(id)));
+        const row={deletedAt:now,expiresAt:now+SAFETY_TTL,reason:reason||'removed',project:project};
+        if(index>=0)entries[index]=row;else entries.unshift(row);
+      });
+      return safetyPut({key:key,user:user,at:now,entries:entries.slice(0,50)});
+    }).catch(error=>{reportNonFatal(error,'safety-trash');return false;});
+    return safetyChain;
+  }
 
   function currentStorageUser(){
     try{return window.A_CEIL_UserStorage?String(window.A_CEIL_UserStorage.getUserId()||''):'';}catch(_){return '';}
@@ -206,11 +282,24 @@
     });
     return chosen.map(stripLocalHeavyData);
   }
+  function recoveryRaw(){
+    try{
+      const backup=JSON.parse(localStorage.getItem('aceil_project_recovery')||'null');
+      return backup&&Array.isArray(backup.projects)?backup.projects:[];
+    }catch(_){return [];}
+  }
   function readRaw(){
-    try {
-      const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      return Array.isArray(value) ? value : [];
-    } catch(_) { return []; }
+    let raw=null;
+    try{raw=localStorage.getItem(STORAGE_KEY);}catch(error){lastReadMeta={state:'unavailable',at:Date.now(),error:String(error&&error.message||error)};return recoveryRaw();}
+    if(raw==null){const recovered=recoveryRaw();lastReadMeta={state:'missing',at:Date.now(),recovered:recovered.length};return recovered;}
+    try{
+      const value=JSON.parse(raw);
+      if(Array.isArray(value)){lastReadMeta={state:'valid',at:Date.now(),count:value.length};return value;}
+      lastReadMeta={state:'invalid_shape',at:Date.now()};
+    }catch(error){lastReadMeta={state:'corrupt',at:Date.now(),error:String(error&&error.message||error)};}
+    const recovered=recoveryRaw();
+    if(recovered.length)lastReadMeta.recovered=recovered.length;
+    return recovered;
   }
   function ensureMemory(){
     const uid=currentStorageUser();
@@ -265,11 +354,18 @@
     const projects=ensureMemory();
     return options && options.clone ? clone(projects) : projects;
   }
-  function replaceAll(projects){
+  function replaceAll(projects,options){
+    const previous=memoryCache===null?normalize(readRaw()):clone(memoryCache);
     const normalized=normalize(projects);
+    if(!(options&&options.allowUnsyncedRemoval)){
+      previous.filter(isUnsynced).forEach(project=>{if(!normalized.some(item=>sameProject(item,project)))normalized.push(clone(project));});
+    }
+    const removed=previous.filter(project=>!normalized.some(item=>sameProject(item,project)));
+    if(removed.length)stashRemoved(removed,options&&options.reason||'replace');
     memoryUserId=currentStorageUser();
     memoryCache=normalized;
     if(!writePersistent(normalized))reportStorageError();
+    queueSafetySnapshot(normalized,options&&options.reason||'replace',!!(options&&options.immediateSnapshot));
     return normalized;
   }
   function findById(id, options){
@@ -299,7 +395,7 @@
     const projects = list({clone:true});
     const filtered = projects.filter(project => !projectKeys(project).includes(key));
     if(filtered.length === projects.length) return false;
-    replaceAll(filtered);
+    replaceAll(filtered,{allowUnsyncedRemoval:true,reason:'explicit_remove',immediateSnapshot:true});
     return true;
   }
   function merge(incoming, resolver){
@@ -321,10 +417,13 @@
     if(!Array.isArray(next)) throw new TypeError('ProjectRepository.transaction: результат має бути масивом проєктів');
     return replaceAll(next);
   }
-  function clear(){
-    memoryCache=[];
-    try { localStorage.removeItem(STORAGE_KEY); return true; }
-    catch(_) { return false; }
+  function clear(options){
+    const before=list({clone:true});
+    if(before.length)stashRemoved(before,options&&options.reason||'explicit_clear');
+    memoryCache=[];memoryUserId=currentStorageUser();
+    const ok=writePersistent([]);
+    queueSafetySnapshot([],options&&options.reason||'explicit_clear',true);
+    return !!ok;
   }
   function audit(){
     return list().map(project => ({
@@ -343,6 +442,61 @@
       lastWrite:lastWriteMeta
     };
   }
+
+  async function safetyStatus(){
+    await flushSafetySnapshot();
+    const user=safetyUser(),current=await safetyGet(user+':current'),previous=await safetyGet(user+':previous'),trash=await safetyGet(user+':trash');
+    return {available:!!window.indexedDB,user:user,lastRead:clone(lastReadMeta),currentAt:current&&current.at||null,
+      currentCount:current&&Array.isArray(current.projects)?current.projects.length:0,
+      previousAt:previous&&previous.at||null,previousCount:previous&&Array.isArray(previous.projects)?previous.projects.length:0,
+      trashCount:trash&&Array.isArray(trash.entries)?trash.entries.length:0};
+  }
+  async function restoreSafety(kind){
+    const user=safetyUser(),record=await safetyGet(user+':'+(kind==='previous'?'previous':'current'));
+    if(!record||!Array.isArray(record.projects)||!record.projects.length)return {ok:false,reason:'snapshot_not_found'};
+    const merged=clone(list({clone:true})),now=Date.now(),restored=[];
+    record.projects.forEach(project=>{
+      const copy=clone(project),index=merged.findIndex(item=>sameProject(item,copy));
+      copy._dirty=true;copy._syncStatus=copy._dbId?'pending_update':'pending_create';copy._localUpdatedAt=now;restored.push(copy);
+      if(index<0)merged.push(copy);else merged[index]=Object.assign({},merged[index],copy);
+    });
+    replaceAll(merged,{allowUnsyncedRemoval:true,reason:'manual_safety_restore',immediateSnapshot:true});
+    restored.forEach(project=>{try{if(typeof window.addToPendingQueue==='function')window.addToPendingQueue({type:'save',payload:{localId:project.id,dbId:project._dbId||null},addedAt:now});}catch(_){reportNonFatal(_)}});
+    try{if(typeof window.flushPendingQueue==='function')window.flushPendingQueue();}catch(_){reportNonFatal(_)}
+    return {ok:true,count:record.projects.length,at:record.at||null};
+  }
+  async function listTrash(){
+    await safetyChain;
+    const record=await safetyGet(safetyUser()+':trash'),now=Date.now();
+    return record&&Array.isArray(record.entries)?record.entries.filter(row=>row&&row.expiresAt>now).map(row=>clone(row)):[];
+  }
+  async function restoreTrash(id){
+    await safetyChain;
+    const user=safetyUser(),key=user+':trash',record=await safetyGet(key),entries=record&&Array.isArray(record.entries)?record.entries:[];
+    const index=entries.findIndex(row=>row&&row.project&&projectKeys(row.project).includes(String(id)));
+    if(index<0)return {ok:false,reason:'trash_item_not_found'};
+    const row=entries[index],project=clone(row.project),now=Date.now();
+    project._localId=project._localId||project.id||project._dbId||null;
+    delete project._dbId;project.id='restored_'+now+'_'+Math.random().toString(36).slice(2,8);
+    project._dirty=true;project._syncStatus='pending_create';project._localUpdatedAt=now;
+    entries.splice(index,1);await safetyPut({key:key,user:user,at:now,entries:entries});
+    upsert(project,{replace:true});
+    try{if(typeof window.addToPendingQueue==='function')window.addToPendingQueue({type:'save',payload:{localId:project.id,dbId:null},addedAt:now});}catch(_){reportNonFatal(_)}
+    try{if(typeof window.flushPendingQueue==='function')window.flushPendingQueue();}catch(_){reportNonFatal(_)}
+    return {ok:true,project:project};
+  }
+  async function autoRecoverSafety(){
+    const state=lastReadMeta.state,user=safetyUser();
+    if(state==='valid'||list().length)return {ok:false,reason:'primary_available'};
+    const record=await safetyGet(user+':current');
+    if(currentStorageUser()!==user||list().length)return {ok:false,reason:'context_changed'};
+    if(!record||!Array.isArray(record.projects)||!record.projects.length)return {ok:false,reason:'snapshot_not_found'};
+    replaceAll(record.projects,{allowUnsyncedRemoval:true,reason:'indexeddb_auto_recovery',immediateSnapshot:true});
+    try{window.dispatchEvent(new CustomEvent('aceil:project-recovered',{detail:{source:'indexeddb',count:record.projects.length,at:record.at||null}}));}catch(_){reportNonFatal(_)}
+    try{if(typeof showToast==='function')showToast('♻️ Відновлено локальні проєкти: '+record.projects.length,5000);}catch(_){reportNonFatal(_)}
+    return {ok:true,count:record.projects.length,at:record.at||null};
+  }
+  const safetyApi=Object.freeze({status:safetyStatus,flush:flushSafetySnapshot,restore:restoreSafety,listTrash:listTrash,restoreTrash:restoreTrash,autoRecover:autoRecoverSafety});
 
   /* First load: preserve what was in Safari in memory, then immediately rewrite
      only a light local cache. Supabase remains the source of truth. */
@@ -368,20 +522,31 @@
     transaction,
     clear,
     audit,
-    cacheInfo
+    cacheInfo,
+    safety:safetyApi
   });
   window.A·CEIL.ProjectRepository = api;
+  window.A·CEIL.ProjectSafety = safetyApi;
   window.A·CEILProjectRepository = api;
+  window.A_CEIL_ProjectSafety = safetyApi;
   window.getProjects = function(){ return api.list(); };
   window.setProjects = function(projects){ return api.replaceAll(projects); };
   try { getProjects = window.getProjects; setProjects = window.setProjects; } catch(_){reportNonFatal(_)}
 
+  function scheduleSafetyRecovery(){
+    const state=lastReadMeta.state;
+    if(state==='valid'){queueSafetySnapshot(list({clone:true}),'startup');return;}
+    setTimeout(()=>{autoRecoverSafety().catch(error=>reportNonFatal(error,'safety-auto-recovery'));},80);
+  }
+  scheduleSafetyRecovery();
   window.addEventListener('aceil:user-storage-changed',function(){
     memoryCache=null;
     memoryUserId='';
     ensureMemory();
+    scheduleSafetyRecovery();
     try{if(typeof renderProjects==='function')renderProjects();}catch(_){reportNonFatal(_)}
   });
+  window.addEventListener('pagehide',function(){flushSafetySnapshot();});
 
   /* Shared persistence used by autosave and explicit project saves. */
   window.A·CEIL.ProjectPersistence = Object.freeze({

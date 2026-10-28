@@ -65,6 +65,10 @@ assert.doesNotMatch(pendingSync,/retryAttempt\s*>=\s*4/,"cloud retries must not 
 assert.match(pendingSync,/Math\.min\(60000/,"cloud retries must use a capped long-lived backoff");
 assert.match(projectRepository,/const CACHE_LIMIT = 4/,"Safari local project caching must remain bounded");
 assert.match(projectRepository,/const persisted=readRaw\(\)/,"recovery storage must avoid duplicating already persisted unsynced projects");
+assert.match(projectRepository,/aceil-project-safety-v1/,"project safety must keep IndexedDB generations");
+assert.match(projectRepository,/allowUnsyncedRemoval/,"bulk replacement must preserve unsynced projects by default");
+assert.match(pendingSync,/Сервер не підтвердив видалення проєкту/,"deletions require an explicit server confirmation");
+assert.match(index,/226-aceil-project-safety-ui\.js/,"project recovery and trash controls must be loaded");
 
 const headerSources=(vercel.headers||[]).map(item=>item.source);
 assert(headerSources.includes("/js/(.*)"),"Vercel must mark versioned JavaScript as immutable");
@@ -102,6 +106,6 @@ assert.doesNotMatch(wallUi,/_prevOpenWallModalForInit/,
 const versions=[...index.matchAll(/(?:src|href)="[^"]+\.(?:js|css)\?v=([^"]+)"/g)].map(match=>match[1]);
 assert(versions.length>150,"runtime asset list unexpectedly shrank");
 assert.strictEqual(new Set(versions).size,1,"all runtime assets must share one build ID");
-assert.strictEqual(versions[0],"20261028-calc-links1","unexpected stability build ID");
+assert.strictEqual(versions[0],"20261028-storage-safety1","unexpected stability build ID");
 
 console.log("Stability regression tests: OK");
