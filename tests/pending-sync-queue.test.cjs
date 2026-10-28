@@ -12,7 +12,9 @@ function fixture(initial = [{id:'local-a', _dbId:'db-a', name:'old', state:'{}',
   let owner = 'owner-a', quota = false;
   const states = new Map([[owner, copy(initial)]]), disk = new Map(), requests = [], listeners = {};
   const status = {textContent:'', title:''};
-  const c = {console, Map, Set, Math, Date, Promise, document:{getElementById:() => status}, hideSync(){}};
+  const later=(fn,ms)=>{const timer=setTimeout(fn,ms);timer.unref?.();return timer};
+  const c = {console, Map, Set, Math, Date, Promise, AbortController, setTimeout:later, clearTimeout,
+    navigator:{onLine:true}, document:{visibilityState:'visible',getElementById:() => status,addEventListener:(name,fn) => {listeners[name] = fn}}, hideSync(){}};
   c.window = c;
   c.addEventListener = (name, fn) => {listeners[name] = fn};
   c.A_CEIL_UserStorage = {getUserId:() => owner};
@@ -59,7 +61,7 @@ test('deleting during INSERT binds the queued delete and does not restore the pr
   const f=fixture([{id:'local-a',name:'old',state:'{}'}]);f.enqueue();const done=f.c.flushPendingQueue();await tick();
   f.states.set('owner-a',[]);f.c.addToPendingQueue({type:'delete',payload:{localId:'local-a'}});
   f.reply(0,'created-id');await tick();assert.equal(f.requests[1].method,'delete');assert.equal(f.requests[1].id,'created-id');
-  f.reply(1);assert.equal(await done,true);assert.equal(f.items().length,0);
+  f.reply(1,'created-id');assert.equal(await done,true);assert.equal(f.items().length,0);
 });
 test('a delete without the returned server row is not acknowledged', async () => {
   const f=fixture([]);f.c.addToPendingQueue({type:'delete',payload:{localId:'local-a',dbId:'db-a'}});
@@ -75,6 +77,18 @@ test('failures stay queued; successful unrelated work is removed and retry succe
 test('a response without a saved row is not acknowledged', async () => {
   const f=fixture();f.enqueue();const done=f.c.flushPendingQueue();await tick();f.requests[0].resolve({data:null,error:null});
   assert.equal(await done,false);assert.equal(f.c.getPendingQueue().length,1);
+});
+test('a missing stale cloud row is recreated instead of blocking the queue', async () => {
+  const f=fixture();f.enqueue();const done=f.c.flushPendingQueue();await tick();
+  f.reply(0,null,{code:'PGRST116',message:'JSON object requested, multiple (or no) rows returned'});await tick();
+  assert.equal(f.requests.length,2);assert.equal(f.requests[0].method,'update');assert.equal(f.requests[1].method,'insert');
+  f.reply(1,'new-db-id');assert.equal(await done,true);assert.equal(f.c.getPendingQueue().length,0);assert.equal(f.items()[0]._dbId,'new-db-id');
+});
+test('a hung Safari request times out and releases the queue flight', async () => {
+  const f=fixture();f.c.__A_CEIL_SYNC_TIMEOUT_MS=20;f.enqueue();
+  const first=f.c.flushPendingQueue();await tick();assert.equal(f.requests.length,1);assert.equal(await first,false);
+  assert.equal(f.c.getPendingQueue().length,1);assert.match(f.c.__A_CEIL_LAST_CLOUD_ERROR.message,/таймаут/);
+  const retry=f.c.flushPendingQueue();await tick();assert.equal(f.requests.length,2);f.reply(1);assert.equal(await retry,true);
 });
 test('quota fallback is authoritative, including a removal that could not reach disk', () => {
   const f=fixture();f.enqueue();f.quota(true);f.c.removeFromPendingQueue('local-a');
