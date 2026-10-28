@@ -17,7 +17,7 @@ function room(id,name){
   await page.evaluate(({ID,r1,r2})=>{
    window.__rpc=[];
    const base=_sb||{};
-   _sb=new Proxy(base,{get(t,k){if(k==='rpc')return (name,args)=>{window.__rpc.push({name,args});return Promise.resolve({data:{},error:null})};const v=t[k];return v===undefined?(()=>({on(){return this},subscribe(){return this},select(){return this},eq(){return this}})):v}});
+   _sb=new Proxy(base,{get(t,k){if(k==='rpc')return (name,args)=>{window.__rpc.push({name,args});return Promise.resolve({data:name==='aceil_revoke_report_snapshot'?{revoked:window.__revokeConfirmed!==false}:{},error:null})};const v=t[k];return v===undefined?(()=>({on(){return this},subscribe(){return this},select(){return this},eq(){return this}})):v}});
    _sbUser={id:'u1'};
    window.A·CEIL.ProjectRepository.replaceAll([{id:ID,_dbId:ID,name:'Квартира Test',addr:'вул. Тест 1',phone:'0500000000',multiRoom:true,projectType:'apartment',rooms:[r1,r2]}]);
    _activeObjectId=ID;
@@ -42,6 +42,11 @@ function room(id,name){
   assert.equal(main.total,2*(10*100+500));assert.equal(alt.total,2*(10*150+500),'each link remembers the total of its own calculation');
   // survives a reload of the project list (stored with the project)
   assert.equal(await page.evaluate(()=>A·CEIL.ProjectRepository.list().find(p=>p.id===_activeObjectId).calcLinks.length),2);
+  // Only one room carries the recovery shadow, avoiding N copies in Safari storage.
+  assert.equal(await page.evaluate(()=>{
+   const p=A_CEIL_EstimateVariants.findProjectRaw(_activeObjectId);
+   return p.rooms.filter(r=>r&&r._aceilVariantsShadow).length;
+  }),1);
 
   await page.evaluate(()=>A_CEIL_OpenEstimateVariants());await page.waitForSelector('#aceilVarBar .aceilv-link-row');
   const plate=await page.locator('.aceilv-plate').innerText();
@@ -69,6 +74,21 @@ function room(id,name){
   assert.equal(await page.evaluate(()=>A_CEIL_EstimateVariants.calcLinks(A_CEIL_EstimateVariants.findProjectRaw(_activeObjectId)).filter(l=>l.kind==='comparison').length),1);
   await page.click('#aceilvCmpClose');
 
+  // A server refusal must not be presented or stored as a successful revoke.
+  const refused=await page.evaluate(async vid=>{
+   const E=A_CEIL_EstimateVariants,p=E.findProjectRaw(_activeObjectId);
+   const link=E.calcLinks(p).find(l=>l.variantId===vid&&l.kind==='estimate');
+   window.__revokeConfirmed=false;
+   try{await A_CEIL_ReportLinks.revokeToken(link.token,_activeObjectId);return '';}
+   catch(e){return String(e&&e.message||e);}
+   finally{window.__revokeConfirmed=true;}
+  },variantId);
+  assert.match(refused,/не підтвердив/);
+  assert.equal(await page.evaluate(vid=>{
+   const E=A_CEIL_EstimateVariants,p=E.findProjectRaw(_activeObjectId);
+   return E.linkState(E.calcLinks(p).find(l=>l.variantId===vid&&l.kind==='estimate'));
+  },variantId),'active');
+
   // closing one link leaves the other open
   await page.evaluate(()=>A_CEIL_OpenEstimateVariants());await page.waitForSelector('#aceilVarBar .aceilv-link-row');
   await page.evaluate(()=>{window.__rpc.length=0;});
@@ -80,6 +100,11 @@ function room(id,name){
   const state=await page.evaluate(()=>A_CEIL_EstimateVariants.calcLinks(A_CEIL_EstimateVariants.findProjectRaw(_activeObjectId)).map(l=>[l.name,A_CEIL_EstimateVariants.linkState(l)]));
   assert.ok(state.some(x=>x[0]==='Економ'&&x[1]==='revoked'));
   assert.ok(state.some(x=>x[0]==='Основний'&&x[1]==='active'),'the other link stays open');
+  assert.equal(await page.evaluate(vid=>{
+   const p=A_CEIL_EstimateVariants.findProjectRaw(_activeObjectId);
+   const shadows=p.rooms.filter(r=>r&&r._aceilVariantsShadow);
+   return shadows.length===1&&shadows[0]._aceilVariantsShadow.links.some(l=>l.variantId===vid&&l.revokedAt);
+  },variantId),true,'revoked state is durable in the cloud recovery shadow');
   await page.waitForFunction(()=>!document.querySelector('.aceilv-plate'));
   assert.deepEqual(errors,[]);
   console.log('PASS calc links registry, plate, per-link revoke, comparison link');
