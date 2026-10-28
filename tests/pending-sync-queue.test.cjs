@@ -22,7 +22,7 @@ function fixture(initial = [{id:'local-a', _dbId:'db-a', name:'old', state:'{}',
   c._sb = {from(){
     let method, payload, id;
     function request(){return new Promise(resolve => requests.push({method,payload:copy(payload || {}),id,resolve}))}
-    const q = {update(value){method='update';payload=value;return q},insert(value){method='insert';payload=value;return q},delete(){method='delete';return q},eq(key,value){id=value;return method==='delete'?request():q},select(){return q},single:request};
+    const q = {update(value){method='update';payload=value;return q},insert(value){method='insert';payload=value;return q},delete(){method='delete';return q},eq(key,value){id=value;return q},select(){return method==='delete'?request():q},single:request};
     return q;
   }};
   c['A·CEIL'] = Object.assign(c['A·CEIL'] || {}, {ProjectRepository:c['A·CEIL'].ProjectRepository});
@@ -60,6 +60,11 @@ test('deleting during INSERT binds the queued delete and does not restore the pr
   f.states.set('owner-a',[]);f.c.addToPendingQueue({type:'delete',payload:{localId:'local-a'}});
   f.reply(0,'created-id');await tick();assert.equal(f.requests[1].method,'delete');assert.equal(f.requests[1].id,'created-id');
   f.reply(1);assert.equal(await done,true);assert.equal(f.items().length,0);
+});
+test('a delete without the returned server row is not acknowledged', async () => {
+  const f=fixture([]);f.c.addToPendingQueue({type:'delete',payload:{localId:'local-a',dbId:'db-a'}});
+  const done=f.c.flushPendingQueue();await tick();assert.equal(f.requests[0].method,'delete');
+  f.requests[0].resolve({data:[],error:null});assert.equal(await done,false);assert.equal(f.c.getPendingQueue().length,1);
 });
 test('failures stay queued; successful unrelated work is removed and retry succeeds', async () => {
   const f=fixture([{id:'local-a',_dbId:'db-a',name:'A',state:'{}'},{id:'local-b',_dbId:'db-b',name:'B',state:'{}'}]);
