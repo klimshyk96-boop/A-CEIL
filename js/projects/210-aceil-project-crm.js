@@ -49,7 +49,7 @@
     var byFingerprint=new Map();Object.keys(data).forEach(function(k){var row=data[k];if(row&&row.fingerprint&&!byFingerprint.has(row.fingerprint))byFingerprint.set(row.fingerprint,row)});
     items.forEach(function (p) {
       var row = data[recordKey(p)] || byFingerprint.get(fingerprint(p));
-      if (row) { ["order_source", "deal_status", "report_token", "report_published_at", "report_expires_at", "report_view_count"].forEach(function (k) { if (row[k] !== undefined&&p[k]!==row[k]) {p[k] = row[k];changed=true;} }); }
+      if (row) { ["order_source", "deal_status", "report_token", "report_published_at", "report_expires_at", "report_view_count", "calcLinks"].forEach(function (k) { if (row[k] !== undefined&&JSON.stringify(p[k])!==JSON.stringify(row[k])) {p[k] = row[k];changed=true;} }); }
     });
     if (changed) saveList(items);
   }
@@ -64,6 +64,18 @@
     var expires = new Date(source.report_expires_at).getTime();
     return !isFinite(expires) || expires > Date.now();
   }
+  // Distinct estimate calculations that still have an open client link.
+  function activeCalculationCount(p) {
+    var seen = {}, count = 0;
+    (p && Array.isArray(p.calcLinks) ? p.calcLinks : []).forEach(function (l) {
+      if (!l || l.kind !== "estimate" || l.revokedAt) return;
+      var exp = l.expiresAt ? new Date(l.expiresAt).getTime() : NaN;
+      if (isFinite(exp) && exp <= Date.now()) return;
+      var key = String(l.variantId == null ? "main" : l.variantId);
+      if (!seen[key]) { seen[key] = true; count++; }
+    });
+    return count;
+  }
   function decorateReportBadges() {
     try {
       var items = list(),byId=new Map();items.forEach(function(p){[p.id,p._dbId,p._localId].forEach(function(id){if(id!=null)byId.set(String(id),p)})});
@@ -72,7 +84,7 @@
         var match = attr.match(/editProject\(['\"]([^'\"]+)['\"]\)/), id = match && match[1];
         var p = id && byId.get(String(id));
         var head = card.querySelector(".rp-project-head"), old = card.querySelector(".aceil-report-active-badge"), oldViews = card.querySelector(".aceil-report-view-count");
-        if (!head || !hasActiveReport(p)) { if (old) old.remove(); if (oldViews) oldViews.remove(); return; }
+        if (!head || !(hasActiveReport(p) || activeCalculationCount(p))) { if (old) old.remove(); if (oldViews) oldViews.remove(); return; }
         var rawCount = Number(p && p.report_view_count), hasCount = Number.isFinite(rawCount) && rawCount >= 0;
         var metrics = card.querySelector(".rp-project-metrics");
         if (metrics) {
@@ -87,11 +99,14 @@
           viewBadge.style.cssText = "display:inline-flex;align-items:center;gap:4px;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;border-radius:9px;padding:4px 8px;font-size:12px;font-weight:850;white-space:nowrap";
           if (!oldViews) metrics.appendChild(viewBadge);
         } else if (oldViews) oldViews.remove();
-        if (old) return;
+        var calcCount = activeCalculationCount(p);
+        var badgeText = calcCount >= 2 ? "🔗 " + calcCount + " ПРОРАХУНКИ" : "🔗 ЗВІТ";
+        var badgeTitle = calcCount >= 2 ? "Клієнт має " + calcCount + " різні прорахунки, у кожного своє посилання" : "Для цього проєкту відкрите активне посилання на звіт";
+        if (old) { old.textContent = badgeText; old.title = badgeTitle; return; }
         var badge = document.createElement("span");
         badge.className = "aceil-report-active-badge";
-        badge.textContent = "🔗 ЗВІТ";
-        badge.title = "Для цього проєкту відкрите активне посилання на звіт";
+        badge.textContent = badgeText;
+        badge.title = badgeTitle;
         badge.style.cssText = "display:inline-flex;align-items:center;flex:0 0 auto;white-space:nowrap;padding:5px 8px;border-radius:9px;background:linear-gradient(135deg,#dc2626,#f97316);color:#fff;font-size:10px;font-weight:950;letter-spacing:.03em;box-shadow:0 4px 11px rgba(220,38,38,.34);border:1px solid rgba(255,255,255,.75)";
         var title = head.querySelector(".rp-project-title");
         head.insertBefore(badge, title && title.nextSibling || head.firstChild);

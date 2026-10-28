@@ -370,6 +370,15 @@ function ensure(project){
       }
     }
   }
+  if(!Array.isArray(project.calcLinks)){
+    project.calcLinks=[];
+    if(Array.isArray(project.rooms)){
+      for(var j=0;j<project.rooms.length;j++){
+        var sh2=project.rooms[j] && project.rooms[j]._aceilVariantsShadow;
+        if(sh2 && Array.isArray(sh2.links) && sh2.links.length){ project.calcLinks=clone(sh2.links); break; }
+      }
+    }
+  }
   return project;
 }
 
@@ -378,6 +387,7 @@ function syncShadow(project){
   var payload = {
     variants: clone(project.estimateVariants||[]),
     activeId: project._activeEstimateVariantId!=null ? project._activeEstimateVariantId : null,
+    links: clone(project.calcLinks||[]),
     savedAt: Date.now()
   };
   project.rooms.forEach(function(r){ if(r && typeof r==='object') r._aceilVariantsShadow = payload; });
@@ -597,6 +607,16 @@ function computeRoomTotal(project, room, variantId){
   return totalForGroups(groupsForState({elemItems:ri.items, elemGroups:ri.groups}));
 }
 
+/* One client-facing category per kind of work. Film groups carry the colour in
+   their name ("Плівка Premium · M303"), so without this a colour change would
+   show up as two unrelated rows instead of one changed line. */
+function categoryLabel(name){
+  name=String(name||'').trim();
+  if(!name) return '\u0406\u043D\u0448\u0435';
+  if(/^\u041F\u043B\u0456\u0432\u043A\u0430(\s|$)/i.test(name)) return '\u041F\u043E\u043B\u043E\u0442\u043D\u043E (\u043F\u043B\u0456\u0432\u043A\u0430)';
+  return name;
+}
+
 function computeProjectBreakdown(project, variantId){
   var rooms=(project.rooms||[]).map(function(room){
     var ri=computeRoomItems(project, room, variantId);
@@ -607,7 +627,7 @@ function computeProjectBreakdown(project, variantId){
   var byName={}, order=[];
   rooms.forEach(function(r){
     r.groups.forEach(function(g){
-      var name=g.name||'\u0406\u043D\u0448\u0435';
+      var name=categoryLabel(g.name);
       if(!Object.prototype.hasOwnProperty.call(byName,name)){ byName[name]=0; order.push(name); }
       byName[name]+=totalForGroups([g]);
     });
@@ -824,7 +844,72 @@ function virtualizeProjectForRender(project){
   return out;
 }
 
+/* ---------- published calculations registry ----------
+   Every cloud link the person creates is an immutable snapshot, so the app
+   keeps a small list of what was sent: which calculation, its total at that
+   moment, and when the link was created / expires. */
+function linkState(link){
+  if(!link) return 'none';
+  if(link.revokedAt) return 'revoked';
+  var exp=link.expiresAt ? new Date(link.expiresAt).getTime() : NaN;
+  if(isFinite(exp) && exp<=Date.now()) return 'expired';
+  return 'active';
+}
+function calcLinks(project){
+  ensure(project);
+  return (project.calcLinks||[]).slice().sort(function(a,b){ return String(b.publishedAt||'').localeCompare(String(a.publishedAt||'')); });
+}
+/* The latest still-active link of every distinct estimate calculation. */
+function activeCalculations(project){
+  var seen={}, out=[];
+  calcLinks(project).forEach(function(l){
+    if(l.kind!=='estimate' || linkState(l)!=='active') return;
+    var key=String(l.variantId==null?'main':l.variantId);
+    if(seen[key]) return;
+    seen[key]=true; out.push(l);
+  });
+  return out;
+}
+function recordPublication(project, info){
+  if(!project || !info || !info.token) return null;
+  ensure(project);
+  var kind = info.kind==='comparison' ? 'comparison' : 'estimate';
+  var vid = info.variantId!==undefined ? info.variantId : getActiveId(project);
+  if(vid!=null && !findVariant(project, vid)) vid=null;
+  var variant=findVariant(project, vid)||findVariant(project, null);
+  var total=0;
+  try{ total=computeProjectBreakdown(project, vid).grandTotal; }catch(_){ total=0; }
+  var entry={
+    token:String(info.token),
+    kind:kind,
+    variantId:vid,
+    name: kind==='comparison' ? ('\u041F\u043E\u0440\u0456\u0432\u043D\u044F\u043D\u043D\u044F: \u041E\u0441\u043D\u043E\u0432\u043D\u0438\u0439 \u0456 '+variant.name) : variant.name,
+    total:Math.round(total*100)/100,
+    publishedAt:info.publishedAt||new Date().toISOString(),
+    expiresAt:info.expiresAt||null,
+    revokedAt:null
+  };
+  project.calcLinks=(project.calcLinks||[]).filter(function(l){ return l.token!==entry.token; });
+  project.calcLinks.push(entry);
+  if(project.calcLinks.length>30) project.calcLinks=calcLinks(project).slice(0,30);
+  if(info.persist!==false) persistProject(project);
+  return entry;
+}
+function markLinkRevoked(project, token, persist){
+  ensure(project);
+  var changed=false;
+  (project.calcLinks||[]).forEach(function(l){ if(l.token===String(token) && !l.revokedAt){ l.revokedAt=new Date().toISOString(); changed=true; } });
+  if(changed && persist!==false) persistProject(project);
+  return changed;
+}
+
 window.A_CEIL_EstimateVariants = {
+  calcLinks: calcLinks,
+  activeCalculations: activeCalculations,
+  linkState: linkState,
+  recordPublication: recordPublication,
+  markLinkRevoked: markLinkRevoked,
+  categoryLabel: categoryLabel,
   money: money,
   clone: clone,
   itemKey: itemKey,
@@ -1048,6 +1133,17 @@ if(typeof oldLoadRoomToCanvas==='function' && !oldLoadRoomToCanvas.__aceilVarian
     '.aceilv-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}' +
     '.aceilv-actions button{flex:1;min-width:140px;padding:10px;border-radius:12px;font-size:12.5px;font-weight:800;}' +
     '.aceilv-btn-secondary{background:#f1f5f9!important;color:#334155!important;box-shadow:none!important;}' +
+    '.aceilv-plate{margin:0 0 10px;padding:9px 11px;border-radius:12px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;font-size:12.5px;font-weight:850;line-height:1.35;}' +
+    '.aceilv-links{margin-top:12px;border-top:1px dashed #e2e8f0;padding-top:10px;}' +
+    '.aceilv-links-title{font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}' +
+    '.aceilv-link-row{display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid #f1f5f9;}' +
+    '.aceilv-link-row.off{opacity:.55;}' +
+    '.aceilv-link-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px;}' +
+    '.aceilv-link-main b{font-size:13px;color:#1e293b;font-weight:850;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+    '.aceilv-link-main small{font-size:11px;color:#64748b;font-weight:700;}' +
+    '.aceilv-link-row button{flex:0 0 auto;padding:7px 10px;border-radius:10px;font-size:11.5px;font-weight:850;background:#eff6ff;color:#1d4ed8;box-shadow:none;}' +
+    '.aceilv-link-row button.danger{background:#fee2e2;color:#b91c1c;}' +
+    '.aceilv-links-note{margin-top:6px;font-size:11px;color:#94a3b8;font-weight:650;line-height:1.35;}' +
     '.aceilv-total{margin-top:10px;font-size:14px;font-weight:900;color:#1d4ed8;}' +
     '.aceilv-rooms{margin-top:8px;display:flex;flex-direction:column;gap:5px;}' +
     '.aceilv-room-row{display:flex;justify-content:space-between;font-size:12.5px;color:#475569;font-weight:700;padding:4px 2px;border-bottom:1px dashed #eef2f7;}' +
@@ -1067,7 +1163,7 @@ if(typeof oldLoadRoomToCanvas==='function' && !oldLoadRoomToCanvas.__aceilVarian
     '.aceilv-mode-btn.active{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;}' +
     '.aceilv-preview{background:#eff6ff;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:800;color:#1d4ed8;margin:10px 0;}' +
     '.aceilv-note{font-size:11px;color:#c2410c;background:#fff7ed;border-radius:10px;padding:8px 10px;margin-top:6px;}' +
-    '.aceilv-modal-btns{display:flex;gap:10px;margin-top:14px;}' +
+    '.aceilv-modal-btns{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}' +
     '.aceilv-modal-btns button{flex:1;padding:12px;border-radius:12px;font-weight:900;font-size:14px;}' +
     '.aceilv-cmp-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px;}' +
     '.aceilv-cmp-table th,.aceilv-cmp-table td{padding:8px 6px;border-bottom:1px solid #f1f5f9;text-align:left;}' +
@@ -1079,6 +1175,22 @@ if(typeof oldLoadRoomToCanvas==='function' && !oldLoadRoomToCanvas.__aceilVarian
     '#aceilvFilmGrid .aceilv-film-chip{min-width:0!important;width:100%;max-width:100%;}' +
     '.aceilv-film-chip small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.68;font-size:9px;font-weight:800;}' +
     '.aceilv-film-series-disabled{opacity:.45;cursor:not-allowed;}' +
+    '.aceilv-cmp-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}' +
+    '.aceilv-cmp-card{border:1.5px solid #bfdbfe;border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0;}' +
+    '.aceilv-cmp-card.alt{border-color:#bbf7d0;}' +
+    '.aceilv-cmp-card small{font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.05em;}' +
+    '.aceilv-cmp-card b{font-size:13px;color:#0f172a;font-weight:850;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+    '.aceilv-cmp-card span{font-size:17px;font-weight:950;color:#1e3a8a;}' +
+    '.aceilv-cmp-card.alt span{color:#166534;}' +
+    '.aceilv-cmp-verdict{margin-top:8px;padding:9px 12px;border-radius:12px;font-size:13.5px;font-weight:900;text-align:center;background:#f1f5f9;color:#334155;}' +
+    '.aceilv-cmp-verdict.good{background:#dcfce7;color:#166534;}' +
+    '.aceilv-cmp-verdict.bad{background:#ffedd5;color:#9a3412;}' +
+    '.aceilv-cmp-table td.num.good{color:#15803d;}' +
+    '.aceilv-cmp-table td.num.bad{color:#c2410c;}' +
+    '.aceilv-cmp-same{margin-top:8px;padding:9px 11px;border-radius:11px;background:#f8fafc;color:#475569;font-size:12px;font-weight:700;line-height:1.4;}' +
+    '.aceilv-cmp-linkbox{display:flex;gap:6px;margin-top:10px;}' +
+    '.aceilv-cmp-linkbox input{flex:1;min-width:0;padding:9px 10px;border:1.5px solid #bfdbfe;border-radius:10px;font-size:12.5px;font-weight:700;color:#1e293b;}' +
+    '.aceilv-cmp-linkbox button{flex:0 0 auto;padding:9px 12px;border-radius:10px;font-size:12px;font-weight:900;background:#eff6ff;color:#1d4ed8;box-shadow:none;}' +
     '.aceilv-cmp-subtitle{font-weight:900;font-size:13px;color:#1e293b;margin:14px 0 4px;}' +
     '.aceilv-nom-banner{margin:8px 10px 2px;padding:9px 11px;border-radius:11px;background:#eef2ff;color:#3730a3;font-size:12px;font-weight:800;}' +
     '.aceilv-ro-group{margin:10px 8px;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;background:#fff;}' +
@@ -1133,6 +1245,41 @@ function injectInterfaceTotals(project, breakdown){
   }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 
+function pluralCalc(n){
+  var a=n%100,b=n%10;
+  return (a>=11&&a<=14)||b===0||b>=5 ? '\u043F\u0440\u043E\u0440\u0430\u0445\u0443\u043D\u043A\u0456\u0432' : (b===1 ? '\u043F\u0440\u043E\u0440\u0430\u0445\u0443\u043D\u043E\u043A' : '\u043F\u0440\u043E\u0440\u0430\u0445\u0443\u043D\u043A\u0438');
+}
+function shortDate(iso){
+  try{ var d=new Date(iso); if(isNaN(d.getTime())) return ''; return d.toLocaleDateString('uk-UA',{day:'2-digit',month:'2-digit'}); }catch(_){ return ''; }
+}
+/* "What has the client been sent" - one row per cloud link. */
+function calcPlateHtml(project){
+  var active=ENGINE.activeCalculations(project);
+  if(active.length<2) return '';
+  return '<div class="aceilv-plate" data-aceilv-plate="1">\uD83D\uDD17 \u0423 \u0446\u044C\u043E\u043C\u0443 \u043E\u0431\u02BC\u0454\u043A\u0442\u0456 '+active.length+' '+pluralCalc(active.length)+' \u0434\u043B\u044F \u043A\u043B\u0456\u0454\u043D\u0442\u0430 \u2014 \u0443 \u043A\u043E\u0436\u043D\u043E\u0433\u043E \u0441\u0432\u043E\u0454 \u043F\u043E\u0441\u0438\u043B\u0430\u043D\u043D\u044F</div>';
+}
+function calcLinksHtml(project){
+  var all=ENGINE.calcLinks(project);
+  if(!all.length) return '';
+  var rows=all.map(function(l){
+    var st=ENGINE.linkState(l);
+    var stText = st==='active' ? ('\u0434\u0456\u0454 \u0434\u043E '+shortDate(l.expiresAt)) : (st==='revoked' ? '\u0437\u0430\u043A\u0440\u0438\u0442\u043E' : '\u0442\u0435\u0440\u043C\u0456\u043D \u0432\u0438\u0439\u0448\u043E\u0432');
+    return '<div class="aceilv-link-row'+(st==='active'?'':' off')+'" data-aceilv-link="'+esc(l.token)+'">'+
+      '<div class="aceilv-link-main"><b>'+(l.kind==='comparison'?'\u2696\uFE0F ':'\uD83D\uDCC4 ')+esc(l.name)+'</b>'+
+      '<small>'+money(l.total)+' \u00B7 \u0441\u0442\u0432\u043E\u0440\u0435\u043D\u043E '+esc(shortDate(l.publishedAt))+' \u00B7 '+stText+'</small></div>'+
+      (st==='active' ? '<button type="button" data-aceilv-copy="'+esc(l.token)+'">\u041A\u043E\u043F\u0456\u044E\u0432\u0430\u0442\u0438</button><button type="button" class="danger" data-aceilv-revoke-link="'+esc(l.token)+'">\u0417\u0430\u043A\u0440\u0438\u0442\u0438</button>' : '')+
+    '</div>';
+  }).join('');
+  return '<div class="aceilv-links"><div class="aceilv-links-title">\u041D\u0430\u0434\u0456\u0441\u043B\u0430\u043D\u0456 \u043A\u043B\u0456\u0454\u043D\u0442\u0443 \u043F\u0440\u043E\u0440\u0430\u0445\u0443\u043D\u043A\u0438</div>'+rows+
+    '<div class="aceilv-links-note">\u041A\u043E\u0436\u043D\u0435 \u043F\u043E\u0441\u0438\u043B\u0430\u043D\u043D\u044F \u0437\u0431\u0435\u0440\u0456\u0433\u0430\u0454 \u0446\u0438\u0444\u0440\u0438 \u043D\u0430 \u043C\u043E\u043C\u0435\u043D\u0442 \u0441\u0442\u0432\u043E\u0440\u0435\u043D\u043D\u044F. \u0429\u043E\u0431 \u043E\u043D\u043E\u0432\u0438\u0442\u0438 \u2014 \u0441\u0442\u0432\u043E\u0440\u0456\u0442\u044C \u043D\u043E\u0432\u0435.</div></div>';
+}
+function copyText(text){
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(function(){ return true; }, function(){ return false; });
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  return Promise.resolve(false);
+}
+
 function renderVariantBar(project, explicitHost){
   var totalsEl=document.getElementById('objRoomsTotals');
   var homeOverlay=document.getElementById('aceilVarHomeModal');
@@ -1171,13 +1318,36 @@ function renderVariantBar(project, explicitHost){
   injectInterfaceTotals(project, breakdown);
 
   bar.innerHTML =
+    calcPlateHtml(project)+
     '<div class="aceilv-tabs">'+tabsHtml+'</div>'+
     '<div class="aceilv-total">'+money(breakdown.grandTotal)+'</div>'+
     '<div class="aceilv-rooms">'+roomsHtml+'</div>'+
     '<div class="aceilv-actions">'+
       '<button type="button" class="aceilv-btn-secondary" data-aceilv-bulk="1">\u0417\u043C\u0456\u043D\u0438\u0442\u0438 \u0434\u043B\u044F \u0432\u0430\u0440\u0456\u0430\u043D\u0442\u0443</button>'+
       '<button type="button" class="aceilv-btn-secondary" data-aceilv-compare="1">\u041F\u043E\u0440\u0456\u0432\u043D\u044F\u0442\u0438 \u0437 \u041E\u0441\u043D\u043E\u0432\u043D\u0438\u043C</button>'+
-    '</div>';
+    '</div>'+
+    calcLinksHtml(project);
+
+  bar.querySelectorAll('[data-aceilv-copy]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var url=window.A_CEIL_ReportLinks && window.A_CEIL_ReportLinks.publicUrl ? window.A_CEIL_ReportLinks.publicUrl(btn.getAttribute('data-aceilv-copy')) : '';
+      if(!url) return;
+      copyText(url).then(function(ok){ if(ok) toast('\u041F\u043E\u0441\u0438\u043B\u0430\u043D\u043D\u044F \u0441\u043A\u043E\u043F\u0456\u0439\u043E\u0432\u0430\u043D\u043E'); else { try{ window.prompt('\u041F\u043E\u0441\u0438\u043B\u0430\u043D\u043D\u044F:', url); }catch(_){window.__diagSilent&&window.__diagSilent(_)} } });
+    });
+  });
+  bar.querySelectorAll('[data-aceilv-revoke-link]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if(!confirm('\u0417\u0430\u043A\u0440\u0438\u0442\u0438 \u0446\u0435 \u043F\u043E\u0441\u0438\u043B\u0430\u043D\u043D\u044F? \u041A\u043B\u0456\u0454\u043D\u0442 \u0431\u0456\u043B\u044C\u0448\u0435 \u043D\u0435 \u0437\u043C\u043E\u0436\u0435 \u0439\u043E\u0433\u043E \u0432\u0456\u0434\u043A\u0440\u0438\u0442\u0438. \u0406\u043D\u0448\u0456 \u043F\u043E\u0441\u0438\u043B\u0430\u043D\u043D\u044F \u043D\u0435 \u0437\u0430\u0447\u0435\u043F\u0438\u0442\u044C.')) return;
+      var tokenValue=btn.getAttribute('data-aceilv-revoke-link');
+      var api=window.A_CEIL_ReportLinks;
+      if(!api || !api.revokeToken){ toast('\u0417\u0430\u043A\u0440\u0438\u0442\u0442\u044F \u043F\u043E\u0441\u0438\u043B\u0430\u043D\u043D\u044F \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0435'); return; }
+      btn.disabled=true;
+      Promise.resolve(api.revokeToken(tokenValue, project.id!=null?project.id:project._dbId)).then(function(){
+        toast('\u041F\u043E\u0441\u0438\u043B\u0430\u043D\u043D\u044F \u0437\u0430\u043A\u0440\u0438\u0442\u043E');
+        var fresh=findActiveProject(); if(fresh) renderVariantBar(fresh, host);
+      }).catch(function(e){ btn.disabled=false; toast('\u041D\u0435 \u0432\u0434\u0430\u043B\u043E\u0441\u044F \u0437\u0430\u043A\u0440\u0438\u0442\u0438: '+(e&&e.message||e)); });
+    });
+  });
 
   bar.querySelectorAll('[data-aceilv-select]').forEach(function(el){
     el.addEventListener('click', function(){
@@ -1804,13 +1974,20 @@ function ensureCompareModal(){
       '<h3>\u041F\u043E\u0440\u0456\u0432\u043D\u044F\u043D\u043D\u044F \u0437 \u041E\u0441\u043D\u043E\u0432\u043D\u0438\u043C</h3>'+
       '<div class="aceilv-field"><label>\u0412\u0430\u0440\u0456\u0430\u043D\u0442</label><select id="aceilvCmpSelect"></select></div>'+
       '<div id="aceilvCmpTableWrap"></div>'+
+      '<div id="aceilvCmpLink" hidden></div>'+
       '<div class="aceilv-modal-btns">'+
+        '<button type="button" id="aceilvCmpPublish">\uD83D\uDD17 \u041F\u043E\u0441\u0438\u043B\u0430\u043D\u043D\u044F \u043A\u043B\u0456\u0454\u043D\u0442\u0443</button>'+
         '<button type="button" id="aceilvCmpReport">\uD83D\uDCE4 \u0417\u0432\u0456\u0442 / \u043F\u043E\u0434\u0456\u043B\u0438\u0442\u0438\u0441\u044F</button>'+
         '<button type="button" class="aceilv-btn-secondary" id="aceilvCmpClose">\u0417\u0430\u043A\u0440\u0438\u0442\u0438</button>'+
       '</div>'+
     '</div>';
   document.body.appendChild(overlay);
   overlay.querySelector('#aceilvCmpClose').addEventListener('click', function(){ overlay.classList.remove('open'); });
+  overlay.querySelector('#aceilvCmpPublish').addEventListener('click', function(){
+    var project=overlay._aceilCompareProject;
+    var select=document.getElementById('aceilvCmpSelect');
+    if(project && select && select.value) publishComparisonLink(project, select.value, this);
+  });
   overlay.querySelector('#aceilvCmpReport').addEventListener('click', function(){
     var project=overlay._aceilCompareProject;
     var select=document.getElementById('aceilvCmpSelect');
@@ -1901,124 +2078,196 @@ function drawComparisonRoomSketch(c,room,x,y,w,h){
   });
 }
 
-function buildComparisonReportCanvas(project,variantId){
+function reportWrapLines(c,text,maxWidth){
+  var words=String(text||'').split(/\s+/).filter(Boolean),lines=[],cur='';
+  words.forEach(function(w){
+    var test=cur?cur+' '+w:w;
+    if(c.measureText(test).width>maxWidth && cur){ lines.push(cur); cur=w; } else cur=test;
+  });
+  if(cur) lines.push(cur);
+  return lines;
+}
+function reportSigned(v){
+  var n=Math.round(num(v));
+  if(n===0) return '0 ₴';
+  return (n>0?'+':'−')+Math.abs(n).toLocaleString('uk-UA')+' ₴';
+}
+
+/* Plain-language data behind the comparison: used by both the modal table and
+   the client report so the two can never disagree. */
+function comparisonModel(project,variantId){
   var mainBd=ENGINE.computeProjectBreakdown(project,null);
   var varBd=ENGINE.computeProjectBreakdown(project,variantId);
   var variant=ENGINE.findVariant(project,variantId);
-  var variantName=variant&&variant.name ? variant.name : '\u0412\u0430\u0440\u0456\u0430\u043D\u0442';
   var names=[],seen={};
   mainBd.categories.concat(varBd.categories).forEach(function(row){
     if(!seen[row.name]){ seen[row.name]=true; names.push(row.name); }
   });
-  function categoryTotal(bd,name){
+  function totalOf(bd,name){
     var found=bd.categories.find(function(row){ return row.name===name; });
     return found ? found.total : 0;
   }
-  var roomCount=Math.max(mainBd.rooms.length,varBd.rooms.length);
+  var rows=names.map(function(name){
+    var m=totalOf(mainBd,name), v=totalOf(varBd,name);
+    return {name:name,main:m,variant:v,diff:v-m};
+  });
+  var changed=rows.filter(function(r){ return Math.abs(r.diff)>=0.5; });
+  var same=rows.filter(function(r){ return Math.abs(r.diff)<0.5 && (r.main>0||r.variant>0); });
+  var diff=varBd.grandTotal-mainBd.grandTotal;
+  return {
+    mainBd:mainBd, varBd:varBd,
+    variantName:(variant&&variant.name)?variant.name:'Варіант',
+    rows:rows, changed:changed, same:same,
+    sameTotal:same.reduce(function(s,r){ return s+r.main; },0),
+    mainTotal:mainBd.grandTotal, varTotal:varBd.grandTotal,
+    diff:diff,
+    percent: mainBd.grandTotal>0 ? Math.abs(diff)/mainBd.grandTotal*100 : 0
+  };
+}
+function comparisonVerdict(model){
+  var amount=reportMoney(Math.abs(model.diff));
+  if(Math.abs(model.diff)<0.5) return 'Варіанти коштують однаково';
+  var pct=model.percent>=1 ? ' ('+Math.round(model.percent)+'%)' : '';
+  return model.diff<0
+    ? 'Варіант 2 дешевший на '+amount+pct
+    : 'Варіант 2 дорожчий на '+amount+pct;
+}
+
+function buildComparisonReportCanvas(project,variantId){
+  var model=comparisonModel(project,variantId);
   var mainFilmBd=ENGINE.computeFilmBreakdown(project,null);
   var varFilmBd=ENGINE.computeFilmBreakdown(project,variantId);
-  var filmRoomCount=(project.rooms||[]).length;
-  var sketchRows=Math.ceil((project.rooms||[]).length/2);
-  var height=570+names.length*58+(roomCount?80+roomCount*54:0)+(filmRoomCount?90+filmRoomCount*70:0)+varFilmBd.warnings.length*24+170+(sketchRows?70+sketchRows*300:0);
+  var rooms=project.rooms||[];
+  var nameV=model.variantName;
+
+  function paint(c,withSketches){
+    var W=1080,y=0;
+    var grad=c.createLinearGradient(0,0,W,150);
+    grad.addColorStop(0,'#0f172a'); grad.addColorStop(1,'#2563eb');
+    c.fillStyle=grad; c.fillRect(0,0,W,150);
+    reportRoundRect(c,42,32,78,78,20,'#ffffff');
+    c.fillStyle='#2563eb'; c.font='900 48px Arial'; c.textAlign='center'; c.fillText('A',81,88);
+    c.textAlign='left'; c.fillStyle='#ffffff'; c.font='900 30px Arial'; c.fillText('A·CEIL',144,68);
+    c.fillStyle='#bfdbfe'; c.font='700 18px Arial'; c.fillText('Порівняння двох варіантів кошторису',144,100);
+
+    y=198;
+    c.fillStyle='#0f172a'; c.font='900 34px Arial';
+    c.fillText(reportFitText(c,project.name||'Проєкт',960),48,y);
+    y+=31;
+    var meta=[project.addr,project.phone].filter(Boolean).join('  •  ');
+    if(meta){ c.fillStyle='#64748b'; c.font='600 17px Arial'; c.fillText(reportFitText(c,meta,970),48,y); y+=26; }
+
+    c.font='600 18px Arial'; c.fillStyle='#334155';
+    reportWrapLines(c,'Ми підготували два варіанти робіт на одному і тому ж обʼєкті. Роботи, які не змінюються, однакові в обох. Нижче — лише те, що відрізняється.',984).forEach(function(line){ y+=26; c.fillText(line,48,y); });
+    y+=30;
+
+    // two total cards
+    reportRoundRect(c,48,y,476,130,20,'#ffffff','#bfdbfe');
+    reportRoundRect(c,556,y,476,130,20,'#ffffff','#bbf7d0');
+    c.fillStyle='#2563eb'; c.font='900 15px Arial'; c.fillText('ВАРІАНТ 1',72,y+32);
+    c.fillStyle='#16a34a'; c.fillText('ВАРІАНТ 2',580,y+32);
+    c.fillStyle='#0f172a'; c.font='800 19px Arial';
+    c.fillText(reportFitText(c,'Основний',420),72,y+60);
+    c.fillText(reportFitText(c,nameV,420),580,y+60);
+    c.font='900 36px Arial'; c.fillStyle='#1e3a8a'; c.fillText(reportMoney(model.mainTotal),72,y+108);
+    c.fillStyle='#166534'; c.fillText(reportMoney(model.varTotal),580,y+108);
+    y+=150;
+
+    var good=model.diff<-0.5, equal=Math.abs(model.diff)<0.5;
+    reportRoundRect(c,48,y,984,70,18,equal?'#f1f5f9':(good?'#dcfce7':'#ffedd5'),equal?'#cbd5e1':(good?'#86efac':'#fdba74'));
+    c.fillStyle=equal?'#334155':(good?'#166534':'#9a3412'); c.font='900 25px Arial'; c.textAlign='center';
+    c.fillText(comparisonVerdict(model),540,y+44); c.textAlign='left';
+    y+=118;
+
+    // what differs
+    c.fillStyle='#0f172a'; c.font='900 24px Arial'; c.fillText('Що відрізняється',48,y); y+=22;
+    function head(first){
+      reportRoundRect(c,48,y,984,44,12,'#e2e8f0');
+      c.fillStyle='#475569'; c.font='800 13px Arial'; c.fillText(first,68,y+28); c.textAlign='right';
+      c.fillText('ВАРІАНТ 1',590,y+28); c.fillText('ВАРІАНТ 2',790,y+28); c.fillText('РІЗНИЦЯ',1012,y+28); c.textAlign='left'; y+=48;
+    }
+    head('ПОЗИЦІЯ');
+    if(!model.changed.length){
+      c.fillStyle='#64748b'; c.font='700 17px Arial'; c.fillText('У сумах позицій різниці немає.',68,y+30); y+=48;
+    }
+    model.changed.forEach(function(r,i){
+      if(i%2===0){ c.fillStyle='#ffffff'; c.fillRect(48,y,984,54); }
+      c.fillStyle='#334155'; c.font='700 18px Arial'; c.fillText(reportFitText(c,r.name,320),68,y+34);
+      c.textAlign='right'; c.font='800 18px Arial';
+      c.fillStyle='#1e3a8a'; c.fillText(reportMoney(r.main),590,y+34);
+      c.fillStyle='#166534'; c.fillText(reportMoney(r.variant),790,y+34);
+      c.fillStyle=r.diff<0?'#15803d':'#c2410c'; c.fillText(reportSigned(r.diff),1012,y+34);
+      c.textAlign='left'; y+=54;
+    });
+
+    // film per room
+    var filmRooms=rooms.filter(function(room,i){
+      return (mainFilmBd.rooms[i]&&mainFilmBd.rooms[i].info)||(varFilmBd.rooms[i]&&varFilmBd.rooms[i].info);
+    });
+    if(filmRooms.length){
+      y+=34; c.fillStyle='#0f172a'; c.font='900 22px Arial'; c.fillText('Полотно по кімнатах',48,y); y+=20;
+      function filmText(info){ return info ? (info.seriesName+' '+info.code+' · '+(info.textureLabel?info.textureLabel+' · ':'')+info.widthM+' м · '+info.areaM2.toFixed(1)+' м²') : '—'; }
+      rooms.forEach(function(room,i){
+        var mInfo=mainFilmBd.rooms[i]&&mainFilmBd.rooms[i].info, vInfo=varFilmBd.rooms[i]&&varFilmBd.rooms[i].info;
+        if(!mInfo&&!vInfo) return;
+        reportRoundRect(c,48,y,984,104,16,'#ffffff','#e2e8f0');
+        c.fillStyle='#0f172a'; c.font='800 18px Arial'; c.fillText(reportFitText(c,room.name||('Кімната '+(i+1)),900),68,y+30);
+        c.font='700 15px Arial';
+        c.fillStyle='#2563eb'; c.fillText('Варіант 1',68,y+60); c.fillStyle='#334155'; c.fillText(reportFitText(c,filmText(mInfo),600),170,y+60);
+        c.fillStyle='#16a34a'; c.fillText('Варіант 2',68,y+86); c.fillStyle='#334155'; c.fillText(reportFitText(c,filmText(vInfo),600),170,y+86);
+        c.textAlign='right'; c.font='800 16px Arial';
+        c.fillStyle='#1e3a8a'; c.fillText(reportMoney(mInfo?mInfo.total:0),1012,y+60);
+        c.fillStyle='#166534'; c.fillText(reportMoney(vInfo?vInfo.total:0),1012,y+86); c.textAlign='left';
+        y+=116;
+      });
+      if(varFilmBd.warnings.length){
+        c.font='700 14px Arial'; c.fillStyle='#c2410c';
+        varFilmBd.warnings.forEach(function(w){ c.fillText(reportFitText(c,'⚠ '+w,940),68,y+14); y+=24; });
+      }
+    }
+
+    // unchanged work
+    if(model.same.length){
+      y+=34;
+      c.font='700 16px Arial';
+      var sameText='Без змін в обох варіантах: '+model.same.map(function(r){ return r.name; }).join(', ')+' — разом '+reportMoney(model.sameTotal)+'.';
+      var lines=reportWrapLines(c,sameText,930);
+      var h=34+lines.length*24;
+      reportRoundRect(c,48,y,984,h,16,'#f8fafc','#e2e8f0');
+      c.fillStyle='#475569';
+      lines.forEach(function(line,i){ c.fillText(line,68,y+32+i*24); });
+      y+=h;
+    }
+
+    // totals
+    y+=34;
+    reportRoundRect(c,48,y,984,70,16,'#0f172a');
+    c.fillStyle='#ffffff'; c.font='900 22px Arial'; c.fillText('Разом',72,y+44);
+    c.textAlign='right'; c.font='900 24px Arial'; c.fillText(reportMoney(model.mainTotal),590,y+44); c.fillText(reportMoney(model.varTotal),790,y+44);
+    c.fillStyle=model.diff<0?'#86efac':(model.diff>0?'#fdba74':'#cbd5e1'); c.fillText(reportSigned(model.diff),1012,y+44); c.textAlign='left';
+    y+=70;
+
+    if(withSketches && rooms.length){
+      y+=44; c.fillStyle='#0f172a'; c.font='900 24px Arial'; c.fillText('Ескізи кімнат',48,y); y+=22;
+      rooms.forEach(function(room,i){
+        drawComparisonRoomSketch(c,room,48+(i%2)*508,y+Math.floor(i/2)*300,476,276);
+      });
+    } else if(!withSketches && rooms.length){
+      y+=44+22+Math.ceil(rooms.length/2)*300;
+    }
+    y+=66;
+    return y;
+  }
+
+  var probe=document.createElement('canvas'); probe.width=1080; probe.height=10;
+  var height=Math.max(900,Math.ceil(paint(probe.getContext('2d'),false)));
   var canvas=document.createElement('canvas');
-  canvas.width=1080; canvas.height=Math.max(1100,height);
+  canvas.width=1080; canvas.height=height;
   var c=canvas.getContext('2d');
   c.fillStyle='#f8fafc'; c.fillRect(0,0,canvas.width,canvas.height);
-
-  var grad=c.createLinearGradient(0,0,1080,150);
-  grad.addColorStop(0,'#0f172a'); grad.addColorStop(1,'#2563eb');
-  c.fillStyle=grad; c.fillRect(0,0,1080,150);
-  reportRoundRect(c,42,32,78,78,20,'#ffffff');
-  c.fillStyle='#2563eb'; c.font='900 48px Arial'; c.textAlign='center'; c.fillText('A',81,88);
-  c.textAlign='left'; c.fillStyle='#ffffff'; c.font='900 30px Arial'; c.fillText('A·CEIL',144,68);
-  c.fillStyle='#bfdbfe'; c.font='700 17px Arial'; c.fillText('\u041F\u043E\u0440\u0456\u0432\u043D\u044F\u043D\u043D\u044F \u0432\u0430\u0440\u0456\u0430\u043D\u0442\u0456\u0432 \u043A\u043E\u0448\u0442\u043E\u0440\u0438\u0441\u0443',144,98);
-
-  var y=198;
-  c.fillStyle='#0f172a'; c.font='900 34px Arial';
-  c.fillText(reportFitText(c,project.name||'\u041F\u0440\u043E\u0454\u043A\u0442',900),48,y);
-  y+=31;
-  var meta=[project.addr,project.phone,(project.rooms||[]).length+' \u043A\u0456\u043C\u043D.'].filter(Boolean).join('  •  ');
-  c.fillStyle='#64748b'; c.font='600 17px Arial'; c.fillText(reportFitText(c,meta,970),48,y);
-  y+=38;
-
-  reportRoundRect(c,48,y,476,116,20,'#ffffff','#dbeafe');
-  reportRoundRect(c,556,y,476,116,20,'#ffffff','#bbf7d0');
-  c.fillStyle='#64748b'; c.font='800 15px Arial'; c.fillText('\u041E\u0421\u041D\u041E\u0412\u041D\u0418\u0419',72,y+31);
-  c.fillStyle='#1e3a8a'; c.font='900 34px Arial'; c.fillText(reportMoney(mainBd.grandTotal),72,y+78);
-  c.fillStyle='#64748b'; c.font='800 15px Arial'; c.fillText(reportFitText(c,String(variantName).toUpperCase(),410),580,y+31);
-  c.fillStyle='#166534'; c.font='900 34px Arial'; c.fillText(reportMoney(varBd.grandTotal),580,y+78);
-  y+=156;
-
-  c.fillStyle='#0f172a'; c.font='900 23px Arial'; c.fillText('\u041A\u043E\u0448\u0442\u043E\u0440\u0438\u0441 \u0437\u0430 \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0456\u044F\u043C\u0438',48,y); y+=24;
-  reportRoundRect(c,48,y,984,46,12,'#e2e8f0');
-  c.fillStyle='#475569'; c.font='800 14px Arial';
-  c.fillText('\u041A\u0410\u0422\u0415\u0413\u041E\u0420\u0406\u042F',68,y+29); c.textAlign='right';
-  c.fillText('\u041E\u0421\u041D\u041E\u0412\u041D\u0418\u0419',780,y+29); c.fillText(reportFitText(c,String(variantName).toUpperCase(),210),1008,y+29);
-  c.textAlign='left'; y+=50;
-  names.forEach(function(name,index){
-    if(index%2===0){ c.fillStyle='#ffffff'; c.fillRect(48,y,984,54); }
-    c.fillStyle='#334155'; c.font='700 18px Arial'; c.fillText(reportFitText(c,name,490),68,y+34);
-    c.textAlign='right'; c.fillStyle='#334155'; c.font='800 18px Arial';
-    c.fillText(reportMoney(categoryTotal(mainBd,name)),780,y+34);
-    c.fillStyle='#166534'; c.fillText(reportMoney(categoryTotal(varBd,name)),1008,y+34);
-    c.textAlign='left'; y+=54;
-  });
-
-  if(roomCount){
-    y+=42; c.fillStyle='#0f172a'; c.font='900 23px Arial'; c.fillText('\u0421\u0443\u043C\u0430 \u043F\u043E \u043A\u0456\u043C\u043D\u0430\u0442\u0430\u0445',48,y); y+=24;
-    reportRoundRect(c,48,y,984,46,12,'#e2e8f0');
-    c.fillStyle='#475569'; c.font='800 14px Arial'; c.fillText('\u041A\u0406\u041C\u041D\u0410\u0422\u0410',68,y+29); c.textAlign='right';
-    c.fillText('\u041E\u0421\u041D\u041E\u0412\u041D\u0418\u0419',780,y+29); c.fillText(reportFitText(c,String(variantName).toUpperCase(),210),1008,y+29); c.textAlign='left'; y+=50;
-    for(var i=0;i<roomCount;i++){
-      var mr=mainBd.rooms[i],vr=varBd.rooms[i];
-      if(i%2===0){ c.fillStyle='#ffffff'; c.fillRect(48,y,984,50); }
-      c.fillStyle='#334155'; c.font='700 17px Arial'; c.fillText(reportFitText(c,(mr&&mr.room&&mr.room.name)||(vr&&vr.room&&vr.room.name)||('\u041A\u0456\u043C\u043D\u0430\u0442\u0430 '+(i+1)),490),68,y+32);
-      c.textAlign='right'; c.font='800 17px Arial'; c.fillText(reportMoney(mr?mr.total:0),780,y+32); c.fillStyle='#166534'; c.fillText(reportMoney(vr?vr.total:0),1008,y+32); c.textAlign='left'; y+=50;
-    }
-  }
-
-  if(filmRoomCount){
-    y+=42; c.fillStyle='#0f172a'; c.font='900 23px Arial'; c.fillText('\u041F\u043B\u0456\u0432\u043A\u0430 / \u043F\u043E\u043B\u043E\u0442\u043D\u043E',48,y); y+=24;
-    reportRoundRect(c,48,y,984,46,12,'#e2e8f0');
-    c.fillStyle='#475569'; c.font='800 14px Arial'; c.fillText('\u041A\u0406\u041C\u041D\u0410\u0422\u0410',68,y+29); c.textAlign='right';
-    c.fillText('\u041E\u0421\u041D\u041E\u0412\u041D\u0418\u0419',780,y+29); c.fillText(reportFitText(c,String(variantName).toUpperCase(),210),1008,y+29); c.textAlign='left'; y+=50;
-    (project.rooms||[]).forEach(function(room,i){
-      var mInfo=mainFilmBd.rooms[i]&&mainFilmBd.rooms[i].info, vInfo=varFilmBd.rooms[i]&&varFilmBd.rooms[i].info;
-      if(i%2===0){ c.fillStyle='#ffffff'; c.fillRect(48,y,984,66); }
-      c.fillStyle='#334155'; c.font='700 17px Arial'; c.fillText(reportFitText(c,room.name||('\u041A\u0456\u043C\u043D\u0430\u0442\u0430 '+(i+1)),300),68,y+26);
-      c.font='600 13px Arial'; c.fillStyle='#64748b';
-      c.fillText(mInfo?(mInfo.seriesName+' '+mInfo.code+' \u00B7 '+mInfo.widthM+'\u043C \u00B7 '+mInfo.areaM2.toFixed(1)+'\u043C\u00B2'):'\u2014',380,y+22);
-      c.fillText(vInfo?(vInfo.seriesName+' '+vInfo.code+' \u00B7 '+vInfo.widthM+'\u043C \u00B7 '+vInfo.areaM2.toFixed(1)+'\u043C\u00B2'):'\u2014',380,y+44);
-      c.textAlign='right'; c.font='800 15px Arial';
-      c.fillStyle='#1e3a8a'; c.fillText(reportMoney(mInfo?mInfo.total:0),1008,y+22);
-      c.fillStyle='#166534'; c.fillText(reportMoney(vInfo?vInfo.total:0),1008,y+44);
-      c.textAlign='left'; y+=70;
-    });
-    if(varFilmBd.warnings.length){
-      c.font='700 13px Arial'; c.fillStyle='#c2410c';
-      varFilmBd.warnings.forEach(function(w){ c.fillText(reportFitText(c,'\u26A0 '+w,940),68,y+14); y+=22; });
-      y+=8;
-    }
-  }
-
-  y+=46;
-  var saving=mainBd.grandTotal-varBd.grandTotal;
-  var savingGood=saving>=0;
-  reportRoundRect(c,48,y,984,104,22,savingGood?'#dcfce7':'#fee2e2',savingGood?'#86efac':'#fecaca');
-  c.fillStyle=savingGood?'#166534':'#991b1b'; c.font='900 22px Arial';
-  c.fillText(savingGood?'\u0415\u043A\u043E\u043D\u043E\u043C\u0456\u044F':'\u041F\u043E\u0434\u043E\u0440\u043E\u0436\u0447\u0430\u043D\u043D\u044F',76,y+42);
-  c.textAlign='right'; c.font='900 36px Arial'; c.fillText(reportMoney(Math.abs(saving)),1004,y+64); c.textAlign='left';
-
-  if((project.rooms||[]).length){
-    y+=148; c.fillStyle='#0f172a'; c.font='900 25px Arial'; c.fillText('Ескізи кімнат',48,y); y+=24;
-    (project.rooms||[]).forEach(function(room,i){
-      var col=i%2,row=Math.floor(i/2);
-      drawComparisonRoomSketch(c,room,48+col*508,y+row*300,476,276);
-    });
-  }
-
+  paint(c,true);
   c.fillStyle='#94a3b8'; c.font='600 14px Arial'; c.textAlign='center';
-  c.fillText('A·CEIL  •  \u041F\u043E\u0440\u0456\u0432\u043D\u044F\u043B\u044C\u043D\u0438\u0439 \u043A\u043E\u0448\u0442\u043E\u0440\u0438\u0441',540,canvas.height-38); c.textAlign='left';
+  c.fillText('A·CEIL  •  Порівняльний кошторис',540,canvas.height-30); c.textAlign='left';
   return canvas;
 }
 
@@ -2040,41 +2289,76 @@ function generateComparisonReport(project,variantId){
 }
 
 function renderCompareTable(project, variantId){
-  var mainBd=ENGINE.computeProjectBreakdown(project, null);
-  var varBd=ENGINE.computeProjectBreakdown(project, variantId);
-  var names=[]; var seen={};
-  mainBd.categories.concat(varBd.categories).forEach(function(c){ if(!seen[c.name]){ seen[c.name]=1; names.push(c.name); } });
-  function totalFor(bd,name){ var f=bd.categories.find(function(c){ return c.name===name; }); return f?f.total:0; }
-  var rows=names.map(function(name){
-    var m=totalFor(mainBd,name), v=totalFor(varBd,name);
-    return '<tr><td>'+esc(name)+'</td><td class="num">'+money(m)+'</td><td class="num">'+money(v)+'</td></tr>';
-  }).join('');
-  var diff=mainBd.grandTotal-varBd.grandTotal;
-  var diffLabel = diff>=0 ? '\u0415\u043A\u043E\u043D\u043E\u043C\u0456\u044F' : '\u041F\u043E\u0434\u043E\u0440\u043E\u0436\u0447\u0430\u043D\u043D\u044F';
-  var html='<table class="aceilv-cmp-table"><thead><tr><th>\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0456\u044F</th><th class="num">\u041E\u0441\u043D\u043E\u0432\u043D\u0438\u0439</th><th class="num">\u0412\u0430\u0440\u0456\u0430\u043D\u0442</th></tr></thead><tbody>'+
+  var model=comparisonModel(project, variantId);
+  var good=model.diff<-0.5, equal=Math.abs(model.diff)<0.5;
+  var rows=model.changed.map(function(r){
+    return '<tr><td>'+esc(r.name)+'</td><td class="num">'+esc(reportMoney(r.main))+'</td><td class="num">'+esc(reportMoney(r.variant))+'</td><td class="num '+(r.diff<0?'good':'bad')+'">'+esc(reportSigned(r.diff))+'</td></tr>';
+  }).join('') || '<tr><td colspan="4" style="color:#64748b">У сумах позицій різниці немає</td></tr>';
+  var html=
+    '<div class="aceilv-cmp-cards">'+
+      '<div class="aceilv-cmp-card"><small>Варіант 1</small><b>Основний</b><span>'+esc(reportMoney(model.mainTotal))+'</span></div>'+
+      '<div class="aceilv-cmp-card alt"><small>Варіант 2</small><b>'+esc(model.variantName)+'</b><span>'+esc(reportMoney(model.varTotal))+'</span></div>'+
+    '</div>'+
+    '<div class="aceilv-cmp-verdict '+(equal?'eq':(good?'good':'bad'))+'">'+esc(comparisonVerdict(model))+'</div>'+
+    '<div class="aceilv-cmp-subtitle">Що відрізняється</div>'+
+    '<table class="aceilv-cmp-table"><thead><tr><th>Позиція</th><th class="num">Вар. 1</th><th class="num">Вар. 2</th><th class="num">Різниця</th></tr></thead><tbody>'+
     rows+
-    '<tr class="total"><td>\u0420\u0430\u0437\u043E\u043C</td><td class="num">'+money(mainBd.grandTotal)+'</td><td class="num">'+money(varBd.grandTotal)+'</td></tr>'+
-    '<tr class="save"><td>'+diffLabel+'</td><td class="num" colspan="2">'+money(Math.abs(diff))+'</td></tr>'+
-  '</tbody></table>';
+    '<tr class="total"><td>Разом</td><td class="num">'+esc(reportMoney(model.mainTotal))+'</td><td class="num">'+esc(reportMoney(model.varTotal))+'</td><td class="num">'+esc(reportSigned(model.diff))+'</td></tr>'+
+    '</tbody></table>'+
+    (model.same.length ? '<div class="aceilv-cmp-same">Без змін в обох: '+esc(model.same.map(function(r){ return r.name; }).join(', '))+' — разом '+esc(reportMoney(model.sameTotal))+'</div>' : '');
 
   var mainFilm=ENGINE.computeFilmBreakdown(project, null);
   var varFilm=ENGINE.computeFilmBreakdown(project, variantId);
   function filmCell(info){
-    if(!info) return '\u2014';
-    return esc(info.seriesName)+' '+esc(info.code)+'<br><span style="color:#64748b;font-weight:600">'+esc(info.textureLabel)+' \u00B7 '+info.widthM+'\u043C \u00B7 '+money(info.pricePerM2)+'/\u043C\u00B2 \u00B7 '+info.areaM2.toFixed(2)+'\u043C\u00B2</span>';
+    if(!info) return '—';
+    return esc(info.seriesName)+' '+esc(info.code)+'<br><span style="color:#64748b;font-weight:600">'+esc(info.textureLabel)+' · '+info.widthM+'м · '+esc(reportMoney(info.total))+'</span>';
   }
   var filmRows=(project.rooms||[]).map(function(room,i){
     var mInfo=mainFilm.rooms[i]&&mainFilm.rooms[i].info, vInfo=varFilm.rooms[i]&&varFilm.rooms[i].info;
-    return '<tr><td>'+esc(room.name||'')+'</td><td>'+filmCell(mInfo)+'</td><td>'+filmCell(vInfo)+'</td>'+
-      '<td class="num">'+money(mInfo?mInfo.total:0)+'</td><td class="num">'+money(vInfo?vInfo.total:0)+'</td></tr>';
+    if(!mInfo&&!vInfo) return '';
+    return '<tr><td>'+esc(room.name||'')+'</td><td>'+filmCell(mInfo)+'</td><td>'+filmCell(vInfo)+'</td></tr>';
   }).join('');
-  var filmHtml = (project.rooms||[]).length
-    ? '<div class="aceilv-cmp-subtitle">\u041F\u043B\u0456\u0432\u043A\u0430 / \u043F\u043E\u043B\u043E\u0442\u043D\u043E</div>'+
-      '<table class="aceilv-cmp-table"><thead><tr><th>\u041A\u0456\u043C\u043D\u0430\u0442\u0430</th><th>\u041E\u0441\u043D\u043E\u0432\u043D\u0438\u0439</th><th>\u0412\u0430\u0440\u0456\u0430\u043D\u0442</th><th class="num">\u0421\u0443\u043C\u0430 \u041E</th><th class="num">\u0421\u0443\u043C\u0430 \u0412</th></tr></thead><tbody>'+filmRows+'</tbody></table>'+
+  var filmHtml = filmRows
+    ? '<div class="aceilv-cmp-subtitle">Полотно по кімнатах</div>'+
+      '<table class="aceilv-cmp-table"><thead><tr><th>Кімната</th><th>Вар. 1</th><th>Вар. 2</th></tr></thead><tbody>'+filmRows+'</tbody></table>'+
       (varFilm.warnings.length ? varFilm.warnings.map(function(w){ return '<div class="aceilv-note">'+esc(w)+'</div>'; }).join('') : '')
     : '';
 
   document.getElementById('aceilvCmpTableWrap').innerHTML=html+filmHtml;
+  var linkBox=document.getElementById('aceilvCmpLink');
+  if(linkBox){ linkBox.hidden=true; linkBox.innerHTML=''; }
+}
+
+/* Publish the comparison as its own client link (an immutable snapshot of the
+   picture the client sees), without touching any other link of the object. */
+async function publishComparisonLink(project, variantId, button){
+  var api=window.A_CEIL_ReportLinks;
+  var box=document.getElementById('aceilvCmpLink');
+  if(!api || typeof api.publishPayload!=='function'){ toast('Публікація посилання недоступна'); return; }
+  var original=button?button.textContent:'';
+  try{
+    if(button){ button.disabled=true; button.textContent='⏳ Створюється…'; }
+    var canvas=buildComparisonReportCanvas(project, variantId);
+    var payload={
+      version:2,
+      createdAt:new Date().toISOString(),
+      meta:{name:String(project.name||'Порівняння кошторисів'),address:String(project.addr||''),phone:String(project.phone||'')},
+      presentation:'generated-report',
+      image:canvas.toDataURL('image/png')
+    };
+    var url=await api.publishPayload(payload,{projectId:project._dbId||project.id,kind:'comparison',variantId:variantId});
+    if(box){
+      box.hidden=false;
+      box.innerHTML='<div class="aceilv-cmp-linkbox"><input type="text" readonly value="'+esc(url)+'"><button type="button" data-copy-cmp="1">Копіювати</button></div>';
+      var input=box.querySelector('input'); var copyBtn=box.querySelector('[data-copy-cmp]');
+      if(copyBtn) copyBtn.addEventListener('click', function(){ copyText(url).then(function(ok){ if(ok) toast('Посилання скопійовано'); else if(input){ input.focus(); input.select(); } }); });
+    }
+    toast('Посилання на порівняння готове');
+  }catch(e){
+    toast('Не вдалося створити посилання: '+(e&&e.message||e));
+  }finally{
+    if(button){ button.disabled=false; button.textContent=original; }
+  }
 }
 
 function openCompareModal(project){
@@ -2121,5 +2405,17 @@ if(typeof oldCloseObjectRooms==='function' && !oldCloseObjectRooms.__aceilVarian
   window.closeObjectRooms=wrappedClose;
   try{ closeObjectRooms=wrappedClose; }catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
+
+window.A_CEIL_EstimateVariantsUI={buildComparisonReportCanvas:buildComparisonReportCanvas,comparisonModel:comparisonModel,comparisonVerdict:comparisonVerdict,renderVariantBar:renderVariantBar,openCompareModal:openCompareModal};
+window.addEventListener('aceil:report-link-change', function(){
+  try{
+    var project=findActiveProject();
+    if(!project) return;
+    var overlay=document.getElementById('aceilVarHomeModal');
+    var host=document.getElementById('aceilVarHomeHost');
+    if(overlay && overlay.classList.contains('open') && host) renderVariantBar(project, host);
+    else if(document.getElementById('aceilVarBar')) renderVariantBar(project);
+  }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+});
 })();
 

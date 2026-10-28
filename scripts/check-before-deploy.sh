@@ -8,6 +8,7 @@ python3 scripts/check-runtime.py || exit 1
 node tests/security-config.test.cjs || exit 1
 node tests/pending-sync-queue.test.cjs || exit 1
 node tests/project-mode.test.cjs || exit 1
+node tests/calc-links.test.cjs || exit 1
 node tests/project-mode-browser.test.cjs || exit 1
 node tests/linear-cloud-restore.test.cjs || exit 1
 node tests/film-group-hydration.test.cjs || exit 1
