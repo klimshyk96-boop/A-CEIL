@@ -146,9 +146,38 @@ const PENDING_KEY = "ceiling_pendingSync";
     return status === 401 || /jwt|token|session|not authenticated|auth session missing/i.test(errorMessage(error));
   }
   function isTransientError(error) {
-    const status = Number(error && (error.status || error.statusCode) || 0);
-    return !navigator.onLine || status === 0 || status === 408 || status === 425 || status === 429 || status >= 500 ||
+    const rawStatus = error && (error.status ?? error.statusCode);
+    const status = rawStatus == null || rawStatus === "" ? null : Number(rawStatus);
+    return !navigator.onLine || status === 0 || status === 408 || status === 425 || status === 429 || (status != null && status >= 500) ||
       /load failed|failed to fetch|networkerror|network request failed|timeout|timed out|таймаут/i.test(errorMessage(error));
+  }
+  function isMissingRowError(error) {
+    const code = String(error && error.code || "");
+    const message = errorMessage(error);
+    return code === "PGRST116" || /0 rows|no rows|result contains 0 rows|cannot coerce.*single json object/i.test(message);
+  }
+  function requestTimeoutMs() {
+    const configured = Number(window.__A_CEIL_SYNC_TIMEOUT_MS);
+    return Number.isFinite(configured) && configured >= 10 ? configured : 12000;
+  }
+  function runQuery(query, label) {
+    const timeoutMs = requestTimeoutMs();
+    let controller = null, timer = null, request = query;
+    try {
+      if (typeof AbortController === "function" && request && typeof request.abortSignal === "function") {
+        controller = new AbortController();
+        request = request.abortSignal(controller.signal);
+      }
+    } catch (_) { controller = null; request = query; }
+    return new Promise((resolve, reject) => {
+      timer = setTimeout(() => {
+        try { if (controller) controller.abort(); } catch (_) {}
+        const error = new Error((label || "Хмарний запит") + ": таймаут");
+        error.aceilTimeout = true;
+        reject(error);
+      }, timeoutMs);
+      Promise.resolve(request).then(resolve, reject).finally(() => clearTimeout(timer));
+    });
   }
   function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
   async function refreshAuth(session) {
@@ -163,14 +192,26 @@ const PENDING_KEY = "ceiling_pendingSync";
     if (op.type === "save") {
       const sentSignature = signature(local, p, session.uid);
       const payload = payloadFor(local, p, session.uid), dbId = local._dbId || p.dbId;
-      const query = dbId ? session.client.from("projects").update(payload).eq("id", dbId) : session.client.from("projects").insert(payload);
-      const result = await query.select().single();
-      if (result.error) throw result.error;
+      let result;
+      if (dbId) {
+        const update = session.client.from("projects").update(payload).eq("id", dbId).select().single();
+        result = await runQuery(update, "Оновлення проєкту");
+        // A local cache can legitimately outlive its old cloud row. Recreate it
+        // instead of leaving the same impossible UPDATE in the queue forever.
+        if (result && result.error && isMissingRowError(result.error)) {
+          const insert = session.client.from("projects").insert(payload).select().single();
+          result = await runQuery(insert, "Відновлення проєкту в хмарі");
+        }
+      } else {
+        const insert = session.client.from("projects").insert(payload).select().single();
+        result = await runQuery(insert, "Збереження проєкту");
+      }
+      if (result && result.error) throw result.error;
       if (!result.data || !result.data.id) throw new Error("Сервер не підтвердив збереження");
       return {row: result.data, sentSignature};
     }
     if (op.type === "delete" && p.dbId) {
-      const result = await session.client.from("projects").delete().eq("id", p.dbId).select("id");
+      const result = await runQuery(session.client.from("projects").delete().eq("id", p.dbId).select("id"), "Видалення проєкту");
       if (result.error) throw result.error;
       const rows=Array.isArray(result.data)?result.data:(result.data?[result.data]:[]);
       if(!rows.some(row=>row&&String(row.id)===String(p.dbId)))throw new Error("Сервер не підтвердив видалення проєкту");
@@ -184,6 +225,9 @@ const PENDING_KEY = "ceiling_pendingSync";
       catch (error) {
         lastError = error;
         if (!sameSession(session)) throw error;
+        // A timed-out INSERT may already have reached the server. Do not issue
+        // an immediate duplicate request; leave it for the normal delayed retry.
+        if (error && error.aceilTimeout) throw error;
         if (attempt === 0 && isAuthError(error) && await refreshAuth(session)) continue;
         if (attempt < 2 && isTransientError(error)) { await wait(700 * (attempt + 1)); continue; }
         throw error;
