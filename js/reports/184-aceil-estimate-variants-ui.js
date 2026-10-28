@@ -390,7 +390,14 @@ function syncShadow(project){
     links: clone(project.calcLinks||[]),
     savedAt: Date.now()
   };
-  project.rooms.forEach(function(r){ if(r && typeof r==='object') r._aceilVariantsShadow = payload; });
+  var carrier=null;
+  project.rooms.forEach(function(r){
+    if(!r || typeof r!=='object') return;
+    if(!carrier){ carrier=r; r._aceilVariantsShadow=payload; return; }
+    // One shadow is enough for recovery. Repeating the same registry in every
+    // room multiplies project JSON size and quickly pressures Safari storage.
+    if(Object.prototype.hasOwnProperty.call(r,'_aceilVariantsShadow')) delete r._aceilVariantsShadow;
+  });
 }
 
 function persistProject(project){
