@@ -234,13 +234,32 @@
     if (typeof options.onProgress === "function") options.onProgress("Оптимізація креслення…");
     var safePayload = Object.assign(await optimizePayload(payload, options), { expiresAt: expires });
     if (typeof options.onProgress === "function") options.onProgress("Завантаження звіту в хмару…");
+    // Every publication is an immutable snapshot. The legacy project fields are
+    // still refreshed below for the project list/CRM, but they are no longer
+    // the authority for previously shared URLs.
+    var snapshotResult = await withTimeout(client.rpc("aceil_publish_report_snapshot", {
+      p_project_id: projectId,
+      p_token: value,
+      p_payload: safePayload,
+      p_expires_at: expires
+    }), 30000, "Хмара не відповіла за 30 секунд. Перевірте інтернет і повторіть");
+    var snapshotReady = !snapshotResult.error;
+    var snapshotUnavailable = snapshotResult.error && (
+      snapshotResult.error.code === "PGRST202" ||
+      /aceil_publish_report_snapshot|schema cache|function/i.test(String(snapshotResult.error.message || snapshotResult.error))
+    );
+    if (snapshotResult.error && !snapshotUnavailable) throw snapshotResult.error;
+
     var result = await withTimeout(client.rpc("aceil_publish_report_link", {
       p_project_id: projectId,
       p_token: value,
       p_payload: safePayload,
       p_expires_at: expires
     }), 30000, "Хмара не відповіла за 30 секунд. Перевірте інтернет і повторіть");
-    if (result.error) throw result.error;
+    // Before the snapshot migration exists the legacy RPC remains the safe
+    // compatibility path. Once snapshots are available, a failure to refresh
+    // the single "latest report" badge must not invalidate the new URL.
+    if (result.error && !snapshotReady) throw result.error;
     patchLocal(project, {
       report_token: value,
       report_published_at: new Date().toISOString(),
@@ -255,6 +274,15 @@
     var project = activeProject(reference);
     var projectId = dbId(project);
     if (!projectId) throw new Error("Проєкт не знайдено");
+    var currentToken = project.report_token || "";
+    if (currentToken) {
+      var snapshotResult = await client.rpc("aceil_revoke_report_snapshot", { p_token: currentToken });
+      var snapshotUnavailable = snapshotResult.error && (
+        snapshotResult.error.code === "PGRST202" ||
+        /aceil_revoke_report_snapshot|schema cache|function/i.test(String(snapshotResult.error.message || snapshotResult.error))
+      );
+      if (snapshotResult.error && !snapshotUnavailable) throw snapshotResult.error;
+    }
     var result = await client.rpc("aceil_revoke_report_link", { p_project_id: projectId });
     if (result.error) throw result.error;
     patchLocal(project, { report_token: null, report_published_at: null, report_expires_at: null });
