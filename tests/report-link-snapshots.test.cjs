@@ -15,7 +15,7 @@ assert.ok(links.indexOf('aceil_publish_report_snapshot')<links.indexOf('aceil_pu
   'immutable snapshot must be stored before the legacy latest-link badge is refreshed');
 assert.match(links,/aceil_revoke_report_snapshot/);
 assert.match(publicPage,/aceil_get_public_report_snapshot/);
-assert.ok(publicPage.indexOf('aceil_get_public_report_snapshot')<publicPage.indexOf('aceil_get_public_report'),
+assert.ok(publicPage.indexOf('aceil_get_public_report_snapshot')<publicPage.indexOf('"aceil_get_public_report"'),
   'public page must resolve immutable snapshots before the historical project field');
 assert.match(migration,/create table if not exists public\.aceil_report_snapshots/);
 assert.match(migration,/token text primary key/);

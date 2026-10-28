@@ -265,7 +265,50 @@
       report_published_at: new Date().toISOString(),
       report_expires_at: expires
     });
+    // Remember WHICH calculation this link shows (main estimate, an economy
+    // variant, or the comparison) so the person can see what the client has.
+    try {
+      var variants = window.A_CEIL_EstimateVariants;
+      if (variants && typeof variants.recordPublication === "function") {
+        variants.recordPublication(project, {
+          token: compactToken(value),
+          kind: options.kind === "comparison" ? "comparison" : "estimate",
+          variantId: options.variantId,
+          expiresAt: expires
+        });
+        patchLocal(project, { calcLinks: project.calcLinks });
+      }
+    } catch (_) { window.__diagSilent && window.__diagSilent(_); }
     return publicUrl(value);
+  }
+
+  // Close one specific link (not only the latest one of the project).
+  async function revokeToken(tokenValue, reference) {
+    var client = sb();
+    if (!client || !user()) throw new Error("Немає підключення до хмари");
+    var project = activeProject(reference);
+    if (!project) throw new Error("Проєкт не знайдено");
+    var storage = expandCompactToken(tokenValue);
+    var result = await client.rpc("aceil_revoke_report_snapshot", { p_token: storage });
+    var unavailable = result.error && (
+      result.error.code === "PGRST202" ||
+      /aceil_revoke_report_snapshot|schema cache|function/i.test(String(result.error.message || result.error))
+    );
+    if (result.error && !unavailable) throw result.error;
+    if (unavailable) {
+      if (compactToken(project.report_token) === compactToken(storage)) return revoke(reference);
+      throw new Error("Окреме закриття посилань ще не підтримується сервером");
+    }
+    if (!result.data || result.data.revoked !== true) {
+      throw new Error("Сервер не підтвердив закриття посилання");
+    }
+    var variants = window.A_CEIL_EstimateVariants;
+    if (variants && typeof variants.markLinkRevoked === "function") {
+      // Persist also refreshes the room shadow used by cloud recovery.
+      variants.markLinkRevoked(project, compactToken(storage));
+      patchLocal(project, { calcLinks: project.calcLinks });
+    }
+    return true;
   }
 
   async function revoke(reference) {
@@ -285,7 +328,11 @@
     }
     var result = await client.rpc("aceil_revoke_report_link", { p_project_id: projectId });
     if (result.error) throw result.error;
-    patchLocal(project, { report_token: null, report_published_at: null, report_expires_at: null });
+    try {
+      var variants = window.A_CEIL_EstimateVariants;
+      if (variants && currentToken && typeof variants.markLinkRevoked === "function") variants.markLinkRevoked(project, compactToken(currentToken));
+    } catch (_) { window.__diagSilent && window.__diagSilent(_); }
+    patchLocal(project, { report_token: null, report_published_at: null, report_expires_at: null, calcLinks: project.calcLinks || [] });
     return true;
   }
 
@@ -300,6 +347,8 @@
   window.A_CEIL_ReportLinks = {
     publishPayload: publishPayload,
     revoke: revoke,
+    revokeToken: revokeToken,
+    publicUrl: publicUrl,
     status: reportStatus,
     resolveProject: activeProject,
     expandToken: expandCompactToken,
