@@ -299,9 +299,13 @@
       if (compactToken(project.report_token) === compactToken(storage)) return revoke(reference);
       throw new Error("Окреме закриття посилань ще не підтримується сервером");
     }
+    if (!result.data || result.data.revoked !== true) {
+      throw new Error("Сервер не підтвердив закриття посилання");
+    }
     var variants = window.A_CEIL_EstimateVariants;
     if (variants && typeof variants.markLinkRevoked === "function") {
-      variants.markLinkRevoked(project, compactToken(storage), false);
+      // Persist also refreshes the room shadow used by cloud recovery.
+      variants.markLinkRevoked(project, compactToken(storage));
       patchLocal(project, { calcLinks: project.calcLinks });
     }
     return true;
@@ -326,7 +330,7 @@
     if (result.error) throw result.error;
     try {
       var variants = window.A_CEIL_EstimateVariants;
-      if (variants && currentToken && typeof variants.markLinkRevoked === "function") variants.markLinkRevoked(project, compactToken(currentToken), false);
+      if (variants && currentToken && typeof variants.markLinkRevoked === "function") variants.markLinkRevoked(project, compactToken(currentToken));
     } catch (_) { window.__diagSilent && window.__diagSilent(_); }
     patchLocal(project, { report_token: null, report_published_at: null, report_expires_at: null, calcLinks: project.calcLinks || [] });
     return true;
