@@ -43,8 +43,36 @@ async function openTrash(){
  });
  modal.querySelector("[data-close]").onclick=function(){modal.remove()};modal.addEventListener("click",function(e){if(e.target===modal)modal.remove()});document.body.appendChild(modal);
 }
+function installDeleteBridge(){
+ var previous=window.deleteProject;
+ if(typeof previous!=="function"||previous.__safetyDeleteBridge)return;
+ var wrapped=function(id,btn){
+  var repository=root().ProjectRepository;
+  if(!repository||typeof repository.list!=="function"||typeof repository.remove!=="function")return previous.apply(this,arguments);
+  var project=repository.list({clone:true}).find(function(p){return[p&&p.id,p&&p._dbId,p&&p._localId].some(function(value){return value!=null&&String(value)===String(id)})});
+  if(!project)return previous.apply(this,arguments);
+  var remove=async function(){
+   var reference=project.id!=null?project.id:(project._dbId!=null?project._dbId:project._localId);
+   if(!repository.remove(reference))return false;
+   try{if(typeof renderProjects==="function")renderProjects()}catch(_){}
+   if(project._dbId!=null&&typeof window.addToPendingQueue==="function"){
+    window.addToPendingQueue({type:"delete",payload:{localId:project.id||project._localId||null,dbId:project._dbId},addedAt:Date.now()});
+    try{if(typeof window.flushPendingQueue==="function")await window.flushPendingQueue()}catch(_){}
+   }else if(typeof window.removeFromPendingQueue==="function"){
+    [project.id,project._localId].filter(function(value){return value!=null}).forEach(window.removeFromPendingQueue);
+   }
+   var safety=api();try{if(safety&&typeof safety.flush==="function")await safety.flush()}catch(_){}
+   await render();
+   return true;
+  };
+  var confirmFn=window.confirmTap||typeof confirmTap==="function"&&confirmTap;
+  return typeof confirmFn==="function"?confirmFn(btn,"⚠️ Ще раз — видалити",remove):remove();
+ };
+ wrapped.__safetyDeleteBridge=true;window.deleteProject=wrapped;try{deleteProject=wrapped}catch(_){}
+}
 function install(){
  var old=window.openProjectsModal;if(typeof old==="function"&&!old.__safetyUi){var wrap=function(){var r=old.apply(this,arguments);setTimeout(render,0);return r};wrap.__safetyUi=true;window.openProjectsModal=wrap;try{openProjectsModal=wrap}catch(_){}}
+ installDeleteBridge();
  window.addEventListener("aceil:sync-status-change",render);window.addEventListener("aceil:project-recovered",render);window.addEventListener("aceil:user-storage-changed",render);
  setTimeout(render,500);
 }
