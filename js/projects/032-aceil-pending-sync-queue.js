@@ -93,6 +93,9 @@ const PENDING_KEY = "ceiling_pendingSync";
   }
   function add(value) {
     const op = compact(value), queue = read();
+    if(op.type === "delete"){
+      try{const root=window["A·CEIL"],safety=root&&root.ProjectSafety;if(safety&&typeof safety.confirmDeletion==="function")safety.confirmDeletion(op.payload);}catch(error){if(window.__diagSilent)window.__diagSilent(error,"project-trash-delete-bridge")}
+    }
     op._queueId = revision();
     // A queued deletion supersedes saves that have not yet been sent.
     const next = op.type === "delete" ? queue.filter(x => x.type !== "save" || !related(x.payload, op.payload)) : queue;
