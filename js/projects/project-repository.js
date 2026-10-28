@@ -117,6 +117,7 @@
   const SAFETY_STORE='snapshots';
   const SAFETY_TTL=30*24*60*60*1000;
   let safetyDbPromise=null,safetyTimer=null,safetyPending=null,safetyChain=Promise.resolve();
+  let recentlyRemoved=[];
 
   function safetyUser(){return currentStorageUser()||'guest';}
   function safetyHash(text){
@@ -361,7 +362,14 @@
       previous.filter(isUnsynced).forEach(project=>{if(!normalized.some(item=>sameProject(item,project)))normalized.push(clone(project));});
     }
     const removed=previous.filter(project=>!normalized.some(item=>sameProject(item,project)));
-    if(removed.length&&options&&options.trashRemoved===true)stashRemoved(removed,options.reason||'replace');
+    if(removed.length){
+      if(options&&options.trashRemoved===true)stashRemoved(removed,options.reason||'replace');
+      else{
+        const expiresAt=Date.now()+30000;
+        removed.forEach(project=>{const ids=projectKeys(project),at=recentlyRemoved.findIndex(row=>row&&projectKeys(row.project).some(id=>ids.includes(id)));const row={expiresAt:expiresAt,project:clone(project)};if(at>=0)recentlyRemoved[at]=row;else recentlyRemoved.push(row);});
+        recentlyRemoved=recentlyRemoved.filter(row=>row&&row.expiresAt>Date.now()).slice(-30);
+      }
+    }
     memoryUserId=currentStorageUser();
     memoryCache=normalized;
     if(!writePersistent(normalized))reportStorageError();
@@ -505,7 +513,20 @@
     try{if(typeof showToast==='function')showToast('♻️ Відновлено локальні проєкти: '+record.projects.length,5000);}catch(_){reportNonFatal(_)}
     return {ok:true,count:record.projects.length,at:record.at||null};
   }
-  const safetyApi=Object.freeze({status:safetyStatus,flush:flushSafetySnapshot,restore:restoreSafety,listTrash:listTrash,restoreTrash:restoreTrash,autoRecover:autoRecoverSafety});
+  function confirmDeletion(reference){
+    const ids=[];
+    if(reference&&typeof reference==='object'){
+      [reference.id,reference.localId,reference.dbId,reference._localId,reference._dbId].forEach(value=>{if(value!=null)ids.push(String(value));});
+    }else if(reference!=null)ids.push(String(reference));
+    if(!ids.length)return Promise.resolve(false);
+    recentlyRemoved=recentlyRemoved.filter(row=>row&&row.expiresAt>Date.now());
+    let project=list({clone:true}).find(item=>projectKeys(item).some(id=>ids.includes(id)));
+    if(!project){const row=recentlyRemoved.find(item=>item&&item.project&&projectKeys(item.project).some(id=>ids.includes(id)));project=row&&clone(row.project);}
+    if(!project)return Promise.resolve(false);
+    recentlyRemoved=recentlyRemoved.filter(row=>!row.project||!projectKeys(row.project).some(id=>ids.includes(id)));
+    return stashRemoved([project],'explicit_delete_queue');
+  }
+  const safetyApi=Object.freeze({status:safetyStatus,flush:flushSafetySnapshot,restore:restoreSafety,listTrash:listTrash,restoreTrash:restoreTrash,autoRecover:autoRecoverSafety,confirmDeletion:confirmDeletion});
 
   /* First load: preserve what was in Safari in memory, then immediately rewrite
      only a light local cache. Supabase remains the source of truth. */
