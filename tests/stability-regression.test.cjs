@@ -113,9 +113,10 @@ assert.doesNotMatch(wallUi,/_prevOpenWallModalForInit/,
 const versions=[...index.matchAll(/(?:src|href)="[^"]+\.(?:js|css)\?v=([^"]+)"/g)].map(match=>match[1]);
 assert(versions.length>150,"runtime asset list unexpectedly shrank");
 assert.strictEqual(new Set(versions).size,1,"all runtime assets must share one build ID");
-assert.strictEqual(versions[0],"20261028-cloud-unblock1","unexpected stability build ID");
+assert.strictEqual(versions[0],"20261028-trash-visible1","unexpected stability build ID");
 
 console.log("Stability regression tests: OK");
 assert.match(index,/227-aceil-cloud-first-autosave\.js/,"cloud-first autosave controller must be loaded");
 assert.match(projectSafetyUI,/#projectsModal>\.modal/,"projects modal must use the full viewport");
 assert.match(projectSafetyUI,/margin-left:auto!important/,"projects close control must stay on the right");
+assert.match(projectSafetyUI,/installDeleteBridge\(\)/,"successful cloud deletion must pass through the recovery trash");
