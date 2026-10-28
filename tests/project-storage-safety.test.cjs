@@ -17,16 +17,23 @@ const OWNER='08d419a3-2fa5-4c40-92f4-ad72b627e734';
   await safety.flush();const beforeRemove=await safety.status();
   repo.remove('dirty-a');await safety.flush();
   const trash=await safety.listTrash(),removed=repo.list().length;
+  repo.upsert({id:'dirty-a',_dbId:'dirty-a',name:'Dirty A',state:'{}'},{replace:true});
+  const duplicateGuard=await safety.restoreTrash('dirty-a');await safety.flush();
+  const duplicateIds=repo.list().filter(p=>String(p.id).startsWith('restored_')).map(p=>p.id);
+  repo.remove('dirty-a');await safety.flush();
   const restored=await safety.restoreTrash('dirty-a');await safety.flush();
   const after=repo.list().find(p=>String(p.id).startsWith('restored_'));
   const finalStatus=await safety.status();
-  return {fallback,guarded,beforeRemove,trash:trash.map(x=>x.project&&x.project.id),removed,restored:restored.ok,
+  return {fallback,guarded,beforeRemove,trash:trash.map(x=>x.project&&x.project.id),removed,
+   duplicateGuard:{ok:duplicateGuard.ok,alreadyPresent:duplicateGuard.alreadyPresent},duplicateIds,restored:restored.ok,
    after:after&&{id:after.id,dirty:after._dirty,status:after._syncStatus,db:after._dbId},finalStatus};
  });
  assert.deepEqual(result.fallback,['fallback-a'],'corrupt primary falls back to the recovery record');
  assert.deepEqual(result.guarded,['dirty-a'],'an accidental empty replacement cannot drop an unsynced project');
  assert.equal(result.beforeRemove.currentCount,1);assert.ok(result.beforeRemove.currentAt);
  assert.equal(result.removed,0);assert.ok(result.trash.includes('dirty-a'),'explicit removal is retained in the 30-day trash');
+ assert.deepEqual(result.duplicateGuard,{ok:true,alreadyPresent:true},'restore must not duplicate a project that already exists');
+ assert.deepEqual(result.duplicateIds,[],'duplicate restore must not create a replacement row');
  assert.equal(result.restored,true);assert.ok(result.after&&result.after.id.startsWith('restored_'));
  assert.equal(result.after.dirty,true);assert.equal(result.after.status,'pending_create');assert.equal(result.after.db,undefined);
  assert.equal(result.finalStatus.currentCount,1);assert.deepEqual(errors,[]);

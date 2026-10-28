@@ -361,7 +361,7 @@
       previous.filter(isUnsynced).forEach(project=>{if(!normalized.some(item=>sameProject(item,project)))normalized.push(clone(project));});
     }
     const removed=previous.filter(project=>!normalized.some(item=>sameProject(item,project)));
-    if(removed.length)stashRemoved(removed,options&&options.reason||'replace');
+    if(removed.length&&options&&options.trashRemoved===true)stashRemoved(removed,options.reason||'replace');
     memoryUserId=currentStorageUser();
     memoryCache=normalized;
     if(!writePersistent(normalized))reportStorageError();
@@ -395,7 +395,7 @@
     const projects = list({clone:true});
     const filtered = projects.filter(project => !projectKeys(project).includes(key));
     if(filtered.length === projects.length) return false;
-    replaceAll(filtered,{allowUnsyncedRemoval:true,reason:'explicit_remove',immediateSnapshot:true});
+    replaceAll(filtered,{allowUnsyncedRemoval:true,trashRemoved:true,reason:'explicit_remove',immediateSnapshot:true});
     return true;
   }
   function merge(incoming, resolver){
@@ -449,7 +449,7 @@
     return {available:!!window.indexedDB,user:user,lastRead:clone(lastReadMeta),currentAt:current&&current.at||null,
       currentCount:current&&Array.isArray(current.projects)?current.projects.length:0,
       previousAt:previous&&previous.at||null,previousCount:previous&&Array.isArray(previous.projects)?previous.projects.length:0,
-      trashCount:trash&&Array.isArray(trash.entries)?trash.entries.length:0};
+      trashCount:visibleTrashEntries(trash).length};
   }
   async function restoreSafety(kind){
     const user=safetyUser(),record=await safetyGet(user+':'+(kind==='previous'?'previous':'current'));
@@ -465,17 +465,26 @@
     try{if(typeof window.flushPendingQueue==='function')window.flushPendingQueue();}catch(_){reportNonFatal(_)}
     return {ok:true,count:record.projects.length,at:record.at||null};
   }
+  function visibleTrashEntries(record){
+    const now=Date.now(),current=list();
+    return record&&Array.isArray(record.entries)?record.entries.filter(row=>row&&row.expiresAt>now&&row.project&&!current.some(project=>sameProject(project,row.project))):[];
+  }
   async function listTrash(){
     await safetyChain;
-    const record=await safetyGet(safetyUser()+':trash'),now=Date.now();
-    return record&&Array.isArray(record.entries)?record.entries.filter(row=>row&&row.expiresAt>now).map(row=>clone(row)):[];
+    const record=await safetyGet(safetyUser()+':trash');
+    return visibleTrashEntries(record).map(row=>clone(row));
   }
   async function restoreTrash(id){
     await safetyChain;
     const user=safetyUser(),key=user+':trash',record=await safetyGet(key),entries=record&&Array.isArray(record.entries)?record.entries:[];
     const index=entries.findIndex(row=>row&&row.project&&projectKeys(row.project).includes(String(id)));
     if(index<0)return {ok:false,reason:'trash_item_not_found'};
-    const row=entries[index],project=clone(row.project),now=Date.now();
+    const row=entries[index],existing=list({clone:true}).find(item=>sameProject(item,row.project)),now=Date.now();
+    if(existing){
+      entries.splice(index,1);await safetyPut({key:key,user:user,at:now,entries:entries});
+      return {ok:true,project:existing,alreadyPresent:true};
+    }
+    const project=clone(row.project);
     project._localId=project._localId||project.id||project._dbId||null;
     delete project._dbId;project.id='restored_'+now+'_'+Math.random().toString(36).slice(2,8);
     project._dirty=true;project._syncStatus='pending_create';project._localUpdatedAt=now;

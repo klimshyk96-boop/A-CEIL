@@ -38,7 +38,7 @@ async function openTrash(){
  rows.forEach(function(row){
   var p=row.project||{},id=p.id||p._dbId||p._localId||"",el=document.createElement("div");el.className="aceil-safety-row";
   el.innerHTML="<div><b>"+esc(p.name||"Без назви")+"</b><small>Видалено "+fmt(row.deletedAt)+"</small></div><button type=\"button\">Відновити</button>";
-  el.querySelector("button").onclick=async function(){this.disabled=true;var result=await safety.restoreTrash(id);if(result.ok){modal.remove();if(typeof showToast==="function")showToast("♻️ Проєкт відновлено та поставлено в чергу хмари",4000);try{if(typeof renderProjects==="function")renderProjects()}catch(_){}}else this.disabled=false;render()};
+  el.querySelector("button").onclick=async function(){this.disabled=true;var result=await safety.restoreTrash(id);if(result.ok){modal.remove();if(typeof showToast==="function")showToast(result.alreadyPresent?"✓ Проєкт уже є у списку":"♻️ Проєкт відновлено та поставлено в чергу хмари",4000);try{if(typeof renderProjects==="function")renderProjects()}catch(_){}}else this.disabled=false;render()};
   host.appendChild(el);
  });
  modal.querySelector("[data-close]").onclick=function(){modal.remove()};modal.addEventListener("click",function(e){if(e.target===modal)modal.remove()});document.body.appendChild(modal);
