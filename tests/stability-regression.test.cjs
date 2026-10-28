@@ -24,7 +24,8 @@ const roomFlow=read("js/rooms/087-aceil-multiroom-simple-flow.js");
 const wallUi=read("js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js")+read("js/canvas/045-aceil-wall-full-side-color-presets.js");
 const pendingSync=read("js/projects/032-aceil-pending-sync-queue.js");
 const accessClean=read("js/admin/159-aceil-access-clean.js");
-const projectRepository=read("js/projects/project-repository.js");\nconst projectSafetyUI=read("js/projects/226-aceil-project-safety-ui.js");
+const projectRepository=read("js/projects/project-repository.js");
+const projectSafetyUI=read("js/projects/226-aceil-project-safety-ui.js");
 
 assert.match(links,/new Uint8Array\(10\)/,"new report URLs must retain 80 random bits");
 assert.match(links,/function expandCompactToken\(/,"short report tokens must expand to the existing server format");
@@ -50,6 +51,8 @@ assert.match(links,/delete optimized\.structured/,"generated report links must n
 assert.match(sw,/function versionedAssetResponse\(/,"versioned JS/CSS must use the runtime cache");
 assert.match(pendingSync,/refreshSession\(\)/,"pending project saves must refresh an expired cloud session");
 assert.match(pendingSync,/function sendWithRecovery\(/,"pending project saves must retry recoverable cloud failures");
+assert.match(pendingSync,/function runQuery\(/,"cloud writes must release a queue blocked by a hung Safari request");
+assert.match(pendingSync,/isMissingRowError\(result\.error\)/,"stale cloud IDs must be recreated instead of blocking forever");
 assert.match(pendingSync,/\[1800, 5000, 10000\]/,"saved Safari queues must resume after a normal reload");
 assert.match(accessClean,/await flushPendingQueue\(\)/,"opening projects must flush local saves independently of list refresh");
 assert.match(accessClean,/if\(!a\)\{a=offlineAccess\(u\)/,"the owner must retain cached access when the access RPC returns no row");
@@ -66,7 +69,11 @@ assert.match(pendingSync,/Math\.min\(60000/,"cloud retries must use a capped lon
 assert.match(projectRepository,/const CACHE_LIMIT = 4/,"Safari local project caching must remain bounded");
 assert.match(projectRepository,/const persisted=readRaw\(\)/,"recovery storage must avoid duplicating already persisted unsynced projects");
 assert.match(projectRepository,/aceil-project-safety-v1/,"project safety must keep IndexedDB generations");
-assert.match(projectRepository,/allowUnsyncedRemoval/,"bulk replacement must preserve unsynced projects by default");\nassert.match(projectRepository,/trashRemoved===true/,"only explicit deletion may add projects to trash");\nassert.match(projectRepository,/alreadyPresent:true/,"trash restore must not duplicate an existing project");\nassert.match(projectRepository,/confirmDeletion:confirmDeletion/,"delete queue must bridge legacy removal into trash");\nassert.match(pendingSync,/safety\.confirmDeletion\(op\.payload\)/,"queued deletes must explicitly confirm trash creation");
+assert.match(projectRepository,/allowUnsyncedRemoval/,"bulk replacement must preserve unsynced projects by default");
+assert.match(projectRepository,/trashRemoved===true/,"only explicit deletion may add projects to trash");
+assert.match(projectRepository,/alreadyPresent:true/,"trash restore must not duplicate an existing project");
+assert.match(projectRepository,/confirmDeletion:confirmDeletion/,"delete queue must bridge legacy removal into trash");
+assert.match(pendingSync,/safety\.confirmDeletion\(op\.payload\)/,"queued deletes must explicitly confirm trash creation");
 assert.match(pendingSync,/Сервер не підтвердив видалення проєкту/,"deletions require an explicit server confirmation");
 assert.match(index,/226-aceil-project-safety-ui\.js/,"project recovery and trash controls must be loaded");
 
@@ -106,7 +113,9 @@ assert.doesNotMatch(wallUi,/_prevOpenWallModalForInit/,
 const versions=[...index.matchAll(/(?:src|href)="[^"]+\.(?:js|css)\?v=([^"]+)"/g)].map(match=>match[1]);
 assert(versions.length>150,"runtime asset list unexpectedly shrank");
 assert.strictEqual(new Set(versions).size,1,"all runtime assets must share one build ID");
-assert.strictEqual(versions[0],"20261028-trash-bridge1","unexpected stability build ID");
+assert.strictEqual(versions[0],"20261028-cloud-unblock1","unexpected stability build ID");
 
 console.log("Stability regression tests: OK");
-\nassert.match(index,/227-aceil-cloud-first-autosave\\.js/,"cloud-first autosave controller must be loaded");\nassert.match(projectSafetyUI,/#projectsModal>\\.modal/,"projects modal must use the full viewport");\nassert.match(projectSafetyUI,/margin-left:auto!important/,"projects close control must stay on the right");
+assert.match(index,/227-aceil-cloud-first-autosave\.js/,"cloud-first autosave controller must be loaded");
+assert.match(projectSafetyUI,/#projectsModal>\.modal/,"projects modal must use the full viewport");
+assert.match(projectSafetyUI,/margin-left:auto!important/,"projects close control must stay on the right");
