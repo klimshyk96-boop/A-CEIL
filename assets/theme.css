@@ -471,6 +471,38 @@ body.rp-home-pro .tile-btn{
 }
 body.rp-home-pro .tile-icon{box-shadow:none!important;}
 
+/* Give the space saved by the mobile tools back to the drawing viewport. */
+@media(max-width:900px){
+  body.rp-home-pro #A·CEILToolPanel{
+    --aceil-canvas-extra:40px;
+    gap:6px!important;
+    margin-top:0!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel .tile-btn{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:3px!important;
+    height:56px!important;
+    min-height:56px!important;
+    padding:6px 3px!important;
+    border-radius:12px!important;
+    text-align:center!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel .tile-icon{
+    width:26px!important;height:26px!important;
+    margin:0!important;border-radius:8px!important;
+    flex-shrink:0;
+  }
+  body.rp-home-pro #A·CEILToolPanel .tile-icon .rm-ico{
+    width:19px!important;height:19px!important;
+  }
+  body.rp-home-pro #A·CEILToolPanel .tile-btn-label{
+    font-size:11px!important;line-height:1.15!important;
+  }
+}
+
 @media(max-width:600px){
   body.rp-home-pro #rpCockpit{margin-top:6px!important;margin-bottom:8px!important;padding:0 8px!important;}
   body.rp-home-pro #rpCockpit .rpc-card{padding:9px 10px 8px!important;border-radius:18px!important;}

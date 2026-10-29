@@ -28,8 +28,18 @@ function applyCanvasLayout(){
       ACEILCanvas.setSize(backingWidth,backingHeight);
     }else{
       canvasHost.style.height="";
-      canvas.style.height="";
-      ACEILCanvas.setSize(originalCanvasWidth,originalCanvasHeight);
+      var extra=parseFloat(getComputedStyle(panel).getPropertyValue("--aceil-canvas-extra"))||0;
+      var width=canvas.getBoundingClientRect().width;
+      if(extra>0&&width>0){
+        // Increase logical height too: CSS-only stretching would distort the plan
+        // and give horizontal and vertical gestures different scales.
+        var height=width*originalCanvasHeight/originalCanvasWidth+extra;
+        canvas.style.setProperty("height",height+"px","important");
+        ACEILCanvas.setSize(originalCanvasWidth,Math.round(height*originalCanvasWidth/width));
+      }else{
+        canvas.style.height="";
+        ACEILCanvas.setSize(originalCanvasWidth,originalCanvasHeight);
+      }
     }
     redraw();
     try{window.dispatchEvent(new CustomEvent("A·CEIL:tool-panel-change",{detail:{collapsed:isCollapsed()}}));}catch(e){window.__diagSilent&&window.__diagSilent(e)}
