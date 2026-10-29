@@ -552,7 +552,7 @@
   function _leGetOverride(a,b,key){
     var av=a&&a.intersectionCornerOverrides&&a.intersectionCornerOverrides[key];
     var bv=b&&b.intersectionCornerOverrides&&b.intersectionCornerOverrides[key];
-    var v=av!=null?av:bv;v=parseInt(v,10);return isFinite(v)?Math.max(0,Math.min(4,v)):4;
+    var v=av!=null?av:bv;v=parseInt(v,10);/* Crossing figures are counted by their own corners; extra corner pieces at a crossing are added only when the user sets them. */return isFinite(v)?Math.max(0,Math.min(4,v)):0;
   }
   function _leFindIntersections(src){
     var lights=(src||[]).filter(function(e){return e&&e.elementType==='lightLine';}),out=[];
@@ -879,7 +879,7 @@
         return '<div class="le-auto-install-v322" style="margin:10px 0;padding:11px;border:1px solid #fed7aa;background:#fff7ed;border-radius:14px">'
           +'<div style="font-size:12px;font-weight:950;color:#9a3412;margin-bottom:7px">Автопрорахунок монтажу</div>'
           +'<div style="font-size:11px;font-weight:800;color:#475569;margin-bottom:8px">Обривів цієї лінії: <b>'+breaks+'</b>. Обрив — вільний кінець, який не торкається основного профілю.</div>'
-          +(hits.length?'<div style="font-size:11px;font-weight:800;color:#475569;margin-bottom:5px">Перехрестя (за замовчуванням 4 кути):</div>':'')
+          +(hits.length?'<div style="font-size:11px;font-weight:800;color:#475569;margin-bottom:5px">Перехрестя (за замовчуванням 0 додаткових кутів; фігури вже мають власні):</div>':'')
           +hits.map(function(h,idx){return '<div style="display:grid;grid-template-columns:1fr 92px;gap:8px;align-items:center;margin-top:6px"><span style="font-size:11px;font-weight:850;color:#334155">Перехрестя '+(idx+1)+'</span><select onchange="setLinearIntersectionCorners(\''+h.key+'\',this.value)" style="height:36px;border:1px solid #fdba74;border-radius:10px;background:#fff;padding:0 7px;font-weight:900">'+[0,1,2,3,4].map(function(v){return '<option value="'+v+'" '+(v===h.corners?'selected':'')+'>'+v+' кути</option>';}).join('')+'</select></div>';}).join('')
           +'</div>';
       })():'')
