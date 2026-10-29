@@ -275,7 +275,9 @@
   ],
   "linearElements": [
    "js/reports/104-aceil-multiroom-report-sandbox-fix.js",
-   "js/rooms/110-aceil-linear-element.js"
+   "js/rooms/110-aceil-linear-element.js",
+   "js/reports/112-aceil-linear-element-persist-report-fix.js",
+   "js/rooms/116-aceil-free-light-pro.js"
   ],
   "wallTypes": [
    "js/reports/104-aceil-multiroom-report-sandbox-fix.js",

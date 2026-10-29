@@ -26,6 +26,12 @@ const root=process.env.ACEIL_PROFILE_ROOT||path.join(__dirname,'..');
   });
   assert.equal(corners.corners,16,'4 squares = 16 corners, crossings add none by default');
   assert.ok(corners.inter>0);
+  await page.evaluate(()=>{resetAllSilent();pts=[{x:100,y:100},{x:600,y:100},{x:600,y:400},{x:100,y:400}];realPts=[{x:0,y:0},{x:500,y:0},{x:500,y:300},{x:0,y:300}];lengths=[500,300,500,300];closed=true;
+   const mk=(id,x)=>({id,elementType:'lightLine',shape:'rectangle',lightShapeMode:'rectangle',segments:[100,100],center:{x,y:150},rotation:0});
+   linearElements=[mk('a',150),mk('b',300)];window.linearElements=linearElements;saveState();});
+  await page.reload({waitUntil:'load'});await page.waitForTimeout(1200);await reveal(page);
+  await page.evaluate(()=>{try{leAddLightSegment&&0}catch(_){}window.A_CEIL_ReportLinks;});
+  assert.equal(await page.evaluate(()=>linearElements.length+'/'+window.linearElements.length+'/'+JSON.parse(localStorage.getItem('ceiling_v18')).linearElements.length),'2/2/2','light lines survive reopen');
   assert.deepEqual(errors,[]);
   console.log('contour reopen + light corners ok');
  }finally{await browser.close()}
