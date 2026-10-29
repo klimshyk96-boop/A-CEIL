@@ -125,7 +125,8 @@
    "js/canvas/063-aceil-wall-marks-persist.js",
    "js/reports/112-aceil-linear-element-persist-report-fix.js",
    "js/nomenclature/170-aceil-autocount-menu.js",
-   "js/canvas/173-aceil-wall-elements-persistence.js"
+   "js/canvas/173-aceil-wall-elements-persistence.js",
+   "js/projects/227-aceil-cloud-first-autosave.js"
   ],
   "saveProject": [
    "js/projects/059-aceil-dirty-state-delete-guards.js",
@@ -342,7 +343,8 @@
   "openProjectsModal": [
    "js/admin/159-aceil-access-clean.js",
    "js/projects/186-aceil-projects-menu-clean.js",
-   "js/projects/210-aceil-project-crm.js"
+   "js/projects/210-aceil-project-crm.js",
+   "js/projects/226-aceil-project-safety-ui.js"
   ],
   "A_CEIL_buildCloudStructuredReport": [
    "js/reports/160-aceil-cloud-html-report.js",
@@ -358,9 +360,9 @@
   ]
  },
  "bigFiles": {
-  "js/core/019-aceil-core-ui-rooms-bulk-walls.js": 113178,
+  "js/core/019-aceil-core-ui-rooms-bulk-walls.js": 114021,
   "js/rooms/110-aceil-linear-element.js": 90482,
-  "js/reports/184-aceil-estimate-variants-ui.js": 121208
+  "js/reports/184-aceil-estimate-variants-ui.js": 140052
  },
  "dynamicAssigners": [
   "js/core/007-aceil-pipeline.js",

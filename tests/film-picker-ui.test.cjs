@@ -4,7 +4,8 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
  const {page,errors}=await open(browser,width);await reveal(page);
  await page.evaluate(()=>A_CEILColorPicker.open());
  assert.equal(await page.locator('#acp2Manufacturer').inputValue(),'MSD');
- assert.equal(await page.locator('#acp2Popular .acp2-pop-btn').count(),3);
+ // Popular colours follow the active finish tab (mat by default), so the strip shows only matt favourites.
+ assert.deepEqual(await page.locator('#acp2Popular .acp2-pop-btn').evaluateAll(ns=>ns.map(n=>n.dataset.code)),['M303']);
  assert.ok(await page.locator('#acp2Popular .acp2-pop-btn>span').evaluateAll(ns=>ns.every(n=>n.getBoundingClientRect().height>=40)));
  assert.ok((await page.locator('#acp2Manage').boundingBox()).width<=40);
  assert.equal(await page.locator('#acp2Series option').count(),2);
