@@ -45,6 +45,28 @@
     label:function(key){return typeDef(key).label;},
     isTrack:function(key){return isTrackType(key);}
   });
+
+  /* One restore boundary for every linear editor.  Some editors use the
+     lexical `linearElements` binding while the free-light editor deliberately
+     accesses `window.linearElements`.  Restoring only one of them lets the
+     other editor replace a freshly loaded project with its stale (often
+     empty) array on the next draw or interaction. */
+  function cloneLinearList(value){
+    try{return JSON.parse(JSON.stringify(Array.isArray(value)?value:[]));}
+    catch(_){return Array.isArray(value)?value.slice():[];}
+  }
+  function restoreLinearList(value){
+    var restored=cloneLinearList(value);
+    try{linearElements=restored;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+    window.linearElements=restored;
+    return restored;
+  }
+  window.A·CEIL=window.A·CEIL||{};
+  window.A·CEIL.LinearPersistence=Object.freeze({
+    list:arr,
+    snapshot:function(){return cloneLinearList(arr());},
+    restore:restoreLinearList
+  });
   function snapTrackAngle(value){
     var a=Math.round(num(value,0)/90)*90;
     while(a>180)a-=360;while(a<=-180)a+=360;
