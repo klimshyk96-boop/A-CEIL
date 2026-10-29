@@ -5,7 +5,7 @@
     try{return raw?(typeof raw==='string'?JSON.parse(raw):raw||{}):{};}catch(e){return {};}
   }
   function clone(v){try{return JSON.parse(JSON.stringify(v));}catch(e){return Array.isArray(v)?v.slice():v;}}
-  function currentLinear(){return Array.isArray(window.linearElements)?window.linearElements:[];}
+  function currentLinear(){try{if(typeof linearElements!=='undefined'&&Array.isArray(linearElements)&&(linearElements.length||!Array.isArray(window.linearElements)))window.linearElements=linearElements;}catch(e){window.__diagSilent&&window.__diagSilent(e)}return Array.isArray(window.linearElements)?window.linearElements:[];}
   function setLinear(list){
     window.linearElements=Array.isArray(list)?clone(list):[];
     try{linearElements=window.linearElements;}catch(e){window.__diagSilent&&window.__diagSilent(e)}

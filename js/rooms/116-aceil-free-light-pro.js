@@ -11,7 +11,7 @@ var placeFamily=('PointerEvent' in window)?'pointer':'touch';
 
 /* --- доступ до середовища застосунку (тільки читання) --- */
 function cv(){try{return (typeof window.cv!=='undefined'&&window.cv)?window.cv:document.querySelector('canvas#cv')||document.querySelector('canvas');}catch(e){return document.querySelector('canvas');}}
-function list(){if(!Array.isArray(window.linearElements))window.linearElements=[];try{linearElements=window.linearElements;}catch(e){window.__diagSilent&&window.__diagSilent(e)}return window.linearElements;}
+function list(){try{if(typeof linearElements!=='undefined'&&Array.isArray(linearElements)&&linearElements!==window.linearElements&&(linearElements.length||!Array.isArray(window.linearElements)||!window.linearElements.length))window.linearElements=linearElements;}catch(e){window.__diagSilent&&window.__diagSilent(e)}if(!Array.isArray(window.linearElements))window.linearElements=[];try{linearElements=window.linearElements;}catch(e){window.__diagSilent&&window.__diagSilent(e)}return window.linearElements;}
 function pxcm(){try{var v=typeof _pxPerCm==='function'?Number(_pxPerCm()):1;return v>0?v:1;}catch(e){return 1;}}
 function vs(){try{return isFinite(viewScale)?Number(viewScale):1;}catch(e){return 1;}}
 function vo(){try{return{x:isFinite(viewOffsetX)?Number(viewOffsetX):0,y:isFinite(viewOffsetY)?Number(viewOffsetY):0};}catch(e){return{x:0,y:0};}}
