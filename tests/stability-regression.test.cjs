@@ -24,7 +24,8 @@ const roomFlow=read("js/rooms/087-aceil-multiroom-simple-flow.js");
 const wallUi=read("js/rooms/044-aceil-cockpit-tools-wall-modal-normalize.js")+read("js/canvas/045-aceil-wall-full-side-color-presets.js");
 const pendingSync=read("js/projects/032-aceil-pending-sync-queue.js");
 const accessClean=read("js/admin/159-aceil-access-clean.js");
-const projectRepository=read("js/projects/project-repository.js");\nconst projectSafetyUI=read("js/projects/226-aceil-project-safety-ui.js");
+const projectRepository=read("js/projects/project-repository.js");
+const projectSafetyUI=read("js/projects/226-aceil-project-safety-ui.js");
 
 assert.match(links,/new Uint8Array\(10\)/,"new report URLs must retain 80 random bits");
 assert.match(links,/function expandCompactToken\(/,"short report tokens must expand to the existing server format");
@@ -106,7 +107,11 @@ assert.doesNotMatch(wallUi,/_prevOpenWallModalForInit/,
 const versions=[...index.matchAll(/(?:src|href)="[^"]+\.(?:js|css)\?v=([^"]+)"/g)].map(match=>match[1]);
 assert(versions.length>150,"runtime asset list unexpectedly shrank");
 assert.strictEqual(new Set(versions).size,1,"all runtime assets must share one build ID");
-assert.strictEqual(versions[0],"20261028-projects-close1","unexpected stability build ID");
+assert.strictEqual(versions[0],"20261028-cleanup1","unexpected stability build ID");
+
+
+assert.match(index,/227-aceil-cloud-first-autosave\.js/,"cloud-first autosave controller must be loaded");
+assert.match(projectSafetyUI,/#projectsModal>\.modal/,"projects modal must use the full viewport");
+assert.match(projectSafetyUI,/margin-left:auto!important/,"projects close control must stay on the right");
 
 console.log("Stability regression tests: OK");
-\nassert.match(index,/227-aceil-cloud-first-autosave\\.js/,"cloud-first autosave controller must be loaded");\nassert.match(projectSafetyUI,/#projectsModal>\\.modal/,"projects modal must use the full viewport");\nassert.match(projectSafetyUI,/margin-left:auto!important/,"projects close control must stay on the right");

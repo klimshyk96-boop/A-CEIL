@@ -163,6 +163,8 @@
   "js/reports/223-aceil-installer-share.js",
   "js/reports/224-aceil-report-diagonals-menu-fix.js",
   "js/core/225-aceil-public-api.js",
+  "js/projects/226-aceil-project-safety-ui.js",
+  "js/projects/227-aceil-cloud-first-autosave.js",
   "calculator/model.js",
   "calculator/cloud.js",
   "calculator/owner.js"

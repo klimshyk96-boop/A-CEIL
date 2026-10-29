@@ -9,6 +9,11 @@ node tests/security-config.test.cjs || exit 1
 node tests/pending-sync-queue.test.cjs || exit 1
 node tests/project-mode.test.cjs || exit 1
 node tests/calc-links.test.cjs || exit 1
+node tests/cloud-first-autosave.test.cjs || exit 1
+node tests/project-storage-safety.test.cjs || exit 1
+node tests/report-link-snapshots.test.cjs || exit 1
+node tests/film-label-layout.test.cjs || exit 1
+node tests/finger-draw-angles.test.cjs || exit 1
 node tests/project-mode-browser.test.cjs || exit 1
 node tests/linear-cloud-restore.test.cjs || exit 1
 node tests/film-group-hydration.test.cjs || exit 1

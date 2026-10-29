@@ -12,7 +12,7 @@ function fixture(initial = [{id:'local-a', _dbId:'db-a', name:'old', state:'{}',
   let owner = 'owner-a', quota = false;
   const states = new Map([[owner, copy(initial)]]), disk = new Map(), requests = [], listeners = {};
   const status = {textContent:'', title:''};
-  const c = {console, Map, Set, Math, Date, Promise, document:{getElementById:() => status}, hideSync(){}};
+  const c = {console, Map, Set, Math, Date, Promise, setTimeout:(fn,ms,...a)=>{const t=setTimeout(fn,ms,...a);t.unref&&t.unref();return t}, clearTimeout, navigator:{onLine:true}, document:{getElementById:() => status, addEventListener(){}, visibilityState:'visible'}, hideSync(){}};
   c.window = c;
   c.addEventListener = (name, fn) => {listeners[name] = fn};
   c.A_CEIL_UserStorage = {getUserId:() => owner};
@@ -59,7 +59,7 @@ test('deleting during INSERT binds the queued delete and does not restore the pr
   const f=fixture([{id:'local-a',name:'old',state:'{}'}]);f.enqueue();const done=f.c.flushPendingQueue();await tick();
   f.states.set('owner-a',[]);f.c.addToPendingQueue({type:'delete',payload:{localId:'local-a'}});
   f.reply(0,'created-id');await tick();assert.equal(f.requests[1].method,'delete');assert.equal(f.requests[1].id,'created-id');
-  f.reply(1);assert.equal(await done,true);assert.equal(f.items().length,0);
+  f.reply(1,'created-id');assert.equal(await done,true);assert.equal(f.items().length,0);
 });
 test('a delete without the returned server row is not acknowledged', async () => {
   const f=fixture([]);f.c.addToPendingQueue({type:'delete',payload:{localId:'local-a',dbId:'db-a'}});

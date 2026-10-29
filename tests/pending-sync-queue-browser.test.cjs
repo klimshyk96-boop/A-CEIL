@@ -24,9 +24,12 @@ const {chromium}=require('playwright'),{open}=require('./browser-review.cjs');
  assert.deepEqual(await page.evaluate(()=>({sameFlight:window.__queueSameFlight,names:window.__queueRequests.map(x=>x.payload.name),queued:getPendingQueue().length,dirty:window['A·CEIL'].ProjectRepository.list()[0]._dirty})),{sameFlight:true,names:['Стара назва','Нова назва'],queued:1,dirty:true});
  const result=await page.evaluate(async()=>{
   const request=window.__queueRequests[1];request.resolve({data:{id:request.dbId},error:null});const ok=await window.__queueDone;
+  _currentProjectId=window['A·CEIL'].ProjectRepository.list()[0].id;window._updatePendingBadge();
   return {ok,queued:getPendingQueue().length,name:window['A·CEIL'].ProjectRepository.list()[0].name,dirty:!!window['A·CEIL'].ProjectRepository.list()[0]._dirty,status:document.getElementById('cloudStatus').textContent};
  });
- assert.deepEqual(result,{ok:true,queued:0,name:'Нова назва',dirty:false,status:'☁️ синхронізовано'});
+ // The badge is per open project and shows the time the server confirmed the save.
+ assert.match(result.status,/^☁️ у хмарі о \d{2}:\d{2}$/);
+ assert.deepEqual({...result,status:undefined},{ok:true,queued:0,name:'Нова назва',dirty:false,status:undefined});
  assert.deepEqual(errors,[]);await page.close();console.log('PASS real app: one canonical queue, serialized requests and latest edit preserved');
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exit(1)});

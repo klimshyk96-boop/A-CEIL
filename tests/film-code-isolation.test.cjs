@@ -23,7 +23,7 @@ const {chromium}=require('playwright'),{open,reveal}=require('./browser-review.c
   assert.equal(satin.current.code,'S303');const custom=satin.rows.find(x=>x.id==='s');assert.ok(custom,'manually created S303 5.8 survives selection');assert.equal(custom.price,451);assert.equal(custom.filmWidth,5.8);
   assert.ok(satin.rows.filter(x=>x.groupId===custom.groupId&&Number(x.filmWidth)>0).every(x=>/^S303\b/.test(x.name)));
   const gloss=await page.evaluate(()=>{window.A_CEILColorPicker.select('L303','premium');renderElemList();return {current:window.A_CEILColorPicker.current(),rows:structuredClone(elemItems)}});
-  assert.equal(gloss.current.code,'L303');assert.ok(gloss.rows.some(x=>x.id==='s'&&x.price===451));assert.ok(gloss.rows.some(x=>x.id==='l'&&x.price===452&&x.filmWidth===5.8),'custom gloss width and price survive selection');
+  assert.equal(gloss.current.code,'L303');assert.ok(gloss.rows.some(x=>x.id==='s'&&x.price===451));assert.ok(gloss.rows.some(x=>x.colorCode==='L303'&&x.price===452&&x.filmWidth===5.8),'custom gloss width and price survive selection');
   const calculated=await page.evaluate(()=>{
    window.A_CEIL_AutoCount.setEnabled(true);realPts=[{x:0,y:0},{x:600,y:0},{x:600,y:700},{x:0,y:700}];pts=realPts.map(p=>({x:100+p.x/2,y:100+p.y/2}));lengths=[600,700,600,700];closed=true;
    document.getElementById('area').textContent='42';document.getElementById('per').textContent='26';

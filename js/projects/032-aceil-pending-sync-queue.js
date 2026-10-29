@@ -143,8 +143,12 @@ const PENDING_KEY = "ceiling_pendingSync";
     return status === 401 || /jwt|token|session|not authenticated|auth session missing/i.test(errorMessage(error));
   }
   function isTransientError(error) {
-    const status = Number(error && (error.status || error.statusCode) || 0);
-    return !navigator.onLine || status === 0 || status === 408 || status === 425 || status === 429 || status >= 500 ||
+    // Only a real transport failure (status explicitly 0, or a network-looking
+    // message) is transient. A plain Error such as "server did not confirm"
+    // carries no status and must not be retried as if the network was down.
+    const raw = error && (error.status !== undefined ? error.status : error.statusCode);
+    const status = Number(raw || 0);
+    return !navigator.onLine || (raw !== undefined && raw !== null && status === 0) || status === 408 || status === 425 || status === 429 || status >= 500 ||
       /load failed|failed to fetch|networkerror|network request failed|timeout|timed out|таймаут/i.test(errorMessage(error));
   }
   function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
