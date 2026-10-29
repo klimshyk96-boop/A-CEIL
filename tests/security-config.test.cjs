@@ -11,6 +11,9 @@ assert.ok(!/script-src[^;]*(https?:|\*|unsafe-eval)/.test(csp),'script-src must 
 assert.equal(H['referrer-policy'],'no-referrer');assert.equal(H['x-content-type-options'],'nosniff');
 const html=read('index.html');
 assert.deepEqual([...html.matchAll(/<script[^>]+src="(https?:)?\/\/[^"]+"/g)].map(m=>m[0]),[],'external <script src> in index.html (vendor it under /vendor)');
+const googleOAuth=read('js/auth/178-aceil-google-oauth-canonical.js');
+assert.match(googleOAuth,/redirectTo\s*:\s*location\.origin\s*\+\s*location\.pathname/,'Google OAuth must return to the deployment that initiated sign-in');
+assert.doesNotMatch(googleOAuth,/redirectTo\s*:\s*["']https:\/\/a-ceil\.pp\.ua/,'preview OAuth must not be pinned to production');
 const pub=read('js/reports/092-aceil-public-report-page.js');
 assert.ok(!/document\.write\s*\(\s*data\./.test(pub),'public report must not document.write cloud HTML');
 const sb=pub.match(/setAttribute\("sandbox",\s*"([^"]*)"/);assert.ok(sb,'manager report iframe must have a sandbox attribute');assert.ok(!/allow-same-origin/.test(sb[1]),'manager report sandbox must not allow same origin');

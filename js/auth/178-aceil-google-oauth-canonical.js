@@ -16,7 +16,9 @@
       var result=await _sb.auth.signInWithOAuth({
         provider:"google",
         options:{
-          redirectTo:"https://a-ceil.pp.ua/",
+          // Keep preview users on the preview that initiated sign-in. Production
+          // still resolves to https://a-ceil.pp.ua/ through location.origin.
+          redirectTo:location.origin+location.pathname,
           skipBrowserRedirect:false
         }
       });
