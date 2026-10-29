@@ -48,6 +48,7 @@ node tests/report-settings-pipeline.test.cjs || exit 1
 node tests/xss-injection.test.cjs || exit 1
 node tests/voice-number.test.cjs || exit 1
 node tests/autocount-profile.test.cjs || exit 1
+node tests/contour-reopen-light-corners.test.cjs || exit 1
 node tests/manual-profile-colour.test.cjs || exit 1
 node tests/light-placement.test.cjs || exit 1
 node tests/chandelier-sketch.test.cjs || exit 1

@@ -246,8 +246,13 @@ function explicitContourProfile(list,draft){
 }
 function inferredContourProfile(list,state){
   var perimeter=contourPerimeterM(state);if(!(perimeter>0))return null;
-  var base=list.filter(function(it){return it&&contourSourceOfItem(it)==="main_profile"}).reduce(function(sum,it){return sum+(Number(it.qty)||0)},0);
+  var baseRows=list.filter(function(it){return it&&contourSourceOfItem(it)==="main_profile"});
+  var base=baseRows.reduce(function(sum,it){return sum+(Number(it.qty)||0)},0);
   if(base>.01)return null;
+  /* H was zeroed by hand: that is an explicit decision, so a special profile
+     that already holds the whole perimeter is the contour even when its row
+     lost the manual flag (older saves, reopen, cloud restore). */
+  var baseManualZero=baseRows.some(function(it){return it.manualQtyOverride===true});
   var marks=state&&Array.isArray(state.wallMarks)?state.wallMarks:getWallMarks();
   var hasProfileMarks=marks.some(function(m){
     var source=String(m&&m.profileSource||m&&m.autoCountSource||"");
@@ -265,7 +270,7 @@ function inferredContourProfile(list,state){
        wall geometry is authoritative. This prevents a stale manual 12 m row
        from turning a new 3 m shadow wall into a full shadow contour. */
     return entry.item&&entry.positive===1&&Math.abs(entry.total-perimeter)<=tolerance&&(
-      Math.abs(entry.marked-perimeter)<=tolerance||(!hasProfileMarks&&entry.manual)
+      Math.abs(entry.marked-perimeter)<=tolerance||(!hasProfileMarks&&(entry.manual||baseManualZero))
     );
   });
   return families.length===1?families[0].item:null;
