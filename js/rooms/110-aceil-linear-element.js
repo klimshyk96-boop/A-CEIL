@@ -97,7 +97,7 @@
        lightLine fell back to segments.length-1, so a rectangle stored as
        [width,height] incorrectly produced one corner instead of four. */
     el.cornerCount=(el.elementType==='lightLine'&&el.lightShapeMode==='rhombus')?4:
-      (isTrackType(el)&&isFreePolyline(el))?countTrackCorners(el):
+      ((isTrackType(el)&&isFreePolyline(el))||(el.elementType==='lightLine'&&el.lightShapeMode==='free'&&Array.isArray(el.segmentAngles)&&el.segmentAngles.length))?countTrackCorners(el):
       ((el.elementType==='lightLine'&&el.lightShapeMode==='free')||isFreePolyline(el))?Math.max(0,s.length-1+(el.closedPath?1:0)):
       (SHAPES[el.shape]||SHAPES.line).corners;
     return el;
