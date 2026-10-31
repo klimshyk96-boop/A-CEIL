@@ -65,7 +65,7 @@ assert.match(sw,/async function purgeCachedReports\(\)/,"service worker activati
 assert.match(sw,/isReportRequest\(request\)[\s\S]*?fetch\(request,\{cache:"no-store"\}\)/,"report/export requests must always bypass Cache Storage");
 assert.doesNotMatch(sw,/isReportRequest\(request\)[\s\S]{0,180}caches\.match\(request\)/,"report/export failures must never resurrect stale cached output");
 assert.doesNotMatch(pendingSync,/retryAttempt\s*>=\s*4/,"cloud retries must not stop permanently after four failures");
-assert.match(pendingSync,/Math\.min\(60000/,"cloud retries must use a capped long-lived backoff");
+assert.match(pendingSync,/Math\.min\(stuck \? 300000 : 60000/,"cloud retries must use a capped long-lived backoff");
 assert.match(projectRepository,/const CACHE_LIMIT = 4/,"Safari local project caching must remain bounded");
 assert.match(projectRepository,/const persisted=readRaw\(\)/,"recovery storage must avoid duplicating already persisted unsynced projects");
 assert.match(projectRepository,/aceil-project-safety-v1/,"project safety must keep IndexedDB generations");
