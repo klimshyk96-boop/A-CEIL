@@ -27,7 +27,8 @@ function fixture(initial = [{id:'local-a', _dbId:'db-a', name:'old', state:'{}',
     const q = {update(value){method='update';payload=value;return q},insert(value){method='insert';payload=value;return q},delete(){method='delete';return q},eq(key,value){id=value;return q},select(){return method==='delete'?request():q},single:request};
     return q;
   }};
-  c['A·CEIL'] = Object.assign(c['A·CEIL'] || {}, {ProjectRepository:c['A·CEIL'].ProjectRepository});
+  const hashRoom = r => JSON.stringify([r && r.name, r && r.state]);
+  c['A·CEIL'] = Object.assign(c['A·CEIL'] || {}, {ProjectRepository:c['A·CEIL'].ProjectRepository, roomSync:{hash:hashRoom, hashes(rooms){const o={};(rooms||[]).forEach(r=>{o[String(r.id)]=hashRoom(r)});return o}}});
   vm.createContext(c); vm.runInContext(modeSource,c); vm.runInContext(source,c);
   const items = () => states.get(owner) || [];
   const enqueue = (id='local-a', extra={}) => c.addToPendingQueue({type:'save',payload:{localId:id},addedAt:1,...extra});
@@ -132,7 +133,13 @@ test('apartment writes rebuild state.rooms from the latest repository rooms and 
 });
 test('empty apartment data cannot overwrite a cloud drawing', async () => {
   const f=fixture([{id:'local-a',_dbId:'db-a',multiRoom:true,rooms:[],state:'{}'}]);f.enqueue();
-  assert.equal(await f.c.flushPendingQueue(),false);assert.equal(f.requests.length,0);assert.equal(f.c.getPendingQueue().length,1);
+  assert.equal(await f.c.flushPendingQueue(),false);assert.equal(f.requests.length,0);
+  assert.equal(f.c.getPendingQueue().length,0,'an impossible empty save is not retried forever');
+});
+test('a failing request records its failure count and reason on the queued operation', async () => {
+  const f=fixture();f.enqueue();const done=f.c.flushPendingQueue();await tick();
+  f.reply(0,null,{status:400,message:'bad payload'});assert.equal(await done,false);
+  const op=f.c.getPendingQueue()[0];assert.equal(op._failures,1);assert.match(op._lastError,/bad payload/);
 });
 test('a standalone drawing with stale apartment flags syncs and is repaired', async () => {
   const state={projectType:'apartment',multiRoom:true,rooms:[],closed:true,pts:[{x:0,y:0},{x:2,y:0},{x:2,y:2}],lengths:[2,2,2]};
@@ -140,4 +147,73 @@ test('a standalone drawing with stale apartment flags syncs and is repaired', as
   f.enqueue();const done=f.c.flushPendingQueue();await tick();
   assert.equal(f.requests.length,1);assert.equal(f.requests[0].payload.state.closed,true);assert.equal(f.requests[0].payload.state.multiRoom,undefined);assert.equal(f.requests[0].payload.state.rooms,undefined);
   f.reply(0);assert.equal(await done,true);const saved=f.items()[0];assert.equal(saved.multiRoom,undefined);assert.equal(saved.rooms,undefined);assert.equal(saved._dirty,undefined);
+});
+
+const drawn = n => JSON.stringify({closed:true,pts:[{x:0,y:0},{x:n,y:0},{x:n,y:n}]});
+function roomsFixture(localRooms, base) {
+  const project = {id:'local-a',_dbId:'db-a',multiRoom:true,name:'Flat',rooms:localRooms,state:'{}',_cloudBase:base};
+  return fixture([project]);
+}
+test('rooms changed only on another device are adopted instead of overwritten', async () => {
+  const orig1={id:'r1',name:'Hall',state:drawn(1)}, orig2={id:'r2',name:'Kitchen',state:drawn(2)};
+  const base={r1:JSON.stringify([orig1.name,orig1.state]), r2:JSON.stringify([orig2.name,orig2.state])};
+  const mine2={...orig2,state:drawn(22)};
+  const f=roomsFixture([orig1,mine2],base);f.enqueue();const done=f.c.flushPendingQueue();await tick();
+  assert.equal(f.requests[0].method,undefined,'live cloud rows are read first');
+  const remote1={...orig1,state:drawn(11)}, remote3={id:'r3',name:'Bath',state:drawn(3)};
+  f.requests[0].resolve({data:{state:JSON.stringify({rooms:[remote1,orig2,remote3]})},error:null});await tick();
+  assert.equal(f.requests[1].method,'update');
+  const sent=f.requests[1].payload.state.rooms;
+  assert.deepEqual(sent.map(r=>[r.id,r.state]),[['r1',remote1.state],['r2',mine2.state],['r3',remote3.state]]);
+  f.reply(1);assert.equal(await done,true);
+  assert.deepEqual(f.items()[0].rooms.map(r=>r.id),['r1','r2','r3']);
+  assert.equal(f.items()[0].rooms[0].state,remote1.state);
+  assert.equal(f.items()[0]._cloudBase.r1,JSON.stringify(['Hall',remote1.state]));
+});
+test('a room changed on both devices keeps this device version', async () => {
+  const orig={id:'r1',name:'Hall',state:drawn(1)};
+  const base={r1:JSON.stringify([orig.name,orig.state])};
+  const mine={...orig,state:drawn(5)};
+  const f=roomsFixture([mine],base);f.enqueue();const done=f.c.flushPendingQueue();await tick();
+  f.requests[0].resolve({data:{state:JSON.stringify({rooms:[{...orig,state:drawn(9)}]})},error:null});await tick();
+  assert.equal(f.requests[1].payload.state.rooms[0].state,mine.state);
+  f.reply(1);assert.equal(await done,true);
+});
+test('a failed cloud pre-check stays queued without a blind update and retries safely', async () => {
+  const orig={id:'r1',name:'Hall',state:drawn(1)};
+  const f=roomsFixture([orig],{r1:JSON.stringify([orig.name,orig.state])});f.enqueue();const done=f.c.flushPendingQueue();await tick();
+  f.requests[0].resolve({data:null,error:{status:400,message:'boom'}});await tick();
+  assert.equal(await done,false);assert.equal(f.requests.length,1);assert.equal(f.c.getPendingQueue().length,1);
+  const retry=f.c.flushPendingQueue();await tick();
+  f.requests[1].resolve({data:{state:{rooms:[orig]}},error:null});await tick();
+  assert.equal(f.requests[2].method,'update');f.reply(2);assert.equal(await retry,true);
+});
+
+for(const moment of ['read','write']) for(const removal of [false,true]) {
+ test('local room edit during cloud '+moment+' survives remote '+(removal?'deletion':'adoption'), async()=>{
+  const orig={id:'r1',name:'Hall',state:drawn(1)},remote={...orig,state:drawn(9)},latest={...orig,state:drawn(42)};
+  const f=roomsFixture([orig],{r1:JSON.stringify([orig.name,orig.state])});f.enqueue();const done=f.c.flushPendingQueue();await tick();
+  if(moment==='read')f.items()[0].rooms=[latest];
+  f.requests[0].resolve({data:{state:{rooms:removal?[]:[remote]}},error:null});await tick();
+  if(moment==='write')f.items()[0].rooms=[latest];
+  f.reply(1);await tick();
+  assert.equal(f.items()[0].rooms[0].state,latest.state,'new local geometry must not be replaced or deleted by acknowledgement');
+  assert.equal(f.items()[0]._dirty,true);assert.equal(f.c.getPendingQueue().length,1);
+  f.requests[2].resolve({data:{state:{rooms:f.requests[1].payload.state.rooms}},error:null});await tick();
+  assert.equal(f.requests[3].payload.state.rooms[0].state,latest.state,'next pass uploads the edit retained locally');
+  f.reply(3);assert.equal(await done,true);assert.equal(f.items()[0].rooms[0].state,latest.state);
+ });
+}
+
+for(const state of [null,'broken json',{}])test('unreadable cloud state blocks destructive update: '+JSON.stringify(state),async()=>{
+ const orig={id:'r1',name:'Hall',state:drawn(1)},f=roomsFixture([orig],{r1:JSON.stringify([orig.name,orig.state])});
+ f.enqueue();const done=f.c.flushPendingQueue();await tick();f.requests[0].resolve({data:{state},error:null});
+ assert.equal(await done,false);assert.equal(f.requests.length,1);assert.equal(f.c.getPendingQueue().length,1);
+});
+
+test('account switch during cloud pre-check prevents the subsequent update',async()=>{
+ const orig={id:'r1',name:'Hall',state:drawn(1)},f=roomsFixture([orig],{r1:JSON.stringify([orig.name,orig.state])});
+ f.enqueue();const done=f.c.flushPendingQueue();await tick();f.switchTo('owner-b');
+ f.requests[0].resolve({data:{state:{rooms:[orig]}},error:null});assert.equal(await done,false);assert.equal(f.requests.length,1);
+ f.switchTo('owner-a');assert.equal(f.c.getPendingQueue().length,1);
 });

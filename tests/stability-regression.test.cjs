@@ -65,7 +65,7 @@ assert.match(sw,/async function purgeCachedReports\(\)/,"service worker activati
 assert.match(sw,/isReportRequest\(request\)[\s\S]*?fetch\(request,\{cache:"no-store"\}\)/,"report/export requests must always bypass Cache Storage");
 assert.doesNotMatch(sw,/isReportRequest\(request\)[\s\S]{0,180}caches\.match\(request\)/,"report/export failures must never resurrect stale cached output");
 assert.doesNotMatch(pendingSync,/retryAttempt\s*>=\s*4/,"cloud retries must not stop permanently after four failures");
-assert.match(pendingSync,/Math\.min\(60000/,"cloud retries must use a capped long-lived backoff");
+assert.match(pendingSync,/Math\.min\(stuck \? 300000 : 60000/,"cloud retries must use a capped long-lived backoff");
 assert.match(projectRepository,/const CACHE_LIMIT = 4/,"Safari local project caching must remain bounded");
 assert.match(projectRepository,/const persisted=readRaw\(\)/,"recovery storage must avoid duplicating already persisted unsynced projects");
 assert.match(projectRepository,/aceil-project-safety-v1/,"project safety must keep IndexedDB generations");
@@ -113,7 +113,7 @@ assert.doesNotMatch(wallUi,/_prevOpenWallModalForInit/,
 const versions=[...index.matchAll(/(?:src|href)="[^"]+\.(?:js|css)\?v=([^"]+)"/g)].map(match=>match[1]);
 assert(versions.length>150,"runtime asset list unexpectedly shrank");
 assert.strictEqual(new Set(versions).size,1,"all runtime assets must share one build ID");
-assert.strictEqual(versions[0],"20261031-sync-ghost1","unexpected stability build ID");
+assert.strictEqual(versions[0],"20261031-sync-hardening2","unexpected stability build ID");
 
 assert.match(index,/227-aceil-cloud-first-autosave\.js/,"cloud-first autosave controller must be loaded");
 assert.match(projectSafetyUI,/#projectsModal>\.modal/,"projects modal must use the full viewport");
