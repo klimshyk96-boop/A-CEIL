@@ -502,6 +502,13 @@
     try{if(typeof window.flushPendingQueue==='function')window.flushPendingQueue();}catch(_){reportNonFatal(_)}
     return {ok:true,project:project};
   }
+  async function discardTrash(id){
+    await safetyChain;
+    const user=safetyUser(),key=user+':trash',record=await safetyGet(key),entries=record&&Array.isArray(record.entries)?record.entries:[];
+    const next=entries.filter(row=>!row||!row.project||!projectKeys(row.project).includes(String(id)));
+    if(next.length===entries.length)return false;
+    await safetyPut({key:key,user:user,at:Date.now(),entries:next});return true;
+  }
   async function autoRecoverSafety(){
     const state=lastReadMeta.state,user=safetyUser();
     if(state==='valid'||list().length)return {ok:false,reason:'primary_available'};
@@ -526,7 +533,7 @@
     recentlyRemoved=recentlyRemoved.filter(row=>!row.project||!projectKeys(row.project).some(id=>ids.includes(id)));
     return stashRemoved([project],'explicit_delete_queue');
   }
-  const safetyApi=Object.freeze({status:safetyStatus,flush:flushSafetySnapshot,restore:restoreSafety,listTrash:listTrash,restoreTrash:restoreTrash,autoRecover:autoRecoverSafety,confirmDeletion:confirmDeletion});
+  const safetyApi=Object.freeze({status:safetyStatus,flush:flushSafetySnapshot,restore:restoreSafety,listTrash:listTrash,restoreTrash:restoreTrash,discardTrash:discardTrash,autoRecover:autoRecoverSafety,confirmDeletion:confirmDeletion});
 
   /* First load: preserve what was in Safari in memory, then immediately rewrite
      only a light local cache. Supabase remains the source of truth. */

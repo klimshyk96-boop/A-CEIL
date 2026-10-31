@@ -258,6 +258,12 @@ const PENDING_KEY = "ceiling_pendingSync";
       return {row: result.data, sentSignature, merge, sentRooms: payload.state && payload.state.rooms};
     }
     if (op.type === "delete" && p.dbId) {
+      if(session.client&&typeof session.client.rpc==="function"){
+        const moved=await runQuery(session.client.rpc("aceil_trash_project",{p_project_id:p.dbId}),"Перенесення проєкту до кошика");
+        if(!moved.error&&String(moved.data)===String(p.dbId))return {trashed:true};
+        const unavailable=/aceil_trash_project|schema cache|could not find the function/i.test(errorMessage(moved.error));
+        if(moved.error&&!unavailable)throw moved.error;
+      }
       const result = await runQuery(session.client.from("projects").delete().eq("id", p.dbId).select("id"), "Видалення проєкту");
       if (result.error) throw result.error;
       const rows=Array.isArray(result.data)?result.data:(result.data?[result.data]:[]);
