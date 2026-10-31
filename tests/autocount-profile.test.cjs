@@ -60,6 +60,7 @@ function makeRoom({ items, marks = [], lengths = [300, 300, 300, 300], presets =
       const item = items.find(row => row.id === id);
       return window.aceilWholeContourCompute(sourceKey, item);
     },
+    selectWhole(id) { return window.A_CEIL_SelectWholeContourItem(items.find(row => row.id === id)); },
     reconcileInsert() {return window.A_CEIL_ReconcileContourInsert();},
     recalculate() {
       window.rmUniversalAutoCountV319({ noSave: true });
@@ -293,6 +294,19 @@ for(const family of ['floating','shadow']){
  assert.equal(items.find(i=>i.id==='base').autoZero,false);
 }
 console.log('PASS whole shadow/floating contour immediately zeroes and restores automatic H');
+
+for(const family of ['floating','shadow']){
+ const items=baseItems();
+ Object.assign(items.find(i=>i.id==='base'),{qty:12,autoFilled:true});
+ Object.assign(items.find(i=>i.id===family),{qty:12,autoFilled:false});
+ const room=makeRoom({items});room.selectWhole(family);room.reconcileInsert();
+ assert.equal(items.find(i=>i.id==='base').qty,0,'↔ '+family+' zeroes H');
+ assert.equal(items.find(i=>i.id===family).fullContourSelected,true,'↔ records the selected contour profile');
+ room.selectWhole('base');room.reconcileInsert();
+ assert.equal(items.find(i=>i.id==='base').qty,12,'↔ H restores the base contour');
+ assert.equal(items.find(i=>i.id===family).fullContourSelected,false);
+}
+console.log('PASS ↔ perimeter button selects shadow/floating contour and base H');
 
 {
  const items=baseItems([{id:'black-shadow-corners',name:'Фіксація кута тіньовий чорний',source:'walltypecolor:black:'+encodeURIComponent('Фіксація кута тіньовий'),unit:'шт',qty:0}]);

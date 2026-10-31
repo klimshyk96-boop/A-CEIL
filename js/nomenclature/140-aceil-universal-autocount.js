@@ -446,6 +446,31 @@ function contourProfile(draft,collection,state){
 }
 window.aceilContourProfile=contourProfile;
 window.aceilContourProfileColor=function(){var p=contourProfile();return p?p.color:"#1d1d1f";};
+// The ↔ button beside a metre item means "use the whole perimeter". For a
+// contour profile it is also the user's explicit profile choice, not merely a
+// copied number. Keep that decision in the room state so H, insert and corners
+// are reconciled immediately and survive save/reopen.
+window.A_CEIL_SelectWholeContourItem=function(item){
+  var source=contourSourceOfItem(item),special=/^(shadow_profile|floating_profile)$/.test(source);
+  if(!special&&source!=="main_profile")return false;
+  var changed=false;
+  getElemItems().forEach(function(row){
+    if(!row)return;
+    var selected=special&&row===item;
+    if(!!row.fullContourSelected!==selected){row.fullContourSelected=selected;changed=true;}
+  });
+  return changed;
+};
+(function(original){
+  if(typeof original!=="function"||original.__contourProfileChoice)return;
+  var wrapped=function(itemId){
+    var item=getElemItems().find(function(row){return row&&String(row.id)===String(itemId);});
+    if(item)window.A_CEIL_SelectWholeContourItem(item);
+    return original.apply(this,arguments);
+  };
+  wrapped.__contourProfileChoice=true;window.setElemFromPerimeter=wrapped;
+  try{setElemFromPerimeter=wrapped;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+})(window.setElemFromPerimeter);
 window.aceilWholeContourCompute=function(source,item,ctx){
   var selected=(/corners$/.test(source)?manualContourStyle(getElemItems()):null)||activeWholeContourProfile(item),profile=selected?{item:selected,source:contourSourceOfItem(selected)||selected.source}:null,relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
   if(!relevant.test(source))return null;

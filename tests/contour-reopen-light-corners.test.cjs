@@ -19,6 +19,21 @@ const root=process.env.ACEIL_PROFILE_ROOT||path.join(__dirname,'..');
    const r=await page.evaluate(()=>({shadow:elemItems.find(i=>i.id==='shadow').qty,base:elemItems.find(i=>i.id==='base').qty,whole:aceilContourProfile().whole}));
    assert.deepEqual(r,{shadow:16,base:0,whole:true},'shadow contour survives reopen: '+flags);
   }
+  await page.evaluate(()=>{
+   resetAllSilent();window.A_CEIL_AutoCount.setEnabled(false,{silent:true});
+   pts=[{x:100,y:100},{x:600,y:100},{x:600,y:400},{x:100,y:400}];realPts=[{x:0,y:0},{x:500,y:0},{x:500,y:300},{x:0,y:300}];lengths=[500,300,500,300];closed=true;
+   elemGroups=[{id:'profiles',name:'Профілі'}];elemItems=[
+    {id:'base',groupId:'profiles',name:'Профіль H',source:'main_profile',qty:16,unit:'м'},
+    {id:'shadow',groupId:'profiles',name:'Тіньовий профіль',source:'shadow_profile',qty:0,unit:'м'},
+    {id:'insert',groupId:'profiles',name:'Вставка',source:'white_insert',insertSelected:true,qty:16,unit:'м'},
+    {id:'base-corners',groupId:'profiles',name:'Фіксація кутів',source:'corners',qty:4,unit:'шт'},
+    {id:'shadow-corners',groupId:'profiles',name:'Фіксація кута тіньового',source:'shadow_corners',qty:0,unit:'шт'}
+   ];renderElemList();document.getElementById('elementsModal').classList.add('open');
+  });
+  await page.locator('#emrow_shadow .em-unit').click();
+  assert.deepEqual(await page.evaluate(()=>Object.fromEntries(elemItems.filter(i=>['base','shadow','insert','base-corners','shadow-corners'].includes(i.id)).map(i=>[i.id,i.qty]))),{base:0,shadow:16,insert:0,'base-corners':0,'shadow-corners':4},'↔ shadow profile replaces H, insert and corners immediately');
+  await page.reload({waitUntil:'load'});await page.waitForTimeout(1200);await reveal(page);
+  assert.deepEqual(await page.evaluate(()=>({base:elemItems.find(i=>i.id==='base').qty,shadow:elemItems.find(i=>i.id==='shadow').qty,whole:aceilContourProfile().whole})),{base:0,shadow:16,whole:true},'↔ contour selection survives reopen');
   const corners=await page.evaluate(()=>{
    const mk=(id,x,y)=>({id,elementType:'lightLine',shape:'rectangle',lightShapeMode:'rectangle',segments:[100,100],center:{x,y},rotation:0});
    window.linearElements=linearElements=[mk('a',150,150),mk('b',200,150),mk('c',150,200),mk('d',200,200)];
