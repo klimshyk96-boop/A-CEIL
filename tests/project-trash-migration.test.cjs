@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const sql=fs.readFileSync(path.join(__dirname,'../supabase/migrations/20261031130000_project_trash.sql'),'utf8');
+assert.match(sql,/create table if not exists public\.aceil_project_trash/);
+assert.match(sql,/primary key \(user_id, project_id\)/);
+assert.match(sql,/now\(\)\+interval '30 days'/);
+assert.match(sql,/create or replace function public\.aceil_trash_project/);
+assert.match(sql,/for update[\s\S]*insert into public\.aceil_project_trash[\s\S]*delete from public\.projects/,'trash move must be transactional and locked');
+assert.match(sql,/create or replace function public\.aceil_restore_project/);
+assert.match(sql,/jsonb_populate_record\(null::public\.projects,doc\)/,'restore preserves the complete project row');
+assert.match(sql,/revoke all on public\.aceil_project_trash from anon, authenticated/);
+assert.match(sql,/grant execute on function public\.aceil_(?:trash|list|restore|purge)_project/);
+console.log('project trash migration: OK');

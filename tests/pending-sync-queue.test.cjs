@@ -69,6 +69,12 @@ test('a delete without the returned server row is not acknowledged', async () =>
   const done=f.c.flushPendingQueue();await tick();assert.equal(f.requests[0].method,'delete');
   f.requests[0].resolve({data:[],error:null});assert.equal(await done,false);assert.equal(f.c.getPendingQueue().length,1);
 });
+test('cloud trash RPC atomically replaces direct project deletion when available', async () => {
+  const f=fixture([]),calls=[];f.c._sb.rpc=(name,args)=>{calls.push({name,args});return Promise.resolve({data:args.p_project_id,error:null})};
+  f.c.addToPendingQueue({type:'delete',payload:{localId:'local-a',dbId:'db-a'}});
+  assert.equal(await f.c.flushPendingQueue(),true);assert.equal(JSON.stringify(calls),JSON.stringify([{name:'aceil_trash_project',args:{p_project_id:'db-a'}}]));
+  assert.equal(f.requests.length,0);assert.equal(f.c.getPendingQueue().length,0);
+});
 test('failures stay queued; successful unrelated work is removed and retry succeeds', async () => {
   const f=fixture([{id:'local-a',_dbId:'db-a',name:'A',state:'{}'},{id:'local-b',_dbId:'db-b',name:'B',state:'{}'}]);
   f.enqueue();const done=f.c.flushPendingQueue();await tick();f.enqueue('local-b');f.reply(0,null,{message:'offline'});await tick();
