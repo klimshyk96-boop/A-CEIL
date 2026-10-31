@@ -4,8 +4,8 @@ const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222
 async function fixture(browser){
  const result=await open(browser,390);const {page}=result;await reveal(page);
  await page.evaluate(()=>{
-  window.__writes=[];window.__lookups=[];
-  const fake={rpc:async()=>({data:[],error:null}),channel(){return {on(){return this},subscribe(){return this}}},removeChannel:async()=>{},from(table){let payload,id,automaticDraft=false;const q={select(){return q},eq(key,value){if(key==='id')id=value;if(key==='comment'&&value==='Автоматична чернетка A·CEIL')automaticDraft=true;return q},order(){return q},limit(){return q},maybeSingle(){return table==='projects'&&automaticDraft?new Promise(resolve=>window.__lookups.push(resolve)):Promise.resolve({data:null,error:null})},update(value){payload=value;return q},insert(value){payload=value;return q},single(){if(payload===undefined)return Promise.resolve({data:null,error:null});return new Promise(resolve=>window.__writes.push({payload,id,resolve}))}};return q}};
+  window.__writes=[];window.__lookups=[];window.__cloudStates={};
+  const fake={rpc:async()=>({data:[],error:null}),channel(){return {on(){return this},subscribe(){return this}}},removeChannel:async()=>{},from(table){let payload,id,automaticDraft=false;const q={select(){return q},eq(key,value){if(key==='id')id=value;if(key==='comment'&&value==='Автоматична чернетка A·CEIL')automaticDraft=true;return q},order(){return q},limit(){return q},maybeSingle(){return table==='projects'&&automaticDraft?new Promise(resolve=>window.__lookups.push(resolve)):Promise.resolve({data:null,error:null})},update(value){payload=value;return q},insert(value){payload=value;return q},single(){if(payload===undefined)return Promise.resolve({data:window.__cloudStates[id]?{state:structuredClone(window.__cloudStates[id])}:null,error:null});return new Promise(resolve=>window.__writes.push({payload,id,resolve}))}};return q}};
   _sb=fake;window._sb=fake;_sbUser={id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'};window._sbUser=_sbUser;window.A_CEIL_UserStorage.setUser(_sbUser);
   window.__originalFrom=fake.from;setPendingQueue([]);
   window['A·CEIL'].API.state.reset();_activeObjectId=null;_activeRoomIdx=null;window._activeRoomId=null;
@@ -13,7 +13,7 @@ async function fixture(browser){
  });return result;
 }
 async function waitWrite(page,count){await page.waitForFunction(n=>window.__writes.length>=n,count,{timeout:5000})}
-async function reply(page,index,id=A){await page.evaluate(({index,id})=>window.__writes[index].resolve({data:{id},error:null}),{index,id})}
+async function reply(page,index,id=A){await page.evaluate(({index,id})=>{window.__cloudStates[id]=structuredClone(window.__writes[index].payload.state);window.__writes[index].resolve({data:{id},error:null})},{index,id})}
 (async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.ACEIL_CHROMIUM_PATH||undefined});try{
  {
   const {page,errors}=await fixture(browser);

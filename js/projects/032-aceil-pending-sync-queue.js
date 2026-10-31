@@ -196,22 +196,19 @@ const PENDING_KEY = "ceiling_pendingSync";
   /* Rooms edited on another device must survive this device's whole-project
      UPDATE. Compare the live cloud rows with the last cloud state this device
      saw (_cloudBase): a room changed only remotely is adopted, a room changed on
-     both sides keeps this device's version and is reported. Any failure falls
-     back to the previous behaviour (plain UPDATE). */
+     both sides keeps this device's version and is reported. A failed read must
+     leave the save queued: a blind UPDATE could erase another device's work. */
   async function mergeRemoteRooms(session, local, payload, dbId) {
     const sync = roomSync();
     if (!sync || !local || !local._cloudBase || !payload.state || !Array.isArray(payload.state.rooms)) return null;
-    let cloud;
-    try {
-      const res = await runQuery(session.client.from("projects").select("state").eq("id", dbId).single(), "Перевірка змін у хмарі");
-      if (!res || res.error || !res.data) return null;
-      cloud = stateRooms(res.data.state);
-    } catch (_) { return null; }
-    if (!cloud) return null;
+    const res = await runQuery(session.client.from("projects").select("state").eq("id", dbId).single(), "Перевірка змін у хмарі");
+    if (!res || res.error || !res.data) throw res && res.error || new Error("Хмара не підтвердила стан кімнат. Збереження очікує повтору.");
+    const cloud = stateRooms(res.data.state);
+    if (!cloud) throw new Error("Не вдалося прочитати кімнати у хмарі. Збереження очікує повтору.");
     const base = local._cloudBase, mine = payload.state.rooms, byId = new Map(mine.map(r => [String(r && r.id), r]));
     let activeRoom = null;
     try { activeRoom = window._activeRoomId != null ? String(window._activeRoomId) : null; } catch (_) {}
-    const out = { adopted: [], added: [], dropped: [], conflicts: [] };
+    const out = { adopted: [], added: [], dropped: [], conflicts: [], before: sync.hashes(mine) };
     const merged = mine.slice();
     const cloudIds = new Set();
     cloud.forEach(room => {
@@ -242,6 +239,7 @@ const PENDING_KEY = "ceiling_pendingSync";
       let merge = null;
       if (dbId) {
         merge = await mergeRemoteRooms(session, local, payload, dbId);
+        if (!sameSession(session)) throw new Error("Обліковий запис змінився під час перевірки хмари");
         if (merge && (merge.adopted.length || merge.added.length || merge.dropped.length)) payload.state.rooms = merge.rooms;
         const update = session.client.from("projects").update(payload).eq("id", dbId).select().single();
         result = await runQuery(update, "Оновлення проєкту");
@@ -302,7 +300,12 @@ const PENDING_KEY = "ceiling_pendingSync";
     if (merge && Array.isArray(current.rooms)) {
       const take = new Map((merge.rooms || []).map(r => [String(r && r.id), r]));
       if (merge.adopted.length || merge.added.length || merge.dropped.length) {
-        current.rooms = current.rooms.filter(r => !merge.dropped.includes(String(r && r.id))).map(r => merge.adopted.includes(String(r && r.id)) ? take.get(String(r.id)) : r);
+        // Recheck each room against the local snapshot captured before the
+        // request. The user may have edited it while either read or write was
+        // pending; such an edit must survive and be sent by the next pass.
+        const unchanged = r => r && merge.before[String(r.id)] === sync.hash(r);
+        current.rooms = current.rooms.filter(r => !merge.dropped.includes(String(r && r.id)) || !unchanged(r))
+          .map(r => merge.adopted.includes(String(r && r.id)) && unchanged(r) ? take.get(String(r.id)) : r);
         merge.added.forEach(id => { if (!current.rooms.some(r => String(r && r.id) === id) && take.get(id)) current.rooms.push(take.get(id)); });
         try { if (typeof _renderRoomTabsAboveCanvas === "function") _renderRoomTabsAboveCanvas(); } catch (_) {}
         try { if (typeof showToast === "function") showToast("🔄 Підтягнуто зміни кімнат з іншого пристрою: " + (merge.adopted.length + merge.added.length + merge.dropped.length), 4500); } catch (_) {}
