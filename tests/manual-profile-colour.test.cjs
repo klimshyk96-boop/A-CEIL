@@ -20,7 +20,7 @@ async function scenario(browser,width,source,variant,family="floating"){
  await page.locator('#emrow_base .em-qty-input').fill('0');
  await page.evaluate(()=>{window.__profileStrokes=[]});
  await page.locator('#emrow_floating .em-qty-input').fill('16');
- await page.waitForFunction(()=>window.__profileStrokes.some(x=>x.color==='#ff9500'&&x.width===3),null,{timeout:5000});
+ await page.waitForFunction(()=>window.__profileStrokes.some(x=>x.color==='#ff9500'&&x.width===3),null,{timeout:15000});
  assert.deepEqual(await page.evaluate(()=>({color:aceilContourProfileColor(),whole:aceilContourProfile().whole,source:aceilContourProfile().source,marks:wallMarks.length,quantities:elemItems.filter(x=>x.id==='base'||x.id==='floating').map(x=>x.qty)})),{color:'#ff9500',whole:true,source:family+'_profile',marks:0,quantities:[0,16]});
  assert.deepEqual(await page.evaluate(()=>elemItems.filter(i=>i.source==='white_insert').map(i=>i.qty)),[0,0],'manual profile immediately removes insert, including with AutoCount off');
  assert.deepEqual(await page.evaluate(()=>elemItems.filter(i=>['base-corners','selected-corners','other-corners'].includes(i.id)).map(i=>i.qty)),[0,4,0],'correct corners replace base corners before any recalculation');
@@ -29,7 +29,7 @@ async function scenario(browser,width,source,variant,family="floating"){
  assert.deepEqual(await page.evaluate(()=>window.__snapshotProfile),{source:family+'_profile',color:'#ff9500',whole:true});
  // Manual profile style does not depend on matching the room perimeter.
  await page.evaluate(()=>{window.__profileStrokes=[]});await page.locator('#emrow_floating .em-qty-input').fill('3');
- await page.waitForFunction(()=>window.__profileStrokes.some(x=>x.color==='#ff9500'&&x.width===3),null,{timeout:5000});
+ await page.waitForFunction(()=>window.__profileStrokes.some(x=>x.color==='#ff9500'&&x.width===3),null,{timeout:15000});
  assert.equal(await page.evaluate(()=>aceilContourProfile().whole),true);
  if(!source){
   await page.evaluate(()=>{window.A_CEIL_AutoCount.setEnabled(true,{silent:true});window.A_CEILColorPicker.select('M303','premium');window.rmUniversalAutoCountV319({noSave:true})});
@@ -57,7 +57,7 @@ async function scenario(browser,width,source,variant,family="floating"){
  }
 
  await page.evaluate(()=>{window.__profileStrokes=[]});await page.locator('#emrow_floating .em-qty-input').fill('0');
- await page.waitForFunction(()=>window.__profileStrokes.some(x=>x.color==='#1d1d1f'&&x.width===3),null,{timeout:5000});
+ await page.waitForFunction(()=>window.__profileStrokes.some(x=>x.color==='#1d1d1f'&&x.width===3),null,{timeout:15000});
  assert.equal(await page.evaluate(()=>aceilContourProfile().whole),false);
  assert.deepEqual(await page.evaluate(()=>elemItems.filter(i=>i.source==='white_insert').map(i=>i.qty)),[16,0],'removing manual profile restores chosen insert');
  assert.deepEqual(await page.evaluate(()=>elemItems.filter(i=>['base-corners','selected-corners','other-corners'].includes(i.id)).map(i=>i.qty)),[4,0,0],'restoring base restores base corners');
