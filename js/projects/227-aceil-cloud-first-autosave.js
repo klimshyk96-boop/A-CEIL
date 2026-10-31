@@ -3,7 +3,7 @@
 if(window.__A_CEIL_CLOUD_FIRST_PASS1)return;
 window.__A_CEIL_CLOUD_FIRST_PASS1=true;
 
-var QUIET_MS=900,MAX_WAIT_MS=3500,timer=null,firstChangeAt=0,running=false,rerun=false,installed=false;
+var roomRetries=0,QUIET_MS=900,MAX_WAIT_MS=3500,timer=null,firstChangeAt=0,running=false,rerun=false,installed=false;
 function root(){return window["A\u00b7CEIL"]||{}}
 function repo(){return root().ProjectRepository||null}
 function persistence(){return root().ProjectPersistence||null}
@@ -38,11 +38,11 @@ function markLocal(rec){
 async function syncNow(reason){
  if(running){rerun=true;return false}
  var rec=activeRecord(),sync=persistence();if(!rec||!sync||typeof sync.syncProject!=="function")return false;
- if(window.__A\u00b7CEILReportRendering||window.__A\u00b7CEILSessionSwitching)return false;
+ if(window.__A\u00b7CEILReportRendering||window.__A\u00b7CEILSessionSwitching){schedule("busy_retry",1500);return false}
  running=true;
  try{
   if(multi(rec.project)&&typeof window.saveCurrentRoom==="function"){
-   var saved=await window.saveCurrentRoom({silent:true,skipCloud:true});if(saved===false)return false;
+   var saved=await window.saveCurrentRoom({silent:true,skipCloud:true});if(saved===false){if(roomRetries++<3)schedule("room_retry",2000);return false}roomRetries=0;
    rec=activeRecord();if(!rec)return false;
   }
   var project=markLocal(rec),ok=await sync.syncProject(project);

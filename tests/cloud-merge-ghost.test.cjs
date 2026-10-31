@@ -14,6 +14,13 @@ const root=process.env.ACEIL_PROFILE_ROOT||path.join(__dirname,'..');
    return R.list().map(p=>p.name).sort();
   });
   assert.deepEqual(r,['dirty','kept','local-only'],'cloud merge drops synced ghosts but keeps unsynced work');
+  const base=await page.evaluate(()=>{
+   const id='33333333-3333-4333-8333-333333333333';
+   window['A·CEILMergeCloudProjects']([{id,_dbId:id,name:'Flat',multiRoom:true,state:'{}',rooms:[{id:'r1',name:'Hall',state:'{"closed":true}'}]}]);
+   const p=window['A·CEIL'].ProjectRepository.list().find(x=>x.id===id);
+   return p&&p._cloudBase;
+  });
+  assert.deepEqual(Object.keys(base||{}),['r1'],'cloud load records the base used to detect remote room edits');
   assert.deepEqual(errors,[]);console.log('cloud merge ghost ok');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});

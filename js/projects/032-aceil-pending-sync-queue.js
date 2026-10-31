@@ -78,7 +78,8 @@ const PENDING_KEY = "ceiling_pendingSync";
     if (!el) return;
     if (n) {
       el.textContent = "⏳ " + n + " не збережено";
-      el.title = "Є зміни, які збережені на пристрої та очікують хмару.";
+      const stuck = read().find(x => (x._failures || 0) >= 3);
+      el.title = stuck ? "Хмара не приймає зміну: " + (stuck._lastError || "помилка") + ". Дані збережені на пристрої, повтор триває." : "Є зміни, які збережені на пристрої та очікують хмару.";
       return;
     }
     const project=activeProject(),at=Number(project&&project._cloudSavedAt)||0;
@@ -124,7 +125,7 @@ const PENDING_KEY = "ceiling_pendingSync";
         try { if (typeof st === "string") st = JSON.parse(st); } catch (_) { st = {}; }
         return st.closed || st.circleMode || [st.pts, st.realPts, st.wallMarks, st.lightMarks].some(value => Array.isArray(value) && value.length);
       });
-      if (!drawn) throw new Error("Порожній об'єкт не замінює хмарний проєкт");
+      if (!drawn) { const empty = new Error("Порожній об'єкт не замінює хмарний проєкт"); empty.aceilEmptyObject = true; throw empty; }
       state = {schemaVersion: state.schemaVersion || 3, projectType: "apartment", multiRoom: true, rooms};
     } else if(mode&&typeof mode.cleanSingleState==='function') state=mode.cleanSingleState(local);
     const value = field => local[field] == null ? fallback[field] || "" : local[field];
@@ -187,13 +188,61 @@ const PENDING_KEY = "ceiling_pendingSync";
       return !!(result && !result.error && result.data && result.data.session);
     } catch (_) { return false; }
   }
+  function roomSync() { return window.A·CEIL && window.A·CEIL.roomSync; }
+  function stateRooms(raw) {
+    try { const st = typeof raw === "string" ? JSON.parse(raw || "{}") : (raw || {}); return Array.isArray(st.rooms) ? st.rooms : null; }
+    catch (_) { return null; }
+  }
+  /* Rooms edited on another device must survive this device's whole-project
+     UPDATE. Compare the live cloud rows with the last cloud state this device
+     saw (_cloudBase): a room changed only remotely is adopted, a room changed on
+     both sides keeps this device's version and is reported. Any failure falls
+     back to the previous behaviour (plain UPDATE). */
+  async function mergeRemoteRooms(session, local, payload, dbId) {
+    const sync = roomSync();
+    if (!sync || !local || !local._cloudBase || !payload.state || !Array.isArray(payload.state.rooms)) return null;
+    let cloud;
+    try {
+      const res = await runQuery(session.client.from("projects").select("state").eq("id", dbId).single(), "Перевірка змін у хмарі");
+      if (!res || res.error || !res.data) return null;
+      cloud = stateRooms(res.data.state);
+    } catch (_) { return null; }
+    if (!cloud) return null;
+    const base = local._cloudBase, mine = payload.state.rooms, byId = new Map(mine.map(r => [String(r && r.id), r]));
+    let activeRoom = null;
+    try { activeRoom = window._activeRoomId != null ? String(window._activeRoomId) : null; } catch (_) {}
+    const out = { adopted: [], added: [], dropped: [], conflicts: [] };
+    const merged = mine.slice();
+    const cloudIds = new Set();
+    cloud.forEach(room => {
+      if (!room || room.id == null) return;
+      const id = String(room.id); cloudIds.add(id);
+      const hc = sync.hash(room), b = base[id], own = byId.get(id);
+      if (!own) { if (b === undefined) { merged.push(room); out.added.push(id); } return; }
+      if (hc === b) return;
+      const ho = sync.hash(own);
+      if (ho === hc) return;
+      if (ho === b && id !== activeRoom) { merged[merged.indexOf(own)] = room; out.adopted.push(id); }
+      else out.conflicts.push(own.name || id);
+    });
+    Object.keys(base).forEach(id => {
+      if (cloudIds.has(id)) return;
+      const own = byId.get(id);
+      if (own && sync.hash(own) === base[id] && id !== activeRoom) { merged.splice(merged.indexOf(own), 1); out.dropped.push(id); }
+    });
+    out.rooms = merged;
+    return out;
+  }
   async function sendOperation(session, op, local) {
     const p = op.payload || {};
     if (op.type === "save") {
       const sentSignature = signature(local, p, session.uid);
       const payload = payloadFor(local, p, session.uid), dbId = local._dbId || p.dbId;
       let result;
+      let merge = null;
       if (dbId) {
+        merge = await mergeRemoteRooms(session, local, payload, dbId);
+        if (merge && (merge.adopted.length || merge.added.length || merge.dropped.length)) payload.state.rooms = merge.rooms;
         const update = session.client.from("projects").update(payload).eq("id", dbId).select().single();
         result = await runQuery(update, "Оновлення проєкту");
         // A local cache can legitimately outlive its old cloud row. Recreate it
@@ -208,7 +257,7 @@ const PENDING_KEY = "ceiling_pendingSync";
       }
       if (result && result.error) throw result.error;
       if (!result.data || !result.data.id) throw new Error("Сервер не підтвердив збереження");
-      return {row: result.data, sentSignature};
+      return {row: result.data, sentSignature, merge, sentRooms: payload.state && payload.state.rooms};
     }
     if (op.type === "delete" && p.dbId) {
       const result = await runQuery(session.client.from("projects").delete().eq("id", p.dbId).select("id"), "Видалення проєкту");
@@ -239,13 +288,32 @@ const PENDING_KEY = "ceiling_pendingSync";
     if (retryTimer || !navigator.onLine || !read().length) return;
     /* Keep the queue alive after transient Safari/network failures. Backoff is
        capped so retries continue without creating a tight background loop. */
-    const delay = Math.min(60000, 2500 * Math.pow(2, Math.min(retryAttempt++, 5)));
+    const stuck = read().some(x => (x._failures || 0) >= 6);
+    const delay = Math.min(stuck ? 300000 : 60000, 2500 * Math.pow(2, Math.min(retryAttempt++, stuck ? 7 : 5)));
     retryTimer = setTimeout(() => {
       retryTimer = null;
       flush().then(ok => { if (ok) retryAttempt = 0; else scheduleRetry(); }).catch(scheduleRetry);
     }, delay);
   }
-  function acceptSave(op, local, row, sentSignature, session) {
+  function applyRemoteMerge(current, extra) {
+    const sync = roomSync();
+    if (!sync || !extra) return;
+    const merge = extra.merge;
+    if (merge && Array.isArray(current.rooms)) {
+      const take = new Map((merge.rooms || []).map(r => [String(r && r.id), r]));
+      if (merge.adopted.length || merge.added.length || merge.dropped.length) {
+        current.rooms = current.rooms.filter(r => !merge.dropped.includes(String(r && r.id))).map(r => merge.adopted.includes(String(r && r.id)) ? take.get(String(r.id)) : r);
+        merge.added.forEach(id => { if (!current.rooms.some(r => String(r && r.id) === id) && take.get(id)) current.rooms.push(take.get(id)); });
+        try { if (typeof _renderRoomTabsAboveCanvas === "function") _renderRoomTabsAboveCanvas(); } catch (_) {}
+        try { if (typeof showToast === "function") showToast("🔄 Підтягнуто зміни кімнат з іншого пристрою: " + (merge.adopted.length + merge.added.length + merge.dropped.length), 4500); } catch (_) {}
+      }
+      if (merge.conflicts.length) {
+        try { if (typeof showToast === "function") showToast("⚠️ Кімнату «" + merge.conflicts[0] + "» змінено і тут, і на іншому пристрої. Збережено вашу версію.", 6000); } catch (_) {}
+      }
+    }
+    if (Array.isArray(extra.sentRooms)) current._cloudBase = sync.hashes(extra.sentRooms);
+  }
+  function acceptSave(op, local, row, sentSignature, session, extra) {
     // Bind later edits/deletions to the newly inserted cloud ID without changing
     // their revision identity. In particular, a second save must UPDATE, not INSERT.
     const pending = read();
@@ -273,11 +341,13 @@ const PENDING_KEY = "ceiling_pendingSync";
       current._syncStatus = "pending_update";
       current._dirty = true;
     }
+    applyRemoteMerge(current, extra);
     repository().replaceAll(all);
     if (changed && !newer) add({type: "save", payload: {localId: current.id, dbId: row.id}, addedAt: Date.now()});
   }
   async function drain(session) {
     const attempted = new Set();
+    let skippedEmpty = false;
     while (sameSession(session)) {
       const op = read().find(x => !attempted.has(x._queueId));
       if (!op) break;
@@ -289,7 +359,7 @@ const PENDING_KEY = "ceiling_pendingSync";
           if (!local) { acknowledge(op); continue; }
           const result = await sendWithRecovery(session, op, local);
           if (!sameSession(session)) return false;
-          acceptSave(op, local, result.row, result.sentSignature, session);
+          acceptSave(op, local, result.row, result.sentSignature, session, result);
           acknowledge(op);
         } else if (op.type === "delete") {
           await sendWithRecovery(session, op, null);
@@ -299,6 +369,14 @@ const PENDING_KEY = "ceiling_pendingSync";
       } catch (error) {
         // Leave the failed revision in place; later revisions can still be sent.
         if (!sameSession(session)) return false;
+        // A drawing-less new object is not ready for the cloud yet. The project
+        // stays dirty locally and is queued again by the next save; retrying the
+        // impossible request would only keep the badge and the timer busy.
+        if (error && error.aceilEmptyObject) { skippedEmpty = true; acknowledge(op); continue; }
+        try {
+          const queue = read(), failed = queue.find(x => x._queueId === op._queueId);
+          if (failed) { failed._failures = (failed._failures || 0) + 1; failed._lastError = errorMessage(error).slice(0, 200); failed._lastFailedAt = Date.now(); write(queue); }
+        } catch (_) {}
         window.__A_CEIL_LAST_CLOUD_ERROR = {at: Date.now(), message: errorMessage(error)};
         if (window.__diagSilent) window.__diagSilent(error);
       }
@@ -309,7 +387,7 @@ const PENDING_KEY = "ceiling_pendingSync";
     try{window.dispatchEvent(new CustomEvent("aceil:sync-status-change",{detail:{pending:remaining}}));}catch(_){}
     if (typeof hideSync === "function") hideSync();
     if (remaining) scheduleRetry(); else retryAttempt = 0;
-    return remaining === 0;
+    return remaining === 0 && !skippedEmpty;
   }
   function flush() {
     const c = client(), u = user(), key = owner();

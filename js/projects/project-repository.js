@@ -538,6 +538,18 @@
     if(repair&&typeof repair.freeSpace==='function')repair.freeSpace({aggressive:true});
   }catch(_){reportNonFatal(_)}
 
+  function roomHash(room){
+    const state=room&&room.state;
+    const text=JSON.stringify([room&&room.name||'',typeof state==='string'?state:(state==null?'':state)]);
+    let h=5381;for(let i=0;i<text.length;i++)h=((h<<5)+h+text.charCodeAt(i))|0;
+    return (h>>>0).toString(36)+':'+text.length;
+  }
+  function roomHashes(rooms){
+    const out={};
+    (Array.isArray(rooms)?rooms:[]).forEach(room=>{if(room&&room.id!=null)out[String(room.id)]=roomHash(room);});
+    return out;
+  }
+  window.A·CEIL.roomSync=Object.freeze({hash:roomHash,hashes:roomHashes});
   const api = Object.freeze({
     STORAGE_KEY,
     list,
@@ -685,6 +697,9 @@
     const mergeCloudProjects=window.A·CEILMergeCloudProjects;
     if(typeof mergeCloudProjects==='function'){
       const wrapped=function(incoming){
+        /* Remember what the cloud held for every room. A later save compares
+           this base with the live cloud row to detect edits made elsewhere. */
+        try{(Array.isArray(incoming)?incoming:[]).forEach(project=>{if(project&&Array.isArray(project.rooms)&&project.rooms.length)project._cloudBase=roomHashes(project.rooms);});}catch(_){reportNonFatal(_)}
         const before=api.list({clone:true});
         backup(before,'before_cloud_merge');
         let result;
