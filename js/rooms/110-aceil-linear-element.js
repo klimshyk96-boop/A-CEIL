@@ -75,11 +75,15 @@
   function countTrackCorners(el){
     var angles=Array.isArray(el&&el.segmentAngles)?el.segmentAngles:[];
     if(!angles.length)return (SHAPES[el&&el.shape]||SHAPES.line).corners;
+    /* Tracks are orthogonal; light lines may turn by any angle. Compare
+       directions modulo 360 so 0/360 and -180/180 remain one straight run. */
+    var direction=function(value){return isTrackType(el)?snapTrackAngle(value):num(value,0);};
+    var bends=function(a,b){return Math.abs(((direction(a)-direction(b))%360+540)%360-180)>1e-6;};
     var count=0;
     for(var i=1;i<angles.length;i++){
-      if(snapTrackAngle(angles[i])!==snapTrackAngle(angles[i-1]))count++;
+      if(bends(angles[i],angles[i-1]))count++;
     }
-    if(el.closedPath&&angles.length>1&&snapTrackAngle(angles[0])!==snapTrackAngle(angles[angles.length-1]))count++;
+    if(el.closedPath&&angles.length>1&&bends(angles[0],angles[angles.length-1]))count++;
     return count;
   }
   function isRotatable(el){return !!(el&&(el.elementType==='lightLine'||isFreePolyline(el)));}
@@ -97,7 +101,7 @@
        lightLine fell back to segments.length-1, so a rectangle stored as
        [width,height] incorrectly produced one corner instead of four. */
     el.cornerCount=(el.elementType==='lightLine'&&el.lightShapeMode==='rhombus')?4:
-      (isTrackType(el)&&isFreePolyline(el))?countTrackCorners(el):
+      ((isTrackType(el)&&isFreePolyline(el))||(el.elementType==='lightLine'&&el.lightShapeMode==='free'&&Array.isArray(el.segmentAngles)&&el.segmentAngles.length))?countTrackCorners(el):
       ((el.elementType==='lightLine'&&el.lightShapeMode==='free')||isFreePolyline(el))?Math.max(0,s.length-1+(el.closedPath?1:0)):
       (SHAPES[el.shape]||SHAPES.line).corners;
     return el;
