@@ -12,7 +12,7 @@ function fixture(initial = [{id:'local-a', _dbId:'db-a', name:'old', state:'{}',
   let owner = 'owner-a', quota = false;
   const states = new Map([[owner, copy(initial)]]), disk = new Map(), requests = [], listeners = {};
   const status = {textContent:'', title:''};
-  const later=(fn,ms)=>{const timer=setTimeout(fn,ms);timer.unref?.();return timer};
+  const later=(fn,ms)=>{const timer=setTimeout(fn,ms);if(ms>=1000)timer.unref?.();return timer};
   const c = {console, Map, Set, Math, Date, Promise, AbortController, setTimeout:later, clearTimeout,
     navigator:{onLine:true}, document:{visibilityState:'visible',getElementById:() => status,addEventListener:(name,fn) => {listeners[name] = fn}}, hideSync(){}};
   c.window = c;
