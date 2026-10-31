@@ -690,7 +690,9 @@
         let result;
         try{result=mergeCloudProjects.apply(this,arguments);}catch(e){api.replaceAll(before);throw e;}
         const after=api.list({clone:true});
-        const preserved=union(before,after);
+        /* Only unsynced local work is protected. A synced project that is absent
+           from the cloud was deleted elsewhere and must not come back. */
+        const preserved=union(before.filter(project=>isUnsynced(project)||after.some(item=>sameProject(item,project))),after);
         if(JSON.stringify(after)!==JSON.stringify(preserved))api.replaceAll(preserved);
         return preserved;
       };
