@@ -279,6 +279,21 @@ for(const family of ['floating','shadow'])for(const variant of ['white','black']
 }
 console.log('PASS H defaults and immediate black/white profile corner replacement/restoration');
 
+for(const family of ['floating','shadow']){
+ const items=baseItems();
+ Object.assign(items.find(i=>i.id==='base'),{qty:12,autoFilled:true,autoZero:false});
+ Object.assign(items.find(i=>i.id===family),{fullContourSelected:true});
+ const room=makeRoom({items});room.reconcileInsert();
+ assert.equal(items.find(i=>i.id==='base').qty,0,family+' whole contour zeroes automatic H immediately');
+ assert.equal(items.find(i=>i.id==='base').autoZero,true);
+ const reopened=JSON.parse(JSON.stringify(items)),reopenedRoom=makeRoom({items:reopened});reopenedRoom.reconcileInsert();
+ assert.equal(reopened.find(i=>i.id==='base').qty,0,family+' saved whole contour reopens with H at zero');
+ items.find(i=>i.id===family).fullContourSelected=false;room.reconcileInsert();
+ assert.equal(items.find(i=>i.id==='base').qty,12,family+' restores automatic H when ordinary contour returns');
+ assert.equal(items.find(i=>i.id==='base').autoZero,false);
+}
+console.log('PASS whole shadow/floating contour immediately zeroes and restores automatic H');
+
 {
  const items=baseItems([{id:'black-shadow-corners',name:'Фіксація кута тіньовий чорний',source:'walltypecolor:black:'+encodeURIComponent('Фіксація кута тіньовий'),unit:'шт',qty:0}]);
  Object.assign(items.find(i=>i.id==='base'),{qty:0,manualQtyOverride:true});Object.assign(items.find(i=>i.id==='shadow'),{qty:3,sourceVariant:'black',manualQtyOverride:true});

@@ -463,18 +463,19 @@ window.aceilWholeContourCompute=function(source,item,ctx){
   var chosen=rows.find(function(row){return profileVariantOfItem(row)===variant;})||rows.find(function(row){return !profileVariantOfItem(row);});
   return source===cornerSource&&chosen&&String(chosen.id)===String(item.id)?count:0;
 };
-// Manual replacement of H owns insert and corner quantities even with AutoCount off.
-// The room-only backup field also preserves corner quantities for reversible changes.
+// A whole-contour replacement owns H, insert and corner quantities even with
+// AutoCount off. The room-only backup field preserves their previous values so
+// returning to the ordinary contour is reversible.
 window.A_CEIL_ReconcileContourInsert=function(){
   var list=getElemItems(),whole=manualContourStyle(list)||explicitContourProfile(list),suppress=!!whole||list.some(function(row){return row&&row.manualQtyOverride&&Number(row.qty)>0&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(row));}),changed=false;
   list.forEach(function(row){
     if(!row)return;
     var source=row.source==="white_insert"?"white_insert":contourSourceOfItem(row);
-    if(source!=="white_insert"&&!/^(corners|shadow_corners|floating_corners)$/.test(source))return;
+    if(source!=="white_insert"&&!/^(main_profile|corners|shadow_corners|floating_corners)$/.test(source))return;
     var active=source==="white_insert"?suppress:!!whole;
     if(active){
       if(!row.contourInsertSuppressed){row.contourInsertSuppressed={qty:Number(row.qty)||0,manual:row.manualQtyOverride===true};changed=true;}
-      var qty=window.aceilWholeContourCompute(source,row);
+      var qty=source==="main_profile"?0:window.aceilWholeContourCompute(source,row);
       if(Number(row.qty)!==qty){row.qty=qty;changed=true;}
       row.autoZero=!(Number(row.qty)>0);
     }else if(row.contourInsertSuppressed){
