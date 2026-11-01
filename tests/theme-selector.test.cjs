@@ -19,7 +19,9 @@ assert.match(script,/\.rpc-tools \.rpc-logout/,'legacy duplicate logout must be 
 assert.match(css,/\.rpc-tools \.rpc-logout\{display:none!important\}/,'legacy duplicate logout must never leak below Save');
 assert.match(css,/#elementsModal input\.em-qty-input\{background:#fff7ed!important/,'nomenclature quantity inputs must stay readable in dark mode');
 assert.match(css,/#elementsModal input\.em-price-input\{background:#eff6ff!important/,'nomenclature price inputs must stay readable in dark mode');
-assert.match(css,/Neutral dark shell/,'dark theme must use the neutral palette');
+assert.match(css,/Coherent graphite theme/,'dark theme must use the graphite palette');
+assert.match(css,/#rpcLights/,'corner count must stay readable in dark mode');
+assert.match(css,/background-color:#e8edf2!important/,'canvas must reduce glare without hiding black plan lines');
 assert.match(css,/html\[data-aceil-theme="dark"\] body/,'dark palette must cover the application');
 assert.match(css,/canvas#cv/,'drawing canvas must remain readable in dark mode');
 assert.match(sw,/theme-mode\.css/,'offline shell must include theme styles');

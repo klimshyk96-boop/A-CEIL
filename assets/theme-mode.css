@@ -43,15 +43,23 @@ html[data-aceil-theme="dark"] body.rp-home-pro #A·CEILToolPanel .tile-btn.activ
 html[data-aceil-theme="dark"] .aceil-theme-sheet{background:#111827;border-color:#334155}.aceil-theme-overlay .aceil-theme-sheet{transition:background .15s ease,border-color .15s ease}html[data-aceil-theme="dark"] .aceil-theme-head h3{color:#f8fafc}html[data-aceil-theme="dark"] .aceil-theme-head p{color:#94a3b8}html[data-aceil-theme="dark"] .aceil-theme-options>button{background:#172033!important;border-color:#334155!important;color:#e5edf8!important}html[data-aceil-theme="dark"] .aceil-theme-options>button.selected{background:#172554!important;border-color:#3b82f6!important}html[data-aceil-theme="dark"] .aceil-theme-options small{color:#94a3b8}
 @media(max-width:600px){.aceil-theme-overlay{align-items:flex-end;padding:10px}.aceil-theme-sheet{border-radius:26px 26px 20px 20px;padding-bottom:calc(18px + env(safe-area-inset-bottom))}}
 
-/* Neutral dark shell. Work dialogs stay light so dense forms remain readable. */
-html[data-aceil-theme="dark"]{--rm-bg:#101012;--rm-card:#1c1c1e;--rm-border:#38383a;--rm-text:#f5f5f7;--rm-muted:#a1a1a6}
-html[data-aceil-theme="dark"] body{background:linear-gradient(180deg,#101012 0,#171719 100%)!important;color:#f5f5f7!important}
-html[data-aceil-theme="dark"] body.rp-home-pro #rpCockpit .rpc-card{background:#1c1c1e!important;border-color:#38383a!important;box-shadow:0 12px 30px rgba(0,0,0,.30)!important}
-html[data-aceil-theme="dark"] body.rp-home-pro #rpCockpit .rpc-metrics{background:#242426!important;border-color:#38383a!important}
-html[data-aceil-theme="dark"] body.rp-home-pro #A·CEILToolPanel .tile-btn{background:#1c1c1e!important;border-color:#38383a!important;box-shadow:0 5px 16px rgba(0,0,0,.24)!important}
-html[data-aceil-theme="dark"] .canvas-container{background:#1c1c1e!important;border-color:#38383a!important;box-shadow:0 16px 38px rgba(0,0,0,.30)!important}
-html[data-aceil-theme="dark"] #rpCockpit .aceil-head-action{background:#2c2c2e!important;border-color:#48484a!important}
-html[data-aceil-theme="dark"] #rpCockpit .aceil-head-logout{background:#2c2022!important;border-color:#563438!important}
+/* Coherent graphite theme: raised surfaces, reduced canvas glare and explicit contrast. */
+html[data-aceil-theme="dark"]{--rm-bg:#15181d;--rm-card:#20242a;--rm-border:#3a414c;--rm-text:#f4f7fb;--rm-muted:#aab4c3}
+html[data-aceil-theme="dark"] body{background:linear-gradient(180deg,#15181d 0,#111318 100%)!important;color:#f4f7fb!important}
+html[data-aceil-theme="dark"] body.rp-home-pro #rpCockpit .rpc-card{background:linear-gradient(145deg,#23272e 0,#1c2025 100%)!important;border-color:#3b424c!important;box-shadow:0 14px 34px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.035)!important}
+html[data-aceil-theme="dark"] body.rp-home-pro #rpCockpit .rpc-metrics{background:#292e35!important;border-color:#414954!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important}
+html[data-aceil-theme="dark"] body.rp-home-pro #rpCockpit .rpc-metric:not(:nth-child(4))::after{background:#414954!important}
+html[data-aceil-theme="dark"] body.rp-home-pro #rpCockpit :is(.rpc-metric b,#rpcArea,#rpcPer,#rpcLights,#rpcRoomName,#rpcTotal){color:#f4f7fb!important;-webkit-text-fill-color:#f4f7fb!important;opacity:1!important}
+html[data-aceil-theme="dark"] body.rp-home-pro #rpCockpit .rpc-metric small{color:#aab4c3!important}
+html[data-aceil-theme="dark"] body.rp-home-pro #A·CEILToolPanel .tile-btn{background:linear-gradient(145deg,#24282e 0,#1e2227 100%)!important;border-color:#3b424c!important;box-shadow:0 7px 18px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.025)!important}
+html[data-aceil-theme="dark"] body.rp-home-pro #A·CEILToolPanel .tile-btn .tile-icon{color:#78b5ff!important;filter:saturate(.82)}
+html[data-aceil-theme="dark"] body.rp-home-pro #A·CEILToolPanel .tile-btn-label{color:#f1f5f9!important}
+html[data-aceil-theme="dark"] body.rp-home-pro #A·CEILToolPanel .tile-sub{color:#a7b1c0!important}
+html[data-aceil-theme="dark"] .canvas-container{background:#242930!important;border-color:#414954!important;box-shadow:0 16px 38px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.035)!important}
+html[data-aceil-theme="dark"] canvas#cv{background-color:#e8edf2!important;background-image:linear-gradient(rgba(71,85,105,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(71,85,105,.055) 1px,transparent 1px),linear-gradient(rgba(59,130,246,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,.09) 1px,transparent 1px)!important;box-shadow:inset 0 0 0 1px rgba(100,116,139,.22),0 10px 28px rgba(0,0,0,.22)!important}
+html[data-aceil-theme="dark"] #rpCockpit .aceil-head-action{background:#2b3139!important;border-color:#46505c!important;color:#9cc9ff!important}
+html[data-aceil-theme="dark"] #rpCockpit .aceil-head-logout{background:#312529!important;border-color:#654049!important}
+html[data-aceil-theme="dark"] .theme-btn{background:#2a3038!important;border-color:#46505c!important;color:#9cc9ff!important}
 html[data-aceil-theme="dark"] :is(.modal,.quick-menu,.elem-menu,#elementsModal.open>.modal,#projectsModal>.modal,#reportSettingsModal .modal){color-scheme:light;background:#fff!important;border-color:#e2e8f0!important;color:#0f172a!important;box-shadow:0 28px 80px rgba(0,0,0,.38)!important}
 html[data-aceil-theme="dark"] :is(.modal h2,.modal h3,.modal h4,.modal b,.modal strong,.quick-menu b,.elem-menu b,#projectsModal h3,#elementsModal h3){color:#0f172a!important}
 html[data-aceil-theme="dark"] :is(.modal p,.modal small,.modal label,.quick-menu small,.elem-menu small){color:#64748b!important}
