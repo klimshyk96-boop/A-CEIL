@@ -20,8 +20,8 @@ for(const [file,size] of Object.entries(expected)){
 }
 
 const index=text('index.html'),manifest=JSON.parse(text('manifest.webmanifest')),sw=text('sw.js');
-assert.match(index,/apple-touch-icon[^>]+aceil-icon-180\.png\?v=20261101-selectable-theme5/);
-assert.match(index,/manifest\.webmanifest\?v=20261101-selectable-theme5/);
+assert.match(index,/apple-touch-icon[^>]+aceil-icon-180\.png\?v=20261101-selectable-theme6/);
+assert.match(index,/manifest\.webmanifest\?v=20261101-selectable-theme6/);
 assert.doesNotMatch(index,/apple-touch-icon[^>]+data:image\/svg/,'iOS must receive a PNG URL, not an embedded SVG');
 assert(manifest.icons.some(icon=>icon.sizes==='192x192'&&icon.type==='image/png'));
 assert(manifest.icons.some(icon=>icon.sizes==='512x512'&&icon.purpose==='maskable'));

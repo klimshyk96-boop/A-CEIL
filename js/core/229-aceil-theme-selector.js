@@ -27,22 +27,22 @@
   }
   function close(){var modal=document.getElementById("A_CEIL_ThemeModal");if(modal)modal.classList.remove("open")}
   function open(){installModal();var modal=document.getElementById("A_CEIL_ThemeModal");if(modal){apply(stored(),false);modal.classList.add("open")}}
-  function buttonHtml(extra){return '<button type="button" class="'+extra+'" data-aceil-theme-trigger aria-label="Тема"><span data-theme-icon aria-hidden="true">'+icon(stored())+'</span></button>'}
   function installButtons(){
     var inserted=false;
     document.querySelectorAll("#rpCockpit .rpc-tools .rpc-logout").forEach(function(button){button.remove()});
-    var actions=document.getElementById("A_CEIL_HeaderActions");
-    if(actions&&!actions.querySelector("[data-aceil-theme-trigger]")){
-      var wrap=document.createElement("div");wrap.innerHTML=buttonHtml("aceil-head-action aceil-head-theme");
-      actions.insertBefore(wrap.firstChild,actions.firstChild);inserted=true;
-    }
-    var compact=document.querySelector(".header-actions-row");
-    if(compact&&!compact.querySelector("[data-aceil-theme-trigger]")){
-      var holder=document.createElement("div");holder.innerHTML=buttonHtml("header-icon-btn theme-btn");
-      var logout=compact.querySelector(".logout-btn");compact.insertBefore(holder.firstChild,logout||null);inserted=true;
+    document.querySelectorAll("#A_CEIL_HeaderActions [data-aceil-theme-trigger],.header-actions-row [data-aceil-theme-trigger]").forEach(function(button){button.remove()});
+    var menu=document.getElementById("A·CEILRoomMenuPopup");
+    if(menu&&!menu.querySelector("[data-aceil-theme-trigger]")){
+      var holder=document.createElement("div");
+      holder.innerHTML='<button type="button" class="rm-room-menu-action aceil-theme-menu-action" data-aceil-theme-trigger aria-label="Тема"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-1.1-.9-2-2-2h-1.2a2 2 0 0 1-1.8-2.8l.5-1.1A2.2 2.2 0 0 0 14.5 3H12Z"/><circle cx="7.5" cy="10" r="1"/><circle cx="10" cy="6.5" r="1"/><circle cx="7.5" cy="14" r="1"/></svg><span><b>Вигляд застосунку</b><small>Світла, темна або системна тема</small></span></button>';
+      var separator=menu.querySelector(".rm-room-menu-separator");
+      menu.insertBefore(holder.firstChild,separator||menu.lastElementChild);inserted=true;
     }
     document.querySelectorAll("[data-aceil-theme-trigger]").forEach(function(button){
-      if(button.dataset.themeBound)return;button.dataset.themeBound="1";button.addEventListener("click",open);
+      if(button.dataset.themeBound)return;button.dataset.themeBound="1";button.addEventListener("click",function(){
+        var popup=document.getElementById("A·CEILRoomMenuPopup"),toggle=document.getElementById("A·CEILRoomMenuToggle");
+        if(popup)popup.hidden=true;if(toggle)toggle.setAttribute("aria-expanded","false");open();
+      });
     });
     // Updating the icon replaces its text node. Only do that after a real
     // insertion, otherwise our childList observer would trigger itself forever.

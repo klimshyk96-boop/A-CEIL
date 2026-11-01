@@ -15,6 +15,9 @@ for(const choice of ['light','dark','system'])assert.match(script,new RegExp('da
 assert.match(script,/prefers-color-scheme: dark/,'system mode must follow the operating system');
 assert.match(script,/MutationObserver/,'theme button must survive dynamic header rendering');
 assert.match(script,/if\(inserted\)apply\(stored\(\),false\)/,'observer must not trigger an endless DOM update loop');
+assert.match(script,/A·CEILRoomMenuPopup/,'theme entry point must live in the canvas three-dots menu');
+assert.match(script,/header-actions-row \[data-aceil-theme-trigger\]/,'old visible header theme button must be removed');
+assert.match(script,/Вигляд застосунку/,'canvas menu must label the theme action clearly');
 assert.match(script,/\.rpc-tools \.rpc-logout/,'legacy duplicate logout must be removed from the cockpit tools');
 assert.match(css,/\.rpc-tools \.rpc-logout\{display:none!important\}/,'legacy duplicate logout must never leak below Save');
 assert.match(css,/#elementsModal input\.em-qty-input\{background:#fff7ed!important/,'nomenclature quantity inputs must stay readable in dark mode');
