@@ -47,6 +47,7 @@ node tests/verify-pipelines.cjs || exit 1
 node tests/report-settings-pipeline.test.cjs || exit 1
 node tests/xss-injection.test.cjs || exit 1
 node tests/voice-number.test.cjs || exit 1
+node tests/pwa-icon.test.cjs || exit 1
 node tests/autocount-profile.test.cjs || exit 1
 node tests/manual-shadow-zeroes-h.test.cjs || exit 1
 node tests/cloud-merge-ghost.test.cjs || exit 1
