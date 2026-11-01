@@ -29,20 +29,23 @@
   function open(){installModal();var modal=document.getElementById("A_CEIL_ThemeModal");if(modal){apply(stored(),false);modal.classList.add("open")}}
   function buttonHtml(extra){return '<button type="button" class="'+extra+'" data-aceil-theme-trigger aria-label="Тема"><span data-theme-icon aria-hidden="true">'+icon(stored())+'</span></button>'}
   function installButtons(){
+    var inserted=false;
     var actions=document.getElementById("A_CEIL_HeaderActions");
     if(actions&&!actions.querySelector("[data-aceil-theme-trigger]")){
       var wrap=document.createElement("div");wrap.innerHTML=buttonHtml("aceil-head-action aceil-head-theme");
-      actions.insertBefore(wrap.firstChild,actions.firstChild);
+      actions.insertBefore(wrap.firstChild,actions.firstChild);inserted=true;
     }
     var compact=document.querySelector(".header-actions-row");
     if(compact&&!compact.querySelector("[data-aceil-theme-trigger]")){
       var holder=document.createElement("div");holder.innerHTML=buttonHtml("header-icon-btn theme-btn");
-      var logout=compact.querySelector(".logout-btn");compact.insertBefore(holder.firstChild,logout||null);
+      var logout=compact.querySelector(".logout-btn");compact.insertBefore(holder.firstChild,logout||null);inserted=true;
     }
     document.querySelectorAll("[data-aceil-theme-trigger]").forEach(function(button){
       if(button.dataset.themeBound)return;button.dataset.themeBound="1";button.addEventListener("click",open);
     });
-    apply(stored(),false);
+    // Updating the icon replaces its text node. Only do that after a real
+    // insertion, otherwise our childList observer would trigger itself forever.
+    if(inserted)apply(stored(),false);
   }
   function installModal(){
     if(document.getElementById("A_CEIL_ThemeModal"))return;
