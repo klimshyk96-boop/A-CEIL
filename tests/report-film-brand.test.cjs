@@ -16,5 +16,9 @@ assert.equal((report.match(/\["Колір стелі",reportFilmLabel\(material\
   'single-room and multi-room reports must both print the branded color label');
 assert.match(report,/contractorMaterialCard\([^\n]+material&&reportFilmLabel\(material\)/,
   'contractor sheet must use the same branded color label');
+assert.match(report,/const heights=rows\.map\(r=>r&&r\[2\]\?62:42\)/,
+  'color rows must get a separate second line instead of overlapping the field label');
+assert.match(report,/c\.fillText\(value,x\+47,cy\)/,
+  'branded color value must be drawn beside the swatch on its own line');
 
 console.log('PASS report ceiling color includes Premium/Teqtum/Lumfer brand');
