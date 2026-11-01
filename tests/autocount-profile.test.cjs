@@ -302,8 +302,12 @@ for(const family of ['floating','shadow']){
  const room=makeRoom({items});room.selectWhole(family);room.reconcileInsert();
  assert.equal(items.find(i=>i.id==='base').qty,0,'↔ '+family+' zeroes H');
  assert.equal(items.find(i=>i.id===family).fullContourSelected,true,'↔ records the selected contour profile');
+ Object.assign(items.find(i=>i.id==='base'),{manualQtyOverride:true,autoFilled:false,universalAuto:false});
  room.selectWhole('base');room.reconcileInsert();
  assert.equal(items.find(i=>i.id==='base').qty,12,'↔ H restores the base contour');
+ assert.equal(items.find(i=>i.id==='base').manualQtyOverride,false,'↔ H re-enables automatic calculation');
+ assert.equal(items.find(i=>i.id==='base').autoFilled,true,'↔ H is marked as automatically filled');
+ assert.equal(items.find(i=>i.id==='base').universalAuto,true,'↔ H stays connected to universal autocount');
  assert.equal(items.find(i=>i.id===family).fullContourSelected,false);
  assert.equal(items.find(i=>i.id===family).qty,0,'↔ H removes the previous whole '+family+' quantity');
  assert.equal(items.find(i=>i.id==='insert').qty,12,'↔ H restores the insert');

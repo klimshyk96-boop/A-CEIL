@@ -467,6 +467,9 @@ window.A_CEIL_SelectWholeContourItem=function(item){
      Wall marks are not deleted: if the drawing itself contains a special wall,
      the normal auto-count remains authoritative for that wall. */
   if(source==="main_profile"&&previous&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(previous))){
+    if(item.manualQtyOverride===true){item.manualQtyOverride=false;changed=true;}
+    if(item.autoFilled!==true){item.autoFilled=true;changed=true;}
+    if(item.universalAuto!==true){item.universalAuto=true;changed=true;}
     list.forEach(function(row){
       if(!row||! /^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(row)))return;
       if(row!==previous&&row.fullContourSelected!==true&&row.manualQtyOverride!==true)return;
@@ -487,7 +490,18 @@ window.A_CEIL_SelectWholeContourItem=function(item){
   if(typeof original!=="function"||original.__contourProfileChoice)return;
   var wrapped=function(itemId){
     var item=getElemItems().find(function(row){return row&&String(row.id)===String(itemId);});
+    var source=contourSourceOfItem(item),before=getElemItems(),previous=source==="main_profile"&&(manualContourStyle(before)||explicitContourProfile(before)||inferredContourProfile(before));
+    var restoreAutoH=!!previous&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(previous));
     var changed=item&&window.A_CEIL_SelectWholeContourItem(item),result=original.apply(this,arguments);
+    /* setElemFromPerimeter marks every filled row as non-auto. H is different:
+       when it reverses a whole special contour it must return to the automatic
+       remainder rule, so future perimeter edits keep recalculating it. */
+    if(item&&source==="main_profile"&&restoreAutoH){
+      item.manualQtyOverride=false;
+      item.autoFilled=true;
+      item.universalAuto=true;
+      item.autoZero=!(Number(item.qty)>0);
+    }
     if(changed&&typeof window.A_CEIL_ReconcileContourInsert==="function"){
       window.A_CEIL_ReconcileContourInsert();
       if(typeof renderElemList==="function")renderElemList();
