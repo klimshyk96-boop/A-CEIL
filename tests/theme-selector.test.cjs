@@ -14,6 +14,7 @@ assert.match(script,/aceil_ui_theme_v1/,'theme choice must persist locally');
 for(const choice of ['light','dark','system'])assert.match(script,new RegExp('data-aceil-theme-choice="'+choice+'"'));
 assert.match(script,/prefers-color-scheme: dark/,'system mode must follow the operating system');
 assert.match(script,/MutationObserver/,'theme button must survive dynamic header rendering');
+assert.match(script,/if\(inserted\)apply\(stored\(\),false\)/,'observer must not trigger an endless DOM update loop');
 assert.match(css,/html\[data-aceil-theme="dark"\] body/,'dark palette must cover the application');
 assert.match(css,/canvas#cv/,'drawing canvas must remain readable in dark mode');
 assert.match(sw,/theme-mode\.css/,'offline shell must include theme styles');
