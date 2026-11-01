@@ -1,11 +1,16 @@
 /* A·CEIL offline shell — fast activation and versioned runtime cache. */
 "use strict";
 
-const BUILD_ID="20261101-contour-reverse1";
-const SHELL_CACHE="aceil-shell-20261101-contour-reverse1";
+const BUILD_ID="20261101-pwa-icon1";
+const SHELL_CACHE="aceil-shell-20261101-pwa-icon1";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
   "/index.html",
+  "/manifest.webmanifest?v="+BUILD_ID,
+  "/assets/pwa/aceil-icon-180.png?v="+BUILD_ID,
+  "/assets/pwa/aceil-icon-192.png?v="+BUILD_ID,
+  "/assets/pwa/aceil-icon-512.png?v="+BUILD_ID,
+  "/assets/pwa/aceil-icon-maskable-512.png?v="+BUILD_ID,
   "/assets/app.css?v="+BUILD_ID,
   "/assets/theme.css?v="+BUILD_ID,
   "/assets/layout.css?v="+BUILD_ID
