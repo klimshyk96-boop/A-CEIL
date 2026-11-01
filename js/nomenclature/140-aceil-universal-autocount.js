@@ -248,7 +248,12 @@ function inferredContourProfile(list,state){
   var perimeter=contourPerimeterM(state);if(!(perimeter>0))return null;
   var baseRows=list.filter(function(it){return it&&contourSourceOfItem(it)==="main_profile"});
   var base=baseRows.reduce(function(sum,it){return sum+(Number(it.qty)||0)},0);
-  if(base>.01)return null;
+  var baseAuto=baseRows.length>0&&!baseRows.some(function(it){return it.manualQtyOverride===true});
+  /* A non-zero H blocks inference unless H is still automatic: then a manual
+     special profile that already holds the whole perimeter means "the contour
+     is shadow/floating", and H becomes zero exactly like the insert and the
+     corners (see the marks check below: wall geometry stays authoritative). */
+  if(base>.01&&!baseAuto)return null;
   /* H was zeroed by hand: that is an explicit decision, so a special profile
      that already holds the whole perimeter is the contour even when its row
      lost the manual flag (older saves, reopen, cloud restore). */
@@ -269,6 +274,7 @@ function inferredContourProfile(list,state){
        Once even one wall is marked, the
        wall geometry is authoritative. This prevents a stale manual 12 m row
        from turning a new 3 m shadow wall into a full shadow contour. */
+    if(base>.01&&!(entry.manual&&!hasProfileMarks))return false;
     return entry.item&&entry.positive===1&&Math.abs(entry.total-perimeter)<=tolerance&&(
       Math.abs(entry.marked-perimeter)<=tolerance||(!hasProfileMarks&&(entry.manual||baseManualZero))
     );
@@ -386,7 +392,7 @@ function partialContourQty(source,item,ctx){
   var perimeterCm=Math.max(0,Number(ctx&&ctx.perimeterCm)||contourPerimeterM()*100),cornersTotal=currentCornersTotal(ctx);
   var shadow=profileMarksFor("shadow_profile","",ctx),floating=profileMarksFor("floating_profile","",ctx),special=shadow.concat(floating);
   var specialCm=Math.min(perimeterCm,mergedProfileLengthCm(special,ctx));
-  if(source==="main_profile")return Math.round(Math.max(0,perimeterCm-specialCm))/100;
+  if(source==="main_profile")return Math.round(Math.max(0,perimeterCm-specialCm-manualInsertExtraCm(ctx)))/100;
   if(source==="white_insert")return insertRowIsChosen(item)?Math.round(Math.max(0,perimeterCm-specialCm-manualInsertExtraCm(ctx)))/100:0;
   var family=source.indexOf("shadow_")===0?"shadow_profile":"floating_profile",variant=profileVariantOfItem(item);
   if(source===family){
@@ -492,15 +498,15 @@ window.aceilWholeContourCompute=function(source,item,ctx){
 // AutoCount off. The room-only backup field preserves their previous values so
 // returning to the ordinary contour is reversible.
 window.A_CEIL_ReconcileContourInsert=function(){
-  var list=getElemItems(),whole=manualContourStyle(list)||explicitContourProfile(list),suppress=!!whole||list.some(function(row){return row&&row.manualQtyOverride&&Number(row.qty)>0&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(row));}),changed=false;
+  var list=getElemItems(),whole=manualContourStyle(list)||explicitContourProfile(list)||inferredContourProfile(list),suppress=!!whole||list.some(function(row){return row&&row.manualQtyOverride&&Number(row.qty)>0&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(row));}),changed=false;
   list.forEach(function(row){
     if(!row)return;
     var source=row.source==="white_insert"?"white_insert":contourSourceOfItem(row);
     if(source!=="white_insert"&&!/^(main_profile|corners|shadow_corners|floating_corners)$/.test(source))return;
-    var active=source==="white_insert"?suppress:!!whole;
+    var active=source==="white_insert"?suppress:(source==="main_profile"?(!!whole||(suppress&&row.manualQtyOverride!==true)):!!whole);
     if(active){
       if(!row.contourInsertSuppressed){row.contourInsertSuppressed={qty:Number(row.qty)||0,manual:row.manualQtyOverride===true};changed=true;}
-      var qty=source==="main_profile"?0:window.aceilWholeContourCompute(source,row);
+      var qty=source==="main_profile"&&whole?0:window.aceilWholeContourCompute(source,row);
       if(Number(row.qty)!==qty){row.qty=qty;changed=true;}
       row.autoZero=!(Number(row.qty)>0);
     }else if(row.contourInsertSuppressed){
