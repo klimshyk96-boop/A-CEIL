@@ -15,6 +15,8 @@ for(const choice of ['light','dark','system'])assert.match(script,new RegExp('da
 assert.match(script,/prefers-color-scheme: dark/,'system mode must follow the operating system');
 assert.match(script,/MutationObserver/,'theme button must survive dynamic header rendering');
 assert.match(script,/if\(inserted\)apply\(stored\(\),false\)/,'observer must not trigger an endless DOM update loop');
+assert.match(script,/\.rpc-tools \.rpc-logout/,'legacy duplicate logout must be removed from the cockpit tools');
+assert.match(css,/\.rpc-tools \.rpc-logout\{display:none!important\}/,'legacy duplicate logout must never leak below Save');
 assert.match(css,/html\[data-aceil-theme="dark"\] body/,'dark palette must cover the application');
 assert.match(css,/canvas#cv/,'drawing canvas must remain readable in dark mode');
 assert.match(sw,/theme-mode\.css/,'offline shell must include theme styles');
