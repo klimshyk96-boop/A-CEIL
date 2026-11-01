@@ -1,8 +1,8 @@
 /* A·CEIL offline shell — fast activation and versioned runtime cache. */
 "use strict";
 
-const BUILD_ID="20261101-report-color-layout1";
-const SHELL_CACHE="aceil-shell-20261101-report-color-layout1";
+const BUILD_ID="20261101-selectable-theme1";
+const SHELL_CACHE="aceil-shell-20261101-selectable-theme1";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
   "/index.html",
@@ -13,7 +13,9 @@ const CORE_SHELL=[
   "/assets/pwa/aceil-icon-maskable-512.png?v="+BUILD_ID,
   "/assets/app.css?v="+BUILD_ID,
   "/assets/theme.css?v="+BUILD_ID,
-  "/assets/layout.css?v="+BUILD_ID
+  "/assets/layout.css?v="+BUILD_ID,
+  "/assets/theme-mode.css?v="+BUILD_ID,
+  "/js/core/229-aceil-theme-selector.js?v="+BUILD_ID
 ];
 
 function isReportRequest(request){
