@@ -33,6 +33,11 @@ function infoCards(c,x,y,w,rows,titleText){
   return h;
 }
 function reportFilmMaterial(state){return window.A_CEILColorPicker&&window.A_CEILColorPicker.material(arguments.length?state||{elemItems:[]}:undefined);}
+function reportFilmLabel(material){
+  if(!material)return"";
+  const parts=[material.displayCode||material.code,material.textureLabel,material.seriesName].filter(Boolean);
+  return parts.length?parts.join(" · "):String(material.label||"");
+}
 function reportSwatchFill(c,value,x,y,w){return window.A_CEILColorPicker?window.A_CEILColorPicker.swatchFill(c,value,x,y,w):value||"#e5e7eb";}
 function info(c,x,y,w,rows,titleText){const h=56+42*rows.length;rr(c,x,y,w,h,18,"#fff","#e2e8f0"),section(c,x+18,y+32,titleText||"Основна інформація");let yy=y+62;return rows.forEach(r=>{c.strokeStyle="#e5e7eb",c.beginPath(),c.moveTo(x+16,yy+17),c.lineTo(x+w-16,yy+17),c.stroke(),c.fillStyle="#475569",c.font="15px Arial",c.fillText(r[0],x+20,yy),c.textAlign="right",c.fillStyle="#0f172a",c.font="bold 16px Arial",c.fillText(r[1],x+w-20,yy);if(r[2]){const tw=c.measureText(String(r[1]||"")).width,cx=x+w-31-tw;c.beginPath(),c.arc(cx,yy-5,8,0,Math.PI*2),c.fillStyle=reportSwatchFill(c,r[2],cx-8,yy-13,16),c.fill(),c.strokeStyle="#64748b",c.lineWidth=1.5,c.stroke()}c.textAlign="left",yy+=42}),h}function lines(c,x,y,w,t,lines,empty){lines=Array.isArray(lines)?lines:[];const isWallBlock=/елемент/i.test(String(t||""));function wrap(txt,maxW,maxLines){if(!(txt=String(txt||"").replace(/^•\s*/,"").trim()))return[""];const words=txt.split(/\s+/).filter(Boolean),out=[];let line="";if(words.forEach(word=>{const test=line?line+" "+word:word;if(c.measureText(test).width<=maxW)line=test;else if(line&&out.push(line),c.measureText(word).width>maxW){let cut=word;for(;cut.length>4&&c.measureText(cut+"…").width>maxW;)cut=cut.slice(0,-1);out.push(cut+"…"),line=""}else line=word}),line&&out.push(line),maxLines&&out.length>maxLines){const clipped=out.slice(0,maxLines);let last=clipped[clipped.length-1]||"";for(;last.length>4&&c.measureText(last+"…").width>maxW;)last=last.slice(0,-1);return clipped[clipped.length-1]=last+"…",clipped}return out.length?out:[""]}function splitWallLine(line){const s=String(line||"").replace(/^•\s*/,"").trim(),m=s.match(/^(.*?):\s*([A-ZА-ЯІЇЄҐ]{1,3})\s*—\s*([^—]+)\s*—\s*(.*)$/i);return m?{name:m[1].trim(),meta:m[2].trim()+" • "+m[3].trim()+" • "+m[4].trim()}:{name:s,meta:""}}c.font="15px Arial";let h=58;lines.length?lines.forEach(line=>{if(isWallBlock){const p=splitWallLine(line),nameLines=wrap(p.name,w-98,2);h+=34+19*nameLines.length+(p.meta?20:0)}else{const arr=wrap(line,w-54,2);h+=Math.max(38,20*arr.length+16)}}):h+=38,rr(c,x,y,w,h,18,"#fff","#e2e8f0"),section(c,x+18,y+32,t);let yy=y+64;return lines.length?lines.forEach(line=>{if(isWallBlock){const p=splitWallLine(line),nameLines=wrap(p.name,w-98,2),rowH=34+19*nameLines.length+(p.meta?20:0);c.strokeStyle="#d7dee9",c.setLineDash([2,2]),c.beginPath(),c.moveTo(x+16,yy+rowH-7),c.lineTo(x+w-16,yy+rowH-7),c.stroke(),c.setLineDash([]),c.fillStyle="#003b91",c.font="bold 22px Arial",c.textAlign="center",c.fillText(function(line){const s=String(line||"").toLowerCase();return s.includes("карниз")?"▥":s.includes("парящ")?"━━":s.includes("профіль")||s.includes("профил")||s.includes("брус")?"▰":s.includes("трек")?"▭":"•"}(line),x+38,yy+22),c.textAlign="left",c.fillStyle="#0f172a",c.font="bold 15px Arial",nameLines.forEach((ln,i)=>c.fillText(ln,x+64,yy+14+19*i)),p.meta&&(c.fillStyle="#334155",c.font="bold 14px Arial",c.fillText(p.meta,x+64,yy+16+19*nameLines.length)),yy+=rowH}else{const arr=wrap(line,w-54,2),rowH=Math.max(38,20*arr.length+16);c.strokeStyle="#e5e7eb",c.beginPath(),c.moveTo(x+16,yy+rowH-8),c.lineTo(x+w-16,yy+rowH-8),c.stroke(),c.fillStyle="#0f172a",c.font="bold 15px Arial",arr.forEach((ln,i)=>c.fillText("• "+ln,x+22,yy+14+20*i)),yy+=rowH}}):(c.fillStyle="#94a3b8",c.font="15px Arial",c.fillText(empty||"Немає даних",x+22,yy)),h}function wallDimensionsList(c,x,y,w,items,empty,titleText){
   items=Array.isArray(items)?items:[];
@@ -525,7 +530,7 @@ async function alphaSingle(rs){
   await plan(c,LX,planY,LW,PLAN_H,!1!==rs.drawing?_modernCaptureCurrentDrawing(rs):null,titles.plan);
   let ry=planY;
   const rows=!1!==rs.area?[["Площа полотна",st.area+" м²"],["Периметр",st.per+" м"]]:[];
-  const material=reportFilmMaterial();if(material)rows.push(["Колір стелі",(material.displayCode||material.code)+" · "+material.textureLabel,material.swatch]);
+  const material=reportFilmMaterial();if(material)rows.push(["Колір стелі",reportFilmLabel(material),material.swatch]);
   const od=_overallDims(st,rs);od&&rows.push(["Габаритні розміри",od]);
   ry+=info(c,RX,ry,RW,rows,titles.info)+12;
   ry+=lines(c,RX,ry,RW,titles.placement,wallLines,"Елементи не задані")+12;
@@ -584,7 +589,7 @@ async function alphaContractorObject(obj,rs){
     const leftW=692,rightX=PAD+leftW+GAP,rightW=W-PAD-rightX;
     wallDimensionsList(c,PAD,y,leftW,rd.dimensions,"Розміри не задані","Розміри стін");
     const material=reportFilmMaterial(rd.st);
-    contractorMaterialCard(c,rightX,y,rightW,rd.bottomH,material&&material.label||rd.r.ceilingColor,rs.harpoonColor,material&&material.swatch||rd.r.ceilingSwatch);
+    contractorMaterialCard(c,rightX,y,rightW,rd.bottomH,material&&reportFilmLabel(material)||rd.r.ceilingColor,rs.harpoonColor,material&&material.swatch||rd.r.ceilingSwatch);
     y+=rd.bottomH+30;
   }
   const finalOut=_finalizeReportCanvas(out,W,y+24,rs);
@@ -627,7 +632,7 @@ async function alphaObject(obj,rs){
     const rows=!1!==rs.area?[["Площа полотна",(rd.r.area||"—")+" м²"],["Периметр",(rd.r.per||"—")+" м"]]:[];
     const _od=_overallDims(rd.st,rs);_od&&rows.push(["Габаритні розміри",_od]);
     const material=reportFilmMaterial(rd.st);
-    if(material)rows.push(["Колір стелі",(material.displayCode||material.code)+" · "+material.textureLabel,material.swatch]);
+    if(material)rows.push(["Колір стелі",reportFilmLabel(material),material.swatch]);
     else if(rd.r.ceilingColor)rows.push(["Колір стелі",rd.r.ceilingColor,rd.r.ceilingSwatch]);
     rs.harpoonColor&&rows.push(["Колір гарпуна","black"===rs.harpoonColor?"ЧОРНИЙ":"БІЛИЙ","black"===rs.harpoonColor?"#111827":"#ffffff"]);
     ry+=info(c,RX,ry,RW,rows,titles.info)+12;
