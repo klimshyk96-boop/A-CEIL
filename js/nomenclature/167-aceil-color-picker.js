@@ -115,7 +115,7 @@ function filmMaterial(state){
  if(!chosen)return null;
  var code=itemFilmCode(chosen),series=chosen.seriesId||chosen.filmSeriesId||'premium',entry=catalogEntry(code,series),texture=chosen.colorTexture||entry&&entry.texture||'',textureLabel=texLabels()[texture]||texture;
  var display=chosen.filmDisplayCode||dispCode(series,code),seriesName=chosen.filmSeriesName||seriesById(series).name;
- return {code:code,displayCode:display,seriesId:series,textureLabel:textureLabel,label:[display,textureLabel,seriesName].filter(Boolean).join(' · '),swatch:chosen.filmSwatch||entry&&entry.swatch||null};
+ return {code:code,displayCode:display,seriesId:series,seriesName:seriesName,textureLabel:textureLabel,label:[display,textureLabel,seriesName].filter(Boolean).join(' · '),swatch:chosen.filmSwatch||entry&&entry.swatch||null};
 }
 function swatchFill(ctx,swatch,x,y,width){
  var colors=String(swatch||'').match(/#[0-9a-f]{6}/ig);if(!colors||!colors.length)return '#e5e7eb';
