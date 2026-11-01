@@ -30,6 +30,7 @@
   function buttonHtml(extra){return '<button type="button" class="'+extra+'" data-aceil-theme-trigger aria-label="Тема"><span data-theme-icon aria-hidden="true">'+icon(stored())+'</span></button>'}
   function installButtons(){
     var inserted=false;
+    document.querySelectorAll("#rpCockpit .rpc-tools .rpc-logout").forEach(function(button){button.remove()});
     var actions=document.getElementById("A_CEIL_HeaderActions");
     if(actions&&!actions.querySelector("[data-aceil-theme-trigger]")){
       var wrap=document.createElement("div");wrap.innerHTML=buttonHtml("aceil-head-action aceil-head-theme");
