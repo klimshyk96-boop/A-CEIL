@@ -43,13 +43,26 @@ html[data-aceil-theme="dark"] body.rp-home-pro #A·CEILToolPanel .tile-btn.activ
 html[data-aceil-theme="dark"] .aceil-theme-sheet{background:#111827;border-color:#334155}.aceil-theme-overlay .aceil-theme-sheet{transition:background .15s ease,border-color .15s ease}html[data-aceil-theme="dark"] .aceil-theme-head h3{color:#f8fafc}html[data-aceil-theme="dark"] .aceil-theme-head p{color:#94a3b8}html[data-aceil-theme="dark"] .aceil-theme-options>button{background:#172033!important;border-color:#334155!important;color:#e5edf8!important}html[data-aceil-theme="dark"] .aceil-theme-options>button.selected{background:#172554!important;border-color:#3b82f6!important}html[data-aceil-theme="dark"] .aceil-theme-options small{color:#94a3b8}
 @media(max-width:600px){.aceil-theme-overlay{align-items:flex-end;padding:10px}.aceil-theme-sheet{border-radius:26px 26px 20px 20px;padding-bottom:calc(18px + env(safe-area-inset-bottom))}}
 
-/* Soft graphite theme: keep the workspace calm instead of turning every card black. */
-html[data-aceil-theme="dark"]{--rm-bg:#121a2a;--rm-card:#1b263a;--rm-border:rgba(148,163,184,.17);--rm-text:#edf3fb;--rm-muted:#9eacc0}
-html[data-aceil-theme="dark"] body{background:radial-gradient(800px 460px at 10% -8%,rgba(59,130,246,.16),transparent 62%),radial-gradient(650px 420px at 105% 18%,rgba(14,165,233,.10),transparent 58%),linear-gradient(180deg,#121a2a 0,#182235 100%)!important}
-html[data-aceil-theme="dark"] body.rp-home-pro #rpCockpit .rpc-card{background:linear-gradient(145deg,#1d2940 0,#182235 100%)!important;border-color:rgba(148,163,184,.18)!important;box-shadow:0 14px 34px rgba(3,7,18,.24),inset 0 1px 0 rgba(255,255,255,.035)!important}
-html[data-aceil-theme="dark"] body.rp-home-pro #rpCockpit .rpc-metrics{background:rgba(12,19,32,.42)!important;border-color:rgba(148,163,184,.16)!important}
-html[data-aceil-theme="dark"] body.rp-home-pro #A·CEILToolPanel .tile-btn{background:linear-gradient(145deg,#1b263a,#182235)!important;border-color:rgba(148,163,184,.16)!important;box-shadow:0 7px 18px rgba(3,7,18,.18),inset 0 1px 0 rgba(255,255,255,.025)!important}
-html[data-aceil-theme="dark"] .canvas-container{background:linear-gradient(180deg,#172237,#131d30)!important;border-color:rgba(148,163,184,.16)!important;box-shadow:0 18px 44px rgba(3,7,18,.24)!important}
-html[data-aceil-theme="dark"] #rpCockpit .aceil-head-action{background:#233149!important;border-color:rgba(148,163,184,.18)!important}
-html[data-aceil-theme="dark"] #rpCockpit .aceil-head-logout{background:#32202a!important;border-color:rgba(248,113,113,.19)!important}
+/* Neutral dark shell. Work dialogs stay light so dense forms remain readable. */
+html[data-aceil-theme="dark"]{--rm-bg:#101012;--rm-card:#1c1c1e;--rm-border:#38383a;--rm-text:#f5f5f7;--rm-muted:#a1a1a6}
+html[data-aceil-theme="dark"] body{background:linear-gradient(180deg,#101012 0,#171719 100%)!important;color:#f5f5f7!important}
+html[data-aceil-theme="dark"] body.rp-home-pro #rpCockpit .rpc-card{background:#1c1c1e!important;border-color:#38383a!important;box-shadow:0 12px 30px rgba(0,0,0,.30)!important}
+html[data-aceil-theme="dark"] body.rp-home-pro #rpCockpit .rpc-metrics{background:#242426!important;border-color:#38383a!important}
+html[data-aceil-theme="dark"] body.rp-home-pro #A·CEILToolPanel .tile-btn{background:#1c1c1e!important;border-color:#38383a!important;box-shadow:0 5px 16px rgba(0,0,0,.24)!important}
+html[data-aceil-theme="dark"] .canvas-container{background:#1c1c1e!important;border-color:#38383a!important;box-shadow:0 16px 38px rgba(0,0,0,.30)!important}
+html[data-aceil-theme="dark"] #rpCockpit .aceil-head-action{background:#2c2c2e!important;border-color:#48484a!important}
+html[data-aceil-theme="dark"] #rpCockpit .aceil-head-logout{background:#2c2022!important;border-color:#563438!important}
+html[data-aceil-theme="dark"] :is(.modal,.quick-menu,.elem-menu,#elementsModal.open>.modal,#projectsModal>.modal,#reportSettingsModal .modal){color-scheme:light;background:#fff!important;border-color:#e2e8f0!important;color:#0f172a!important;box-shadow:0 28px 80px rgba(0,0,0,.38)!important}
+html[data-aceil-theme="dark"] :is(.modal h2,.modal h3,.modal h4,.modal b,.modal strong,.quick-menu b,.elem-menu b,#projectsModal h3,#elementsModal h3){color:#0f172a!important}
+html[data-aceil-theme="dark"] :is(.modal p,.modal small,.modal label,.quick-menu small,.elem-menu small){color:#64748b!important}
+html[data-aceil-theme="dark"] :is(.modal input,.modal select,.modal textarea,#elementsModal input,#elementsModal select){background:#fff!important;border-color:#d7dee9!important;color:#0f172a!important}
+html[data-aceil-theme="dark"] :is(.modal input,.modal textarea,#elementsModal input)::placeholder{color:#94a3b8!important}
+html[data-aceil-theme="dark"] #elementsModal :is(.modal>div:first-child,#elemList,#elemBottomBar){background:#fff!important;border-color:#e2e8f0!important;color:#0f172a!important}
+html[data-aceil-theme="dark"] #elementsModal #elemList>div{background:#fff!important;border-color:#e2e8f0!important;color:#0f172a!important}
+html[data-aceil-theme="dark"] #elementsModal :is(.grp-card,.em-row){background:#fff!important;border-color:#e5e7eb!important}
+html[data-aceil-theme="dark"] #elementsModal .grp-header{background:#f6f8fc!important;border-color:#e2e8f0!important}
+html[data-aceil-theme="dark"] #elementsModal :is(.grp-name,.em-name,#elemTotalValue){color:#1e293b!important}
+html[data-aceil-theme="dark"] #elementsModal input.em-qty-input{background:#fff7ed!important;border-color:#fed7aa!important;color:#9a3412!important}
+html[data-aceil-theme="dark"] #elementsModal input.em-price-input{background:#eff6ff!important;border-color:#bfdbfe!important;color:#1e293b!important}
+html[data-aceil-theme="dark"] #elementsModal .em-line-total{color:#15803d!important}
 body.rp-home-pro #rpCockpit .rpc-tools .rpc-logout{display:none!important}

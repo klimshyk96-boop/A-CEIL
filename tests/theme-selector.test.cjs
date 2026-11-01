@@ -17,6 +17,9 @@ assert.match(script,/MutationObserver/,'theme button must survive dynamic header
 assert.match(script,/if\(inserted\)apply\(stored\(\),false\)/,'observer must not trigger an endless DOM update loop');
 assert.match(script,/\.rpc-tools \.rpc-logout/,'legacy duplicate logout must be removed from the cockpit tools');
 assert.match(css,/\.rpc-tools \.rpc-logout\{display:none!important\}/,'legacy duplicate logout must never leak below Save');
+assert.match(css,/#elementsModal input\.em-qty-input\{background:#fff7ed!important/,'nomenclature quantity inputs must stay readable in dark mode');
+assert.match(css,/#elementsModal input\.em-price-input\{background:#eff6ff!important/,'nomenclature price inputs must stay readable in dark mode');
+assert.match(css,/Neutral dark shell/,'dark theme must use the neutral palette');
 assert.match(css,/html\[data-aceil-theme="dark"\] body/,'dark palette must cover the application');
 assert.match(css,/canvas#cv/,'drawing canvas must remain readable in dark mode');
 assert.match(sw,/theme-mode\.css/,'offline shell must include theme styles');
