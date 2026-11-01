@@ -305,8 +305,12 @@ for(const family of ['floating','shadow']){
  room.selectWhole('base');room.reconcileInsert();
  assert.equal(items.find(i=>i.id==='base').qty,12,'↔ H restores the base contour');
  assert.equal(items.find(i=>i.id===family).fullContourSelected,false);
+ assert.equal(items.find(i=>i.id===family).qty,0,'↔ H removes the previous whole '+family+' quantity');
+ assert.equal(items.find(i=>i.id==='insert').qty,12,'↔ H restores the insert');
+ assert.equal(items.find(i=>i.id==='base-corners').qty,4,'↔ H restores base corners');
+ assert.equal(items.find(i=>i.id===family+'-corners').qty,0,'↔ H removes special corners');
 }
-console.log('PASS ↔ perimeter button selects shadow/floating contour and base H');
+console.log('PASS ↔ perimeter button switches both ways between shadow/floating and base H');
 
 {
  const items=baseItems([{id:'black-shadow-corners',name:'Фіксація кута тіньовий чорний',source:'walltypecolor:black:'+encodeURIComponent('Фіксація кута тіньовий'),unit:'шт',qty:0}]);
