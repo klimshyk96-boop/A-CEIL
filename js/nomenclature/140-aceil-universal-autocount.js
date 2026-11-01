@@ -457,10 +457,26 @@ window.aceilContourProfileColor=function(){var p=contourProfile();return p?p.col
 // copied number. Keep that decision in the room state so H, insert and corners
 // are reconciled immediately and survive save/reopen.
 window.A_CEIL_SelectWholeContourItem=function(item){
-  var source=contourSourceOfItem(item),special=/^(shadow_profile|floating_profile)$/.test(source);
+  var list=getElemItems(),source=contourSourceOfItem(item),special=/^(shadow_profile|floating_profile)$/.test(source);
   if(!special&&source!=="main_profile")return false;
-  var changed=false;
-  getElemItems().forEach(function(row){
+  var previous=manualContourStyle(list)||explicitContourProfile(list)||inferredContourProfile(list),changed=false;
+  /* The perimeter button beside H is the reverse of choosing a whole
+     shadow/floating contour. Remove the nomenclature choice that owned the
+     whole contour before H is filled with the perimeter; otherwise the old
+     special-profile quantity remains in the estimate next to the restored H.
+     Wall marks are not deleted: if the drawing itself contains a special wall,
+     the normal auto-count remains authoritative for that wall. */
+  if(source==="main_profile"&&previous&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(previous))){
+    list.forEach(function(row){
+      if(!row||! /^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(row)))return;
+      if(row!==previous&&row.fullContourSelected!==true&&row.manualQtyOverride!==true)return;
+      if(Number(row.qty)!==0){row.qty=0;changed=true;}
+      if(row.manualQtyOverride===true){row.manualQtyOverride=false;changed=true;}
+      if(row.autoFilled===true){row.autoFilled=false;changed=true;}
+      if(row.autoZero!==true){row.autoZero=true;changed=true;}
+    });
+  }
+  list.forEach(function(row){
     if(!row)return;
     var selected=special&&row===item;
     if(!!row.fullContourSelected!==selected){row.fullContourSelected=selected;changed=true;}
@@ -471,8 +487,14 @@ window.A_CEIL_SelectWholeContourItem=function(item){
   if(typeof original!=="function"||original.__contourProfileChoice)return;
   var wrapped=function(itemId){
     var item=getElemItems().find(function(row){return row&&String(row.id)===String(itemId);});
-    if(item)window.A_CEIL_SelectWholeContourItem(item);
-    return original.apply(this,arguments);
+    var changed=item&&window.A_CEIL_SelectWholeContourItem(item),result=original.apply(this,arguments);
+    if(changed&&typeof window.A_CEIL_ReconcileContourInsert==="function"){
+      window.A_CEIL_ReconcileContourInsert();
+      if(typeof renderElemList==="function")renderElemList();
+      if(typeof updateElemBadge==="function")updateElemBadge();
+      if(typeof saveState==="function")saveState();
+    }
+    return result;
   };
   wrapped.__contourProfileChoice=true;window.setElemFromPerimeter=wrapped;
   try{setElemFromPerimeter=wrapped;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
