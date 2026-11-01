@@ -166,6 +166,7 @@
   "js/projects/228-aceil-cloud-project-trash.js",
   "js/projects/226-aceil-project-safety-ui.js",
   "js/projects/227-aceil-cloud-first-autosave.js",
+  "js/core/229-aceil-theme-selector.js",
   "calculator/model.js",
   "calculator/cloud.js",
   "calculator/owner.js"

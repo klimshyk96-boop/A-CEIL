@@ -1,0 +1,211 @@
+/* A·CEIL — тема «Ніч». Стеля після заходу сонця.
+   Один акцент: тепле світло LED-профілю (бурштин). Решта — графіт, що відділяється
+   яскравістю, а не рамками. Креслення на полотні світиться, як лінії у стелі. */
+
+html[data-aceil-theme="dark"]{
+  color-scheme:dark;
+  --n-void:#090a0c;--n-ground:#0e1013;--n-s1:#13161a;--n-s2:#191d22;--n-s3:#222730;--n-s4:#2b313b;
+  --n-line:rgba(236,232,225,.075);--n-line2:rgba(236,232,225,.14);--n-line3:rgba(236,232,225,.24);
+  --n-text:#ece8e1;--n-dim:#a9a59d;--n-faint:#7a766e;
+  --n-led:#ffb547;--n-led-hi:#ffc977;--n-led-lo:#f29a1f;--n-led-ink:#1c1304;
+  --n-led-soft:rgba(255,181,71,.12);--n-led-mid:rgba(255,181,71,.28);--n-led-glow:rgba(255,181,71,.36);
+  --n-steel:#9fb6c8;--n-ok:#7ad3a1;--n-bad:#ff8a80;--n-bad-soft:rgba(255,138,128,.12);
+  --rm-bg:var(--n-void);--rm-card:var(--n-s1);--rm-border:var(--n-line2);--rm-text:var(--n-text);--rm-muted:var(--n-dim);
+  --cp-bg:var(--n-ground);--cp-paper:var(--n-ground);--cp-grid:#1b1f25;--cp-grid-strong:#232831;--cp-wall:var(--n-text);--cp-muted:var(--n-faint);
+}
+
+/* ── Основа ─────────────────────────────────────────────── */
+html[data-aceil-theme="dark"],html[data-aceil-theme="dark"] body{background-color:var(--n-void)!important;color:var(--n-text)!important}
+html[data-aceil-theme="dark"] body{
+  background-image:
+    radial-gradient(90% 42% at 50% -8%,rgba(255,181,71,.085),transparent 70%),
+    radial-gradient(60% 30% at 105% 18%,rgba(159,182,200,.05),transparent 70%)!important;
+  background-attachment:fixed!important;
+}
+html[data-aceil-theme="dark"] ::selection{background:var(--n-led-mid);color:#fff}
+html[data-aceil-theme="dark"] :focus-visible{outline:2px solid var(--n-led)!important;outline-offset:2px!important}
+html[data-aceil-theme="dark"] hr{border-color:var(--n-line)!important}
+html[data-aceil-theme="dark"] ::-webkit-scrollbar{width:10px;height:10px}
+html[data-aceil-theme="dark"] ::-webkit-scrollbar-thumb{background:var(--n-s4);border-radius:10px;border:2px solid var(--n-void)}
+
+/* ── Шапка-кокпіт ───────────────────────────────────────── */
+html[data-aceil-theme="dark"] :is(#rpCockpit .rpc-card,body.rp-home-pro #rpCockpit .rpc-card){
+  background:linear-gradient(180deg,var(--n-s2),var(--n-s1))!important;
+  border:1px solid var(--n-line2)!important;border-top-color:rgba(255,181,71,.34)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 28px 48px -30px #000!important;
+}
+html[data-aceil-theme="dark"] :is(#rpCockpit .rpc-name,.header-content h2){color:var(--n-text)!important;-webkit-text-fill-color:var(--n-text)!important}
+html[data-aceil-theme="dark"] #rpCockpit :is(.rpc-name,.rpc-metric b,.rpc-metric b *){font-variant-numeric:tabular-nums}
+html[data-aceil-theme="dark"] :is(#rpCockpit #rpcTotalPill,body.rp-home-pro #rpCockpit #rpcTotalPill){
+  background:linear-gradient(180deg,rgba(255,181,71,.16),rgba(255,181,71,.06))!important;
+  border:1px solid var(--n-led-mid)!important;box-shadow:0 0 28px -8px var(--n-led-glow),inset 0 1px 0 rgba(255,220,160,.12)!important;
+}
+html[data-aceil-theme="dark"] #rpCockpit #rpcTotalPill small{color:var(--n-led-hi)!important;opacity:.85}
+html[data-aceil-theme="dark"] #rpCockpit #rpcTotalPill b{color:var(--n-led)!important;text-shadow:0 0 18px var(--n-led-glow);font-variant-numeric:tabular-nums}
+html[data-aceil-theme="dark"] :is(#rpCockpit .rpc-metrics,body.rp-home-pro #rpCockpit .rpc-metrics){background:var(--n-ground)!important;border:1px solid var(--n-line)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important}
+html[data-aceil-theme="dark"] body.rp-home-pro #rpCockpit .rpc-metric:not(:nth-child(4))::after{background:var(--n-line2)!important}
+html[data-aceil-theme="dark"] #rpCockpit .rpc-metric b{color:var(--n-text)!important}
+html[data-aceil-theme="dark"] #rpCockpit .rpc-metric small{color:var(--n-faint)!important}
+html[data-aceil-theme="dark"] #rpCockpit .rpc-metric-icon{background:var(--n-s3)!important;color:var(--n-steel)!important;box-shadow:none!important}
+html[data-aceil-theme="dark"] #rpCockpit .rpc-metric-icon *{color:inherit!important;stroke:currentColor!important}
+html[data-aceil-theme="dark"] #rpCockpit .rpc-metric-icon{color:var(--n-steel)!important}
+html[data-aceil-theme="dark"] #rpCockpit #rpcLights,html[data-aceil-theme="dark"] #rpCockpit #rpcLights *{color:var(--n-led)!important}
+
+/* Головна дія — світло */
+html[data-aceil-theme="dark"] :is(#rpCockpit .rpc-save,body.rp-home-pro #rpCockpit .rpc-save){
+  background:linear-gradient(180deg,var(--n-led-hi),var(--n-led) 55%,var(--n-led-lo))!important;color:var(--n-led-ink)!important;border:0!important;
+  box-shadow:0 10px 28px -10px var(--n-led-glow),inset 0 1px 0 rgba(255,255,255,.45)!important;font-weight:800!important;
+}
+html[data-aceil-theme="dark"] #rpCockpit .rpc-save *{color:var(--n-led-ink)!important}
+html[data-aceil-theme="dark"] :is(#rpCockpit .rpc-projects-button,body.rp-home-pro #rpCockpit .rpc-tools .rpc-projects-button,.compact-user-pill,.header-icon-btn,.theme-btn,#rmAppLangBtn,#rpCockpit .rpc-tools>button:not(.rpc-save):not(.rpc-logout),#rpCockpit .aceil-head-action){
+  background:var(--n-s2)!important;border:1px solid var(--n-line2)!important;color:var(--n-text)!important;box-shadow:none!important;
+}
+html[data-aceil-theme="dark"] #rpCockpit .rpc-projects-button *{color:var(--n-text)!important}
+html[data-aceil-theme="dark"] :is(#rpCockpit .rpc-logout,#rpCockpit .aceil-head-logout,body.rp-home-pro #rpCockpit .aceil-head-logout){background:var(--n-bad-soft)!important;border:1px solid rgba(255,138,128,.28)!important;color:var(--n-bad)!important}
+html[data-aceil-theme="dark"] #rpCockpit .rpc-logout *{color:var(--n-bad)!important}
+html[data-aceil-theme="dark"] .compact-cloud-row{color:var(--n-dim)!important}
+
+/* ── Полотно: креслення світиться ─────────────────────── */
+html[data-aceil-theme="dark"] .canvas-container{
+  background:var(--n-ground)!important;border:1px solid var(--n-line2)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.02),0 30px 60px -34px #000!important;
+}
+/* Полотно малюється світлим «папером» (його ж бере і звіт), тому темну версію
+   дає лише фільтр відображення: піксели й експорт не змінюються. */
+html[data-aceil-theme="dark"] canvas#cv{
+  background-color:#eceff3!important;
+  background-image:linear-gradient(rgba(20,30,50,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(20,30,50,.035) 1px,transparent 1px)!important;
+  background-size:24px 24px!important;
+  filter:invert(.92) hue-rotate(180deg) saturate(1.35) brightness(1.3) contrast(1.05)!important;
+}
+html[data-aceil-theme="dark"] .zoom-controls{background:var(--n-s2)!important;border:1px solid var(--n-line2)!important;box-shadow:0 14px 30px -14px #000!important}
+html[data-aceil-theme="dark"] .zoom-controls *{color:var(--n-text)!important}
+html[data-aceil-theme="dark"] :is(#A·CEILUndoBtn,#A·CEILRedoBtn,.rm-history-btn,#A·CEILRoomMenuToggle,.rm-room-menu-toggle){
+  background:rgba(25,29,34,.9)!important;border:1px solid var(--n-line2)!important;color:var(--n-text)!important;box-shadow:0 12px 24px -12px #000!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+}
+html[data-aceil-theme="dark"] :is(#A·CEILUndoBtn,#A·CEILRedoBtn,.rm-history-btn) :is(svg,path){stroke:var(--n-led)!important;color:var(--n-led)!important}
+html[data-aceil-theme="dark"] .rm-history-btn[disabled],html[data-aceil-theme="dark"] .rm-history-btn:disabled{opacity:.35!important}
+html[data-aceil-theme="dark"] #aceilColorPickerBtn{
+  background:rgba(25,29,34,.92)!important;border:1px solid var(--n-line2)!important;color:var(--n-text)!important;box-shadow:0 14px 28px -14px #000!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+}
+html[data-aceil-theme="dark"] #aceilColorPickerBtn *{color:var(--n-text)!important}
+
+/* ── Плитки інструментів ───────────────────────────────── */
+html[data-aceil-theme="dark"] :is(.tile-btn,body.rp-home-pro #A·CEILToolPanel .tile-btn){
+  background:linear-gradient(180deg,var(--n-s2),var(--n-s1))!important;border:1px solid var(--n-line)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important;transition:border-color .18s,box-shadow .18s;
+}
+html[data-aceil-theme="dark"] :is(.tile-btn,body.rp-home-pro #A·CEILToolPanel .tile-btn,body.rp-home-pro #A·CEILToolPanel .tile-btn[class*=tile-]) :is(.tile-btn-label,b){color:var(--n-text)!important}
+html[data-aceil-theme="dark"] .tile-btn :is(.tile-sub,small){color:var(--n-faint)!important}
+html[data-aceil-theme="dark"] :is(.tile-btn,body.rp-home-pro #A·CEILToolPanel .tile-btn[class*=tile-]) :is(.tile-icon,.tile-icon *){color:var(--n-steel)!important;stroke:currentColor}
+html[data-aceil-theme="dark"] .tile-btn:is(:hover,:active,.active){border-color:var(--n-led-mid)!important;box-shadow:0 0 0 1px var(--n-led-soft),0 14px 30px -18px var(--n-led-glow)!important;background:linear-gradient(180deg,var(--n-s3),var(--n-s2))!important}
+html[data-aceil-theme="dark"] .tile-btn:is(:hover,:active,.active) .tile-icon,html[data-aceil-theme="dark"] .tile-btn:is(:hover,:active,.active) .tile-icon *{color:var(--n-led)!important}
+html[data-aceil-theme="dark"] .tile-btn.tile-red{background:linear-gradient(180deg,#261b1c,#1b1414)!important;border-color:rgba(255,138,128,.2)!important}
+html[data-aceil-theme="dark"] .tile-btn.tile-red .tile-icon,html[data-aceil-theme="dark"] .tile-btn.tile-red .tile-icon *,html[data-aceil-theme="dark"] .tile-btn.tile-red .tile-btn-label{color:var(--n-bad)!important}
+html[data-aceil-theme="dark"] :is(#elemBadge,.tile-badge,.tile-btn .badge){background:var(--n-led)!important;color:var(--n-led-ink)!important;box-shadow:0 0 14px var(--n-led-glow)!important}
+html[data-aceil-theme="dark"] :is(.stat-card,.info-box,.table-scroll){background:var(--n-s1)!important;border-color:var(--n-line)!important;color:var(--n-text)!important}
+html[data-aceil-theme="dark"] :is(.stat-value){color:var(--n-text)!important}
+html[data-aceil-theme="dark"] :is(.stat-label,.stat-unit){color:var(--n-faint)!important}
+
+/* ── Модальні вікна, меню, форми ───────────────────────── */
+html[data-aceil-theme="dark"] .modal-overlay{background:rgba(4,5,7,.7)!important;-webkit-backdrop-filter:blur(8px)!important;backdrop-filter:blur(8px)!important}
+html[data-aceil-theme="dark"] :is(.modal,.quick-menu,.elem-menu,.rm-lf-sheet .modal){
+  background:linear-gradient(180deg,var(--n-s2),var(--n-s1) 120px)!important;border:1px solid var(--n-line2)!important;color:var(--n-text)!important;
+  box-shadow:0 -30px 80px -30px #000,inset 0 1px 0 rgba(255,255,255,.05)!important;
+}
+html[data-aceil-theme="dark"] :is(.modal h1,.modal h2,.modal h3,.modal h4,.modal b,.modal strong,.quick-menu b,.elem-menu b){color:var(--n-text)!important}
+html[data-aceil-theme="dark"] :is(.modal p,.modal small,.modal label,.modal .hint,.quick-menu small,.elem-menu small,.modal span.sub){color:var(--n-dim)!important}
+html[data-aceil-theme="dark"] :is(input,select,textarea){
+  background:var(--n-ground)!important;border:1px solid var(--n-line2)!important;color:var(--n-text)!important;caret-color:var(--n-led);
+}
+html[data-aceil-theme="dark"] :is(input,textarea)::placeholder{color:var(--n-faint)!important}
+html[data-aceil-theme="dark"] :is(input,select,textarea):focus{border-color:var(--n-led)!important;box-shadow:0 0 0 3px var(--n-led-soft)!important;outline:none!important}
+html[data-aceil-theme="dark"] :is(input[type=checkbox],input[type=radio],input[type=range]){accent-color:var(--n-led)}
+html[data-aceil-theme="dark"] :is(.btn-cancel,.secondary,.aceil-theme-close,.rm-smart-secondary,.rwe2-x,.rm-ce-close){background:var(--n-s3)!important;color:var(--n-text)!important;border:1px solid var(--n-line2)!important}
+html[data-aceil-theme="dark"] :is(.modal button:not([class*=cancel]):not([class*=secondary]):not([class*=del]):not([class*=danger]):not(.btn-cancel)){
+  background:var(--n-s3);color:var(--n-text);border-color:var(--n-line2);
+}
+/* Підтвердні кнопки модалок — світло, як головна дія */
+html[data-aceil-theme="dark"] .modal :is(.btn-save,.btn-primary,.btn-confirm,.primary,button[onclick*="Apply"],button[onclick*="Save"],button[onclick*="save"],button[onclick*="Create"],button[onclick*="create"],button[onclick*="Confirm"]){
+  background:linear-gradient(180deg,var(--n-led-hi),var(--n-led) 55%,var(--n-led-lo))!important;color:var(--n-led-ink)!important;border:0!important;box-shadow:0 10px 26px -10px var(--n-led-glow),inset 0 1px 0 rgba(255,255,255,.4)!important;font-weight:800!important;
+}
+html[data-aceil-theme="dark"] :is(.modal .danger,.rm-smart-danger,.rwe2-del,.lt-del,#deleteElemBtn,#deleteGroupBtn,button[class*=del]){background:var(--n-bad-soft)!important;color:var(--n-bad)!important;border:1px solid rgba(255,138,128,.28)!important}
+html[data-aceil-theme="dark"] :is(.aceil-theme-sheet){background:var(--n-s1)!important;border-color:var(--n-line2)!important;color:var(--n-text)!important}
+html[data-aceil-theme="dark"] .aceil-theme-sheet :is(h3,p,small){color:var(--n-text)!important}
+html[data-aceil-theme="dark"] .aceil-theme-options>button{background:var(--n-s2)!important;border-color:var(--n-line2)!important;color:var(--n-text)!important}
+html[data-aceil-theme="dark"] .aceil-theme-options>button>span{background:var(--n-s3)!important;color:var(--n-led)!important}
+html[data-aceil-theme="dark"] .aceil-theme-options>button.selected{border-color:var(--n-led)!important;box-shadow:0 0 0 3px var(--n-led-soft)!important}
+
+/* ── Номенклатура ─────────────────────────────────────── */
+html[data-aceil-theme="dark"] body #elementsModal{background:var(--n-void)!important}
+html[data-aceil-theme="dark"] body #elementsModal .modal{background:var(--n-void)!important;color:var(--n-text)!important}
+html[data-aceil-theme="dark"] body #elementsModal :is(h3,h2,.modal-title){color:var(--n-text)!important}
+html[data-aceil-theme="dark"] body #elementsModal .modal>div:first-child,html[data-aceil-theme="dark"] body #elementsModal #elemBottomBar,html[data-aceil-theme="dark"] body #elementsModal #elemList{background:var(--n-ground)!important;border-color:var(--n-line)!important}
+html[data-aceil-theme="dark"] body #elementsModal #elemBottomBar{box-shadow:0 -24px 40px -28px #000!important}
+html[data-aceil-theme="dark"] body #elementsModal #elemBottomBar *{color:var(--n-text)}
+html[data-aceil-theme="dark"] body #elementsModal .grp-card{background:var(--n-s1)!important;border:1px solid var(--n-line2)!important;box-shadow:0 10px 30px -18px #000!important}
+html[data-aceil-theme="dark"] body #elementsModal .grp-header{background:linear-gradient(180deg,var(--n-s3),var(--n-s2))!important;border-bottom:1px solid var(--n-line)!important}
+html[data-aceil-theme="dark"] body #elementsModal .grp-header .nom-group-label,html[data-aceil-theme="dark"] body #elementsModal .grp-name{color:var(--n-text)!important}
+html[data-aceil-theme="dark"] body #elementsModal .grp-header svg{color:var(--n-steel)!important;stroke:currentColor}
+html[data-aceil-theme="dark"] body #elementsModal .grp-count{background:var(--n-s1)!important;color:var(--n-dim)!important;border:1px solid var(--n-line)!important}
+html[data-aceil-theme="dark"] body #elementsModal :is(.grp-toggle,.grp-edit,.grp-auto-count){background:var(--n-s1)!important;border:1px solid var(--n-line2)!important;color:var(--n-dim)!important}
+html[data-aceil-theme="dark"] body #elementsModal .grp-add{background:linear-gradient(180deg,var(--n-led-hi),var(--n-led-lo))!important;color:var(--n-led-ink)!important;border:0!important;box-shadow:0 0 18px -4px var(--n-led-glow)!important}
+html[data-aceil-theme="dark"] body #elementsModal .em-row{border-color:var(--n-line)!important}
+html[data-aceil-theme="dark"] body #elementsModal .em-icon{background:var(--n-s3)!important;border:1px solid var(--n-line)!important}
+html[data-aceil-theme="dark"] body #elementsModal .em-icon .nom-svg-icon,html[data-aceil-theme="dark"] body #elementsModal .em-icon svg{color:var(--n-steel)!important}
+html[data-aceil-theme="dark"] body #elementsModal :is(.em-name,.nom-legacy-icon){color:var(--n-text)!important}
+html[data-aceil-theme="dark"] body #elementsModal :is(.em-qty-input,.em-price-input,input[id^=grpAddInput]){background:var(--n-ground)!important;color:var(--n-text)!important;border:1px solid var(--n-line2)!important;box-shadow:inset 0 1px 3px #0008!important;font-variant-numeric:tabular-nums}
+html[data-aceil-theme="dark"] body #elementsModal :is(.em-qty-input,.em-price-input,input[id^=grpAddInput]):focus{border-color:var(--n-led)!important;box-shadow:0 0 0 3px var(--n-led-soft)!important;outline:0}
+html[data-aceil-theme="dark"] body #elementsModal :is(.em-unit,.mode-btn){background:var(--n-s3)!important;color:var(--n-steel)!important;border:1px solid var(--n-line2)!important}
+html[data-aceil-theme="dark"] body #elementsModal .em-unit-label{color:var(--n-faint)!important}
+html[data-aceil-theme="dark"] body #elementsModal .em-auto-badge{background:var(--n-led)!important;color:var(--n-led-ink)!important}
+html[data-aceil-theme="dark"] body #elementsModal :is(.em-total,.em-sum,.em-line-total){color:var(--n-led)!important;font-variant-numeric:tabular-nums}
+html[data-aceil-theme="dark"] body #elementsModal [id^=emrow_] [style*="#16a34a"],html[data-aceil-theme="dark"] body #elementsModal [id^=emrow_] [style*="rgb(22, 163, 74)"]{color:var(--n-ok)!important}
+html[data-aceil-theme="dark"] body #elementsModal button:not(.grp-add):not(.grp-toggle):not(.grp-edit):not(.em-unit):not(.mode-btn){color:var(--n-text)}
+html[data-aceil-theme="dark"] body :is(td,th){border-color:var(--n-line)!important}
+
+/* inline-стилі кнопок номенклатури */
+html[data-aceil-theme="dark"] body #elementsModal #elemBottomBar button[onclick*=clearElemQuantities]{background:var(--n-bad-soft)!important;color:var(--n-bad)!important;border:1px solid rgba(255,138,128,.35)!important}
+html[data-aceil-theme="dark"] body #elementsModal #elemBottomBar button[onclick*=autoFillNomenclature]{background:var(--n-s3)!important;color:var(--n-steel)!important;border:1px solid var(--n-line2)!important}
+html[data-aceil-theme="dark"] body #elementsModal #elemBottomBar button[onclick*=closeModal]{background:linear-gradient(180deg,var(--n-led-hi),var(--n-led-lo))!important;color:var(--n-led-ink)!important;font-weight:800!important;box-shadow:0 0 26px -6px var(--n-led-glow)!important}
+html[data-aceil-theme="dark"] body #elementsModal #elemTotalLabel{color:var(--n-dim)!important}
+html[data-aceil-theme="dark"] body #elementsModal #elemTotalValue{color:var(--n-led)!important}
+html[data-aceil-theme="dark"] body #elementsModal button[onclick*=elemMenu],html[data-aceil-theme="dark"] body #elementsModal button[onclick*=openElemMenu],html[data-aceil-theme="dark"] body #elementsModal .modal>div:first-child button:not([onclick*=closeModal]){background:var(--n-s3)!important;color:var(--n-steel)!important;border:1px solid var(--n-line2)!important;box-shadow:none!important}
+html[data-aceil-theme="dark"] body #elementsModal .grp-auto-count svg,html[data-aceil-theme="dark"] body #elementsModal .nom-auto-mark{color:var(--n-led)!important}
+
+/* ── Редагування позицій, світло, стіни, проєкти ────────── */
+html[data-aceil-theme="dark"] :is(.ac-edit-card,#acEditPreview,.ac-edit-preview,.rwe2-wall-distance-field,.svg-light-type-card,.rm-smart-note,#aceilProjectSafetyBar,#A·CEILGeoBox,.rm-ce-card,.rm-ce-new,#ccLauncher){
+  background:var(--n-s2)!important;border:1px solid var(--n-line2)!important;color:var(--n-text)!important;
+}
+html[data-aceil-theme="dark"] :is(.ac-edit-card,.rm-ce-card,.rwe2-wall-distance-field,.svg-light-type-card) :is(strong,b,div,span,label){color:inherit}
+html[data-aceil-theme="dark"] :is(.ac-edit-switch-track){background:var(--n-s4)!important}
+html[data-aceil-theme="dark"] :is(.svg-light-type-icon-preview,.svg-icon-pick,.light-grid-chip,.rwe-pos-btn,.rwe2-adv-toggle,.rm-ce-edit-toggle,.rm-ce-icon,.rm-ce-icon.cc-launch-icon,#A·CEILGeoMap,#A·CEILGeoPaste,#A·CEILGeoClear,#A·CEILGeoCapture){
+  background:var(--n-s3)!important;border:1px solid var(--n-line2)!important;color:var(--n-text)!important;
+}
+html[data-aceil-theme="dark"] :is(.svg-icon-cat-title,.rwe2-title,.rm-ce-title,.rwe2-label){color:var(--n-dim)!important}
+html[data-aceil-theme="dark"] :is(.svg-icon-pick,.rm-ce-icon) :is(svg,path){color:var(--n-steel);stroke:currentColor}
+html[data-aceil-theme="dark"] #aceilProjectSafetyBar{color:var(--n-dim)!important}
+html[data-aceil-theme="dark"] #aceilProjectSafetyBar *{color:inherit}
+html[data-aceil-theme="dark"] #aceilProjectSafetyBar button{background:var(--n-s3)!important;color:var(--n-text)!important;border:1px solid var(--n-line2)!important}
+
+/* ── Тости і дрібниці ─────────────────────────────────── */
+html[data-aceil-theme="dark"] :is(.toast,#toast,.aceil-toast){background:var(--n-s3)!important;color:var(--n-text)!important;border:1px solid var(--n-line2)!important;box-shadow:0 18px 40px -16px #000!important}
+html[data-aceil-theme="dark"] a{color:var(--n-led)}
+
+@media(prefers-reduced-motion:reduce){html[data-aceil-theme="dark"] *{transition:none!important}}
+
+/* ── Загальні поля й кнопки всіх модалок (перебивають inline) ── */
+html[data-aceil-theme="dark"] body .modal :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea){background:var(--n-ground)!important;color:var(--n-text)!important;border:1px solid var(--n-line2)!important;box-shadow:inset 0 1px 3px #0008!important;color-scheme:dark}
+html[data-aceil-theme="dark"] body .modal :is(input,select,textarea):focus{border-color:var(--n-led)!important;box-shadow:0 0 0 3px var(--n-led-soft)!important;outline:0}
+html[data-aceil-theme="dark"] body .modal :is(.btn-cancel,.rm-ce-close,.rwe2-del,button[onclick*=close]):not([onclick*=closeModal\(\"elementsModal\"\)]){background:var(--n-s3)!important;color:var(--n-text)!important;border:1px solid var(--n-line2)!important}
+html[data-aceil-theme="dark"] body .modal .rwe2-del{color:var(--n-bad)!important;background:var(--n-bad-soft)!important}
+html[data-aceil-theme="dark"] body .modal :is(.rwe2-ok,.rm-smart-primary,.rmni-save,.btn-save){background:linear-gradient(180deg,var(--n-led-hi),var(--n-led-lo))!important;color:var(--n-led-ink)!important;border:0!important;font-weight:800!important}
+html[data-aceil-theme="dark"] body :is(#rmLightStartModal,#editElemModal,#editGroupModal,#wallEditModal,#saveProjectModal,#smartLightModal) .modal{background:linear-gradient(180deg,var(--n-s2),var(--n-s1))!important;border:1px solid var(--n-line2)!important}
+html[data-aceil-theme="dark"] body :is(#rmLightStartModal,#editElemModal,#editGroupModal,#wallEditModal,#saveProjectModal,#smartLightModal) :is(.rm-ce-title,b,small,label,h3){color:var(--n-text)!important}
+html[data-aceil-theme="dark"] body :is(#editElemModal,#editGroupModal) button:not(.btn-save):not(.btn-primary):not(.btn-confirm){background:var(--n-s3)!important;color:var(--n-text)!important;border:1px solid var(--n-line2)!important}
+/* проєкти: прибрати білі рамки/лінії */
+html[data-aceil-theme="dark"] body #projectsModal .modal{border:1px solid var(--n-line2)!important;outline:0!important}
+html[data-aceil-theme="dark"] body #projectsModal :is(hr,.pm-divider,[style*="border-bottom"],[style*="border-top"]){border-color:var(--n-line)!important}
+html[data-aceil-theme="dark"] body :is(#editElemModal,#editGroupModal,#rmLightStartModal,#wallEditModal,#saveProjectModal,#smartLightModal) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){background:var(--n-ground)!important;color:var(--n-text)!important;border:1px solid var(--n-line2)!important;color-scheme:dark}
+html[data-aceil-theme="dark"] body #rmLightStartModal .rm-ce-close{background:var(--n-s3)!important;color:var(--n-text)!important;border:1px solid var(--n-line2)!important}
+html[data-aceil-theme="dark"] body #wallEditModal .rwe2-del{background:var(--n-bad-soft)!important;color:var(--n-bad)!important}
