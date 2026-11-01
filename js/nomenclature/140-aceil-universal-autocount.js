@@ -392,7 +392,7 @@ function partialContourQty(source,item,ctx){
   var perimeterCm=Math.max(0,Number(ctx&&ctx.perimeterCm)||contourPerimeterM()*100),cornersTotal=currentCornersTotal(ctx);
   var shadow=profileMarksFor("shadow_profile","",ctx),floating=profileMarksFor("floating_profile","",ctx),special=shadow.concat(floating);
   var specialCm=Math.min(perimeterCm,mergedProfileLengthCm(special,ctx));
-  if(source==="main_profile")return Math.round(Math.max(0,perimeterCm-specialCm))/100;
+  if(source==="main_profile")return Math.round(Math.max(0,perimeterCm-specialCm-manualInsertExtraCm(ctx)))/100;
   if(source==="white_insert")return insertRowIsChosen(item)?Math.round(Math.max(0,perimeterCm-specialCm-manualInsertExtraCm(ctx)))/100:0;
   var family=source.indexOf("shadow_")===0?"shadow_profile":"floating_profile",variant=profileVariantOfItem(item);
   if(source===family){
@@ -503,10 +503,10 @@ window.A_CEIL_ReconcileContourInsert=function(){
     if(!row)return;
     var source=row.source==="white_insert"?"white_insert":contourSourceOfItem(row);
     if(source!=="white_insert"&&!/^(main_profile|corners|shadow_corners|floating_corners)$/.test(source))return;
-    var active=source==="white_insert"?suppress:!!whole;
+    var active=source==="white_insert"?suppress:(source==="main_profile"?(!!whole||(suppress&&row.manualQtyOverride!==true)):!!whole);
     if(active){
       if(!row.contourInsertSuppressed){row.contourInsertSuppressed={qty:Number(row.qty)||0,manual:row.manualQtyOverride===true};changed=true;}
-      var qty=source==="main_profile"?0:window.aceilWholeContourCompute(source,row);
+      var qty=source==="main_profile"&&whole?0:window.aceilWholeContourCompute(source,row);
       if(Number(row.qty)!==qty){row.qty=qty;changed=true;}
       row.autoZero=!(Number(row.qty)>0);
     }else if(row.contourInsertSuppressed){

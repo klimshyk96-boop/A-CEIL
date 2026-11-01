@@ -21,7 +21,7 @@ const root=process.env.ACEIL_PROFILE_ROOT||path.join(__dirname,'..');
   await page.locator('#emrow_shadow .em-qty-input').fill('0');await page.waitForTimeout(700);
   assert.deepEqual(await q(),{base:16,shadow:0,insert:16,corners:4,scorners:0},'clearing the manual shadow restores the standard profile');
   await page.locator('#emrow_shadow .em-qty-input').fill('6');await page.waitForTimeout(700);
-  assert.equal((await q()).base,16,'a partial manual quantity does not zero H');
+  assert.deepEqual(await q(),{base:10,shadow:6,insert:10,corners:4,scorners:0},'a partial manual quantity is subtracted from H and the insert; corners stay');
   assert.deepEqual(errors,[]);console.log('manual shadow zeroes H ok');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});
