@@ -1,25 +1,25 @@
 /* A·CEIL — тема «Ніч». Стеля після заходу сонця.
-   Один акцент: тепле світло LED-профілю (бурштин). Решта — графіт, що відділяється
+   Глибока ніч: індиго-чорний, електричний ціан і фіолетове світіння; полотно — синє креслення.
    яскравістю, а не рамками. Креслення на полотні світиться, як лінії у стелі. */
 
 html[data-aceil-theme="dark"]{
   color-scheme:dark;
-  --n-void:#090a0c;--n-ground:#0e1013;--n-s1:#13161a;--n-s2:#191d22;--n-s3:#222730;--n-s4:#2b313b;
-  --n-line:rgba(236,232,225,.075);--n-line2:rgba(236,232,225,.14);--n-line3:rgba(236,232,225,.24);
-  --n-text:#ece8e1;--n-dim:#a9a59d;--n-faint:#7a766e;
-  --n-led:#ffb547;--n-led-hi:#ffc977;--n-led-lo:#f29a1f;--n-led-ink:#1c1304;
-  --n-led-soft:rgba(255,181,71,.12);--n-led-mid:rgba(255,181,71,.28);--n-led-glow:rgba(255,181,71,.36);
-  --n-steel:#9fb6c8;--n-ok:#7ad3a1;--n-bad:#ff8a80;--n-bad-soft:rgba(255,138,128,.12);
+  --n-void:#05071a;--n-ground:#0a0e26;--n-s1:#0f1431;--n-s2:#161c40;--n-s3:#1f2755;--n-s4:#2a346b;
+  --n-line:rgba(150,175,255,.11);--n-line2:rgba(150,175,255,.2);--n-line3:rgba(150,175,255,.34);
+  --n-text:#eaf0ff;--n-dim:#a3b0d8;--n-faint:#7482b0;
+  --n-led:#3ee6ff;--n-led-hi:#8af2ff;--n-led-lo:#17b6e8;--n-led-ink:#021a22;
+  --n-led-soft:rgba(62,230,255,.14);--n-led-mid:rgba(62,230,255,.32);--n-led-glow:rgba(62,230,255,.45);
+  --n-steel:#9db4ff;--n-ok:#6df0b0;--n-bad:#ff7a9c;--n-bad-soft:rgba(255,122,156,.14);
   --rm-bg:var(--n-void);--rm-card:var(--n-s1);--rm-border:var(--n-line2);--rm-text:var(--n-text);--rm-muted:var(--n-dim);
-  --cp-bg:var(--n-ground);--cp-paper:var(--n-ground);--cp-grid:#1b1f25;--cp-grid-strong:#232831;--cp-wall:var(--n-text);--cp-muted:var(--n-faint);
+  --cp-bg:var(--n-ground);--cp-paper:var(--n-ground);--cp-grid:#121838;--cp-grid-strong:#1a2250;--cp-wall:var(--n-text);--cp-muted:var(--n-faint);
 }
 
 /* ── Основа ─────────────────────────────────────────────── */
 html[data-aceil-theme="dark"],html[data-aceil-theme="dark"] body{background-color:var(--n-void)!important;color:var(--n-text)!important}
 html[data-aceil-theme="dark"] body{
   background-image:
-    radial-gradient(90% 42% at 50% -8%,rgba(255,181,71,.085),transparent 70%),
-    radial-gradient(60% 30% at 105% 18%,rgba(159,182,200,.05),transparent 70%)!important;
+    radial-gradient(90% 42% at 50% -8%,rgba(62,230,255,.12),transparent 70%),
+    radial-gradient(60% 30% at 105% 18%,rgba(140,90,255,.16),transparent 70%)!important;
   background-attachment:fixed!important;
 }
 html[data-aceil-theme="dark"] ::selection{background:var(--n-led-mid);color:#fff}
@@ -31,14 +31,14 @@ html[data-aceil-theme="dark"] ::-webkit-scrollbar-thumb{background:var(--n-s4);b
 /* ── Шапка-кокпіт ───────────────────────────────────────── */
 html[data-aceil-theme="dark"] :is(#rpCockpit .rpc-card,body.rp-home-pro #rpCockpit .rpc-card){
   background:linear-gradient(180deg,var(--n-s2),var(--n-s1))!important;
-  border:1px solid var(--n-line2)!important;border-top-color:rgba(255,181,71,.34)!important;
+  border:1px solid var(--n-line2)!important;border-top-color:rgba(62,230,255,.34)!important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 28px 48px -30px #000!important;
 }
 html[data-aceil-theme="dark"] :is(#rpCockpit .rpc-name,.header-content h2){color:var(--n-text)!important;-webkit-text-fill-color:var(--n-text)!important}
 html[data-aceil-theme="dark"] #rpCockpit :is(.rpc-name,.rpc-metric b,.rpc-metric b *){font-variant-numeric:tabular-nums}
 html[data-aceil-theme="dark"] :is(#rpCockpit #rpcTotalPill,body.rp-home-pro #rpCockpit #rpcTotalPill){
-  background:linear-gradient(180deg,rgba(255,181,71,.16),rgba(255,181,71,.06))!important;
-  border:1px solid var(--n-led-mid)!important;box-shadow:0 0 28px -8px var(--n-led-glow),inset 0 1px 0 rgba(255,220,160,.12)!important;
+  background:linear-gradient(180deg,rgba(62,230,255,.16),rgba(62,230,255,.06))!important;
+  border:1px solid var(--n-led-mid)!important;box-shadow:0 0 28px -8px var(--n-led-glow),inset 0 1px 0 rgba(180,245,255,.12)!important;
 }
 html[data-aceil-theme="dark"] #rpCockpit #rpcTotalPill small{color:var(--n-led-hi)!important;opacity:.85}
 html[data-aceil-theme="dark"] #rpCockpit #rpcTotalPill b{color:var(--n-led)!important;text-shadow:0 0 18px var(--n-led-glow);font-variant-numeric:tabular-nums}
@@ -73,20 +73,22 @@ html[data-aceil-theme="dark"] .canvas-container{
 /* Полотно малюється світлим «папером» (його ж бере і звіт), тому темну версію
    дає лише фільтр відображення: піксели й експорт не змінюються. */
 html[data-aceil-theme="dark"] canvas#cv{
-  background-color:#eceff3!important;
-  background-image:linear-gradient(rgba(20,30,50,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(20,30,50,.035) 1px,transparent 1px)!important;
-  background-size:24px 24px!important;
-  filter:invert(.92) hue-rotate(180deg) saturate(1.35) brightness(1.3) contrast(1.05)!important;
+  background-color:#d6defa!important;
+  background-image:
+    linear-gradient(rgba(40,80,200,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(40,80,200,.18) 1px,transparent 1px),
+    linear-gradient(rgba(40,80,200,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(40,80,200,.1) 1px,transparent 1px)!important;
+  background-size:120px 120px,120px 120px,24px 24px,24px 24px!important;
+  filter:invert(.93) hue-rotate(180deg) saturate(1.3) brightness(.92) contrast(1.1)!important;
 }
 html[data-aceil-theme="dark"] .zoom-controls{background:var(--n-s2)!important;border:1px solid var(--n-line2)!important;box-shadow:0 14px 30px -14px #000!important}
 html[data-aceil-theme="dark"] .zoom-controls *{color:var(--n-text)!important}
 html[data-aceil-theme="dark"] :is(#A·CEILUndoBtn,#A·CEILRedoBtn,.rm-history-btn,#A·CEILRoomMenuToggle,.rm-room-menu-toggle){
-  background:rgba(25,29,34,.9)!important;border:1px solid var(--n-line2)!important;color:var(--n-text)!important;box-shadow:0 12px 24px -12px #000!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  background:rgba(16,22,60,.9)!important;border:1px solid var(--n-line2)!important;color:var(--n-text)!important;box-shadow:0 12px 24px -12px #000!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
 }
 html[data-aceil-theme="dark"] :is(#A·CEILUndoBtn,#A·CEILRedoBtn,.rm-history-btn) :is(svg,path){stroke:var(--n-led)!important;color:var(--n-led)!important}
 html[data-aceil-theme="dark"] .rm-history-btn[disabled],html[data-aceil-theme="dark"] .rm-history-btn:disabled{opacity:.35!important}
 html[data-aceil-theme="dark"] #aceilColorPickerBtn{
-  background:rgba(25,29,34,.92)!important;border:1px solid var(--n-line2)!important;color:var(--n-text)!important;box-shadow:0 14px 28px -14px #000!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  background:rgba(16,22,60,.92)!important;border:1px solid var(--n-line2)!important;color:var(--n-text)!important;box-shadow:0 14px 28px -14px #000!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
 }
 html[data-aceil-theme="dark"] #aceilColorPickerBtn *{color:var(--n-text)!important}
 
@@ -165,7 +167,7 @@ html[data-aceil-theme="dark"] body #elementsModal button:not(.grp-add):not(.grp-
 html[data-aceil-theme="dark"] body :is(td,th){border-color:var(--n-line)!important}
 
 /* inline-стилі кнопок номенклатури */
-html[data-aceil-theme="dark"] body #elementsModal #elemBottomBar button[onclick*=clearElemQuantities]{background:var(--n-bad-soft)!important;color:var(--n-bad)!important;border:1px solid rgba(255,138,128,.35)!important}
+html[data-aceil-theme="dark"] body #elementsModal #elemBottomBar button[onclick*=clearElemQuantities]{background:var(--n-bad-soft)!important;color:var(--n-bad)!important;border:1px solid rgba(255,122,156,.38)!important}
 html[data-aceil-theme="dark"] body #elementsModal #elemBottomBar button[onclick*=autoFillNomenclature]{background:var(--n-s3)!important;color:var(--n-steel)!important;border:1px solid var(--n-line2)!important}
 html[data-aceil-theme="dark"] body #elementsModal #elemBottomBar button[onclick*=closeModal]{background:linear-gradient(180deg,var(--n-led-hi),var(--n-led-lo))!important;color:var(--n-led-ink)!important;font-weight:800!important;box-shadow:0 0 26px -6px var(--n-led-glow)!important}
 html[data-aceil-theme="dark"] body #elementsModal #elemTotalLabel{color:var(--n-dim)!important}
@@ -209,3 +211,14 @@ html[data-aceil-theme="dark"] body #projectsModal :is(hr,.pm-divider,[style*="bo
 html[data-aceil-theme="dark"] body :is(#editElemModal,#editGroupModal,#rmLightStartModal,#wallEditModal,#saveProjectModal,#smartLightModal) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){background:var(--n-ground)!important;color:var(--n-text)!important;border:1px solid var(--n-line2)!important;color-scheme:dark}
 html[data-aceil-theme="dark"] body #rmLightStartModal .rm-ce-close{background:var(--n-s3)!important;color:var(--n-text)!important;border:1px solid var(--n-line2)!important}
 html[data-aceil-theme="dark"] body #wallEditModal .rwe2-del{background:var(--n-bad-soft)!important;color:var(--n-bad)!important}
+
+/* ── Глибина: скло, внутрішній відблиск, світіння іконок ── */
+html[data-aceil-theme="dark"] body.rp-home-pro #A·CEILToolPanel .tile-btn[class*=tile-],html[data-aceil-theme="dark"] .tile-btn{
+  background:linear-gradient(160deg,rgba(40,52,120,.55),rgba(12,17,44,.92) 62%)!important;
+  border:1px solid var(--n-line2)!important;border-top-color:rgba(138,242,255,.3)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 18px 34px -22px #000,0 0 0 0 transparent!important;
+}
+html[data-aceil-theme="dark"] .tile-btn svg,html[data-aceil-theme="dark"] .tile-btn .nom-svg-icon{filter:drop-shadow(0 0 8px rgba(62,230,255,.45))}
+html[data-aceil-theme="dark"] .tile-btn:active{transform:translateY(1px) scale(.99);box-shadow:0 0 0 1px var(--n-led-mid),0 0 28px -6px var(--n-led-glow)!important}
+html[data-aceil-theme="dark"] :is(#rpCockpit .rpc-card){background:linear-gradient(160deg,rgba(50,40,140,.5),rgba(12,17,44,.96) 58%)!important}
+html[data-aceil-theme="dark"] body{background-image:radial-gradient(90% 42% at 50% -8%,rgba(62,230,255,.14),transparent 70%),radial-gradient(70% 34% at 100% 30%,rgba(140,90,255,.2),transparent 70%),radial-gradient(60% 30% at 0% 80%,rgba(40,90,255,.14),transparent 70%)!important}
