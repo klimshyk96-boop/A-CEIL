@@ -1821,3 +1821,11 @@ html[data-aceil-theme="dark"] .aceil-project-archive-tabs{background:#eef2f7;bor
 
 #aceilColorPickerModalV2 .acp2-manager-row[hidden]{display:none}
 #aceilColorPickerModalV2 .acp2-manager-series{margin-bottom:10px}
+
+/* Compact project-list controls on phones: keep the actual projects in view. */
+#projectsModal .aceil-project-archive-tabs{display:inline-flex!important;grid-template-columns:none!important;width:auto!important;max-width:calc(100% - 12px)!important;gap:2px!important;margin:0 6px 6px!important;padding:3px!important;border-radius:10px!important;background:#eef3f9!important}
+#projectsModal .aceil-project-archive-tabs button{flex:0 0 auto!important;min-width:0!important;min-height:30px!important;height:30px!important;gap:5px!important;padding:3px 9px!important;border-radius:7px!important;font-size:10.5px!important;line-height:1!important}
+#projectsModal .aceil-project-archive-tabs button b{display:inline-grid!important;min-width:18px!important;width:auto!important;height:18px!important;padding:0 5px!important;font-size:8.5px!important}
+#projectsModal #aceilProjectSafetyBar{display:grid!important;grid-template-columns:auto minmax(0,1fr) auto auto!important;align-items:center!important;gap:3px!important;min-height:32px!important;margin:0 6px 5px!important;padding:3px 5px!important;flex-wrap:nowrap!important;overflow:hidden!important;border-radius:8px!important;font-size:8.5px!important;line-height:1!important}
+#projectsModal #aceilProjectSafetyBar>span{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+#projectsModal #aceilProjectSafetyBar button{min-width:0!important;min-height:26px!important;height:26px!important;padding:2px 6px!important;border-radius:6px!important;font-size:8.5px!important;line-height:1!important}
