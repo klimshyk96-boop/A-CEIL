@@ -543,78 +543,28 @@ function render(force){
   btn.className="rm-"+state;
   btn.title=state==="confirmed"?"Кривизна підтверджена":(state==="green"?"Замір перевірено":(state==="yellow"?"Потрібна перевірка":"Є критична помилка"));
 
-  var title="",sub="",heroClass=state,actionHtml="";
+  var canConfirm=r.enough&&r.closed&&!r.intersect&&!(r.duplicates&&r.duplicates.length);
+  var names=r.verdict&&r.verdict.sides?r.verdict.sides.map(function(i){return labelPoint(i)+labelPoint((i+1)%r.points);}).join(", "):"";
+  var title="Перевірте замір",sub="Перевірте розміри стін.";
   if(state==="confirmed"){
-    title="✅ Кривизна підтверджена";
-    sub="Замірник підтвердив, що нерівна геометрія відповідає фактичним стінам. Проєкт можна передавати виконавцю.";
-    actionHtml='<button class="rm-primary-action" type="button" onclick="A·CEILMeasureConfidence.close()">Готово</button><button class="rm-secondary-action" type="button" id="rmMeasureRevokeBtn">Скасувати підтвердження</button>';
+    title="Кривизну погоджено";sub="Можна передавати виконавцю.";
+  }else if(!r.enough){sub="Додайте щонайменше 3 точки.";
+  }else if(!r.closed){sub="Контур не замкнений.";
+  }else if(r.intersect){sub="Сторони контуру перетинаються.";
+  }else if(r.duplicates&&r.duplicates.length){sub="Є точки, що накладаються.";
+  }else if(names){
+    sub="Розбіжність на сторонах "+names+".";
+    if(r.rectangle&&r.rectangle.max>0)sub+=" Різниця до "+fmtCm(r.rectangle.max)+".";
   }else if(state==="green"){
-    title="✅ Замір перевірено";
-    sub="Критичних суперечностей не виявлено. Можна переходити до наступного етапу.";
-    actionHtml='<button class="rm-primary-action" type="button" onclick="A·CEILMeasureConfidence.close()">Продовжити</button>';
-  }else if(state==="red"){
-    title="❌ Замір неузгоджений";
-    sub="Є критична геометрична помилка. Перед монтажем потрібно перевірити розміри.";
-  }else{
-    title="⚠️ Потрібна перевірка";
-    sub=(r.verdict&&r.verdict.text)?r.verdict.text:"Є невизначеність у введених розмірах.";
-  }
-
-  var html='<div class="rm-status-hero '+heroClass+'"><div class="rm-status-title">'+title+'</div><div class="rm-status-sub">'+sub+'</div></div>';
-  var hasSkew=false,skewPoints=getPoints();
-  if(skewPoints.length>=4)for(var si=0;si<skewPoints.length;si++){
-    var angle=interiorAngle(skewPoints[(si-1+skewPoints.length)%skewPoints.length],skewPoints[si],skewPoints[(si+1)%skewPoints.length]);
-    if(Number.isFinite(angle)&&Math.abs(angle-90)>.5){hasSkew=true;break;}
-  }
-  html+='<div class="rm-score-line"><span>Рівень перевірки</span><b>'+r.score+'%</b></div>'+
-        '<div class="rm-score-bar"><div class="rm-score-fill" style="width:'+Math.max(0,Math.min(100,r.score))+'%"></div></div>';
-
-  html+='<div class="rm-status-grid">'+
-        '<div class="rm-status-box"><b>Тип форми</b><span>'+(r.shape&&r.shape.label?r.shape.label:"—")+'</span></div>'+
-        '<div class="rm-status-box"><b>Точок</b><span>'+r.points+'</span></div>'+
-        '</div>';
-
-  html+='<div class="rm-check-list">';
-  html+=checkRow(r.enough?"✅":"⚠️","Точки контуру",r.enough?("Задано: "+r.points):"Потрібно щонайменше 3 точки");
-  html+=checkRow(r.closed?"✅":"⚠️","Замикання",r.closed?"Контур замкнений":"Контур не замкнений");
-  html+=checkRow(r.duplicates&&r.duplicates.length?"❌":"✅","Накладання точок",r.duplicates&&r.duplicates.length?("Знайдено: "+r.duplicates.length):"Немає");
-  html+=checkRow(r.intersect?"❌":"✅","Самоперетини",r.intersect?"Є перетин сторін":"Немає");
-
-  if(r.closure){
-    var ci=r.closure.diffCm<=tol(Math.max(r.closure.enteredCm,r.closure.impliedCm)).ok?"✅":"⚠️";
-    html+=checkRow(ci,"Замикання периметра",
-      "Очікується "+fmtCm(r.closure.impliedCm)+", введено "+fmtCm(r.closure.enteredCm)+", різниця "+fmtCm(r.closure.diffCm));
-  }
-  if(r.diagonalChecks&&r.diagonalChecks.length){
-    r.diagonalChecks.forEach(function(d){
-      html+=checkRow(d.diffCm<=tol(Math.max(d.enteredCm,d.impliedCm)).ok?"✅":"⚠️",
-        "Діагональ "+d.key,
-        "Введено "+fmtCm(d.enteredCm)+", розрахунково "+fmtCm(d.impliedCm)+", різниця "+fmtCm(d.diffCm));
-    });
-  }
-  html+='</div>';
-
-  if(state!=="confirmed"&&r.verdict&&r.verdict.sides&&r.verdict.sides.length){
-    var names=r.verdict.sides.map(function(i){return labelPoint(i)+labelPoint((i+1)%r.points);}).join(", ");
-    html+='<div class="rm-action-card"><b>Що перевірити</b><p>Проблемна сторона або зона: <strong>'+names+'</strong>.</p></div>';
-  }
-
+    title="Замір перевірено";sub="Розміри узгоджені.";
+  }else{sub="Косі стіни потребують підтвердження.";}
+  var html='<div class="rm-status-hero '+state+'"><div class="rm-status-title">'+title+'</div><div class="rm-status-sub">'+sub+'</div></div>';
   if(state==="confirmed"){
-    html+=actionHtml;
-  }else if(r.verdict&&r.verdict.recommend){
-    var rec=r.verdict.recommend;
-    html+='<div class="rm-action-card"><b>Рекомендований контрольний замір</b>'+
-      '<p><strong>'+rec.label+'</strong> допоможе точніше локалізувати помилку.</p></div>'+
-      '<button class="rm-primary-action" type="button" id="rmMeasureRecommendedBtn">Виміряти '+rec.label+'</button>'+
-      (r.enough&&r.closed&&!r.intersect&&!(r.duplicates&&r.duplicates.length)?'<button class="rm-secondary-action" type="button" id="rmMeasureConfirmBtn">Так, стіни дійсно криві</button>':'');
-  }else if(state!=="green"){
-    if(r.enough&&r.closed&&!r.intersect&&!(r.duplicates&&r.duplicates.length)){
-      html+='<button class="rm-primary-action" type="button" id="rmMeasureConfirmBtn">Підтвердити кривизну</button>';
-    }
-    html+='<button class="rm-secondary-action" type="button" onclick="A·CEILMeasureConfidence.close()">Закрити</button>';
+    html+='<button class="rm-primary-action" type="button" onclick="A·CEILMeasureConfidence.close()">Готово</button><button class="rm-secondary-action" type="button" id="rmMeasureRevokeBtn">Скасувати погодження</button>';
   }else{
-    html+=actionHtml;
-    if(hasSkew&&r.closed&&!r.intersect&&!(r.duplicates&&r.duplicates.length))html+='<button class="rm-secondary-action" type="button" id="rmMeasureConfirmBtn">Підтвердити кривизну стін</button>';
+    if(canConfirm)html+='<button class="rm-primary-action" type="button" id="rmMeasureConfirmBtn">Погодити кривизну</button>';
+    if(r.verdict&&r.verdict.recommend)html+='<button class="rm-secondary-action" type="button" id="rmMeasureRecommendedBtn">Виміряти '+r.verdict.recommend.label+'</button>';
+    if(!canConfirm)html+='<button class="rm-secondary-action" type="button" onclick="A·CEILMeasureConfidence.close()">Закрити</button>';
   }
 
   document.getElementById("rmMeasureConfidenceBody").innerHTML=html;
