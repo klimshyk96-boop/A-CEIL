@@ -46,6 +46,7 @@
       elemGroups:clone(typeof elemGroups!=='undefined'?elemGroups:[]),
       lightMarks:clone(typeof lightMarks!=='undefined'?lightMarks:[]),
       wallMarks:clone(typeof wallMarks!=='undefined'?wallMarks:[]),ceilingCornices:clone(Array.isArray(window.ceilingCornices)?window.ceilingCornices:[]),linearElements:clone(typeof linearElements!=='undefined'?linearElements:[]),wallTypes:clone(typeof wallTypes!=='undefined'?wallTypes:[]),arcPoints:clone(typeof arcPoints!=='undefined'?arcPoints:[])
+      ,geometryConfirmation:window.A·CEILMeasureConfidence&&window.A·CEILMeasureConfidence.exportConfirmation?window.A·CEILMeasureConfidence.exportConfirmation():null
     };
   }
   function resolveActive(arr){

@@ -4,6 +4,39 @@
 
 var lastSignature="";
 var timer=null;
+var geometryConfirmation=null;
+
+function clone(value){try{return JSON.parse(JSON.stringify(value));}catch(_){return value;}}
+function signatureForState(state){
+  state=state||{};
+  function cleanPoints(list){return (Array.isArray(list)?list:[]).map(function(p){return [Number(p&&p.x)||0,Number(p&&p.y)||0];});}
+  function cleanNumbers(list){return (Array.isArray(list)?list:[]).map(function(v){return Number(v)||0;});}
+  function cleanDiagonals(list){return (Array.isArray(list)?list:[]).map(function(pair){return Array.isArray(pair)?[Number(pair[0])||0,Number(pair[1])||0]:[];});}
+  var overrides={},raw=state.diagonalOverrides||{};
+  Object.keys(raw).sort().forEach(function(key){if(key!=="__geometryConfirmation")overrides[key]=Number(raw[key])||0;});
+  return JSON.stringify({pts:cleanPoints(state.pts),realPts:cleanPoints(state.realPts),lengths:cleanNumbers(state.lengths),closed:state.closed===true,diagonals:cleanDiagonals(state.diagonals),diagonalOverrides:overrides,circleMode:state.circleMode===true,circleDiamCm:Number(state.circleDiamCm)||0});
+}
+function currentGeometryState(){
+  var cm=false,diam=0;
+  try{cm=typeof circleMode!=="undefined"&&circleMode===true;diam=typeof circleDiamCm!=="undefined"?circleDiamCm:0;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
+  return {pts:getPoints(),realPts:getRealPoints(),lengths:getLengths(),closed:isClosed(),diagonals:getDiagonalsArr(),diagonalOverrides:getDiagonalOverrides(),circleMode:cm,circleDiamCm:diam};
+}
+function validConfirmation(value,state){return !!(value&&value.verified===true&&value.signature&&value.signature===signatureForState(state));}
+function confirmationFromState(state){
+  if(state&&state.geometryConfirmation)return state.geometryConfirmation;
+  return state&&state.diagonalOverrides&&state.diagonalOverrides.__geometryConfirmation||null;
+}
+function syncConfirmationFromState(){
+  var overrides=getDiagonalOverrides(),found=overrides&&overrides.__geometryConfirmation||null;
+  if(found)geometryConfirmation=clone(found);else if(geometryConfirmation)geometryConfirmation=null;
+}
+function persistConfirmation(value){
+  var overrides=getDiagonalOverrides();if(!overrides)return;
+  if(value)overrides.__geometryConfirmation=clone(value);else delete overrides.__geometryConfirmation;
+}
+function currentIsConfirmed(){syncConfirmationFromState();return validConfirmation(geometryConfirmation,currentGeometryState());}
+function exportConfirmation(){return currentIsConfirmed()?clone(geometryConfirmation):null;}
+function importConfirmation(value){geometryConfirmation=value&&value.verified===true?clone(value):null;lastSignature="";}
 
 function getPoints(){
   try{ if(typeof pts!=="undefined" && Array.isArray(pts)) return pts; }catch(e){window.__diagSilent&&window.__diagSilent(e)}
@@ -431,6 +464,7 @@ function ensureStyles(){
     "#rmMeasureConfidenceBtn.rm-green{background:#dcfce7}.rm-green .rm-status-dot{background:#22c55e}" +
     "#rmMeasureConfidenceBtn.rm-yellow{background:#fef3c7}.rm-yellow .rm-status-dot{background:#f59e0b}" +
     "#rmMeasureConfidenceBtn.rm-red{background:#fee2e2}.rm-red .rm-status-dot{background:#ef4444}" +
+    "#rmMeasureConfidenceBtn.rm-confirmed{background:#d1fae5}.rm-confirmed .rm-status-dot{background:#10b981;box-shadow:0 0 0 5px rgba(255,255,255,.55)}" +
     "#rmMeasureConfidenceModal{position:fixed;inset:0;z-index:9998;background:rgba(15,23,42,.42);backdrop-filter:blur(7px);display:none;align-items:flex-end;justify-content:center;padding:12px}" +
     "#rmMeasureConfidenceModal.rm-open{display:flex}" +
     "#rmMeasureConfidenceCard{width:100%;max-width:520px;max-height:88vh;overflow:auto;background:#fff;border-radius:26px 26px 20px 20px;box-shadow:0 -18px 60px rgba(15,23,42,.28);padding:20px 18px 18px;animation:rmModalUp .2s ease-out}" +
@@ -439,7 +473,7 @@ function ensureStyles(){
     "#rmMeasureConfidenceHead strong{font-size:21px;color:#0f172a}" +
     "#rmMeasureConfidenceClose{width:38px;height:38px;border:none;border-radius:50%;background:#f1f5f9;color:#475569;font-size:25px;line-height:1;cursor:pointer}" +
     ".rm-status-hero{border-radius:20px;padding:16px;margin-bottom:14px;border:1px solid transparent}" +
-    ".rm-status-hero.green{background:#ecfdf5;border-color:#bbf7d0}.rm-status-hero.yellow{background:#fffbeb;border-color:#fde68a}.rm-status-hero.red{background:#fef2f2;border-color:#fecaca}" +
+    ".rm-status-hero.green,.rm-status-hero.confirmed{background:#ecfdf5;border-color:#86efac}.rm-status-hero.yellow{background:#fffbeb;border-color:#fde68a}.rm-status-hero.red{background:#fef2f2;border-color:#fecaca}" +
     ".rm-status-title{font-size:19px;font-weight:850;margin-bottom:5px}.rm-status-sub{font-size:14px;line-height:1.45;color:#475569}" +
     ".rm-status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}" +
     ".rm-status-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:12px}" +
@@ -481,6 +515,7 @@ function ensureUi(){
   }
 }
 function resultState(r){
+  if(currentIsConfirmed()) return "confirmed";
   if(!r||!r.verdict) return "yellow";
   if(r.verdict.type==="proven") return "red";
   if(r.verdict.type==="conflict") return "yellow";
@@ -497,18 +532,23 @@ function fmtCm(v){
 }
 function render(force){
   ensureUi();
+  syncConfirmationFromState();
   var r=analyze();
-  var signature=JSON.stringify(r);
+  var signature=JSON.stringify(r)+"|"+currentIsConfirmed();
   if(!force&&signature===lastSignature) return;
   lastSignature=signature;
 
   var state=resultState(r);
   var btn=document.getElementById("rmMeasureConfidenceBtn");
   btn.className="rm-"+state;
-  btn.title=state==="green"?"Замір перевірено":(state==="yellow"?"Потрібна перевірка":"Є критична помилка");
+  btn.title=state==="confirmed"?"Кривизна підтверджена":(state==="green"?"Замір перевірено":(state==="yellow"?"Потрібна перевірка":"Є критична помилка"));
 
   var title="",sub="",heroClass=state,actionHtml="";
-  if(state==="green"){
+  if(state==="confirmed"){
+    title="✅ Кривизна підтверджена";
+    sub="Замірник підтвердив, що нерівна геометрія відповідає фактичним стінам. Проєкт можна передавати виконавцю.";
+    actionHtml='<button class="rm-primary-action" type="button" onclick="A·CEILMeasureConfidence.close()">Готово</button><button class="rm-secondary-action" type="button" id="rmMeasureRevokeBtn">Скасувати підтвердження</button>';
+  }else if(state==="green"){
     title="✅ Замір перевірено";
     sub="Критичних суперечностей не виявлено. Можна переходити до наступного етапу.";
     actionHtml='<button class="rm-primary-action" type="button" onclick="A·CEILMeasureConfidence.close()">Продовжити</button>';
@@ -521,6 +561,11 @@ function render(force){
   }
 
   var html='<div class="rm-status-hero '+heroClass+'"><div class="rm-status-title">'+title+'</div><div class="rm-status-sub">'+sub+'</div></div>';
+  var hasSkew=false,skewPoints=getPoints();
+  if(skewPoints.length>=4)for(var si=0;si<skewPoints.length;si++){
+    var angle=interiorAngle(skewPoints[(si-1+skewPoints.length)%skewPoints.length],skewPoints[si],skewPoints[(si+1)%skewPoints.length]);
+    if(Number.isFinite(angle)&&Math.abs(angle-90)>.5){hasSkew=true;break;}
+  }
   html+='<div class="rm-score-line"><span>Рівень перевірки</span><b>'+r.score+'%</b></div>'+
         '<div class="rm-score-bar"><div class="rm-score-fill" style="width:'+Math.max(0,Math.min(100,r.score))+'%"></div></div>';
 
@@ -549,21 +594,27 @@ function render(force){
   }
   html+='</div>';
 
-  if(r.verdict&&r.verdict.sides&&r.verdict.sides.length){
+  if(state!=="confirmed"&&r.verdict&&r.verdict.sides&&r.verdict.sides.length){
     var names=r.verdict.sides.map(function(i){return labelPoint(i)+labelPoint((i+1)%r.points);}).join(", ");
     html+='<div class="rm-action-card"><b>Що перевірити</b><p>Проблемна сторона або зона: <strong>'+names+'</strong>.</p></div>';
   }
 
-  if(r.verdict&&r.verdict.recommend){
+  if(state==="confirmed"){
+    html+=actionHtml;
+  }else if(r.verdict&&r.verdict.recommend){
     var rec=r.verdict.recommend;
     html+='<div class="rm-action-card"><b>Рекомендований контрольний замір</b>'+
       '<p><strong>'+rec.label+'</strong> допоможе точніше локалізувати помилку.</p></div>'+
       '<button class="rm-primary-action" type="button" id="rmMeasureRecommendedBtn">Виміряти '+rec.label+'</button>'+
-      '<button class="rm-secondary-action" type="button" onclick="A·CEILMeasureConfidence.close()">Продовжити без перевірки</button>';
+      (r.enough&&r.closed&&!r.intersect&&!(r.duplicates&&r.duplicates.length)?'<button class="rm-secondary-action" type="button" id="rmMeasureConfirmBtn">Так, стіни дійсно криві</button>':'');
   }else if(state!=="green"){
+    if(r.enough&&r.closed&&!r.intersect&&!(r.duplicates&&r.duplicates.length)){
+      html+='<button class="rm-primary-action" type="button" id="rmMeasureConfirmBtn">Підтвердити кривизну</button>';
+    }
     html+='<button class="rm-secondary-action" type="button" onclick="A·CEILMeasureConfidence.close()">Закрити</button>';
   }else{
     html+=actionHtml;
+    if(hasSkew&&r.closed&&!r.intersect&&!(r.duplicates&&r.duplicates.length))html+='<button class="rm-secondary-action" type="button" id="rmMeasureConfirmBtn">Підтвердити кривизну стін</button>';
   }
 
   document.getElementById("rmMeasureConfidenceBody").innerHTML=html;
@@ -584,12 +635,31 @@ function render(force){
       }catch(e){window.__diagSilent&&window.__diagSilent(e)}
     });
   }
+  var confirmBtn=document.getElementById("rmMeasureConfirmBtn");
+  if(confirmBtn) confirmBtn.addEventListener("click",function(){
+    geometryConfirmation={verified:true,signature:signatureForState(currentGeometryState()),verifiedAt:new Date().toISOString(),reason:"intentional_irregular_geometry"};
+    persistConfirmation(geometryConfirmation);
+    if(window.A_CEIL_HonestGeometry)window.A_CEIL_HonestGeometry.sync();
+    try{if(typeof saveState==="function")saveState();}catch(e){window.__diagSilent&&window.__diagSilent(e)}
+    try{if(typeof saveCurrentRoom==="function")Promise.resolve(saveCurrentRoom({silent:true})).catch(function(){});}catch(e){window.__diagSilent&&window.__diagSilent(e)}
+    try{if(typeof showToast==="function")showToast("✓ Кривизну підтверджено. Можна передавати виконавцю.",4200);}catch(e){window.__diagSilent&&window.__diagSilent(e)}
+    render(true);
+  });
+  var revokeBtn=document.getElementById("rmMeasureRevokeBtn");
+  if(revokeBtn) revokeBtn.addEventListener("click",function(){
+    geometryConfirmation=null;
+    persistConfirmation(null);
+    if(window.A_CEIL_HonestGeometry)window.A_CEIL_HonestGeometry.sync();
+    try{if(typeof saveState==="function")saveState();}catch(e){window.__diagSilent&&window.__diagSilent(e)}
+    render(true);
+  });
 }
 function open(){render(true);document.getElementById("rmMeasureConfidenceModal").classList.add("rm-open");}
 function close(){var m=document.getElementById("rmMeasureConfidenceModal");if(m)m.classList.remove("rm-open");}
 function notify(force){
   var r=analyze();
   if(!r||!r.verdict) return false;
+  if(currentIsConfirmed()) return false;
   if(r.verdict.type!=="proven"&&r.verdict.type!=="conflict") return false;
   var sig=r.verdict.type+"|"+r.verdict.text;
   if(!force&&sig===lastNotifySignature) return false;
@@ -608,8 +678,13 @@ function boot(){
   document.addEventListener("visibilitychange",function(){if(!document.hidden)render(true);});
 }
 window.A·CEILMeasureConfidence={
-  version:"2.56",
+  version:"2.57",
   analyze:analyze,
+  signatureForState:signatureForState,
+  isStateConfirmed:function(state){return validConfirmation(confirmationFromState(state),state||{});},
+  isCurrentConfirmed:currentIsConfirmed,
+  exportConfirmation:exportConfirmation,
+  importConfirmation:importConfirmation,
   render:function(){render(true);},
   open:open,
   close:close,
