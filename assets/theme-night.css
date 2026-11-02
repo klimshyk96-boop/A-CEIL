@@ -222,3 +222,40 @@ html[data-aceil-theme="dark"] .tile-btn svg,html[data-aceil-theme="dark"] .tile-
 html[data-aceil-theme="dark"] .tile-btn:active{transform:translateY(1px) scale(.99);box-shadow:0 0 0 1px var(--n-led-mid),0 0 28px -6px var(--n-led-glow)!important}
 html[data-aceil-theme="dark"] :is(#rpCockpit .rpc-card){background:linear-gradient(160deg,rgba(50,40,140,.5),rgba(12,17,44,.96) 58%)!important}
 html[data-aceil-theme="dark"] body{background-image:radial-gradient(90% 42% at 50% -8%,rgba(62,230,255,.14),transparent 70%),radial-gradient(70% 34% at 100% 30%,rgba(140,90,255,.2),transparent 70%),radial-gradient(60% 30% at 0% 80%,rgba(40,90,255,.14),transparent 70%)!important}
+
+/* ── Меню «три крапки» на канвасі ── */
+html[data-aceil-theme="dark"] body #A·CEILRoomMenuPopup{background:linear-gradient(180deg,var(--n-s2),var(--n-s1))!important;border:1px solid var(--n-line2)!important;box-shadow:0 30px 60px -20px #000,0 0 0 1px rgba(62,230,255,.08)!important;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+html[data-aceil-theme="dark"] body #A·CEILRoomMenuPopup .rm-room-menu-action{background:var(--n-s3)!important;border:1px solid var(--n-line)!important;color:var(--n-text)!important}
+html[data-aceil-theme="dark"] body #A·CEILRoomMenuPopup .rm-room-menu-action :is(b,span,svg,path,circle){color:var(--n-text)!important}
+html[data-aceil-theme="dark"] body #A·CEILRoomMenuPopup .rm-room-menu-action svg{stroke:var(--n-led)!important}
+html[data-aceil-theme="dark"] body #A·CEILRoomMenuPopup .rm-room-menu-action.danger{background:var(--n-bad-soft)!important;border-color:rgba(255,122,156,.35)!important}
+html[data-aceil-theme="dark"] body #A·CEILRoomMenuPopup .rm-room-menu-action.danger :is(b,span,svg,path){color:var(--n-bad)!important;stroke:var(--n-bad)!important}
+html[data-aceil-theme="dark"] body #A·CEILRoomMenuPopup #aceil-input-switch>span{color:var(--n-dim)!important}
+html[data-aceil-theme="dark"] body #A·CEILRoomMenuPopup #aceil-input-finger{background:var(--n-s3)!important;color:var(--n-dim)!important;border:1px solid var(--n-line)!important}
+html[data-aceil-theme="dark"] body #A·CEILRoomMenuPopup #aceil-input-points{background:linear-gradient(180deg,var(--n-led-hi),var(--n-led-lo))!important;color:var(--n-led-ink)!important}
+html[data-aceil-theme="dark"] body .rm-add-room,html[data-aceil-theme="dark"] body [class*=rm-room-add]{background:linear-gradient(180deg,#4f7bff,#2f55e0)!important;color:#fff!important}
+
+/* ── Налаштування звіту ── */
+html[data-aceil-theme="dark"] body #reportSettingsModal{background:rgba(3,5,18,.72)!important}
+html[data-aceil-theme="dark"] body #reportSettingsModal .rspro-sheet{background:var(--n-ground)!important;color:var(--n-text)!important}
+html[data-aceil-theme="dark"] body #reportSettingsModal .rspro-head{background:rgba(10,14,38,.94)!important;border-bottom:1px solid var(--n-line)!important}
+html[data-aceil-theme="dark"] body #reportSettingsModal :is(.rspro-title,.rspro-card-title,.rspro-card-title span,.rspro-toggle b,.rspro-toggle strong,.rspro-toggle span){color:var(--n-text)!important}
+html[data-aceil-theme="dark"] body #reportSettingsModal :is(.rspro-sub,.rspro-card-title small,.rspro-toggle small,.rspro-toggle em){color:var(--n-dim)!important}
+html[data-aceil-theme="dark"] body #reportSettingsModal .rspro-card{background:linear-gradient(160deg,rgba(40,52,120,.4),rgba(15,20,49,.95))!important;border:1px solid var(--n-line2)!important;box-shadow:none!important}
+html[data-aceil-theme="dark"] body #reportSettingsModal .rspro-toggle{background:var(--n-s1)!important;border:1px solid var(--n-line)!important}
+html[data-aceil-theme="dark"] body #reportSettingsModal .rspro-mini-actions button,html[data-aceil-theme="dark"] body #A_CEIL_ManagerReportCard button{background:var(--n-s3)!important;color:var(--n-steel)!important;border:1px solid var(--n-line2)!important;box-shadow:none!important}
+html[data-aceil-theme="dark"] body #reportSettingsModal .rspro-secondary{background:var(--n-s3)!important;color:var(--n-text)!important;border:1px solid var(--n-line2)!important}
+html[data-aceil-theme="dark"] body #reportSettingsModal .rspro-primary{background:linear-gradient(180deg,#4f7bff,#2f55e0)!important;color:#fff!important;box-shadow:0 12px 30px -10px rgba(79,123,255,.7)!important}
+html[data-aceil-theme="dark"] body #reportSettingsModal .rspro-actions{background:linear-gradient(180deg,transparent,var(--n-void) 40%)!important}
+html[data-aceil-theme="dark"] body #reportSettingsModal :is(.rspro-input,input,select){background:var(--n-s1)!important;color:var(--n-text)!important;border:1px solid var(--n-line2)!important}
+
+/* ── Елементи стелі: велика картка «Світлові лінії» ── */
+html[data-aceil-theme="dark"] body #rmLightStartModal .rm-ce-card.primary{background:linear-gradient(135deg,rgba(62,230,255,.16),var(--n-s2))!important;border:1px solid var(--n-led-mid)!important;box-shadow:0 0 30px -12px var(--n-led-glow)!important}
+html[data-aceil-theme="dark"] body #rmLightStartModal .rm-ce-card :is(b,small,span){color:var(--n-text)!important}
+html[data-aceil-theme="dark"] body #rmLightStartModal .rm-ce-card small{color:var(--n-dim)!important}
+html[data-aceil-theme="dark"] body #rmLightStartModal .rm-ce-sub,html[data-aceil-theme="dark"] body #rmLightStartModal .rm-ce-title{color:var(--n-text)!important}
+html[data-aceil-theme="dark"] body #rmLightStartModal .rm-ce-sub{color:var(--n-dim)!important}
+html[data-aceil-theme="dark"] body #rmLightStartModal .rm-ce-icon{color:var(--n-led)!important}
+
+/* без жовто-помаранчевих відтінків в інтерфейсі */
+html[data-aceil-theme="dark"] body .rpc-corner-out{color:#b49bff!important;border-color:#b49bff!important}
