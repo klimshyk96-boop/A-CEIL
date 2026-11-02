@@ -209,11 +209,54 @@ function showPickerPanel(){
  gid('acp2Footer').style.display=_catalogOpen||editing?'none':'';
  gid('acp2Manager').hidden=!_catalogOpen||editing;
 }
+async function openSharedFilmCatalogs(){
+ var host=gid('acp2Manager'),c=window._sb,u=window._sbUser;
+ try{if(typeof _sb!=='undefined')c=_sb;if(typeof _sbUser!=='undefined')u=_sbUser}catch(_){}
+ if(!host)return;
+ host.innerHTML='<div class="acp2-head"><div class="acp2-title">Доступні каталоги</div><button type="button" class="acp2-x" data-shared-back aria-label="Назад">×</button></div><div data-shared-list>Завантаження…</div><button type="button" class="acp2-manual-add" data-shared-restore>Відновити попередній асортимент</button>';
+ host.querySelector('[data-shared-back]').onclick=renderCatalogManager;
+ host.querySelector('[data-shared-restore]').onclick=async function(){
+  if(!c||!u||!confirm('Відновити попередній асортимент плівок? Поточний каталог буде замінено.'))return;
+  var button=this;button.disabled=true;
+  try{
+   var sync=window.ACEILFilmCatalogSync,status=sync&&await sync.sync();if(!status||status.state!=='ok')throw new Error('Спочатку синхронізуйте каталог');
+   var current=typeof _sbUser!=='undefined'?_sbUser:window._sbUser;if(!current||current.id!==u.id)throw new Error('Акаунт змінився');
+   var mine=await c.rpc('aceil_get_film_catalog');if(mine.error)throw mine.error;
+   current=typeof _sbUser!=='undefined'?_sbUser:window._sbUser;if(!current||current.id!==u.id)throw new Error('Акаунт змінився');
+   var restored=await c.rpc('aceil_restore_film_catalog',{p_user_id:u.id,p_expected_rev:Number(mine.data&&mine.data.rev)||0});if(restored.error)throw restored.error;
+   status=await sync.sync();if(status.state!=='ok')throw new Error('Відновлено у хмарі. Оновіть сторінку.');
+   toast('✓ Попередній асортимент відновлено');renderCatalogManager();
+  }catch(e){toast(/No backup/.test(String(e.message))?'Немає попереднього каталогу для відновлення.':String(e.message||e));button.disabled=false}
+ };
+ var list=host.querySelector('[data-shared-list]');
+ try{
+  if(!c||!u)throw new Error('Увійдіть в акаунт для отримання каталогів');
+  var result=await c.rpc('aceil_list_shared_film_catalogs');if(result.error)throw result.error;
+  var rows=Array.isArray(result.data)?result.data:[];
+  list.innerHTML=rows.length?rows.map(function(row){return '<div class="acp2-manager-row"><div><b>'+esc(row.owner_name||'Каталог адміністратора')+'</b><small>'+Number(row.series_count||0)+' серій</small></div><button type="button" class="acp2-manual-add" data-owner="'+esc(row.owner_id)+'">Замінити мій асортимент</button></div>'}).join(''):'<p class="acp2-muted">Поки немає наданих каталогів. Адміністратор може відкрити доступ у твоїй картці.</p>';
+  list.querySelectorAll('[data-owner]').forEach(function(button){button.onclick=async function(){
+   if(!confirm('Замінити свій асортимент цим каталогом? Виробники, кольори, ширини та ціни будуть замінені. Попередня копія збережеться для відновлення.'))return;
+   button.disabled=true;
+   try{
+    var sync=window.ACEILFilmCatalogSync;if(!sync)throw new Error('Синхронізація недоступна');
+    var status=await sync.sync();if(status.state!=='ok')throw new Error(status.error||'Не вдалося синхронізувати каталог');
+    var current=typeof _sbUser!=='undefined'?_sbUser:window._sbUser;if(!current||current.id!==u.id)throw new Error('Акаунт змінився');
+    var mine=await c.rpc('aceil_get_film_catalog');if(mine.error)throw mine.error;
+    current=typeof _sbUser!=='undefined'?_sbUser:window._sbUser;if(!current||current.id!==u.id)throw new Error('Акаунт змінився');
+    var replaced=await c.rpc('aceil_replace_film_catalog',{p_owner_id:button.dataset.owner,p_user_id:u.id,p_expected_rev:Number(mine.data&&mine.data.rev)||0});if(replaced.error)throw replaced.error;
+    status=await sync.sync();if(status.state!=='ok')throw new Error('Каталог замінено в хмарі. Оновіть сторінку для завантаження.');
+    toast('✓ Асортимент замінено');renderCatalogManager();
+   }catch(e){toast('Не вдалося завершити: '+String(e.message||e));button.disabled=false}
+  }});
+ }catch(e){list.textContent=/PGRST202|42883/.test(String(e.code||''))?'Доступні каталоги ще не налаштовані адміністратором.':String(e.message||e)}
+}
 function renderCatalogManager(){
  var host=gid('acp2Manager');if(!host)return;
+ if(!seriesList().some(function(s){return s.id===_activeSeries}))_activeSeries=(seriesList()[0]||{}).id||'premium';
  host.innerHTML='<div class="acp2-head"><div class="acp2-title">Керування каталогом</div><button type="button" class="acp2-x" data-back aria-label="Назад до вибору">×</button></div><button type="button" class="acp2-manual-add" id="acp2ManualAdd">+ Додати</button><details><summary>Виробники та серії</summary><div class="acp2-manager-list">'+seriesList().map(function(s){return '<div><b>'+esc(s.manufacturer||s.name)+'</b><small>'+esc(s.name)+'</small></div>'}).join('')+'</div></details><details open><summary>Кольори та фактури</summary><label class="acp2-manager-series">Серія<select id="acp2ManagerSeries">'+seriesList().map(function(s){return '<option value="'+esc(s.id)+'"'+(s.id===_activeSeries?' selected':'')+'>'+esc(s.name)+'</option>'}).join('')+'</select></label><label class="acp2-search"><input id="acp2ManagerSearch" type="search" placeholder="Знайти колір" aria-label="Знайти колір у каталозі"></label><div class="acp2-manager-list">'+catalog(_activeSeries).map(function(c){return '<div class="acp2-manager-row"><button type="button" class="acp2-manager-edit" data-edit="'+esc(c.code)+'"><span class="acp2-selected-swatch" style="background:'+esc(textureSwatch(c))+'"></span><span><b>'+esc(c.displayCode||c.code)+'</b><small>'+esc(materialCaption(c)||'Тканина')+'</small></span><span aria-hidden="true">✎</span></button><button type="button" class="acp2-manager-delete" data-delete="'+esc(c.code)+'" aria-label="Видалити '+esc(c.displayCode||c.code)+'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></button></div>'}).join('')+'</div></details><details><summary>Ширини та ціни</summary><p class="acp2-muted">Оберіть колір вище — у його картці доступні всі ширини, робочі максимуми та ціни. Ціни стандартних позицій змінюються в номенклатурі.</p></details>';
  host.querySelector('[data-back]').onclick=function(){_catalogOpen=false;showPickerPanel();renderSeries();renderPopular();renderTabs();renderGrid();renderSelection();gid('acp2Manage').focus()};
  gid('acp2ManualAdd').onclick=function(){openManualForm()};
+ var shared=document.createElement('button');shared.type='button';shared.className='acp2-manual-add';shared.textContent='Каталоги, доступні мені';shared.onclick=openSharedFilmCatalogs;gid('acp2ManualAdd').insertAdjacentElement('afterend',shared);
  gid('acp2ManagerSearch').oninput=function(){var q=norm(this.value);host.querySelectorAll('.acp2-manager-row').forEach(function(row){row.hidden=norm(row.textContent).indexOf(q)<0})};
  gid('acp2ManagerSeries').onchange=function(){_activeSeries=this.value;renderCatalogManager()};
  host.querySelectorAll('[data-delete]').forEach(function(b){b.onclick=function(){if(confirm('Видалити колір '+b.dataset.delete+' з каталогу? Уже збережені проєкти залишаться.')){manualApi().deleteColor(_activeSeries,b.dataset.delete);renderCatalogManager()}}});

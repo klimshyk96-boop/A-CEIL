@@ -149,6 +149,12 @@ function projectScope(uid,r){
     '</div>';
 }
 var adminRows=[],activityByUser={},workspaceByUser={};
+var filmSharingReady=false;
+function filmCatalogBox(uid,r){
+  return '<details class="aceil-admin-fold" data-admin-section="films">'+foldSummary('workspace','Каталог плівок',r.film_catalog_access?'Доступ надано':'Власний асортимент',r.film_catalog_access?'ready':'')+
+    '<div class="aceil-wall-copy-box"><small>Виробники, кольори, ширини та ціни. Копія незалежна; збережені проєкти залишаться.</small>'+
+    (filmSharingReady?'<div class="aceil-admin-row"><div class="aceil-admin-row-text"><b>Доступ до мого списку плівок</b><small>Користувач зможе взяти копію у виборі плівки</small></div><label class="aceil-switch"><input type="checkbox" '+(r.film_catalog_access?'checked ':'')+'onchange="A_CEIL_Admin.setFilmAccess(\''+esc(uid)+'\',this.checked,this)"><span class="aceil-slider"></span></label></div><div class="aceil-workspace-actions"><button type="button" class="copy" onclick="A_CEIL_Admin.replaceFilmCatalog(\''+esc(uid)+'\',this)">Замінити моїм асортиментом</button>'+(r.film_catalog_backup?'<button type="button" onclick="A_CEIL_Admin.restoreFilmCatalog(\''+esc(uid)+'\',this)">Відновити попередній</button>':'')+'</div>':'<small>Потрібне оновлення бази для спільних каталогів плівок.</small>')+'</div></details>';
+}
 function workspaceBox(uid,r){
   var ready=!!r.workspace_initialized,copied=!!r.workspace_copied;
   if(ready)return '<details class="aceil-admin-fold" data-admin-section="workspace">'+foldSummary('workspace','Особисті дані','✓ Ізольовано','ready')+'<div class="aceil-workspace-box ready"><div><small>'+(copied?'Незалежна копія твоєї номенклатури.':'Власний ізольований кабінет.')+'</small></div><div class="aceil-workspace-actions change"><button type="button" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',false,this,true)">Очистити</button><button type="button" class="copy" onclick="A_CEIL_Admin.initializeWorkspace(\''+esc(uid)+'\',true,this,true)">Замінити копією</button></div></div></details>';
@@ -192,6 +198,7 @@ function render(rows){
       var mail=email&&displayName.toLowerCase()!==email.toLowerCase()?'<span class="aceil-admin-mail">'+esc(email)+'</span>':'';
       return '<div class="aceil-admin-user" data-uid="'+esc(uid)+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||''))+'"><button type="button" class="aceil-admin-user-top" aria-expanded="false" onclick="A_CEIL_Admin.toggleCard(this)"><span class="aceil-user-avatar">'+esc(initials(r))+'</span><span class="aceil-user-ident"><span class="aceil-admin-name">'+esc(displayName)+'</span>'+mail+'</span>'+badge+'<span class="aceil-user-chevron">⌄</span></button>'+quick+'<div class="aceil-admin-controls">'+(pending?'<div class="aceil-approval-box"><div><b>Нова реєстрація</b><small>Обери початкові дані користувача.</small></div><div class="aceil-approval-actions"><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,false)" type="button" class="approve empty">✓ Порожній</button><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,true)" type="button" class="approve">✓ Дати копію</button><button onclick="A_CEIL_Admin.reject(\''+esc(uid)+'\',this)" type="button" class="reject">× Відхилити</button></div></div>':workspaceBox(uid,r))+
         (!pending?wallCatalogBox(uid,r):'')+
+        (!pending?filmCatalogBox(uid,r):'')+
         toggle(uid,"projects_access","Доступ до моїх проєктів","Окремий спільний доступ до проєктів головного власника",!!r.projects_access,false)+
         (r.projects_access?projectScope(uid,r):'')+
         toggle(uid,"projects_edit","Редагування проєктів","Може змінювати доступні проєкти",!!r.projects_edit,!r.projects_access)+
@@ -243,9 +250,11 @@ async function load(){
   if(!hasCards)content('<div class="aceil-admin-note">Завантажуємо користувачів…</div>');
   try{
     var c=sb();if(!c)throw new Error("Supabase client недоступний.");
-    var results=await Promise.all([c.rpc("admin_list_users"),c.rpc("admin_list_workspace_status")]);
+    var results=await Promise.all([c.rpc("admin_list_users"),c.rpc("admin_list_workspace_status"),c.rpc("admin_film_catalog_status")]);
     var r=results[0],wr=results[1];if(r.error)throw r.error;if(wr.error)throw wr.error;
     workspaceByUser={};(Array.isArray(wr.data)?wr.data:[]).forEach(function(x){workspaceByUser[String(x.user_id||'')]=x});
+    filmSharingReady=!results[2].error;
+    if(filmSharingReady)(Array.isArray(results[2].data)?results[2].data:[]).forEach(function(x){var key=String(x.user_id||'');workspaceByUser[key]=Object.assign({},workspaceByUser[key]||{},x)});
     var rows=(Array.isArray(r.data)?r.data:[]).map(function(x){return Object.assign({},x,workspaceByUser[String(x.user_id||x.id||'')]||{})});
     render(rows);
     await loadActivityData();
@@ -338,6 +347,43 @@ async function copyWallCatalog(uid,mode,button){
     await load();return true;
   }catch(e){if(button)button.disabled=false;toast('Не вдалося скопіювати заготовки: '+String(e&&e.message?e.message:e));return false}
 }
+async function setFilmAccess(uid,value,input){
+  if(input)input.disabled=true;
+  try{
+    var c=sb(),u=currentUser();if(!c||!u)throw new Error('Увійдіть повторно');
+    if(value){var sync=window.ACEILFilmCatalogSync;if(!sync)throw new Error('Синхронізація недоступна');var status=await sync.sync();if(status.state!=='ok')throw new Error('Не вдалося синхронізувати твій каталог');if(currentUser()?.id!==u.id||sb()!==c)throw new Error('Акаунт змінився');}
+    var r=await c.rpc('admin_set_film_catalog_access',{p_user_id:uid,p_value:!!value});
+    if(r.error)throw r.error;if(r.data!==true)throw new Error('Доступ не підтверджено');
+    if(currentUser()?.id!==u.id)return;
+    toast(value?'✓ Доступ до каталогу надано':'✓ Доступ до каталогу забрано');await load();
+  }catch(e){if(input){input.checked=!value;input.disabled=false}toast('Не вдалося змінити доступ: '+String(e.message||e))}
+}
+async function replaceFilmCatalog(uid,button){
+  if(!confirm('Замінити весь асортимент плівок користувача твоїм?\nВиробники, кольори, ширини та ціни будуть замінені. Попередній каталог можна відновити.'))return;
+  if(button)button.disabled=true;
+  try{
+    var c=sb(),u=currentUser(),row=adminRows.find(function(r){return String(r.user_id||r.id)===String(uid)});
+    if(!c||!u||!row)throw new Error('Оновіть список користувачів');
+    var sync=window.ACEILFilmCatalogSync;if(!sync)throw new Error('Синхронізація каталогу недоступна');
+    var status=await sync.sync();if(status.state!=='ok')throw new Error('Спочатку синхронізуйте свій каталог: '+(status.error||status.state));
+    if(currentUser()?.id!==u.id||sb()!==c)throw new Error('Акаунт змінився');
+    var r=await c.rpc('aceil_replace_film_catalog',{p_owner_id:u.id,p_user_id:uid,p_expected_rev:Number(row.film_catalog_rev)||0});
+    if(r.error)throw r.error;
+    toast('✓ Асортимент замінено. Користувач отримає його при синхронізації.');await load();
+  }catch(e){toast(e.code==='40001'?'Каталог користувача змінився. Оновіть список і повторіть.':'Не вдалося замінити каталог: '+String(e.message||e));await load()}
+  finally{if(button)button.disabled=false}
+}
+async function restoreFilmCatalog(uid,button){
+  if(!confirm('Відновити попередній каталог плівок цього користувача? Поточний асортимент буде замінено.'))return;
+  if(button)button.disabled=true;
+  try{
+    var row=adminRows.find(function(r){return String(r.user_id||r.id)===String(uid)}),c=sb();
+    if(!row||!c)throw new Error('Оновіть список користувачів');
+    var r=await c.rpc('aceil_restore_film_catalog',{p_user_id:uid,p_expected_rev:Number(row.film_catalog_rev)||0});if(r.error)throw r.error;
+    toast('✓ Попередній каталог відновлено');await load();
+  }catch(e){toast('Не вдалося відновити: '+String(e.message||e));await load()}
+  finally{if(button)button.disabled=false}
+}
 async function setScope(uid,scope,button){
   if(button)button.disabled=true;
   try{var c=sb();var r=await c.rpc("admin_set_projects_scope",{p_user_id:uid,p_scope:scope});if(r.error)throw r.error;toast(scope==='all'?"✓ Доступ до всіх проєктів":"✓ Доступ до вибраних проєктів");await load()}
@@ -378,7 +424,7 @@ function setDebugCount(value){var count=Math.max(0,Number(value)||0),label=count
 function open(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.add("open");m.setAttribute("aria-hidden","false");load()}
 function close(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 
-window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab,setDebugCount:setDebugCount};
+window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,setFilmAccess:setFilmAccess,replaceFilmCatalog:replaceFilmCatalog,restoreFilmCatalog:restoreFilmCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab,setDebugCount:setDebugCount};
 
 function boot(){
   removeLegacyMenuItem();

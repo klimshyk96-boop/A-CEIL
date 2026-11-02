@@ -142,7 +142,11 @@ function mergePricing(local,remote,dead){
 
 function mergeDocs(local,remote){
   var l=local||{},r=remote||{};
+  // A deliberate replacement is authoritative; old devices must not resurrect their assortment.
+  if(r.custom&&r.custom.catalogReset&&r.custom.catalogReset!==(l.custom&&l.custom.catalogReset))return clone(r);
   var custom=mergeCustom(l.custom,r.custom);
+  var reset=r.custom&&r.custom.catalogReset||l.custom&&l.custom.catalogReset;
+  if(reset)custom.catalogReset=reset;
   return{v:1,custom:custom,pricing:mergePricing(l.pricing,r.pricing,custom.deleted)};
 }
 
@@ -234,7 +238,15 @@ async function runOnce(){
   }
   var merged=remote?mergeDocs(base,remote):base;
   var changedLocal=comparable(merged)!==comparable(readLocalDoc());
-  if(changedLocal){applyDoc(merged);merged=readLocalDoc();healLive();}
+  if(changedLocal){
+    if(remote&&remote.custom&&remote.custom.catalogReset!==(base.custom&&base.custom.catalogReset)){
+      // Retain local-only work too, before installing a server replacement.
+      try{localStorage.setItem("aceil_film_before_replace_"+u.id,JSON.stringify({at:Date.now(),doc:base}));}
+      catch(_){throw new Error("Не вдалося зберегти попередній каталог. Заміна не застосована.");}
+    }
+    if(!applyDoc(merged))throw new Error("Не вдалося зберегти каталог на пристрої.");
+    merged=readLocalDoc();healLive();
+  }
   var needPush=!remote||dirty||comparable(merged)!==comparable(remote);
   var pushed=false;
   if(needPush){
