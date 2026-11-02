@@ -213,6 +213,11 @@
   }
   function setWarning(result){
     var el=ensureWarning();if(!el)return;
+    var confidence=window["A·CEILMeasureConfidence"],confirmed=confidence&&confidence.isCurrentConfirmed&&confidence.isCurrentConfirmed();
+    if(confirmed&&result&&result.warning){
+      el.textContent="✓";el.title="Кривизна підтверджена замірником";el.setAttribute("aria-label",el.title);el.style.display="block";el.style.background="#d1fae5";el.style.color="#047857";el.style.borderColor="#fff";return;
+    }
+    el.textContent="!";
     if(!result||!result.warning){el.style.display="none";el.removeAttribute("title");el.removeAttribute("aria-label");return}
     el._aceilWarningResult=result;
     el.title=result.warning;el.setAttribute("aria-label",result.warning);el.style.display="block";
@@ -222,6 +227,7 @@
   }
   function notifyWarning(result){
     if(!result||!result.warning)return;
+    var confidence=window["A·CEILMeasureConfidence"];if(confidence&&confidence.isCurrentConfirmed&&confidence.isCurrentConfirmed())return;
     try{if(typeof showToast==="function")showToast(result.warning,result.invalid?5600:4800)}catch(_){}
   }
   function finishUi(){

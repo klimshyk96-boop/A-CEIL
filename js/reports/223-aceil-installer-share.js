@@ -32,7 +32,8 @@
       diagonals:typeof diagonals!=="undefined"?diagonals:[],circleMode:typeof circleMode!=="undefined"&&circleMode,circleDiamCm:typeof circleDiamCm!=="undefined"?circleDiamCm:0,
       diagonalOverrides:typeof diagonalOverrides!=="undefined"?diagonalOverrides:{},notes:typeof notes!=="undefined"?notes:[],elemItems:typeof elemItems!=="undefined"?elemItems:[],elemGroups:typeof elemGroups!=="undefined"?elemGroups:[],
       lightMarks:typeof lightMarks!=="undefined"?lightMarks:[],wallMarks:typeof wallMarks!=="undefined"?wallMarks:[],linearElements:typeof linearElements!=="undefined"?linearElements:[],wallTypes:typeof wallTypes!=="undefined"?wallTypes:[],arcPoints:typeof arcPoints!=="undefined"?arcPoints:[],
-      ceilingCornices:typeof ceilingCornices!=="undefined"?ceilingCornices:[]
+      ceilingCornices:typeof ceilingCornices!=="undefined"?ceilingCornices:[],
+      geometryConfirmation:window.A·CEILMeasureConfidence&&window.A·CEILMeasureConfidence.exportConfirmation?window.A·CEILMeasureConfidence.exportConfirmation():null
     });
   }
   function currentRoom(){
@@ -78,12 +79,27 @@
       for(var i=0;i<object.rooms.length;i++){
         var room=object.rooms[i];if(!hasGeometry(parseState(room.state)))return t("noGeometry");
         if(typeof window._analyzeRoomState==="function"){
-          var analysis=window._analyzeRoomState(room),kind=analysis&&analysis.verdict&&analysis.verdict.type;
-          if(kind==="proven"||kind==="conflict")return t("badMeasure")+": "+(room.name||"Кімната");
+          var state=parseState(room.state),analysis=window._analyzeRoomState(room),kind=analysis&&analysis.verdict&&analysis.verdict.type;
+          var confirmed=window.A·CEILMeasureConfidence&&window.A·CEILMeasureConfidence.isStateConfirmed&&window.A·CEILMeasureConfidence.isStateConfirmed(state);
+          if((kind==="proven"||kind==="conflict")&&!confirmed)return t("badMeasure")+": "+(room.name||"Кімната");
         }
       }
     }catch(_){return t("failed")}
     return"";
+  }
+  function verifiedRooms(object){
+    return (object&&object.rooms||[]).filter(function(room){var state=parseState(room.state);return window.A·CEILMeasureConfidence&&window.A·CEILMeasureConfidence.isStateConfirmed&&window.A·CEILMeasureConfidence.isStateConfirmed(state);});
+  }
+  function stampVerified(canvas,object){
+    var rooms=verifiedRooms(object);if(!rooms.length||!canvas||!canvas.getContext)return canvas;
+    try{
+      var logicalWidth=Number(canvas.dataset&&canvas.dataset.logicalWidth)||canvas.width,logicalHeight=Number(canvas.dataset&&canvas.dataset.logicalHeight)||canvas.height,scale=canvas.width/logicalWidth;
+      var output=document.createElement("canvas"),extra=38+rooms.length*24;output.width=canvas.width;output.height=canvas.height+Math.ceil(extra*scale);output.dataset.logicalWidth=logicalWidth;output.dataset.logicalHeight=logicalHeight+extra;
+      var ctx=output.getContext("2d");ctx.drawImage(canvas,0,0);ctx.scale(scale,scale);ctx.fillStyle="#ecfdf5";ctx.fillRect(0,logicalHeight,logicalWidth,extra);ctx.fillStyle="#166534";ctx.font="bold 16px Arial";ctx.textAlign="left";
+      ctx.fillText("✓ Кривизна стін підтверджена замірником",24,logicalHeight+25,logicalWidth-48);ctx.font="14px Arial";
+      rooms.forEach(function(room,index){ctx.fillText(String(room.name||"Кімната"),24,logicalHeight+49+index*24,logicalWidth-48)});
+      return output;
+    }catch(_){window.__diagSilent&&window.__diagSilent(_)}return canvas;
   }
   function canvasBlob(canvas){return new Promise(function(resolve,reject){try{canvas.toBlob(function(blob){blob?resolve(blob):reject(new Error(t("failed")))} ,"image/png")}catch(error){reject(error)}})}
   function download(blob,fileName){var url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=fileName;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1800)}
@@ -109,7 +125,7 @@
       hadSettings=localStorage.getItem("reportSettings")!==null;oldSettings=localStorage.getItem("reportSettings");localStorage.setItem("reportSettings",JSON.stringify(settings));window.reportSettings=settings;
       var capture=function(canvas,fileName){captured={canvas:canvas,fileName:fileName}};window._modernOpenPreview=capture;try{_modernOpenPreview=capture}catch(_){window.__diagSilent&&window.__diagSilent(_)}
       if(typeof window.generateModernObjectReport!=="function")throw new Error(t("failed"));
-      await window.generateModernObjectReport(clean,settings);if(!captured||!captured.canvas)throw new Error(t("failed"));
+      await window.generateModernObjectReport(clean,settings);if(!captured||!captured.canvas)throw new Error(t("failed"));captured.canvas=stampVerified(captured.canvas,object);
       var fileName="A-CEIL_blank_vykonavtsiu_"+safeName(clean.name)+".png",title=t("blank")+" — "+String(clean.name||"A·CEIL"),blob=await canvasBlob(captured.canvas),shared=false;
       closeChooser(false);
       try{shared=await nativeShare(blob,fileName,title)}catch(error){if(error&&error.name==="AbortError")return;if(!error||error.name!=="NotAllowedError")throw error}
@@ -143,6 +159,6 @@
   }
   function boot(){ensureUi();installMenu();translate()}
   document.addEventListener("A·CEIL-language-changed",translate);document.addEventListener("keydown",function(event){if(event.key==="Escape"&&!busy)closeChooser(true)});
-  window.A_CEIL_OpenInstallerShare=openChooser;window.A_CEIL_InstallerShare={open:openChooser,build:buildAndShare,preset:preset,cleanObject:cleanObject,reportObject:reportObject};
+  window.A_CEIL_OpenInstallerShare=openChooser;window.A_CEIL_InstallerShare={open:openChooser,build:buildAndShare,preset:preset,cleanObject:cleanObject,reportObject:reportObject,measurementProblem:measurementProblem,stampVerified:stampVerified};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 })();

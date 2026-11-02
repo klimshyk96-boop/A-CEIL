@@ -49,6 +49,7 @@
   function gateCheck(proceedCallback){
     window._rmReportHasUnresolvedIssue=false;
     var r=analyzeNow();
+    if(window.A·CEILMeasureConfidence&&window.A·CEILMeasureConfidence.isCurrentConfirmed&&window.A·CEILMeasureConfidence.isCurrentConfirmed()) return proceedCallback();
     if(!r||!r.verdict||(r.verdict.type!=="proven"&&r.verdict.type!=="conflict")) return proceedCallback();
     showGate(r.verdict,proceedCallback);
   }
@@ -59,7 +60,9 @@
       (obj&&obj.rooms||[]).forEach(function(room){
         if(typeof window._analyzeRoomState!=="function") return;
         var r=window._analyzeRoomState(room);
-        if(r&&r.verdict&&(r.verdict.type==="proven"||r.verdict.type==="conflict")){
+        var state={};try{state=typeof room.state==="string"?JSON.parse(room.state||"{}"):room.state||{};}catch(_){state={};}
+        var confirmed=window.A·CEILMeasureConfidence&&window.A·CEILMeasureConfidence.isStateConfirmed&&window.A·CEILMeasureConfidence.isStateConfirmed(state);
+        if(!confirmed&&r&&r.verdict&&(r.verdict.type==="proven"||r.verdict.type==="conflict")){
           problems.push({name:room&&room.name||"Кімната",verdict:r.verdict});
         }
       });
