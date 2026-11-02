@@ -128,6 +128,7 @@ const PENDING_KEY = "ceiling_pendingSync";
       if (!drawn) { const empty = new Error("Порожній об'єкт не замінює хмарний проєкт"); empty.aceilEmptyObject = true; throw empty; }
       state = {schemaVersion: state.schemaVersion || 3, projectType: "apartment", multiRoom: true, rooms};
     } else if(mode&&typeof mode.cleanSingleState==='function') state=mode.cleanSingleState(local);
+    if(local.archivedAt)state.archivedAt=local.archivedAt;else delete state.archivedAt;
     const value = field => local[field] == null ? fallback[field] || "" : local[field];
     return {user_id: uid, name: value("name"), addr: value("addr"), phone: value("phone"), comment: value("comment"),
       area: value("area"), per: value("per"), in_corners: value("inC"), out_corners: value("outC"), thumb: local.thumb || "", state};
