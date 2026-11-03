@@ -262,7 +262,8 @@
   "getProjects": [
    "js/projects/094-aceil-project-schema-migrations.js",
    "js/projects/project-repository.js",
-   "js/reports/184-aceil-estimate-variants-ui.js"
+   "js/reports/184-aceil-estimate-variants-ui.js",
+   "js/projects/230-aceil-project-archive.js"
   ],
   "A·CEILMergeCloudProjects": [
    "js/projects/094-aceil-project-schema-migrations.js",
@@ -359,6 +360,10 @@
   "A_CEIL_OpenManagerReport": [
    "js/reports/162-aceil-manager-report.js",
    "js/reports/184-aceil-estimate-variants-ui.js"
+  ],
+  "renderProjects": [
+   "js/projects/210-aceil-project-crm.js",
+   "js/projects/230-aceil-project-archive.js"
   ]
  },
  "bigFiles": {
