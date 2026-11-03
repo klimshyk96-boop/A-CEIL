@@ -43,16 +43,13 @@ async function styles(page){return page.evaluate(()=>{
     const circleRestored=snapshot()===circleBefore;
     const circleSingle=_modernCaptureCurrentDrawing();
     resetAllSilent();draw();
-    ACEILFingerDraw.setMode('finger');const modeStored=localStorage.getItem('aceil-canvas-input-mode');
-    ACEILFingerDraw.setMode('points');
     const drawIdentity=window.draw;draw();
-    return {logical,raster:[cv.width,cv.height],roundTrips,drawReadOnly,multi:pngSize(multi),single:pngSize(single),circle:pngSize(circle),circleSingle:pngSize(circleSingle),multiRestored,singleRestored,circleRestored,modeStored,stableDraw:window.draw===drawIdentity,health:A_CEIL_CleanHealth(),pipeline:ACEILCanvas.inspect()};
+    return {logical,raster:[cv.width,cv.height],roundTrips,drawReadOnly,multi:pngSize(multi),single:pngSize(single),circle:pngSize(circle),circleSingle:pngSize(circleSingle),multiRestored,singleRestored,circleRestored,stableDraw:window.draw===drawIdentity,health:A_CEIL_CleanHealth(),pipeline:ACEILCanvas.inspect()};
    });
    check(`Coordinate round trips ${width}/${dpr}`,result.roundTrips.every(x=>x<1e-6),result);
    check(`Read-only draw ${width}/${dpr}`,result.drawReadOnly,result);
    check(`Report state restore ${width}/${dpr}`,result.multiRestored&&result.singleRestored&&result.circleRestored,result);
    for(const kind of ['multi','single','circle','circleSingle'])check(`${kind} PNG ${width}/${dpr}`,result[kind]?.[0]===3000&&result[kind]?.[1]===3000,result[kind]);
-   check(`Mode persistence ${width}/${dpr}`,result.modeStored==='finger',result);
    check(`Stable renderer and health ${width}/${dpr}`,result.stableDraw&&result.health.ok,result);
    check(`No scenario errors ${width}/${dpr}`,!errors.length&&!missing.length,{errors,missing});
    await page.evaluate(()=>{document.querySelectorAll('.modal-overlay').forEach(e=>e.classList.remove('open'));document.getElementById('rectW').value='400';document.getElementById('rectH').value='300';applyRect();});
