@@ -93,6 +93,7 @@ node --check calculator/wizard.js || exit 1
 node --check calculator/palette.js || exit 1
 node tests/pipeline-contract.test.cjs || exit 1
 node tests/render-pipeline.test.cjs || exit 1
+node tests/lang-ru.test.cjs || exit 1
 node tests/stability-regression.test.cjs || exit 1
 node scripts/check-architecture.cjs || exit 1
 node tests/global-surface.test.cjs || exit 1

@@ -1329,3 +1329,7 @@ body.rp-home-pro #A·CEILToolPanel #lightBadge,body.rp-home-pro #A·CEILToolPane
 #elementsModal .grp-name{display:flex!important;align-items:center;gap:6px;}
 #elementsModal .nom-group-folder{width:18px;height:18px;flex:0 0 18px;color:#3159c9;}
 #elementsModal .nom-group-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* Кнопка мови в кокпіті: третя вузька колонка поруч із «Зберегти» і «Проєкти» */
+body.rp-home-pro #rpCockpit .rpc-tools:has(#rmAppLangBtn){grid-template-columns:minmax(0,1.18fr) minmax(0,.82fr) 44px!important}
+body.rp-home-pro #rpCockpit .rpc-tools #rmAppLangBtn{width:44px!important;min-width:0!important;padding:0!important;font-size:12px!important;font-weight:800!important;justify-content:center!important}
