@@ -10,7 +10,7 @@ var observer=null;
 var current="uk";
 try{var saved=localStorage.getItem(STORAGE_KEY);if(saved&&SUPPORTED.indexOf(saved)>-1)current=saved;}catch(e){window.__diagSilent&&window.__diagSilent(e)}
 
-function norm(s){return String(s).replace(/\s+/g," ").trim();}
+function norm(s){return String(s).replace(/[’ʼ]/g,"'").replace(/…/g,"...").replace(/\s+/g," ").trim();}
 
 /* Переклад одного рядка: точний збіг → патерни → без змін */
 function translateString(s,lang){
@@ -28,6 +28,11 @@ function translateString(s,lang){
       p[0].lastIndex=0;
       if(p[0].test(key)){p[0].lastIndex=0;out=key.replace(p[0],p[1]);break;}
     }
+  }
+  if(out==null&&d.separators&&key.indexOf(" · ")>=0){
+    var parts=key.split(" · ");
+    var joined=parts.map(function(part){return translateString(part,lang);}).join(" · ");
+    if(joined!==key)out=joined;
   }
   if(out==null)return s;
   var lead=/^\s*/.exec(s)[0],tail=/\s*$/.exec(s)[0];
@@ -118,6 +123,15 @@ function translateTree(root){
 
 function translatePage(root){translateTree(root||document.body||document.documentElement);}
 
+/* Standalone report documents have no application MutationObserver. */
+function translateHTML(html){
+  if(current==="uk"||!window.DOMParser)return html;
+  var report=new DOMParser().parseFromString(html,"text/html");
+  report.documentElement.lang=current;
+  translateTree(report.documentElement);
+  return "<!doctype html>"+report.documentElement.outerHTML;
+}
+
 /* ---- MutationObserver для динамічного контенту (toast, меню, модалки) ---- */
 var pending=[],scheduled=false;
 function schedule(){
@@ -139,11 +153,13 @@ function startObserver(){
         for(var j=0;j<m.addedNodes.length;j++)pending.push(m.addedNodes[j]);
       }else if(m.type==="characterData"){
         pending.push(m.target);
+      }else if(m.type==="attributes"){
+        pending.push(m.target);
       }
     }
     if(pending.length)schedule();
   });
-  observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+  observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:ATTRS});
 }
 
 /* ---- Патч canvas: переклад текстів у звітах без зміни коду звітів ---- */
@@ -183,7 +199,10 @@ function startObserver(){
 /* ---- API ---- */
 function register(lang,dict){
   dict=dict||{};
-  var strings=dict.strings||{};
+  var strings={};
+  Object.keys(dict.strings||{}).forEach(function(key){
+    strings[norm(key)]=String(dict.strings[key]).trim();
+  });
   var patterns=[];
   (dict.patterns||[]).forEach(function(p){
     try{
@@ -191,7 +210,7 @@ function register(lang,dict){
       patterns.push([re,p[1]]);
     }catch(e){window.__diagSilent&&window.__diagSilent(e)}
   });
-  dicts[lang]={strings:strings,patterns:patterns};
+  dicts[lang]={strings:strings,patterns:patterns,separators:dict.separators===true};
   if(SUPPORTED.indexOf(lang)<0)SUPPORTED.push(lang);
   if(lang===current&&document.body)translatePage();
 }
@@ -221,6 +240,7 @@ var api={
   t:t,
   translate:translateString,
   translatePage:translatePage,
+  translateHTML:translateHTML,
   onChange:onChange,
   availableLanguages:function(){return SUPPORTED.slice();}
 };

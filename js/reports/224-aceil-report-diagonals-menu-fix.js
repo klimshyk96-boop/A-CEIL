@@ -4,13 +4,14 @@
   window.__A_CEIL_REPORT_DIAGONALS_MENU_V1=true;
 
   function language(){
-    try{return window["A·CEIL"]&&window["A·CEIL"].I18n&&window["A·CEIL"].I18n.currentLanguage||"uk"}catch(_){return"uk"}
+    try{return window["A·CEIL"]&&window["A·CEIL"].i18n&&window["A·CEIL"].i18n.getLanguage()||"uk"}catch(_){return"uk"}
   }
   function labels(){
     var all={
       uk:{title:"Які діагоналі показати",manual:"Тільки виміряні",all:"Усі можливі"},
       en:{title:"Which diagonals to show",manual:"Measured only",all:"All possible"},
-      pl:{title:"Które przekątne pokazać",manual:"Tylko zmierzone",all:"Wszystkie możliwe"}
+      pl:{title:"Które przekątne pokazać",manual:"Tylko zmierzone",all:"Wszystkie możliwe"},
+      ru:{title:"Какие диагонали показать",manual:"Только измеренные",all:"Все возможные"}
     };
     return all[language()]||all.uk;
   }

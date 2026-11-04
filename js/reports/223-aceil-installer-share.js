@@ -11,9 +11,9 @@
   };
 
   function language(){
-    try{return window["A·CEIL"]&&window["A·CEIL"].I18n&&window["A·CEIL"].I18n.currentLanguage||"uk"}catch(_){return"uk"}
+    try{return window["A·CEIL"]&&window["A·CEIL"].i18n&&window["A·CEIL"].i18n.getLanguage()||"uk"}catch(_){return"uk"}
   }
-  function t(key){var set=copy[language()]||copy.uk;return set[key]||copy.uk[key]||key}
+  function t(key){var lang=language(),set=copy[lang]||copy.uk,value=set[key]||copy.uk[key]||key;return lang==="ru"?window["A·CEIL"].i18n.translate(value,lang):value}
   function clone(value){try{return JSON.parse(JSON.stringify(value))}catch(_){return value}}
   function toast(message,duration){try{if(typeof showToast==="function")showToast(message,duration||3200)}catch(_){window.__diagSilent&&window.__diagSilent(_)}}
   function safeName(value){

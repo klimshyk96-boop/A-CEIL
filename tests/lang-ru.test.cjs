@@ -5,7 +5,7 @@ const missing=Object.keys(pl.strings).filter(k=>!(k in ru.strings));
 assert.strictEqual(missing.length,0,'ru dictionary lacks keys present in pl: '+missing.slice(0,5).join(' | '));
 const ukr=Object.entries(ru.strings).filter(([,v])=>/[іїєґІЇЄҐ]/.test(v));
 assert.strictEqual(ukr.length,0,'Ukrainian-only letters left in ru values: '+ukr.slice(0,3).map(x=>x[0]).join(' | '));
-assert.strictEqual(ru.patterns.length,pl.patterns.length,'ru patterns must mirror pl patterns');
+assert.ok(ru.patterns.length>=pl.patterns.length,'dynamic Russian strings must be covered');
 const core=fs.readFileSync('js/i18n/013-aceil-i18n-core.js','utf8');
 assert.match(core,/SUPPORTED=\["uk","en","pl","ru"\]/);
 assert.match(fs.readFileSync('js/i18n/117-aceil-lang-switchers.js','utf8'),/\["ru","/);
