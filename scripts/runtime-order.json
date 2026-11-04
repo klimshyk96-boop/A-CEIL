@@ -12,6 +12,7 @@
   "js/i18n/014-aceil-lang-uk.js",
   "js/i18n/015-aceil-lang-en.js",
   "js/i18n/016-aceil-lang-pl.js",
+  "js/i18n/017-aceil-lang-ru.js",
   "js/core/018-aceil-diag-plus.js",
   "js/canvas/viewport.js",
   "js/canvas/contour-state.js",

@@ -2,7 +2,7 @@
    Уся логіка перекладу — в A·CEIL.i18n; тут лише UI перемикачів. */
 (function(){
 "use strict";
-var LANGS=[["uk","🇺🇦 Українська"],["en","🇬🇧 English"],["pl","🇵🇱 Polski"]];
+var LANGS=[["uk","🇺🇦 Українська"],["en","🇬🇧 English"],["pl","🇵🇱 Polski"],["ru","🌐 Русский"]];
 
 function i18n(){return window.A·CEIL&&window.A·CEIL.i18n;}
 

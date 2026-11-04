@@ -3,7 +3,7 @@
 "use strict";
 if(window.A·CEIL&&window.A·CEIL.i18n)return;
 var STORAGE_KEY="A·CEIL_language";
-var SUPPORTED=["uk","en","pl"];
+var SUPPORTED=["uk","en","pl","ru"];
 var dicts={};
 var listeners=[];
 var observer=null;
