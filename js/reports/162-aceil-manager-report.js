@@ -161,6 +161,11 @@ function block(title,map,totalLabel){
     (rows.length?'<div class="md-card-total"><span>Разом</span><b>'+fmt(total,2)+'</b></div>':'')+'</section>';
 }
 function makeHtml(obj,data){
+  var html=makeHtmlSource(obj,data),api=window.A·CEIL&&window.A·CEIL.i18n;
+  if(api)html=html.replace(/"(✓ Хмарне посилання|✓ Скопійовано|Копіювати|Менеджерський звіт A·CEIL)"/g,function(_,label){return JSON.stringify(api.t(label));});
+  return api&&api.translateHTML?api.translateHTML(html):html;
+}
+function makeHtmlSource(obj,data){
   var a=data.total,rooms=data.rooms,returnUrl=appReturnUrl();
   var modeLabel=rooms.length>1?"Багатокімнатний":"Однокімнатний",roomsTitle=rooms.length>1?"Розбивка по кімнатах":"Кімната";
   var fin=[
@@ -199,15 +204,16 @@ window.A_CEIL_PublishManagerReport=async function(){
   return window.A_CEIL_ReportLinks.publishPayload(payload,{projectId:obj._dbId||obj.id});
 };
 function bindLocalReport(win,onBack){
+  function tr(label){var api=window.A·CEIL&&window.A·CEIL.i18n;return api?api.t(label):label;}
   var doc=win.document,back=doc.getElementById("mdBack"),cloud=doc.getElementById("mdCloud"),share=doc.getElementById("mdShare"),box=doc.getElementById("mdCloudBox"),inp=doc.getElementById("mdCloudUrl"),copy=doc.getElementById("mdCopy");
   if(!back||!cloud||!share||!box||!inp||!copy)throw new Error("Не вдалося підключити кнопки звіту");
-  function showUrl(url){inp.value=url;box.classList.add("show");cloud.textContent="✓ Хмарне посилання";return url}
+  function showUrl(url){inp.value=url;box.classList.add("show");cloud.textContent=tr("✓ Хмарне посилання");return url}
   async function getCloud(){
     if(inp.value)return inp.value;
-    cloud.disabled=true;cloud.textContent="⏳ Завантаження…";
+    cloud.disabled=true;cloud.textContent=tr("⏳ Завантаження…");
     try{return showUrl(await window.A_CEIL_PublishManagerReport())}
     catch(e){
-      cloud.textContent="⚠️ "+(e&&e.message?e.message:"Помилка");
+      cloud.textContent="⚠️ "+tr(e&&e.message?e.message:"Помилка");
       try{var log=window.A·CEIL&&window.A·CEIL.DebugLog;if(log&&log.error)log.error("manager_report_cloud_failed",{message:String(e&&e.message||e),name:String(e&&e.name||"")})}catch(_){window.__diagSilent&&window.__diagSilent(_)}
       throw e;
     }
@@ -222,27 +228,27 @@ function bindLocalReport(win,onBack){
   cloud.addEventListener("click",function(){getCloud().catch(function(){})});
   copy.addEventListener("click",async function(){
     if(!inp.value)return;
-    try{await navigator.clipboard.writeText(inp.value);copy.textContent="✓ Скопійовано";setTimeout(function(){copy.textContent="Копіювати"},1500)}
+    try{await navigator.clipboard.writeText(inp.value);copy.textContent=tr("✓ Скопійовано");setTimeout(function(){copy.textContent=tr("Копіювати")},1500)}
     catch(_){try{inp.focus();inp.select();doc.execCommand("copy")}catch(__){window.__diagSilent&&window.__diagSilent(__)}}
   });
   function shareReadyUrl(url){
     var nav=win.navigator||navigator;
     if(nav&&typeof nav.share==="function"){
-      nav.share({title:"Менеджерський звіт A·CEIL",text:"Менеджерський звіт A·CEIL",url:url}).catch(function(e){
+      nav.share({title:tr("Менеджерський звіт A·CEIL"),text:tr("Менеджерський звіт A·CEIL"),url:url}).catch(function(e){
         if(e&&e.name==="AbortError")return;
         try{var log=window.A·CEIL&&window.A·CEIL.DebugLog;if(log&&log.warn)log.warn("manager_report_native_share_failed",{message:String(e&&e.message||e)})}catch(_){window.__diagSilent&&window.__diagSilent(_)}
       });
       return;
     }
-    navigator.clipboard.writeText(url).then(function(){share.textContent="✓ Посилання скопійовано";setTimeout(function(){share.textContent="↗ Поділитися"},1800)}).catch(function(){try{inp.focus();inp.select();doc.execCommand("copy")}catch(_){window.__diagSilent&&window.__diagSilent(_)}});
+    navigator.clipboard.writeText(url).then(function(){share.textContent=tr("✓ Посилання скопійовано");setTimeout(function(){share.textContent=tr("↗ Поділитися")},1800)}).catch(function(){try{inp.focus();inp.select();doc.execCommand("copy")}catch(_){window.__diagSilent&&window.__diagSilent(_)}});
   }
   share.addEventListener("click",function(){
     /* iOS Safari only opens the native share sheet during the original tap.
        If the URL already exists, share synchronously. Otherwise prepare it and
        ask for one deliberate second tap instead of silently acting like Cloud. */
     if(inp.value){shareReadyUrl(inp.value);return;}
-    share.disabled=true;share.textContent="⏳ Готуємо посилання…";
-    getCloud().then(function(){share.disabled=false;share.textContent="↗ Натисніть ще раз"}).catch(function(){share.disabled=false;share.textContent="↗ Поділитися"});
+    share.disabled=true;share.textContent=tr("⏳ Готуємо посилання…");
+    getCloud().then(function(){share.disabled=false;share.textContent=tr("↗ Натисніть ще раз")}).catch(function(){share.disabled=false;share.textContent=tr("↗ Поділитися")});
   });
 }
 function isInstalledApp(){
