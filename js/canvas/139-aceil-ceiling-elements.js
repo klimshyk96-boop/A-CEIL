@@ -114,6 +114,8 @@ function render(){
     +'</div>'
     +'<button type="button" class="rm-ce-new" onclick="rmOpenNewCeilingElementV318()">＋ Новий елемент</button>';
   var lightName=card.querySelector("[data-flp] b");if(lightName)lightName.textContent="Лінійне освітлення";
+  var api=window.A·CEIL&&window.A·CEIL.i18n;
+  if(api)api.translatePage(card);
 }
 window.rmCeToggleEditV318=function(){editMode=!editMode;render()};
 window.rmRenderCeilingElementsV318=render;
@@ -281,7 +283,8 @@ if(host){
   try{new MutationObserver(function(){
     var card=host.querySelector(".modal");
     if(!card)return;
-    if(!/Елементи стелі/.test(card.textContent||""))render();
+    // Translation changes text, not ownership of this layout.
+    if(!card.querySelector(".rm-ce-grid"))render();
   }).observe(host,{childList:true,subtree:true})}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 }
 setTimeout(render,120);
