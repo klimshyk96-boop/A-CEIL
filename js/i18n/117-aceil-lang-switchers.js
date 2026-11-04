@@ -120,6 +120,14 @@ function init(){
     ensureAppSwitcher();
     if(document.getElementById("rmAppLangBtn")||++tries>20)clearInterval(tm);
   },500);
+  /* Інші модулі перемальовують панель кокпіта (innerHTML) і стирають кнопку мови —
+     повертаємо її щоразу, коли вона зникає. ensureAppSwitcher ідемпотентний. */
+  var cockpit=document.getElementById("rpCockpit"),queued=false;
+  if(cockpit&&window.MutationObserver)new MutationObserver(function(){
+    if(queued||document.getElementById("rmAppLangBtn"))return;
+    queued=true;
+    setTimeout(function(){queued=false;ensureAppSwitcher();},0);
+  }).observe(cockpit,{childList:true,subtree:true});
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});
 else init();
