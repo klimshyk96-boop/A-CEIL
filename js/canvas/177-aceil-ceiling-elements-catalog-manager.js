@@ -54,7 +54,8 @@ function apply(){
       var k=keyFor(card);if(!k)return;
       card.dataset.catalogKey=k;map[k]=wrapper(card);keys.push(k);
       var b=card.querySelector("b"),label=p.labels&&p.labels[k],icon=card.querySelector(".rm-ce-icon"),glyph=p.icons&&p.icons[k];
-      if(b&&label&&b.textContent!==label)b.textContent=label;
+      var api=window.A·CEIL&&window.A·CEIL.i18n,displayLabel=label&&api?api.t(label):label;
+      if(b&&displayLabel&&b.textContent!==displayLabel)b.textContent=displayLabel;
       if(icon&&glyph&&icon.textContent!==glyph)icon.textContent=glyph;
       // A single edit action owns name, icon, order and deletion.
       if(map[k]!==card)map[k].querySelectorAll(".rm-ce-delete").forEach(function(button){button.remove();});

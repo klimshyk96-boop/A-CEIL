@@ -95,6 +95,7 @@ node tests/pipeline-contract.test.cjs || exit 1
 node tests/render-pipeline.test.cjs || exit 1
 node tests/lang-ru.test.cjs || exit 1
 node tests/i18n-runtime.test.cjs || exit 1
+node tests/language-menu-regression.cjs || exit 1
 node tests/stability-regression.test.cjs || exit 1
 node scripts/check-architecture.cjs || exit 1
 node tests/global-surface.test.cjs || exit 1

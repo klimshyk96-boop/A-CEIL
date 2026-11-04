@@ -27,10 +27,13 @@ for(const [input,expected] of [
  ['L303 · Глянець · TEQTUM Euro','L303 · Глянец · TEQTUM Euro'],
  ['MSD · 137 кольорів / фактур','MSD · 137 цветов / фактур'],
  ['Ширини полотна','Ширины полотна'],['Обрати','Выбрать'],
+ ['Розміри стін','Размеры стен'],['3. Розміри стін','3. Размеры стен'],
+ ['Пряма / крива, см','Прямая / кривая, см'],
  ['Загальна площа','Общая площадь'],['Відкрити план Кімната 1','Открыть план комнаты 1'],
  ['Тест клієнта 123','Тест клієнта 123'],['123,45 ₴','123,45 ₴']
 ])assert.equal(api.t(input),expected,input);
 const canvas=new Canvas();canvas.fillText('Світлова лінія 4');assert.equal(canvasText,'Световая линия 4');
+canvas.fillText('Розміри стін');assert.equal(canvasText,'Размеры стен');
 assert.equal(canvas.measureText('Зберегти').text,'Сохранить');
 assert.equal(ctx.confirm('Видалити "Тест клієнта"?'),'Удалить "Тест клієнта"?','user names in patterns are preserved');
 // Dynamic labels and tooltips are retranslated from their latest source value.

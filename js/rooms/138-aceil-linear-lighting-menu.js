@@ -71,6 +71,7 @@ function consolidateLauncher(){
   }
 
   btn.className="rm-ls-btn primary";
+  btn.setAttribute("data-linear-launcher","1");
   btn.innerHTML='<span class="rm-ls-icon">━</span><span><b>Лінійне освітлення</b><small>готові фігури або довільна форма</small></span>';
   btn.onclick=function(e){
     e.preventDefault();e.stopPropagation();
@@ -96,7 +97,7 @@ if(host){
       if(!grid)return;
       var hasOld=grid.querySelector("[data-le-item]");
       var flp=grid.querySelector("[data-flp]");
-      var correct=flp&&/Лінійне освітлення/.test(flp.textContent||"");
+      var correct=flp&&flp.getAttribute("data-linear-launcher")==="1";
       if(hasOld||!correct)consolidateLauncher();
     }).observe(host,{childList:true,subtree:true});
   }catch(_){window.__diagSilent&&window.__diagSilent(_)}
