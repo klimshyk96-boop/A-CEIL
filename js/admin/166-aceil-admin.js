@@ -194,9 +194,12 @@ function render(rows){
       var uid=String(r.user_id||r.id||""), active=r.is_active!==false, approval=String(r.approval_status||'').toLowerCase(), pending=approval==='pending', rejected=approval==='rejected';
       var badge=active?'<span class="aceil-admin-badge">Активний</span>':pending?'<span class="aceil-admin-badge pending">Очікує</span>':rejected?'<span class="aceil-admin-badge off">Відхилено</span>':'<span class="aceil-admin-badge off">Заблоковано</span>';
       var quick='<div class="aceil-quick-rights"><span class="aceil-quick-pill '+(r.workspace_initialized?'on':'')+'">Власний кабінет</span><span class="aceil-quick-pill '+(r.workspace_copied?'on':'')+'">'+(r.workspace_copied?'Копія надана':'Без копії')+'</span><span class="aceil-quick-pill edit '+(r.projects_access?'on':'')+'">Спільні проєкти</span></div>';
-      var displayName=String(r.name||r.email||'Користувач').trim(),email=String(r.email||'').trim();
+      var displayName=String(r.name||r.email||'Користувач').trim(),email=String(r.email||'').trim(),phone=String(r.contact_phone||'').trim();
       var mail=email&&displayName.toLowerCase()!==email.toLowerCase()?'<span class="aceil-admin-mail">'+esc(email)+'</span>':'';
-      return '<div class="aceil-admin-user" data-uid="'+esc(uid)+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||''))+'"><button type="button" class="aceil-admin-user-top" aria-expanded="false" onclick="A_CEIL_Admin.toggleCard(this)"><span class="aceil-user-avatar">'+esc(initials(r))+'</span><span class="aceil-user-ident"><span class="aceil-admin-name">'+esc(displayName)+'</span>'+mail+'</span>'+badge+'<span class="aceil-user-chevron">⌄</span></button>'+quick+'<div class="aceil-admin-controls">'+(pending?'<div class="aceil-approval-box"><div><b>Нова реєстрація</b><small>Обери початкові дані користувача.</small></div><div class="aceil-approval-actions"><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,false)" type="button" class="approve empty">✓ Порожній</button><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,true)" type="button" class="approve">✓ Дати копію</button><button onclick="A_CEIL_Admin.reject(\''+esc(uid)+'\',this)" type="button" class="reject">× Відхилити</button></div></div>':workspaceBox(uid,r))+
+      var contactDetails='<div style="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px;font-size:13px">'+
+        (phone?'<a href="tel:'+esc(phone)+'" style="color:#2563eb;font-weight:700">📞 '+esc(phone)+'</a>':'<span style="color:#64748b">📞 Телефон ще не вказаний</span>')+
+        (email?'<a href="mailto:'+encodeURIComponent(email)+'" style="color:#2563eb;font-weight:700">✉️ '+esc(email)+'</a>':'')+'</div>';
+      return '<div class="aceil-admin-user" data-uid="'+esc(uid)+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||'')+' '+String(r.contact_phone||''))+'"><button type="button" class="aceil-admin-user-top" aria-expanded="false" onclick="A_CEIL_Admin.toggleCard(this)"><span class="aceil-user-avatar">'+esc(initials(r))+'</span><span class="aceil-user-ident"><span class="aceil-admin-name">'+esc(displayName)+'</span>'+mail+'</span>'+badge+'<span class="aceil-user-chevron">⌄</span></button>'+quick+'<div class="aceil-admin-controls">'+contactDetails+(pending?'<div class="aceil-approval-box"><div><b>Нова реєстрація</b><small>Обери початкові дані користувача.</small></div><div class="aceil-approval-actions"><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,false)" type="button" class="approve empty">✓ Порожній</button><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,true)" type="button" class="approve">✓ Дати копію</button><button onclick="A_CEIL_Admin.reject(\''+esc(uid)+'\',this)" type="button" class="reject">× Відхилити</button></div></div>':workspaceBox(uid,r))+
         (!pending?wallCatalogBox(uid,r):'')+
         (!pending?filmCatalogBox(uid,r):'')+
         toggle(uid,"projects_access","Доступ до моїх проєктів","Окремий спільний доступ до проєктів головного власника",!!r.projects_access,false)+
@@ -250,12 +253,14 @@ async function load(){
   if(!hasCards)content('<div class="aceil-admin-note">Завантажуємо користувачів…</div>');
   try{
     var c=sb();if(!c)throw new Error("Supabase client недоступний.");
-    var results=await Promise.all([c.rpc("admin_list_users"),c.rpc("admin_list_workspace_status"),c.rpc("admin_film_catalog_status")]);
+    var results=await Promise.all([c.rpc("admin_list_users"),c.rpc("admin_list_workspace_status"),c.rpc("admin_film_catalog_status"),c.rpc("aceil_admin_contact_list")]);
     var r=results[0],wr=results[1];if(r.error)throw r.error;if(wr.error)throw wr.error;
     workspaceByUser={};(Array.isArray(wr.data)?wr.data:[]).forEach(function(x){workspaceByUser[String(x.user_id||'')]=x});
     filmSharingReady=!results[2].error;
     if(filmSharingReady)(Array.isArray(results[2].data)?results[2].data:[]).forEach(function(x){var key=String(x.user_id||'');workspaceByUser[key]=Object.assign({},workspaceByUser[key]||{},x)});
-    var rows=(Array.isArray(r.data)?r.data:[]).map(function(x){return Object.assign({},x,workspaceByUser[String(x.user_id||x.id||'')]||{})});
+    var contactsByUser={};
+    if(!results[3].error)(Array.isArray(results[3].data)?results[3].data:[]).forEach(function(x){contactsByUser[String(x.user_id||'')]=x.contact_phone||''});
+    var rows=(Array.isArray(r.data)?r.data:[]).map(function(x){var uid=String(x.user_id||x.id||'');return Object.assign({},x,workspaceByUser[uid]||{},{contact_phone:contactsByUser[uid]||''})});
     render(rows);
     await loadActivityData();
     if(view)restoreAdminViewState(view);
