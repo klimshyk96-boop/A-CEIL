@@ -28,4 +28,23 @@ jobs:
       - name: Run full regression suite
         env:
           CI: 'true'
-        run: bash scripts/run-all-tests.sh
+        shell: bash
+        run: |
+          # Store verbose browser output locally so failed jobs show the
+          # actual exception, not 100+ KB of unrelated stack/HTML logs.
+          set +e
+          bash scripts/run-all-tests.sh > /tmp/aceil-regression.log 2>&1 &
+          test_pid=$!
+          while kill -0 "$test_pid" 2>/dev/null; do
+            sleep 25
+            kill -0 "$test_pid" 2>/dev/null || break
+            printf '%s %s\n' "Suite running:" "$(grep '^## ' /tmp/aceil-regression.log | tail -n 1)"
+          done
+          wait "$test_pid"
+          result=$?
+          if [ "$result" -ne 0 ]; then
+            echo "::error::A·CEIL regression failed; last test output:"
+            tail -n 95 /tmp/aceil-regression.log
+            exit "$result"
+          fi
+          tail -n 24 /tmp/aceil-regression.log
