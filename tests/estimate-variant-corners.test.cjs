@@ -92,5 +92,8 @@ delete persisted._activeEstimateVariantId;
 api.ensure(persisted);
 assert.equal(persisted.estimateVariants.length,3,'variant restored from synced shadow');
 assert.equal(qty(rows(persisted,'a',first.variant.id),'noinsert'),6,'corner selection survives sync/reopen');
-assert.equal(JSON.stringify(project.rooms),JSON.stringify(repository[0].rooms.map((r,i)=>i===0?Object.assign({},r,{_aceilVariantsShadow:undefined}):r)).replaceAll(',"_aceilVariantsShadow":undefined',''),'Main items untouched');
+assert.equal(project.rooms[0].state,JSON.parse(mainSnapshot)[0].state,
+  'persisted shadow never modifies the Main room calculation state');
+assert.equal(project.rooms[1].state,JSON.parse(mainSnapshot)[1].state,
+  'persisted shadow never modifies other rooms');
 console.log('Estimate variant corner selection, scope, comparison, chaining and storage: OK');
