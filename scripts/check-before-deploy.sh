@@ -40,6 +40,7 @@ node tests/project-save-context.test.cjs || exit 1
 node tests/cloud-hydration-startup.test.cjs || exit 1
 node tests/demo-access-ui.test.cjs || exit 1
 node tests/demo-existing-user.test.cjs || exit 1
+node tests/support-contacts.test.cjs || exit 1
 node tests/projects-opening.test.cjs || exit 1
 node tests/project-recovery.test.cjs || exit 1
 node tests/room-save-canonical.test.cjs || exit 1
