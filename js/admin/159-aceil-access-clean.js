@@ -3,7 +3,19 @@
 'use strict';
 var busy=false, ACCESS=null, NOM_DENIED=false, lastAccessSig='', lastResumeRightsAt=0;
 var ACCESS_CACHE_KEY='A_CEIL_access_snapshot_v1';
-var projectsRefresh=null,projectsLoadedAt=0,projectsLoadedUid='',projectsLoadedClient=null;
+var projectsRefresh=null,projectsLoadedAt=0,projectsLoadedUid='',projectsLoadedClient=null,projectsRequest=null;
+function canonicalCloudState(c,u){
+  if(!c||!u||!u.id||typeof window.A_CEIL_CloudLoadState!=='function')return null;
+  try{
+    var state=window.A_CEIL_CloudLoadState();
+    return state&&String(state.userId)===String(u.id)?state:null;
+  }catch(_){return null}
+}
+function noteFreshCanonical(c,u,state){
+  if(!state||!state.completedAt||Date.now()-state.completedAt>15000)return false;
+  projectsLoadedAt=state.completedAt;projectsLoadedUid=u.id;projectsLoadedClient=c;
+  return true;
+}
 try{if(!localStorage.getItem('A_CEIL_access_log_cleanup_v50')){localStorage.setItem('A_CEIL_access_log_cleanup_v50','1');var dp=window.A·CEIL&&window.A·CEIL.DebugPanel;if(dp&&typeof dp.clear==='function')dp.clear()}}catch(_cleanupError){window.__diagSilent&&window.__diagSilent(_cleanupError)}
 function accessSig(a){if(!a)return'';return [a.app_role,a.is_active,a.owner_id,a.nomenclature_access,a.projects_access,a.projects_edit,a.projects_scope,a.access_until].map(function(v){return String(v==null?'':v)}).join('|')}
 function sb(){try{var c=(typeof _sb!=='undefined'&&_sb)||window._sb||null;if(c&&!window._sb)window._sb=c;return c}catch(e){return window._sb||null}}
@@ -49,7 +61,24 @@ function mergeCatalogGroupsWithRoom(catalog,current){var out=clone(Array.isArray
 async function loadNom(a){var c=sb(),u=usr();if(!c||!u)return false;if(applyNomGate(a))return false;var source=u.id;var r=await c.from('nomenclature').select('user_id,items,groups,wall_presets,light_types').eq('user_id',source).maybeSingle();if(r.error)throw r.error;if(!r.data){clearNom();window.__A·CEILNomenCatalogV339={items:[],groups:[]};return false}var d=r.data,current=currentNomItems(),currentGroups=clone(typeof elemGroups!=='undefined'&&Array.isArray(elemGroups)?elemGroups:(window.elemGroups||[]));setGlobal('elemGroups',mergeCatalogGroupsWithRoom(d.groups,currentGroups));var items=mergeCatalogWithRoomResults(clone(Array.isArray(d.items)?d.items:[]),current);setGlobal('elemItems',items);try{window.__A·CEILNomenCatalogV339={items:clone(Array.isArray(d.items)?d.items:[]),groups:clone(Array.isArray(d.groups)?d.groups:[])}}catch(e){window.__diagSilent&&window.__diagSilent(e)}if(Array.isArray(d.wall_presets)){try{localStorage.setItem('A·CEIL_wall_presets_v32',JSON.stringify(d.wall_presets))}catch(e){window.__diagSilent&&window.__diagSilent(e)}}if(Array.isArray(d.light_types)){var cloudLightTypes=clone(d.light_types);setGlobal('lightTypes',cloudLightTypes);try{localStorage.setItem('lightTypes_v1',JSON.stringify(cloudLightTypes))}catch(e){window.__diagSilent&&window.__diagSilent(e)}try{if(typeof window.rmRenderCeilingElementsV318==='function')window.rmRenderCeilingElementsV318()}catch(e){window.__diagSilent&&window.__diagSilent(e)}}refreshNomUI();return true}
 function mapProject(p){var st={};try{st=typeof p.state==='string'?JSON.parse(p.state):p.state||{}}catch(e){window.__diagSilent&&window.__diagSilent(e)};var probe={state:st,multiRoom:st.multiRoom,projectType:st.projectType,rooms:st.rooms},multi=window.A_CEIL_ProjectMode?window.A_CEIL_ProjectMode.isMulti(probe):st.multiRoom===true;if(!multi&&window.A_CEIL_ProjectMode)st=window.A_CEIL_ProjectMode.cleanSingleState(probe);var u=usr(),ownerId=p.user_id||null;return {id:p.id,_dbId:p.id,_ownerId:ownerId,_shared:!!(u&&ownerId&&String(ownerId)!==String(u.id)),name:p.name,addr:p.addr||'',phone:p.phone||'',comment:p.comment||'',area:p.area||'',per:p.per||'',inC:p.in_corners||'',outC:p.out_corners||'',thumb:p.thumb||'',date:p.created_at?new Date(p.created_at).toLocaleDateString('uk-UA'):'',order_source:p.order_source,deal_status:p.deal_status,report_token:p.report_token,report_published_at:p.report_published_at,report_expires_at:p.report_expires_at,archivedAt:st.archivedAt||null,multiRoom:multi,rooms:multi?(st.rooms||[]):undefined,state:multi?null:(typeof p.state==='string'?p.state:JSON.stringify(st))}}
 function replaceProjects(rows,preserveLocal){var mapped=(rows||[]).map(mapProject);try{if(preserveLocal&&typeof A·CEILMergeCloudProjects==='function')A·CEILMergeCloudProjects(mapped);else if(window.A·CEIL&&window.A·CEIL.ProjectRepository)window.A·CEIL.ProjectRepository.replaceAll(mapped);else if(typeof setProjects==='function')setProjects(mapped)}catch(e){window.__diagSilent&&window.__diagSilent(e)};try{if(typeof renderProjects==='function')renderProjects()}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
-async function loadProjects(a){var c=sb(),u=usr();if(!c||!u||!a||a.is_active!==true)return false;var r=await("function"==typeof withTimeout?withTimeout(c.from('projects').select('*').order('created_at',{ascending:false}),8000,"Список проєктів"):c.from('projects').select('*').order('created_at',{ascending:false}));if(!usr()||usr().id!==u.id||sb()!==c)return false;if(r.error)throw r.error;if(typeof _aceilProtectActiveProjectRow==='function')_aceilProtectActiveProjectRow(r.data||[]);replaceProjects(r.data||[],true);projectsLoadedAt=Date.now();projectsLoadedUid=u.id;projectsLoadedClient=c;return true}
+async function loadProjects(a){
+  var c=sb(),u=usr();if(!c||!u||!a||a.is_active!==true)return false;
+  if(projectsRequest&&projectsRequest.uid===u.id&&projectsRequest.client===c)return projectsRequest.promise;
+  var request={uid:u.id,client:c};
+  projectsRequest=request;
+  request.promise=(async function(){
+    var r=await("function"==typeof withTimeout
+      ?withTimeout(c.from('projects').select('*').order('created_at',{ascending:false}),8000,"Список проєктів")
+      :c.from('projects').select('*').order('created_at',{ascending:false}));
+    if(!usr()||usr().id!==u.id||sb()!==c)return false;
+    if(r.error)throw r.error;
+    if(typeof _aceilProtectActiveProjectRow==='function')_aceilProtectActiveProjectRow(r.data||[]);
+    replaceProjects(r.data||[],true);
+    projectsLoadedAt=Date.now();projectsLoadedUid=u.id;projectsLoadedClient=c;
+    return true;
+  })();
+  try{return await request.promise}finally{if(projectsRequest===request)projectsRequest=null}
+}
 async function refresh(){if(busy)return false;var c=sb(),u=usr();if(!u)return false;if(!navigator.onLine){var cached=offlineAccess(u);if(cached){ACCESS=cached;applyNomGate(cached);lastAccessSig=accessSig(cached)}enterOffline(u);return true}if(!c)return false;busy=true;try{var a=await rights();if(!a)return false;await Promise.all([loadNom(a),loadProjects(a)]);applyNomGate(a);lastAccessSig=accessSig(a);return true}catch(e){enterOffline(u);return true}finally{busy=false}}
 async function refreshOnResume(){if(busy)return false;var now=Date.now();if(now-lastResumeRightsAt<1200)return true;lastResumeRightsAt=now;var c=sb(),u=usr();if(!u)return false;if(!navigator.onLine){enterOffline(u);return true}if(!c)return false;busy=true;try{var prev=lastAccessSig||accessSig(ACCESS),a=await rights();if(!a)return false;var sig=accessSig(a);if(sig!==prev){await Promise.all([loadNom(a),loadProjects(a)])}else{applyNomGate(a)}lastAccessSig=sig;return true}catch(e){enterOffline(u);return true}finally{busy=false}}
 /* Nomenclature window remains available. OFF means its catalogue is empty for a non-owner. */
@@ -69,7 +98,20 @@ function refreshProjectsInBackground(){
   if(!navigator.onLine){projectsStatus('Локальні проєкти · немає з’єднання');return;}
   var c=sb(),u=usr();if(!c||!u)return;
   if(projectsRefresh&&projectsRefresh.client===c&&projectsRefresh.uid===u.id)return;
-  if(projectsLoadedClient===c&&projectsLoadedUid===u.id&&Date.now()-projectsLoadedAt<15000){projectsStatus('Список оновлено');return;}
+  var canonical=canonicalCloudState(c,u);
+  if(canonical&&canonical.inFlight){
+    projectsStatus('Список проєктів · синхронізація триває…');
+    Promise.resolve(canonical.inFlight).then(function(){
+      var current=canonicalCloudState(c,u);
+      if(current&&noteFreshCanonical(c,u,current))projectsStatus('Список оновлено');
+      else refreshProjectsInBackground();
+    }).catch(function(){refreshProjectsInBackground()});
+    return;
+  }
+  if(noteFreshCanonical(c,u,canonical)||
+     (projectsLoadedClient===c&&projectsLoadedUid===u.id&&Date.now()-projectsLoadedAt<15000)){
+    projectsStatus('Список оновлено');return;
+  }
   var request={client:c,uid:u.id};projectsRefresh=request;
   projectsStatus('Збережені проєкти · оновлюємо з хмари…');
   setTimeout(async function(){
@@ -92,7 +134,26 @@ if(typeof oldProjects==='function'){
 }
 window.forceLoadNomenclature=async function(){if(!navigator.onLine)return false;var a=await rights();return a?loadNom(a):false};try{forceLoadNomenclature=window.forceLoadNomenclature}catch(e){window.__diagSilent&&window.__diagSilent(e)};try{loadNomenclatureFromCloud=window.forceLoadNomenclature}catch(e){window.__diagSilent&&window.__diagSilent(e)}
 window.A_CEIL_forceAccessRefresh=refresh;
-function boot(n){if(n>4||window.__A_CEIL_OFFLINE_ACTIVE===true)return;setTimeout(async function(){if(await refresh())return;boot(n+1)},500)}
+function boot(n){
+  if(n>4||window.__A_CEIL_OFFLINE_ACTIVE===true)return;
+  setTimeout(async function(){
+    var c=sb(),u=usr(),canonical=canonicalCloudState(c,u);
+    // Auth already owns the initial download of large project snapshots and
+    // nomenclature. Do not race it with a second full Supabase download.
+    if(canonical&&canonical.inFlight){
+      try{await canonical.inFlight}catch(_){}
+      canonical=canonicalCloudState(c,u);
+    }
+    if(noteFreshCanonical(c,u,canonical)){
+      try{
+        var a=await rights();
+        if(a&&a.is_active===true){applyNomGate(a);lastAccessSig=accessSig(a);return}
+      }catch(_){}
+    }
+    if(await refresh())return;
+    boot(n+1);
+  },500)
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){boot(0)},{once:true});else boot(0);
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(refreshOnResume,200)});
 
