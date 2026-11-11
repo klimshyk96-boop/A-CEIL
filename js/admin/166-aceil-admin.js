@@ -194,7 +194,13 @@ function render(rows){
   if(!rows.length){content('<div class="aceil-admin-empty">Користувачів не знайдено.</div>');return}
   content(rows.map(function(r){
       var uid=String(r.user_id||r.id||""), active=r.is_active!==false, approval=String(r.approval_status||'').toLowerCase(), pending=approval==='pending', rejected=approval==='rejected';
-      var badge=active?'<span class="aceil-admin-badge">Активний</span>':pending?'<span class="aceil-admin-badge pending">Очікує</span>':rejected?'<span class="aceil-admin-badge off">Відхилено</span>':'<span class="aceil-admin-badge off">Заблоковано</span>';
+      var demoExpired=!!r.demo_enabled&&!!r.demo_expires_at&&Date.parse(r.demo_expires_at)<=Date.now();
+      var badge=r.demo_enabled
+        ?'<span class="aceil-admin-badge '+(demoExpired?'off':'pending')+'">'+(demoExpired?'ДЕМО завершено':'ДЕМО')+'</span>'
+        :active?'<span class="aceil-admin-badge">Активний</span>'
+        :pending?'<span class="aceil-admin-badge pending">Очікує</span>'
+        :rejected?'<span class="aceil-admin-badge off">Відхилено</span>'
+        :'<span class="aceil-admin-badge off">Заблоковано</span>';
       var quick='<div class="aceil-quick-rights"><span class="aceil-quick-pill '+(r.workspace_initialized?'on':'')+'">Власний кабінет</span><span class="aceil-quick-pill '+(r.workspace_copied?'on':'')+'">'+(r.workspace_copied?'Копія надана':'Без копії')+'</span><span class="aceil-quick-pill edit '+(r.projects_access?'on':'')+'">Спільні проєкти</span></div>';
       var displayName=String(r.name||r.email||'Користувач').trim(),email=String(r.email||'').trim(),phone=String(r.contact_phone||'').trim();
       var mail=email&&displayName.toLowerCase()!==email.toLowerCase()?'<span class="aceil-admin-mail">'+esc(email)+'</span>':'';
