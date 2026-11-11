@@ -1798,3 +1798,42 @@ body.rm-hybrid-only-active #cv{pointer-events:none!important;}
 
 .aceil-auth-help{display:block;margin:11px auto 0;padding:7px 10px;border:0;background:transparent;color:#2563eb;font-size:12px;font-weight:700;text-align:center;cursor:pointer;}
 .aceil-auth-help:focus-visible{outline:2px solid #2563eb;border-radius:8px;}
+
+
+/* One-hour DEMO: actual contact details visible without opening hidden header.
+   The strip is placed after header in the document flow, not over the menu. */
+#aceilDemoBanner.aceil-demo-strip{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  position:sticky!important;
+  top:0!important;
+  z-index:11000!important;
+  width:calc(100% - 28px)!important;
+  max-width:980px!important;
+  margin:12px auto!important;
+  padding:11px 13px!important;
+  border:1px solid #93c5fd!important;
+  border-radius:17px!important;
+  background:linear-gradient(115deg,#172d68 0%,#244aa8 100%)!important;
+  color:#fff!important;
+  box-shadow:0 8px 22px rgba(21,49,123,.17)!important;
+  font:inherit!important;
+  pointer-events:auto!important;
+  transform:none!important;
+  left:auto!important;
+}
+.aceil-demo-strip-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.aceil-demo-strip-timer{display:block;font-size:13px;font-weight:900;line-height:1.3;color:#fff;}
+.aceil-demo-strip-help{display:block;min-height:33px;padding:7px 12px;border:1px solid rgba(255,255,255,.52);border-radius:10px;background:#fff;color:#1d4ed8;font-size:12px;font-weight:900;white-space:nowrap;cursor:pointer;}
+.aceil-demo-strip-prompt{display:block;margin-top:6px;font-size:11px;font-weight:700;color:#dbeafe;}
+.aceil-demo-strip-links{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:7px;}
+.aceil-demo-strip-links:empty{display:none;}
+.aceil-demo-strip-link{display:inline-flex;align-items:center;max-width:100%;box-sizing:border-box;min-height:34px;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.4);color:#fff!important;font-size:12px;font-weight:800;text-decoration:none!important;overflow-wrap:anywhere;}
+.aceil-demo-strip-link:focus-visible,.aceil-demo-strip-help:focus-visible{outline:2px solid #facc15;outline-offset:2px;}
+@media(max-width:430px){
+  #aceilDemoBanner.aceil-demo-strip{width:calc(100% - 18px)!important;margin:8px auto 10px!important;padding:10px!important;}
+  .aceil-demo-strip-timer{font-size:12px;}
+  .aceil-demo-strip-help{font-size:11px;min-height:35px;padding:7px 10px;}
+  .aceil-demo-strip-link{font-size:11px;}
+}
