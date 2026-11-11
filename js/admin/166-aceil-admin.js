@@ -138,7 +138,7 @@ function expiryInfo(r){
 }
 function tempAccess(uid,r){
   var x=expiryInfo(r);
-  return '<details class="aceil-admin-fold" data-admin-section="expiry">'+foldSummary('expiry','Тимчасовий доступ',x.text,x.active?'ready':'')+'<div class="aceil-temp-access"><div class="aceil-temp-buttons">'+
+  return '<details class="aceil-admin-fold" data-admin-section="expiry">'+foldSummary('expiry','Спільні проєкти · термін доступу',x.text,x.active?'ready':'')+'<div class="aceil-temp-access"><div class="aceil-temp-buttons">'+
     [1,3,8,24].map(function(h){return '<button type="button" class="aceil-temp-btn" onclick="A_CEIL_Admin.setExpiry(\''+esc(uid)+'\','+h+',this)">'+h+' год</button>'}).join('')+
     '</div>'+(x.active?'<button type="button" class="aceil-temp-cancel" onclick="A_CEIL_Admin.clearExpiry(\''+esc(uid)+'\',this)">Скасувати тимчасовий доступ</button>':'')+'</div></details>';
 }
@@ -204,8 +204,12 @@ function render(rows){
       ?'ДЕМО · діє до '+new Date(r.demo_expires_at).toLocaleString('uk-UA',{dateStyle:'short',timeStyle:'short'})
       :'ДЕМО · завершено')
   :'';
-       var demoControls=r.demo_enabled&&!pending
-         ?'<div class="aceil-demo-admin-status"><b>⏳ '+esc(demoStatus)+'</b><button type="button" onclick="A_CEIL_Admin.upgradeDemo(\''+esc(uid)+'\',this)">Надати повний доступ</button></div>'
+       var demoControls=!pending&&approval==='approved'&&active
+         ?'<div class="aceil-demo-admin-status">'+
+            (r.demo_enabled
+              ?'<div><b>⏳ '+esc(demoStatus)+'</b><small>Проєкти залишаться збереженими після завершення години.</small></div><button type="button" onclick="A_CEIL_Admin.upgradeDemo(\''+esc(uid)+'\',this)">Надати повний доступ</button>'
+              :'<div><b>⏱ ДЕМО-доступ на 1 годину</b><small>Пробний доступ до всього A·CEIL. Час почнеться з наступного входу клієнта.</small></div><button type="button" onclick="A_CEIL_Admin.startDemo(\''+esc(uid)+'\',this)">Видати 1 годину</button>')+
+           '</div>'
          :'';
        var mailStatus=r.aceil_mail||null;
       var mailTitle=mailStatus?(mailStatus.status==='sent'?'Лист передано поштовому сервісу':mailStatus.status==='failed'?'Помилка відправки':mailStatus.status==='pending'?'Лист у черзі':mailStatus.status==='processing'?'Надсилаємо лист':'Надсилання скасовано'):'Лист ще не надсилався';
@@ -214,14 +218,15 @@ function render(rows){
       var contactDetails='<div style="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px;font-size:13px">'+
         (phone?'<a href="tel:'+esc(phone)+'" style="color:#2563eb;font-weight:700">📞 '+esc(phone)+'</a>':'<span style="color:#64748b">📞 Телефон ще не вказаний</span>')+
         (email?'<a href="mailto:'+encodeURIComponent(email)+'" style="color:#2563eb;font-weight:700">✉️ '+esc(email)+'</a>':'')+'</div>';
-      return '<div class="aceil-admin-user" data-uid="'+esc(uid)+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||'')+' '+String(r.contact_phone||''))+'"><button type="button" class="aceil-admin-user-top" aria-expanded="false" onclick="A_CEIL_Admin.toggleCard(this)"><span class="aceil-user-avatar">'+esc(initials(r))+'</span><span class="aceil-user-ident"><span class="aceil-admin-name">'+esc(displayName)+'</span>'+mail+'</span>'+badge+'<span class="aceil-user-chevron">⌄</span></button>'+quick+'<div class="aceil-admin-controls">'+contactDetails+mailTools+demoControls+(pending?'<div class="aceil-approval-box"><div><b>Нова реєстрація</b><small>Обери початкові дані користувача.</small></div><label class="aceil-demo-approval"><input type="checkbox" id="aceilDemo_'+esc(uid)+'"><span><b>ДЕМО-доступ на 1 годину</b><small>Відлік почнеться з першого входу клієнта після схвалення</small></span></label><div class="aceil-approval-actions"><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,false)" type="button" class="approve empty">✓ Порожній</button><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,true)" type="button" class="approve">✓ Дати копію</button><button onclick="A_CEIL_Admin.reject(\''+esc(uid)+'\',this)" type="button" class="reject">× Відхилити</button></div></div>':workspaceBox(uid,r))+
+      return '<div class="aceil-admin-user" data-uid="'+esc(uid)+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||'')+' '+String(r.contact_phone||''))+'"><button type="button" class="aceil-admin-user-top" aria-expanded="false" onclick="A_CEIL_Admin.toggleCard(this)"><span class="aceil-user-avatar">'+esc(initials(r))+'</span><span class="aceil-user-ident"><span class="aceil-admin-name">'+esc(displayName)+'</span>'+mail+'</span>'+badge+'<span class="aceil-user-chevron">⌄</span></button>'+quick+'<div class="aceil-admin-controls">'+contactDetails+mailTools+(pending?'<div class="aceil-approval-box"><div><b>Нова реєстрація</b><small>Обери початкові дані користувача.</small></div><label class="aceil-demo-approval"><input type="checkbox" id="aceilDemo_'+esc(uid)+'"><span><b>ДЕМО-доступ на 1 годину</b><small>Відлік почнеться з першого входу клієнта після схвалення</small></span></label><div class="aceil-approval-actions"><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,false)" type="button" class="approve empty">✓ Порожній</button><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,true)" type="button" class="approve">✓ Дати копію</button><button onclick="A_CEIL_Admin.reject(\''+esc(uid)+'\',this)" type="button" class="reject">× Відхилити</button></div></div>':workspaceBox(uid,r))+
         (!pending?wallCatalogBox(uid,r):'')+
         (!pending?filmCatalogBox(uid,r):'')+
         toggle(uid,"projects_access","Доступ до моїх проєктів","Окремий спільний доступ до проєктів головного власника",!!r.projects_access,false)+
         (r.projects_access?projectScope(uid,r):'')+
         toggle(uid,"projects_edit","Редагування проєктів","Може змінювати доступні проєкти",!!r.projects_edit,!r.projects_access)+
         toggle(uid,"report_publish","Створення хмарних звітів","Може створювати й відкликати посилання без права редагувати проєкт",!!r.report_publish,!r.projects_access)+
-        tempAccess(uid,r)+
+        (r.projects_access?tempAccess(uid,r):'')+
+        demoControls+
         toggle(uid,"is_active","Активний користувач","Повне блокування доступу до A·CEIL",active,false)+
         '<details class="aceil-danger-zone">'+foldSummary('danger','Небезпечні дії','Видалення','')+'<div class="aceil-delete-user-box"><div><b>Видалити користувача назавжди</b><small>Обліковий запис буде видалено без можливості відновлення.</small></div><button type="button" class="aceil-delete-user-btn" onclick="A_CEIL_Admin.deleteUser(\''+esc(uid)+'\',\''+esc(r.email||r.name||'Користувач')+'\',this)"><svg class="aceil-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg><span>Видалити назавжди</span></button></div></details>'+
       '</div></div>';
@@ -316,6 +321,17 @@ async function approve(uid,b,copy){
   var ok=await setApproval(uid,'approved',b,demo);
   if(ok)return initializeWorkspace(uid,!!copy,b);
   return false;
+}
+async function startDemo(uid,button){
+  if(!confirm('Увімкнути DEMO на 1 годину?\n\nВідлік 60 хвилин почнеться з наступного входу клієнта. Після цього доступ до A·CEIL завершиться, але всі його проєкти залишаться збереженими.'))return;
+  if(button)button.disabled=true;
+  try{
+    var c=sb();if(!c)throw new Error('Немає зв’язку з Supabase');
+    var r=await c.rpc('aceil_admin_start_demo',{p_user_id:uid});
+    if(r.error||r.data!==true)throw (r.error||new Error('DEMO вже активне або акаунт неактивний'));
+    toast('✓ DEMO на 1 годину видано. Час почнеться з наступного входу.');await load();
+  }catch(e){toast('Не вдалося видати DEMO: '+String(e.message||e))}
+  finally{if(button)button.disabled=false}
 }
 async function upgradeDemo(uid,button){
   if(!confirm('Надати цьому користувачу повний доступ без обмеження в 1 годину?'))return;
@@ -479,7 +495,7 @@ function setDebugCount(value){var count=Math.max(0,Number(value)||0),label=count
 function open(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.add("open");m.setAttribute("aria-hidden","false");load()}
 function close(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 
-window.A_CEIL_Admin={open:open,close:close,load:load,upgradeDemo:upgradeDemo,resendRegistrationEmail:resendRegistrationEmail,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,setFilmAccess:setFilmAccess,replaceFilmCatalog:replaceFilmCatalog,restoreFilmCatalog:restoreFilmCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab,setDebugCount:setDebugCount};
+window.A_CEIL_Admin={open:open,close:close,load:load,upgradeDemo:upgradeDemo,startDemo:startDemo,resendRegistrationEmail:resendRegistrationEmail,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,setFilmAccess:setFilmAccess,replaceFilmCatalog:replaceFilmCatalog,restoreFilmCatalog:restoreFilmCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab,setDebugCount:setDebugCount};
 
 function boot(){
   removeLegacyMenuItem();
