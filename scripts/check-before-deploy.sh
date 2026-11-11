@@ -37,6 +37,7 @@ node tests/descor-catalog.test.cjs || exit 1
 node tests/pending-sync-queue-browser.test.cjs || exit 1
 node tests/shared-project-save.test.cjs || exit 1
 node tests/project-save-context.test.cjs || exit 1
+node tests/cloud-hydration-startup.test.cjs || exit 1
 node tests/projects-opening.test.cjs || exit 1
 node tests/project-recovery.test.cjs || exit 1
 node tests/room-save-canonical.test.cjs || exit 1
