@@ -24,6 +24,9 @@ for(const fn of ['aceil_publish_report_link','aceil_publish_report_snapshot','ac
   assert.match(migration.slice(at,at+1500),/A_CEIL_ACCOUNT_INACTIVE_OR_DEMO_EXPIRED/i,'access guard for '+fn);
 }
 assert.match(migration,/public\.aceil_is_platform_admin\(\) or public\.can_access_nomenclature\(p_user_id\)/i,'platform owner can copy target wall catalog');
+assert.equal((migration.match(/octet_length\(p_payload::text\) > 10485760/g)||[]).length,2,'both report RPCs bound payload size');
+assert.match(migration,/raise exception 'invalid report expiry'/i,'snapshot expiry enforced server-side');
+assert.match(migration,/p_expires_at > now\(\) \+ interval '366 days'/i,'expiry capped at one year');
 assert.match(migration,/revoke execute on function public\.aceil_cleanup_report_links\(\) from public,anon,authenticated/i);
 
 assert.match(queue,/delete updatePayload\.user_id/,'pending queue may not transfer project ownership');
