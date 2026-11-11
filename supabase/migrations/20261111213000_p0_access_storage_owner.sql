@@ -300,7 +300,7 @@ AS $function$
     ) with ordinality e(value, ord)
     where n.user_id = p_user_id
       and public.aceil_demo_has_access()
-      and public.can_access_nomenclature(p_user_id)
+      and (public.aceil_is_platform_admin() or public.can_access_nomenclature(p_user_id))
   ),
   candidates as (
     select
@@ -337,7 +337,7 @@ AS $function$
     from public.wall_presets w
     where w.user_id = p_user_id
       and public.aceil_demo_has_access()
-      and public.can_access_nomenclature(p_user_id)
+      and (public.aceil_is_platform_admin() or public.can_access_nomenclature(p_user_id))
       and coalesce(trim(w.name), '') <> ''
   ),
   ranked as (
@@ -366,50 +366,8 @@ AS $function$
   where rn = 1;
 $function$;
 
-create or replace function public.get_my_access()
-returns table(
- app_role text, is_active boolean, owner_id uuid,
- nomenclature_access boolean, projects_access boolean,
- projects_edit boolean, projects_scope text, access_until timestamptz
-)
-language sql stable security definer set search_path=''
-as $access$
-select p.app_role::text,
-       (p.is_active
-        and p.approval_status='approved'
-        and (p.demo_enabled=false
-             or (p.demo_expires_at is not null and p.demo_expires_at>now()))
-       )::boolean as is_active,
-       p.id as owner_id,
-       (p.app_role='owner' or
-         (coalesce(ua.nomenclature_access,false)
-          and (ua.access_until is null or ua.access_until>now()))
-       )::boolean as nomenclature_access,
-       (p.app_role='owner' or
-         (coalesce(ua.projects_access,false)
-          and (ua.access_until is null or ua.access_until>now()))
-       )::boolean as projects_access,
-       (p.app_role='owner' or
-         (coalesce(ua.projects_access,false)
-          and coalesce(ua.projects_edit,false)
-          and (ua.access_until is null or ua.access_until>now()))
-       )::boolean as projects_edit,
-       (case when p.app_role='owner' then 'all'
-        else coalesce(ua.projects_scope,'selected') end)::text as projects_scope,
-       (case when p.demo_enabled then p.demo_expires_at
-         else ua.access_until end)::timestamptz as access_until
-from public.profiles p
-left join lateral (
- select a.* from public.user_access a
- join public.profiles o on o.id=a.owner_id
-   and o.app_role='owner' and o.is_active=true
- where a.user_id=p.id
- order by a.updated_at desc nulls last
- limit 1
-) ua on true
-where p.id=auth.uid() and p.approval_status='approved'
-limit 1;
-$access$;
+-- Keep get_my_access() unchanged: flags grant access to users' OWN workspaces.
+-- Shared-owner permissions remain enforced separately in user_access and table RLS.
 
 -- Prevent loss of project ownership/identity when a shared editor saves a room.
 create or replace function public.aceil_projects_identity_immutable()
