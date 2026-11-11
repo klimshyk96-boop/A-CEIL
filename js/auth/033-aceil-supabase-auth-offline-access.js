@@ -58,13 +58,15 @@ function A_CEIL_applyDemoStatus(user,state){
   else document.body.appendChild(bar);
   // Only the DEMO audience gets one small read-only contacts request;
   // normal app startup and project editor load no extra support data.
-  if(_sb&&typeof _sb.rpc==="function"){
+  if(typeof _sb!=="undefined"&&_sb&&typeof _sb.rpc==="function"){
     Promise.resolve(_sb.rpc("aceil_support_public")).then(function(r){
       if(!bar.isConnected||_aceilDemoUser!==user.id||r.error)return;
       var data=r.data&&typeof r.data==="object"?r.data:{};
-      var linkApi=window.A_CEIL_Support&&window.A_CEIL_Support.link;
-      if(typeof linkApi!=="function")return;
-      var options=[["phone","📞 Телефон"],["telegram","✈️ Telegram"],
+      var displayLinks=function(){
+        if(!bar.isConnected||_aceilDemoUser!==user.id)return true;
+        var linkApi=window.A_CEIL_Support&&window.A_CEIL_Support.link;
+        if(typeof linkApi!=="function")return false;
+        var options=[["phone","📞 Телефон"],["telegram","✈️ Telegram"],
         ["whatsapp","WhatsApp"],["viber","Viber"],["email","Email"],
         ["instagram","Instagram"],["facebook","Facebook"]];
       options.forEach(function(row){
@@ -80,6 +82,12 @@ function A_CEIL_applyDemoStatus(user,state){
         }
         links.appendChild(item);
       });
+        return true;
+      };
+      // Auth can finish before the admin/support script at page end is ready.
+      if(!displayLinks()&&document.readyState==="loading"){
+        document.addEventListener("DOMContentLoaded",displayLinks,{once:true});
+      }
     }).catch(function(){});
   }
   function tick(){
