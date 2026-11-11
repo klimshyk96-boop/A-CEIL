@@ -198,14 +198,17 @@ test('rooms changed only on another device are adopted instead of overwritten', 
   assert.equal(f.items()[0].rooms[0].state,remote1.state);
   assert.equal(f.items()[0]._cloudBase.r1,JSON.stringify(['Hall',remote1.state]));
 });
-test('a room changed on both devices keeps this device version', async () => {
+test('a room changed on two devices must remain queued without overwriting either drawing', async () => {
   const orig={id:'r1',name:'Hall',state:drawn(1)};
   const base={r1:JSON.stringify([orig.name,orig.state])};
   const mine={...orig,state:drawn(5)};
   const f=roomsFixture([mine],base);f.enqueue();const done=f.c.flushPendingQueue();await tick();
   f.requests[0].resolve({data:{state:JSON.stringify({rooms:[{...orig,state:drawn(9)}]})},error:null});await tick();
-  assert.equal(f.requests[1].payload.state.rooms[0].state,mine.state);
-  f.reply(1);assert.equal(await done,true);
+  assert.equal(await done,false,'automatic sync must stop at the conflict');
+  assert.equal(f.requests.length,1,'must not issue a destructive UPDATE');
+  assert.equal(f.c.getPendingQueue().length,1,'unsynced local drawing remains in queue');
+  assert.equal(f.items()[0].rooms[0].state,mine.state,'local drawing remains intact');
+  assert.match(f.c.__A_CEIL_LAST_CLOUD_ERROR.message,/Хмарну версію не перезаписано/);
 });
 test('a failed cloud pre-check stays queued without a blind update and retries safely', async () => {
   const orig={id:'r1',name:'Hall',state:drawn(1)};
