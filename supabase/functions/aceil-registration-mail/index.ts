@@ -35,6 +35,21 @@ export default {
     let payload: { type?: string; schema?: string; table?: string; record?: { id?: string } };
     try { payload = await req.json(); }
     catch { return json({ error: "Invalid JSON" }, 400); }
+    // Secret-key-protected diagnostic: report presence/format ONLY, never secret values.
+    // Does not contact SMTP and never creates or changes a mail job.
+    if (payload.type === "HEALTH") {
+      const email = Deno.env.get("ACEIL_GMAIL_ADDRESS")?.trim() || "";
+      const appPassword = Deno.env.get("ACEIL_GMAIL_APP_PASSWORD")?.replace(/\s+/g, "") || "";
+      return json({
+        ok: true,
+        smtp: {
+          email_present: Boolean(email),
+          email_valid: /^[^\s@]+@gmail\.com$/i.test(email),
+          app_password_present: Boolean(appPassword),
+          app_password_is_16_chars: appPassword.length === 16
+        }
+      });
+    }
     if (payload.type !== "INSERT" || payload.schema !== "public" ||
         payload.table !== "aceil_registration_mail_jobs") {
       return json({ error: "Invalid event" }, 400);
