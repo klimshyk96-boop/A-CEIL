@@ -4,6 +4,11 @@
 var busy=false, ACCESS=null, NOM_DENIED=false, lastAccessSig='', lastResumeRightsAt=0;
 var ACCESS_CACHE_KEY='A_CEIL_access_snapshot_v1';
 var projectsRefresh=null,projectsLoadedAt=0,projectsLoadedUid='',projectsLoadedClient=null,projectsRequest=null;
+var lastRightsAt=0,lastRightsUid='',lastRightsClient=null;
+function verifiedRights(c,u){
+  return !!(c&&u&&ACCESS&&lastRightsUid===u.id&&lastRightsClient===c
+    &&Date.now()-lastRightsAt<10000)?ACCESS:null;
+}
 function canonicalCloudState(c,u){
   if(!c||!u||!u.id||typeof window.A_CEIL_CloudLoadState!=='function')return null;
   try{
@@ -32,7 +37,9 @@ function offlineAccess(u){
   try{var row=JSON.parse(localStorage.getItem(ACCESS_CACHE_KEY)||'null');return row&&String(row.userId)===String(u.id)&&row.access?row.access:null}catch(e){return null}
 }
 function enterOffline(u){window.__A_CEIL_OFFLINE_ACTIVE=true;try{if(typeof window.A_CEIL_enterOfflineMode==='function')window.A_CEIL_enterOfflineMode(u)}catch(e){window.__diagSilent&&window.__diagSilent(e)}var el=document.getElementById('cloudStatus');if(el)el.textContent='⚠️ офлайн · локальні дані'}
-async function rights(){var c=sb(),u=usr();if(!u)return null;if(!navigator.onLine){var cached=offlineAccess(u);if(cached){ACCESS=cached;window.A_CEIL_MY_ACCESS=cached}return cached}if(!c)return offlineAccess(u);try{var r=await("function"==typeof withTimeout?withTimeout(c.rpc('get_my_access'),6000,"Перевірка доступу"):c.rpc('get_my_access'));if(!usr()||usr().id!==u.id||sb()!==c)return null;if(r.error)throw r.error;var a=Array.isArray(r.data)?r.data[0]:r.data;if(!a){a=offlineAccess(u);if(!a)return null}ACCESS=a;window.A_CEIL_MY_ACCESS=a;saveAccessSnapshot(a,u);applyNomGate(a);return a}catch(e){if(!usr()||usr().id!==u.id||sb()!==c)return null;var fallback=offlineAccess(u);if(fallback){ACCESS=fallback;window.A_CEIL_MY_ACCESS=fallback}if(isTransientNetworkError(e)||/таймаут/i.test(String(e&&e.message||"")))return fallback;throw e}}
+async function rights(){var c=sb(),u=usr();if(!u)return null;if(!navigator.onLine){var cached=offlineAccess(u);if(cached){ACCESS=cached;window.A_CEIL_MY_ACCESS=cached}return cached}if(!c)return offlineAccess(u);try{var r=await("function"==typeof withTimeout?withTimeout(c.rpc('get_my_access'),6000,"Перевірка доступу"):c.rpc('get_my_access'));if(!usr()||usr().id!==u.id||sb()!==c)return null;if(r.error)throw r.error;var a=Array.isArray(r.data)?r.data[0]:r.data;if(!a){a=offlineAccess(u);if(!a)return null}
+if(r.data){lastRightsAt=Date.now();lastRightsUid=u.id;lastRightsClient=c;}
+ACCESS=a;window.A_CEIL_MY_ACCESS=a;saveAccessSnapshot(a,u);applyNomGate(a);return a}catch(e){if(!usr()||usr().id!==u.id||sb()!==c)return null;var fallback=offlineAccess(u);if(fallback){ACCESS=fallback;window.A_CEIL_MY_ACCESS=fallback}if(isTransientNetworkError(e)||/таймаут/i.test(String(e&&e.message||"")))return fallback;throw e}}
 function nomItemKey(it){if(!it)return'';if(it.id!=null)return'id:'+String(it.id);return'n:'+String(it.name||'').trim().toLowerCase()+'|g:'+String(it.groupId==null?'':it.groupId)+'|u:'+String(it.unit||'')}
 function currentNomItems(){try{return clone(typeof elemItems!=='undefined'&&Array.isArray(elemItems)?elemItems:(window.elemItems||[]))}catch(e){return clone(window.elemItems||[])}}
 function mergeCatalogWithRoomResults(catalog,current){
@@ -82,7 +89,7 @@ async function loadProjects(a){
 async function refresh(){if(busy)return false;var c=sb(),u=usr();if(!u)return false;if(!navigator.onLine){var cached=offlineAccess(u);if(cached){ACCESS=cached;applyNomGate(cached);lastAccessSig=accessSig(cached)}enterOffline(u);return true}if(!c)return false;busy=true;try{var a=await rights();if(!a)return false;await Promise.all([loadNom(a),loadProjects(a)]);applyNomGate(a);lastAccessSig=accessSig(a);return true}catch(e){enterOffline(u);return true}finally{busy=false}}
 async function refreshOnResume(){if(busy)return false;var now=Date.now();if(now-lastResumeRightsAt<1200)return true;lastResumeRightsAt=now;var c=sb(),u=usr();if(!u)return false;if(!navigator.onLine){enterOffline(u);return true}if(!c)return false;busy=true;try{var prev=lastAccessSig||accessSig(ACCESS),a=await rights();if(!a)return false;var sig=accessSig(a);if(sig!==prev){await Promise.all([loadNom(a),loadProjects(a)])}else{applyNomGate(a)}lastAccessSig=sig;return true}catch(e){enterOffline(u);return true}finally{busy=false}}
 /* Nomenclature window remains available. OFF means its catalogue is empty for a non-owner. */
-var oldElements=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);if(typeof oldElements==='function'){var openElementsClean=async function(){var a=null;try{a=await rights();if(a)applyNomGate(a)}catch(e){window.__diagSilent&&window.__diagSilent(e)}var r=oldElements.apply(this,arguments);if(a&&applyNomGate(a))setTimeout(clearNom,0);return r};window.openElementsModal=openElementsClean;try{openElementsModal=openElementsClean}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
+var oldElements=window.openElementsModal||(typeof openElementsModal==='function'?openElementsModal:null);if(typeof oldElements==='function'){var openElementsClean=async function(){var a=null;try{a=verifiedRights(sb(),usr())||await rights();if(a)applyNomGate(a)}catch(e){window.__diagSilent&&window.__diagSilent(e)}var r=oldElements.apply(this,arguments);if(a&&applyNomGate(a))setTimeout(clearNom,0);return r};window.openElementsModal=openElementsClean;try{openElementsModal=openElementsClean}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
 /* Prevent room/project snapshots from resurrecting catalogue rows while access is OFF. */
 var oldRoomLoad=window._loadRoomToCanvas||(typeof _loadRoomToCanvas==='function'?_loadRoomToCanvas:null);if(typeof oldRoomLoad==='function'){var roomLoadGated=function(){var r=oldRoomLoad.apply(this,arguments);if(NOM_DENIED){clearNom();setTimeout(clearNom,0)}var roomNomen=window.A·CEIL&&window.A·CEIL.RoomNomenclature;if(roomNomen)roomNomen.refreshPrice();return r};window._loadRoomToCanvas=roomLoadGated;try{_loadRoomToCanvas=roomLoadGated}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
 /* If any older module adds an item later (lights, room restore, local state), purge it before nomenclature renders. */
@@ -103,8 +110,10 @@ function refreshProjectsInBackground(){
     projectsStatus('Список проєктів · синхронізація триває…');
     Promise.resolve(canonical.inFlight).then(function(){
       var current=canonicalCloudState(c,u);
-      if(current&&noteFreshCanonical(c,u,current))projectsStatus('Список оновлено');
-      else refreshProjectsInBackground();
+      if(current&&noteFreshCanonical(c,u,current)){
+        if(typeof renderProjects==='function')renderProjects();
+        projectsStatus('Список оновлено');
+      }else refreshProjectsInBackground();
     }).catch(function(){refreshProjectsInBackground()});
     return;
   }
@@ -161,6 +170,7 @@ document.addEventListener('visibilitychange',function(){if(document.visibilitySt
 var liveChannel=null, liveTimer=null, liveUid=null, liveRetryCount=0;
 function isTransientNetworkError(e){return !navigator.onLine||/load failed|failed to fetch|networkerror|network request failed|timeout|таймаут/i.test(String(e&&e.message||e||''))}
 function scheduleLiveRefresh(){
+  lastRightsAt=0; // Realtime permission changes invalidate short-lived UI cache immediately.
   clearTimeout(liveTimer);
   liveTimer=setTimeout(async function(){
     try{
