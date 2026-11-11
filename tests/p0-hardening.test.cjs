@@ -9,11 +9,8 @@ const undo=read('supabase/rollback/20261111213000_p0_access_storage_owner.down.s
 const auth=read('js/auth/033-aceil-supabase-auth-offline-access.js');
 const queue=read('js/projects/032-aceil-pending-sync-queue.js');
 
-assert.match(migration,/create or replace function public\.get_my_access\(\)/i);
-assert.match(migration,/from public\.user_access a/i);
-assert.match(migration,/coalesce\(ua\.projects_access,false\)/i);
-assert.match(migration,/coalesce\(ua\.projects_edit,false\)/i);
-assert.match(migration,/p\.demo_expires_at>now\(\)/i);
+assert.doesNotMatch(migration,/create or replace function public\.get_my_access\(\)/i,'own-workspace access stays unchanged');
+assert.match(migration,/public\.aceil_demo_has_access\(\)/i);
 assert.match(migration,/aceil_projects_identity_immutable/i);
 assert.match(migration,/new\.user_id is distinct from old\.user_id/i);
 assert.match(migration,/new\.id is distinct from old\.id/i);
@@ -26,7 +23,7 @@ for(const fn of ['aceil_publish_report_link','aceil_publish_report_snapshot','ac
   assert.ok(at>0,'missing '+fn);
   assert.match(migration.slice(at,at+1500),/A_CEIL_ACCOUNT_INACTIVE_OR_DEMO_EXPIRED/i,'access guard for '+fn);
 }
-assert.match(migration,/and public\.can_access_nomenclature\(p_user_id\)/i);
+assert.match(migration,/public\.aceil_is_platform_admin\(\) or public\.can_access_nomenclature\(p_user_id\)/i,'platform owner can copy target wall catalog');
 assert.match(migration,/revoke execute on function public\.aceil_cleanup_report_links\(\) from public,anon,authenticated/i);
 
 assert.match(queue,/delete updatePayload\.user_id/,'pending queue may not transfer project ownership');
