@@ -10,14 +10,19 @@ language plpgsql
 set search_path = pg_catalog
 as $$
 begin
-  new.sync_revision := old.sync_revision + 1;
+  if TG_OP = 'INSERT' then
+    -- Restoring old trash snapshots may explicitly provide NULL for a new column.
+    new.sync_revision := 1;
+  else
+    new.sync_revision := old.sync_revision + 1;
+  end if;
   return new;
 end;
 $$;
 
 drop trigger if exists aceil_projects_sync_revision_bump on public.projects;
 create trigger aceil_projects_sync_revision_bump
-  before update on public.projects
+  before insert or update on public.projects
   for each row
   execute function public.aceil_projects_bump_sync_revision();
 
