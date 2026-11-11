@@ -36,14 +36,56 @@ function A_CEIL_applyDemoStatus(user,state){
     A_CEIL_showAccessGate("demo_expired");
     return;
   }
-  var bar=document.createElement("div");
-  bar.id="aceilDemoBanner";
-  bar.style.cssText="position:fixed;z-index:11000;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:max-content;max-width:calc(100vw - 26px);padding:9px 15px;border-radius:999px;background:#1e3a8a;color:#fff;border:1px solid #93c5fd;box-shadow:0 7px 24px rgba(15,23,42,.2);font:800 12px/1.25 -apple-system,BlinkMacSystemFont,Arial,sans-serif;text-align:center;pointer-events:none";
-  document.body.appendChild(bar);
+  // Visible, tappable DEMO + support strip lives BELOW the app header.
+  // It must not cover the iPhone navigation or block taps as the old fixed pill did.
+  var bar=document.createElement("section");
+  bar.id="aceilDemoBanner";bar.className="aceil-demo-strip";
+  bar.setAttribute("aria-label","Демо-доступ і контакти підтримки");
+  var head=document.createElement("div");head.className="aceil-demo-strip-head";
+  var timer=document.createElement("span");timer.className="aceil-demo-strip-timer";
+  timer.setAttribute("role","timer");
+  var button=document.createElement("button");button.type="button";button.className="aceil-demo-strip-help";
+  button.textContent="💬 Усі контакти";button.onclick=function(){
+    if(window.A_CEIL_Support&&typeof window.A_CEIL_Support.open==="function")window.A_CEIL_Support.open();
+  };
+  head.appendChild(timer);head.appendChild(button);
+  var links=document.createElement("div");links.className="aceil-demo-strip-links";
+  var heading=document.createElement("span");heading.className="aceil-demo-strip-prompt";
+  heading.textContent="Потрібна допомога або повний доступ?";
+  bar.appendChild(head);bar.appendChild(heading);bar.appendChild(links);
+  var header=document.querySelector("header.app-header");
+  if(header&&header.parentNode)header.parentNode.insertBefore(bar,header.nextSibling);
+  else document.body.appendChild(bar);
+  // Only the DEMO audience gets one small read-only contacts request;
+  // normal app startup and project editor load no extra support data.
+  if(_sb&&typeof _sb.rpc==="function"){
+    Promise.resolve(_sb.rpc("aceil_support_public")).then(function(r){
+      if(!bar.isConnected||_aceilDemoUser!==user.id||r.error)return;
+      var data=r.data&&typeof r.data==="object"?r.data:{};
+      var linkApi=window.A_CEIL_Support&&window.A_CEIL_Support.link;
+      if(typeof linkApi!=="function")return;
+      var options=[["phone","📞 Телефон"],["telegram","✈️ Telegram"],
+        ["whatsapp","WhatsApp"],["viber","Viber"],["email","Email"],
+        ["instagram","Instagram"],["facebook","Facebook"]];
+      options.forEach(function(row){
+        var key=row[0],value=String(data[key]||"").trim();
+        if(!value||links.childElementCount>=3)return;
+        var url=linkApi(key,value);if(!url)return;
+        var item=document.createElement("a");item.className="aceil-demo-strip-link";
+        item.href=url;
+        item.textContent=row[1]+": "+value;
+        item.setAttribute("aria-label","Зв'язатися: "+row[1]);
+        if(!url.startsWith("tel:")&&!url.startsWith("mailto:")){
+          item.target="_blank";item.rel="noopener noreferrer";
+        }
+        links.appendChild(item);
+      });
+    }).catch(function(){});
+  }
   function tick(){
     if(_aceilDemoUser!==user.id||!bar.isConnected){clearInterval(_aceilDemoClock);return}
     var left=Math.max(0,Math.ceil((_aceilDemoDeadline-Date.now())/1000));
-    bar.textContent="⏳ ДЕМО · залишилось "+String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
+    timer.textContent="⏳ ДЕМО · залишилось "+String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
     if(left===0){A_CEIL_hideDemoBanner();A_CEIL_showAccessGate("demo_expired");}
   }
   tick();
