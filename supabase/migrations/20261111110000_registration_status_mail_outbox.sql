@@ -48,13 +48,13 @@ BEGIN
   IF NEW.approval_status IS NOT DISTINCT FROM OLD.approval_status THEN
     RETURN NEW;
   END IF;
-  IF NEW.approval_status IN ('approved','rejected') THEN
+  IF NEW.approval_status::text IN ('approved','rejected') THEN
     UPDATE public.aceil_registration_mail_jobs j
        SET status='canceled', last_error='Status changed before delivery'
      WHERE j.user_id=NEW.id AND j.status='pending'
-       AND j.kind<>NEW.approval_status;
+       AND j.kind<>NEW.approval_status::text;
     INSERT INTO public.aceil_registration_mail_jobs(user_id,kind,source)
-    VALUES (NEW.id, NEW.approval_status, 'automatic')
+    VALUES (NEW.id, NEW.approval_status::text, 'automatic')
     ON CONFLICT DO NOTHING;
   END IF;
   RETURN NEW;
@@ -80,7 +80,7 @@ AS $fn$
      WHERE j.id=p_job_id
        AND j.status='pending'
        AND j.attempts=0
-       AND p.approval_status=j.kind
+       AND p.approval_status::text=j.kind
      FOR UPDATE OF j SKIP LOCKED
   )
   UPDATE public.aceil_registration_mail_jobs j
@@ -144,7 +144,7 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'Access denied' USING errcode='42501';
   END IF;
-  SELECT p.approval_status INTO mail_kind
+  SELECT p.approval_status::text INTO mail_kind
     FROM public.profiles p
     JOIN auth.users u ON u.id=p.id
    WHERE p.id=p_user_id AND u.email IS NOT NULL;
