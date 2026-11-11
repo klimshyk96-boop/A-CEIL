@@ -85,11 +85,33 @@ test('a response without a saved row is not acknowledged', async () => {
   const f=fixture();f.enqueue();const done=f.c.flushPendingQueue();await tick();f.requests[0].resolve({data:null,error:null});
   assert.equal(await done,false);assert.equal(f.c.getPendingQueue().length,1);
 });
-test('a missing stale cloud row is recreated instead of blocking the queue', async () => {
+test('a deleted cloud project is never silently recreated; local edits are preserved', async () => {
   const f=fixture();f.enqueue();const done=f.c.flushPendingQueue();await tick();
-  f.reply(0,null,{code:'PGRST116',message:'JSON object requested, multiple (or no) rows returned'});await tick();
-  assert.equal(f.requests.length,2);assert.equal(f.requests[0].method,'update');assert.equal(f.requests[1].method,'insert');
-  f.reply(1,'new-db-id');assert.equal(await done,true);assert.equal(f.c.getPendingQueue().length,0);assert.equal(f.items()[0]._dbId,'new-db-id');
+  f.reply(0,null,{code:'PGRST116',message:'JSON object requested, multiple (or no) rows returned'});
+  assert.equal(await done,false);
+  assert.equal(f.requests.length,1,'must not INSERT an orphaned old project with a new ID');
+  assert.equal(f.requests[0].method,'update');
+  assert.equal(f.c.getPendingQueue().length,1,'local save remains queued');
+  assert.equal(f.c.getPendingQueue()[0]._manualRestoreRequired,true);
+  assert.match(f.status.textContent,/очікує відновлення/);
+  assert.match(f.c.__A_CEIL_LAST_CLOUD_ERROR.message,/Локальні зміни збережено/);
+  assert.equal(f.items()[0]._dbId,'db-a','original project identity is preserved');
+});
+test('only explicit cloud-trash restoration unblocks a missing project revision', async () => {
+  const f=fixture();f.enqueue();const done=f.c.flushPendingQueue();await tick();
+  f.reply(0,null,{code:'PGRST116',message:'JSON object requested, multiple (or no) rows returned'});
+  assert.equal(await done,false);
+  f.listeners['aceil:project-recovered']({detail:{source:'local-cache',id:'db-a'}});
+  await tick();
+  assert.equal(f.requests.length,1,'local-only recovery cannot resurrect a deleted cloud project');
+  assert.equal(f.c.getPendingQueue()[0]._manualRestoreRequired,true);
+  f.listeners['aceil:project-recovered']({detail:{source:'cloud-trash',id:'db-a'}});
+  await tick();
+  assert.equal(f.requests.length,2,'explicit cloud restoration allows retrying the original UPDATE');
+  assert.equal(f.requests[1].method,'update');
+  assert.equal(f.requests[1].id,'db-a');
+  f.reply(1,'db-a');await tick();
+  assert.equal(f.c.getPendingQueue().length,0,'restored project can sync safely');
 });
 test('a hung Safari request times out and releases the queue flight', async () => {
   const f=fixture();f.c.__A_CEIL_SYNC_TIMEOUT_MS=20;f.enqueue();

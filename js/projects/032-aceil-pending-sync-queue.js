@@ -77,6 +77,12 @@ const PENDING_KEY = "ceiling_pendingSync";
     const n = read().length, el = document.getElementById("cloudStatus");
     if (!el) return;
     if (n) {
+      const blocked = read().find(op => op._manualRestoreRequired);
+      if (blocked) {
+        el.textContent = "⚠️ " + n + " очікує відновлення";
+        el.title = "Проєкт відсутній у хмарі або доступ відкликано. Локальні зміни НЕ видалені. Відновіть проєкт із хмарного кошика вручну або зверніться до власника.";
+        return;
+      }
       el.textContent = "⏳ " + n + " не збережено";
       const stuck = read().find(x => (x._failures || 0) >= 3);
       el.title = stuck ? "Хмара не приймає зміну: " + (stuck._lastError || "помилка") + ". Дані збережені на пристрої, повтор триває." : "Є зміни, які збережені на пристрої та очікують хмару.";
@@ -248,11 +254,13 @@ const PENDING_KEY = "ceiling_pendingSync";
         delete updatePayload.user_id;
         const update = session.client.from("projects").update(updatePayload).eq("id", dbId).select().single();
         result = await runQuery(update, "Оновлення проєкту");
-        // A local cache can legitimately outlive its old cloud row. Recreate it
-        // instead of leaving the same impossible UPDATE in the queue forever.
+        // A stale local cache may outlive a cloud deletion or revoked sharing.
+        // NEVER silently INSERT a different cloud project ID: that resurrects
+        // explicitly deleted objects, creates duplicates and breaks ownership.
         if (result && result.error && isMissingRowError(result.error)) {
-          const insert = session.client.from("projects").insert(payload).select().single();
-          result = await runQuery(insert, "Відновлення проєкту в хмарі");
+          const missing = new Error("Проєкт відсутній у хмарі або доступ відкликано. Локальні зміни збережено. Відновіть проєкт із кошика вручну.");
+          missing.aceilManualRestoreRequired = true;
+          throw missing;
         }
       } else {
         const insert = session.client.from("projects").insert(payload).select().single();
@@ -294,7 +302,8 @@ const PENDING_KEY = "ceiling_pendingSync";
     throw lastError || new Error("Не вдалося синхронізувати проєкт");
   }
   function scheduleRetry() {
-    if (retryTimer || !navigator.onLine || !read().length) return;
+    // Missing/deleted cloud rows require an explicit restore, never a retry loop.
+    if (retryTimer || !navigator.onLine || !read().some(op => !op._manualRestoreRequired)) return;
     /* Keep the queue alive after transient Safari/network failures. Backoff is
        capped so retries continue without creating a tight background loop. */
     const stuck = read().some(x => (x._failures || 0) >= 6);
@@ -363,7 +372,7 @@ const PENDING_KEY = "ceiling_pendingSync";
     const attempted = new Set();
     let skippedEmpty = false;
     while (sameSession(session)) {
-      const op = read().find(x => !attempted.has(x._queueId));
+      const op = read().find(x => !attempted.has(x._queueId) && !x._manualRestoreRequired);
       if (!op) break;
       attempted.add(op._queueId);
       try {
@@ -389,7 +398,13 @@ const PENDING_KEY = "ceiling_pendingSync";
         if (error && error.aceilEmptyObject) { skippedEmpty = true; acknowledge(op); continue; }
         try {
           const queue = read(), failed = queue.find(x => x._queueId === op._queueId);
-          if (failed) { failed._failures = (failed._failures || 0) + 1; failed._lastError = errorMessage(error).slice(0, 200); failed._lastFailedAt = Date.now(); write(queue); }
+          if (failed) {
+            failed._failures = (failed._failures || 0) + 1;
+            failed._lastError = errorMessage(error).slice(0, 200);
+            failed._lastFailedAt = Date.now();
+            if (error && error.aceilManualRestoreRequired) failed._manualRestoreRequired = true;
+            write(queue);
+          }
         } catch (_) {}
         window.__A_CEIL_LAST_CLOUD_ERROR = {at: Date.now(), message: errorMessage(error)};
         if (window.__diagSilent) window.__diagSilent(error);
@@ -431,6 +446,28 @@ const PENDING_KEY = "ceiling_pendingSync";
   [1800, 5000, 10000].forEach(delay => setTimeout(() => {
     if (navigator.onLine && read().length) retryNow();
   }, delay));
-  window.addEventListener("aceil:project-recovered",badge);
+  window.addEventListener("aceil:project-recovered", event => {
+    const detail = event && event.detail || {};
+    // Only an explicit CLOUD TRASH restore makes an orphaned cloud ID valid again.
+    if (detail.source === "cloud-trash" && detail.id != null) {
+      const target = String(detail.id), queue = read();
+      let unblocked = false;
+      queue.forEach(op => {
+        if (!op._manualRestoreRequired) return;
+        const local = findLocal(op.payload || {});
+        const cloudId = (op.payload && op.payload.dbId) || (local && local._dbId);
+        if (cloudId != null && String(cloudId) === target) {
+          delete op._manualRestoreRequired;
+          delete op._lastError;
+          unblocked = true;
+        }
+      });
+      if (unblocked) {
+        write(queue);
+        if (navigator.onLine) flush().catch(error => { if (window.__diagSilent) window.__diagSilent(error); });
+      }
+    }
+    badge();
+  });
   setTimeout(badge,0);
 })();
