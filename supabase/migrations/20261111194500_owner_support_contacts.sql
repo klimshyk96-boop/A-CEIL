@@ -47,7 +47,7 @@ begin
        or jsonb_typeof(p_contacts->v_field)<>'string'
     then raise exception 'invalid contact field'; end if;
     v_value:=btrim(v_value);
-    if length(v_value)>case when v_field='note' then 500 else 300 end then
+    if length(v_value)>(case when v_field='note' then 500 else 300 end) then
       raise exception 'contact field too long'; end if;
     if v_value='' then continue; end if;
     if v_field='email'
