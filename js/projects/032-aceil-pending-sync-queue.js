@@ -247,6 +247,14 @@ const PENDING_KEY = "ceiling_pendingSync";
       if (dbId) {
         merge = await mergeRemoteRooms(session, local, payload, dbId);
         if (!sameSession(session)) throw new Error("Обліковий запис змінився під час перевірки хмари");
+        // Two devices changed the same room since the last common cloud state.
+        // Never silently prefer this device and overwrite the other drawing.
+        // Keep the local snapshot and pending operation for manual reconciliation.
+        if (merge && merge.conflicts.length) {
+          const conflict = new Error("Кімнату «" + merge.conflicts[0] + "» змінено на двох пристроях. Хмарну версію не перезаписано; ваші зміни збережені локально. Потрібне узгодження змін.");
+          conflict.aceilConcurrentEdit = true;
+          throw conflict;
+        }
         if (merge && (merge.adopted.length || merge.added.length || merge.dropped.length)) payload.state.rooms = merge.rooms;
         // Never transfer shared-project ownership when a worker saves the original project.
         // The database enforces immutability; update only editable fields here.
