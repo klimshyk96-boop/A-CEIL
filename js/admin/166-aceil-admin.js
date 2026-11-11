@@ -1,7 +1,7 @@
 /* A·CEIL administration UI. */
 (function(){
 "use strict";
-var profile=null,loading=false;
+var profile=null,loading=false,mailFeatureReady=false;
 
 function sb(){try{return (typeof _sb!=="undefined"&&_sb)||window._sb||null}catch(e){return window._sb||null}}
 function currentUser(){try{return (typeof _sbUser!=="undefined"&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
@@ -196,10 +196,13 @@ function render(rows){
       var quick='<div class="aceil-quick-rights"><span class="aceil-quick-pill '+(r.workspace_initialized?'on':'')+'">Власний кабінет</span><span class="aceil-quick-pill '+(r.workspace_copied?'on':'')+'">'+(r.workspace_copied?'Копія надана':'Без копії')+'</span><span class="aceil-quick-pill edit '+(r.projects_access?'on':'')+'">Спільні проєкти</span></div>';
       var displayName=String(r.name||r.email||'Користувач').trim(),email=String(r.email||'').trim(),phone=String(r.contact_phone||'').trim();
       var mail=email&&displayName.toLowerCase()!==email.toLowerCase()?'<span class="aceil-admin-mail">'+esc(email)+'</span>':'';
+      var mailStatus=r.aceil_mail||null;
+      var mailTitle=mailStatus?(mailStatus.status==='sent'?'Лист передано поштовому сервісу':mailStatus.status==='failed'?'Помилка відправки':mailStatus.status==='pending'?'Лист у черзі':mailStatus.status==='processing'?'Надсилаємо лист':'Надсилання скасовано'):'Лист ще не надсилався';
+      var mailTools=mailFeatureReady&&!pending?'<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:9px 0 12px;font-size:12px"><span>✉️ '+esc(mailTitle)+'</span><button type="button" onclick="A_CEIL_Admin.resendRegistrationEmail(\''+esc(uid)+'\',this)" style="border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:10px;padding:8px 12px;font-weight:700">Надіслати ще раз</button></div>':'';
       var contactDetails='<div style="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px;font-size:13px">'+
         (phone?'<a href="tel:'+esc(phone)+'" style="color:#2563eb;font-weight:700">📞 '+esc(phone)+'</a>':'<span style="color:#64748b">📞 Телефон ще не вказаний</span>')+
         (email?'<a href="mailto:'+encodeURIComponent(email)+'" style="color:#2563eb;font-weight:700">✉️ '+esc(email)+'</a>':'')+'</div>';
-      return '<div class="aceil-admin-user" data-uid="'+esc(uid)+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||'')+' '+String(r.contact_phone||''))+'"><button type="button" class="aceil-admin-user-top" aria-expanded="false" onclick="A_CEIL_Admin.toggleCard(this)"><span class="aceil-user-avatar">'+esc(initials(r))+'</span><span class="aceil-user-ident"><span class="aceil-admin-name">'+esc(displayName)+'</span>'+mail+'</span>'+badge+'<span class="aceil-user-chevron">⌄</span></button>'+quick+'<div class="aceil-admin-controls">'+contactDetails+(pending?'<div class="aceil-approval-box"><div><b>Нова реєстрація</b><small>Обери початкові дані користувача.</small></div><div class="aceil-approval-actions"><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,false)" type="button" class="approve empty">✓ Порожній</button><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,true)" type="button" class="approve">✓ Дати копію</button><button onclick="A_CEIL_Admin.reject(\''+esc(uid)+'\',this)" type="button" class="reject">× Відхилити</button></div></div>':workspaceBox(uid,r))+
+      return '<div class="aceil-admin-user" data-uid="'+esc(uid)+'" data-search="'+esc(String(r.name||'')+' '+String(r.email||'')+' '+String(r.contact_phone||''))+'"><button type="button" class="aceil-admin-user-top" aria-expanded="false" onclick="A_CEIL_Admin.toggleCard(this)"><span class="aceil-user-avatar">'+esc(initials(r))+'</span><span class="aceil-user-ident"><span class="aceil-admin-name">'+esc(displayName)+'</span>'+mail+'</span>'+badge+'<span class="aceil-user-chevron">⌄</span></button>'+quick+'<div class="aceil-admin-controls">'+contactDetails+mailTools+(pending?'<div class="aceil-approval-box"><div><b>Нова реєстрація</b><small>Обери початкові дані користувача.</small></div><div class="aceil-approval-actions"><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,false)" type="button" class="approve empty">✓ Порожній</button><button onclick="A_CEIL_Admin.approve(\''+esc(uid)+'\',this,true)" type="button" class="approve">✓ Дати копію</button><button onclick="A_CEIL_Admin.reject(\''+esc(uid)+'\',this)" type="button" class="reject">× Відхилити</button></div></div>':workspaceBox(uid,r))+
         (!pending?wallCatalogBox(uid,r):'')+
         (!pending?filmCatalogBox(uid,r):'')+
         toggle(uid,"projects_access","Доступ до моїх проєктів","Окремий спільний доступ до проєктів головного власника",!!r.projects_access,false)+
@@ -253,14 +256,16 @@ async function load(){
   if(!hasCards)content('<div class="aceil-admin-note">Завантажуємо користувачів…</div>');
   try{
     var c=sb();if(!c)throw new Error("Supabase client недоступний.");
-    var results=await Promise.all([c.rpc("admin_list_users"),c.rpc("admin_list_workspace_status"),c.rpc("admin_film_catalog_status"),c.rpc("aceil_admin_contact_list")]);
+    var results=await Promise.all([c.rpc("admin_list_users"),c.rpc("admin_list_workspace_status"),c.rpc("admin_film_catalog_status"),c.rpc("aceil_admin_contact_list"),c.rpc("aceil_admin_registration_mail_log")]);
     var r=results[0],wr=results[1];if(r.error)throw r.error;if(wr.error)throw wr.error;
     workspaceByUser={};(Array.isArray(wr.data)?wr.data:[]).forEach(function(x){workspaceByUser[String(x.user_id||'')]=x});
     filmSharingReady=!results[2].error;
     if(filmSharingReady)(Array.isArray(results[2].data)?results[2].data:[]).forEach(function(x){var key=String(x.user_id||'');workspaceByUser[key]=Object.assign({},workspaceByUser[key]||{},x)});
     var contactsByUser={};
     if(!results[3].error)(Array.isArray(results[3].data)?results[3].data:[]).forEach(function(x){contactsByUser[String(x.user_id||'')]=x.contact_phone||''});
-    var rows=(Array.isArray(r.data)?r.data:[]).map(function(x){var uid=String(x.user_id||x.id||'');return Object.assign({},x,workspaceByUser[uid]||{},{contact_phone:contactsByUser[uid]||''})});
+    var mailByUser={};mailFeatureReady=!results[4].error;
+    if(mailFeatureReady)(Array.isArray(results[4].data)?results[4].data:[]).forEach(function(x){mailByUser[String(x.user_id||'')]=x});
+    var rows=(Array.isArray(r.data)?r.data:[]).map(function(x){var uid=String(x.user_id||x.id||'');return Object.assign({},x,workspaceByUser[uid]||{},{contact_phone:contactsByUser[uid]||'',aceil_mail:mailByUser[uid]||null})});
     render(rows);
     await loadActivityData();
     if(view)restoreAdminViewState(view);
@@ -292,6 +297,18 @@ async function initializeWorkspace(uid,copy,button,overwrite){
 async function approve(uid,b,copy){var ok=await setApproval(uid,'approved',b);if(ok)return initializeWorkspace(uid,!!copy,b);return false}
 function reject(uid,b){if(!confirm('Відхилити реєстрацію цього користувача?'))return;return setApproval(uid,'rejected',b)}
 
+async function resendRegistrationEmail(uid,button){
+  if(!mailFeatureReady)return toast('Надсилання листів ще не налаштоване.');
+  if(!confirm('Повторно надіслати користувачу лист про поточний статус реєстрації?'))return;
+  if(button)button.disabled=true;
+  try{
+    var c=sb();if(!c)throw new Error('Немає зв’язку із Supabase.');
+    var r=await c.rpc('aceil_admin_resend_registration_mail',{p_user_id:uid});
+    if(r.error)throw r.error;
+    toast('✓ Лист додано до черги');await load();
+  }catch(e){toast('Не вдалося додати лист: '+String(e&&e.message?e.message:e))}
+  finally{if(button)button.disabled=false}
+}
 async function deleteUser(uid,label,button){
   label=String(label||'Користувач');
   if(!confirm('Повністю видалити користувача '+label+'?\n\nЦю дію не можна скасувати.'))return;
@@ -429,7 +446,7 @@ function setDebugCount(value){var count=Math.max(0,Number(value)||0),label=count
 function open(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.add("open");m.setAttribute("aria-hidden","false");load()}
 function close(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 
-window.A_CEIL_Admin={open:open,close:close,load:load,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,setFilmAccess:setFilmAccess,replaceFilmCatalog:replaceFilmCatalog,restoreFilmCatalog:restoreFilmCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab,setDebugCount:setDebugCount};
+window.A_CEIL_Admin={open:open,close:close,load:load,resendRegistrationEmail:resendRegistrationEmail,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,setFilmAccess:setFilmAccess,replaceFilmCatalog:replaceFilmCatalog,restoreFilmCatalog:restoreFilmCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab,setDebugCount:setDebugCount};
 
 function boot(){
   removeLegacyMenuItem();
