@@ -74,13 +74,19 @@ const PENDING_KEY = "ceiling_pendingSync";
     return all.find(project=>ids.some(id=>matches(project,id)))||null;
   }
   function badge() {
-    const n = read().length, el = document.getElementById("cloudStatus");
+    const queue = read(), n = queue.length, el = document.getElementById("cloudStatus");
     if (!el) return;
     if (n) {
       const blocked = read().find(op => op._manualRestoreRequired);
       if (blocked) {
         el.textContent = "⚠️ " + n + " очікує відновлення";
         el.title = "Проєкт відсутній у хмарі або доступ відкликано. Локальні зміни НЕ видалені. Відновіть проєкт із хмарного кошика вручну або зверніться до власника.";
+        return;
+      }
+      const conflict = queue.find(op => op._manualConflictRequired);
+      if (conflict) {
+        el.textContent = "⚠️ " + n + " конфлікт змін";
+        el.title = "Інший пристрій змінив цей проєкт. Локальна копія та черга збережені, хмарну версію не перезаписано. Потрібне ручне узгодження або створення окремої копії.";
         return;
       }
       el.textContent = "⏳ " + n + " не збережено";
@@ -196,6 +202,16 @@ const PENDING_KEY = "ceiling_pendingSync";
     } catch (_) { return false; }
   }
   function roomSync() { return window.A·CEIL && window.A·CEIL.roomSync; }
+  function revisionOf(project) {
+    const raw = project && project._cloudRevision;
+    if (raw == null || !/^[1-9][0-9]*$/.test(String(raw))) return null;
+    return String(raw);
+  }
+  function concurrentEdit(message) {
+    const error = new Error(message || "Проєкт змінено на іншому пристрої. Локальна копія збережена; хмарну не перезаписано.");
+    error.aceilConcurrentEdit = true;
+    return error;
+  }
   function stateRooms(raw) {
     try { const st = typeof raw === "string" ? JSON.parse(raw || "{}") : (raw || {}); return Array.isArray(st.rooms) ? st.rooms : null; }
     catch (_) { return null; }
@@ -208,8 +224,11 @@ const PENDING_KEY = "ceiling_pendingSync";
   async function mergeRemoteRooms(session, local, payload, dbId) {
     const sync = roomSync();
     if (!sync || !local || !local._cloudBase || !payload.state || !Array.isArray(payload.state.rooms)) return null;
-    const res = await runQuery(session.client.from("projects").select("state").eq("id", dbId).single(), "Перевірка змін у хмарі");
+    const res = await runQuery(session.client.from("projects").select("state,sync_revision").eq("id", dbId).single(), "Перевірка змін у хмарі");
     if (!res || res.error || !res.data) throw res && res.error || new Error("Хмара не підтвердила стан кімнат. Збереження очікує повтору.");
+    if (String(res.data.sync_revision) !== revisionOf(local)) {
+      throw concurrentEdit("Проєкт змінено на іншому пристрої. Ваші локальні правки збережені; хмарну версію не перезаписано.");
+    }
     const cloud = stateRooms(res.data.state);
     if (!cloud) throw new Error("Не вдалося прочитати кімнати у хмарі. Збереження очікує повтору.");
     const base = local._cloudBase, mine = payload.state.rooms, byId = new Map(mine.map(r => [String(r && r.id), r]));
@@ -245,6 +264,10 @@ const PENDING_KEY = "ceiling_pendingSync";
       let result;
       let merge = null;
       if (dbId) {
+        const expectedRevision = revisionOf(local);
+        if (!expectedRevision) {
+          throw concurrentEdit("Немає перевіреної серверної ревізії проєкту. Локальні правки збережені; необхідне ручне узгодження перед записом.");
+        }
         merge = await mergeRemoteRooms(session, local, payload, dbId);
         if (!sameSession(session)) throw new Error("Обліковий запис змінився під час перевірки хмари");
         // Two devices changed the same room since the last common cloud state.
@@ -260,12 +283,19 @@ const PENDING_KEY = "ceiling_pendingSync";
         // The database enforces immutability; update only editable fields here.
         const updatePayload = Object.assign({}, payload);
         delete updatePayload.user_id;
-        const update = session.client.from("projects").update(updatePayload).eq("id", dbId).select().single();
+        const update = session.client.from("projects").update(updatePayload).eq("id", dbId).eq("sync_revision", expectedRevision).select().single();
         result = await runQuery(update, "Оновлення проєкту");
         // A stale local cache may outlive a cloud deletion or revoked sharing.
         // NEVER silently INSERT a different cloud project ID: that resurrects
         // explicitly deleted objects, creates duplicates and breaks ownership.
         if (result && result.error && isMissingRowError(result.error)) {
+          // CAS returning no rows can mean stale revision, deletion, or revoked access.
+          // Distinguish with a read before ever offering recovery; do not INSERT.
+          const check = await runQuery(session.client.from("projects").select("sync_revision").eq("id", dbId).single(), "Перевірка конфлікту проєкту");
+          if (check && check.data && check.data.sync_revision != null) {
+            throw concurrentEdit("Проєкт змінено на іншому пристрої під час збереження. Локальні правки збережені; хмарну версію не перезаписано.");
+          }
+          if (check && check.error && !isMissingRowError(check.error)) throw check.error;
           const missing = new Error("Проєкт відсутній у хмарі або доступ відкликано. Локальні зміни збережено. Відновіть проєкт із кошика вручну.");
           missing.aceilManualRestoreRequired = true;
           throw missing;
@@ -311,7 +341,7 @@ const PENDING_KEY = "ceiling_pendingSync";
   }
   function scheduleRetry() {
     // Missing/deleted cloud rows require an explicit restore, never a retry loop.
-    if (retryTimer || !navigator.onLine || !read().some(op => !op._manualRestoreRequired)) return;
+    if (retryTimer || !navigator.onLine || !read().some(op => !op._manualRestoreRequired && !op._manualConflictRequired)) return;
     /* Keep the queue alive after transient Safari/network failures. Backoff is
        capped so retries continue without creating a tight background loop. */
     const stuck = read().some(x => (x._failures || 0) >= 6);
@@ -359,6 +389,7 @@ const PENDING_KEY = "ceiling_pendingSync";
     const newer = pending.some(x => x._queueId !== op._queueId && related(x.payload, op.payload));
     if (current._localId == null) current._localId = current.id;
     current.id = row.id; current._dbId = row.id; current._cloudSavedAt=Date.now();
+    if (row.sync_revision != null) current._cloudRevision = String(row.sync_revision);
     // Keep the open object attached to its assigned cloud ID, unless the user
     // has already navigated to another project while the request was pending.
     if (typeof _currentProjectId !== "undefined" && matches(local, _currentProjectId)) _currentProjectId = row.id;
@@ -380,7 +411,7 @@ const PENDING_KEY = "ceiling_pendingSync";
     const attempted = new Set();
     let skippedEmpty = false;
     while (sameSession(session)) {
-      const op = read().find(x => !attempted.has(x._queueId) && !x._manualRestoreRequired);
+      const op = read().find(x => !attempted.has(x._queueId) && !x._manualRestoreRequired && !x._manualConflictRequired);
       if (!op) break;
       attempted.add(op._queueId);
       try {
@@ -411,6 +442,7 @@ const PENDING_KEY = "ceiling_pendingSync";
             failed._lastError = errorMessage(error).slice(0, 200);
             failed._lastFailedAt = Date.now();
             if (error && error.aceilManualRestoreRequired) failed._manualRestoreRequired = true;
+            if (error && error.aceilConcurrentEdit) failed._manualConflictRequired = true;
             write(queue);
           }
         } catch (_) {}
