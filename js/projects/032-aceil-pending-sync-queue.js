@@ -242,7 +242,11 @@ const PENDING_KEY = "ceiling_pendingSync";
         merge = await mergeRemoteRooms(session, local, payload, dbId);
         if (!sameSession(session)) throw new Error("Обліковий запис змінився під час перевірки хмари");
         if (merge && (merge.adopted.length || merge.added.length || merge.dropped.length)) payload.state.rooms = merge.rooms;
-        const update = session.client.from("projects").update(payload).eq("id", dbId).select().single();
+        // Never transfer shared-project ownership when a worker saves the original project.
+        // The database enforces immutability; update only editable fields here.
+        const updatePayload = Object.assign({}, payload);
+        delete updatePayload.user_id;
+        const update = session.client.from("projects").update(updatePayload).eq("id", dbId).select().single();
         result = await runQuery(update, "Оновлення проєкту");
         // A local cache can legitimately outlive its old cloud row. Recreate it
         // instead of leaving the same impossible UPDATE in the queue forever.

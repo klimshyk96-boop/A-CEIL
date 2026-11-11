@@ -170,5 +170,6 @@
   "js/projects/230-aceil-project-archive.js",
   "calculator/model.js",
   "calculator/cloud.js",
-  "calculator/owner.js"
+  "calculator/owner.js",
+  "js/auth/231-aceil-contact-phone-onboarding.js"
 ]

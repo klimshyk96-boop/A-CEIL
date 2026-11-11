@@ -6,6 +6,7 @@ cd "$ROOT_DIR" || exit 1
 
 python3 scripts/check-runtime.py || exit 1
 node tests/security-config.test.cjs || exit 1
+node tests/p0-hardening.test.cjs || exit 1
 node tests/pending-sync-queue.test.cjs || exit 1
 node tests/project-mode.test.cjs || exit 1
 node tests/calc-links.test.cjs || exit 1

@@ -10,7 +10,7 @@ const sql=fs.readFileSync(path.join(__dirname,'..','supabase','migrations','2026
 
 assert.match(html,/id="aceilSupportPane"/,'admin contacts pane must exist');
 assert.match(html,/data-tab="support"/,'owner contacts tab must exist');
-assert.match(html,/class="aceil-support-header"/,'contact entry point in header');
+assert.match(html,/class="[^"]*\baceil-support-header\b[^"]*"/,'contact entry point in header');
 assert.match(html,/class="aceil-auth-help"/,'users can request help before login');
 assert.match(auth,/onclick="A_CEIL_Support.open\(\)"/,'expired demos may reach owner');
 assert.match(admin,/if\(name==='support'&&cp\)loadSupportEditor\(\)/,'contacts loaded on tab selection');
