@@ -57,7 +57,7 @@ export default {
       if (userResp.error) throw userResp.error;
       const user = userResp.data?.user;
       const to = user?.email || "";
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(to)) throw new Error("User email not available");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new Error("User email not available");
       const name = String(user?.user_metadata?.name || user?.user_metadata?.full_name || "");
       const contents = message(job.kind, name);
 
@@ -65,9 +65,9 @@ export default {
       // No app password is ever sent to the browser or committed to the repo.
       // Keep Resend as a future optional provider. Gmail wins when configured.
       const gmailAddress = Deno.env.get("ACEIL_GMAIL_ADDRESS")?.trim() || "";
-      const gmailAppPassword = Deno.env.get("ACEIL_GMAIL_APP_PASSWORD")?.replace(/\\s+/g, "") || "";
+      const gmailAppPassword = Deno.env.get("ACEIL_GMAIL_APP_PASSWORD")?.replace(/\s+/g, "") || "";
       if (gmailAddress || gmailAppPassword) {
-        if (!/^[^\\s@]+@gmail\\.com$/i.test(gmailAddress) || !gmailAppPassword) {
+        if (!/^[^\s@]+@gmail\.com$/i.test(gmailAddress) || !gmailAppPassword) {
           throw new Error("A·CEIL Gmail SMTP is only partially configured");
         }
         const transport = nodemailer.createTransport({
