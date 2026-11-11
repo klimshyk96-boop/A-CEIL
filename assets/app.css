@@ -1700,3 +1700,49 @@ body.rm-hybrid-only-active #cv{pointer-events:none!important;}
 .aceil-workspace-box,.aceil-wall-copy-box{grid-column:1/-1!important;}.aceil-workspace-box.ready{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;}.aceil-workspace-box.ready .aceil-workspace-actions{grid-column:1/-1;width:100%;}.aceil-workspace-actions.change button:first-child{border-color:#fecaca;background:#fff7f7;color:#b91c1c;}.aceil-wall-copy-box{margin:0;padding:14px;border:1px solid #ddd6fe;border-radius:16px;background:#faf5ff;display:flex;flex-direction:column;gap:10px;}.aceil-wall-copy-box>div:first-child{display:flex;flex-direction:column;gap:3px;}.aceil-wall-copy-box b{color:#4c1d95;font-size:14px;}.aceil-wall-copy-box small{color:#6b7280;line-height:1.35;}.aceil-access-icon.report_publish{background:#ecfeff;color:#0891b2;}@media(max-width:520px){.aceil-workspace-box.ready{grid-template-columns:1fr;}.aceil-workspace-box.ready>span{grid-column:1;}.aceil-wall-copy-box .aceil-workspace-actions{grid-template-columns:1fr;}}
 .aceil-owner-admin-dock{width:100%;max-width:1200px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;}.aceil-owner-admin-button{min-height:42px!important;padding:0 17px!important;border:1px solid rgba(99,102,241,.2)!important;border-radius:16px!important;background:rgba(255,255,255,.82)!important;color:#334155!important;box-shadow:0 10px 26px rgba(15,23,42,.08),inset 0 1px 0 rgba(255,255,255,.95)!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;font-size:13px!important;font-weight:900!important;line-height:1!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}.aceil-owner-admin-button svg{width:19px;height:19px;fill:none;stroke:#4f46e5;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto;}.aceil-owner-admin-button:active{transform:scale(.97)!important;}@media(max-width:600px){.aceil-owner-admin-dock{margin-bottom:8px;}.aceil-owner-admin-button{min-height:40px!important;padding:0 15px!important;border-radius:15px!important;font-size:12.5px!important;}}
 #rpCockpit .rpc-top{min-width:0!important;}#rpCockpit .rpc-brand{min-width:0!important;flex:0 1 auto!important;}#rpCockpit .rpc-name{min-width:0!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}#rpCockpit .aceil-head-actions{margin-left:auto;display:flex!important;align-items:center;gap:5px;flex:0 0 auto;padding:0 6px;}#rpCockpit .rpc-head-right{margin-left:0!important;}#rpCockpit .aceil-head-action{box-sizing:border-box!important;width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important;padding:7px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;border:1px solid #dbe4f2!important;border-radius:12px!important;background:#f7f9ff!important;color:#4f46e5!important;box-shadow:none!important;line-height:1!important;}#rpCockpit .aceil-head-action svg{display:block!important;width:19px!important;height:19px!important;min-width:19px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.9!important;stroke-linecap:round!important;stroke-linejoin:round!important;}#rpCockpit .aceil-head-logout{color:#dc2626!important;background:#fff7f7!important;border-color:#fee2e2!important;}#rpCockpit .rpc-tools .rpc-logout{display:none!important;}@media(max-width:430px){#rpCockpit .aceil-head-actions{gap:3px;padding:0 4px;}#rpCockpit .aceil-head-action{width:31px!important;min-width:31px!important;height:31px!important;min-height:31px!important;padding:6px!important;}#rpCockpit #rpcTotalPill{min-width:92px!important;padding:5px 7px!important;}}
+
+/* A·CEIL auth: signup must be visible and reachable on short mobile viewports.
+   Previous no-scroll rule clipped the bottom registration link AND the signup phone fields. */
+#authScreen:not(.hidden){
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-y:contain!important;
+  touch-action:pan-y!important;
+  justify-content:flex-start!important;
+}
+#authScreen:not(.hidden) .rm-auth-shell{
+  height:auto!important;
+  min-height:100%!important;
+  flex:0 0 auto!important;
+  justify-content:flex-start!important;
+  padding:18px 0 max(26px, env(safe-area-inset-bottom))!important;
+  box-sizing:border-box!important;
+}
+#authScreen .rm-auth-mode-switch{
+  display:block!important;
+  width:100%!important;
+  min-height:44px!important;
+  margin:0 0 14px!important;
+  padding:9px 14px!important;
+  border:1px solid rgba(96,165,250,.65)!important;
+  border-radius:13px!important;
+  background:rgba(37,99,235,.13)!important;
+  color:#bfdbfe!important;
+  font:800 14px/1.35 system-ui,-apple-system,sans-serif!important;
+  text-align:center!important;
+  cursor:pointer!important;
+  -webkit-tap-highlight-color:transparent;
+}
+#authScreen .rm-auth-mode-switch:focus-visible{
+  outline:3px solid #93c5fd!important;
+  outline-offset:2px!important;
+}
+@media(max-width:600px){
+  #authScreen:not(.hidden) .rm-auth-shell{
+    padding-top:10px!important;
+  }
+  #authScreen:not(.hidden) .rm-auth-brand{
+    margin-bottom:12px!important;
+  }
+}
