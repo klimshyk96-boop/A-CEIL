@@ -2,6 +2,8 @@
 (function(){
 "use strict";
 var profile=null,loading=false,mailFeatureReady=false;
+// A delivery result arrives asynchronously after the approval RPC. Refresh the status a few times, not forever.
+function scheduleMailStatusRefresh(){[3500,11000,23000].forEach(function(delay){setTimeout(function(){var modal=document.getElementById("aceilAdminModal");if(modal&&modal.classList.contains("open"))load()},delay)})}
 
 function sb(){try{return (typeof _sb!=="undefined"&&_sb)||window._sb||null}catch(e){return window._sb||null}}
 function currentUser(){try{return (typeof _sbUser!=="undefined"&&_sbUser)||window._sbUser||null}catch(e){return window._sbUser||null}}
@@ -198,7 +200,8 @@ function render(rows){
       var mail=email&&displayName.toLowerCase()!==email.toLowerCase()?'<span class="aceil-admin-mail">'+esc(email)+'</span>':'';
       var mailStatus=r.aceil_mail||null;
       var mailTitle=mailStatus?(mailStatus.status==='sent'?'Лист передано поштовому сервісу':mailStatus.status==='failed'?'Помилка відправки':mailStatus.status==='pending'?'Лист у черзі':mailStatus.status==='processing'?'Надсилаємо лист':'Надсилання скасовано'):'Лист ще не надсилався';
-      var mailTools=mailFeatureReady&&!pending?'<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:9px 0 12px;font-size:12px"><span>✉️ '+esc(mailTitle)+'</span><button type="button" onclick="A_CEIL_Admin.resendRegistrationEmail(\''+esc(uid)+'\',this)" style="border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:10px;padding:8px 12px;font-weight:700">Надіслати ще раз</button></div>':'';
+      var mailProblem=mailStatus&&mailStatus.status==='failed'&&mailStatus.last_error?'<span style="color:#b91c1c;flex-basis:100%;font-size:11px">'+esc(mailStatus.last_error)+'</span>':'';
+      var mailTools=mailFeatureReady&&!pending?'<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:9px 0 12px;font-size:12px"><span>✉️ '+esc(mailTitle)+'</span><button type="button" onclick="A_CEIL_Admin.load()" style="border:1px solid #cbd5e1;background:#f8fafc;color:#334155;border-radius:10px;padding:8px 12px;font-weight:700">Оновити стан</button><button type="button" onclick="A_CEIL_Admin.resendRegistrationEmail(\''+esc(uid)+'\',this)" style="border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:10px;padding:8px 12px;font-weight:700">Надіслати ще раз</button>'+mailProblem+'</div>':'';
       var contactDetails='<div style="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px;font-size:13px">'+
         (phone?'<a href="tel:'+esc(phone)+'" style="color:#2563eb;font-weight:700">📞 '+esc(phone)+'</a>':'<span style="color:#64748b">📞 Телефон ще не вказаний</span>')+
         (email?'<a href="mailto:'+encodeURIComponent(email)+'" style="color:#2563eb;font-weight:700">✉️ '+esc(email)+'</a>':'')+'</div>';
@@ -279,7 +282,7 @@ async function load(){
 }
 async function setApproval(uid,status,button){
   if(button)button.disabled=true;
-  try{var c=sb();if(!c)throw new Error("Supabase client недоступний.");var r=await c.rpc("admin_set_registration_status",{p_user_id:uid,p_status:status});if(r.error)throw r.error;toast(status==='approved'?"✓ Реєстрацію схвалено":"✓ Реєстрацію відхилено");if(status!=='approved')await load();return true}
+  try{var c=sb();if(!c)throw new Error("Supabase client недоступний.");var r=await c.rpc("admin_set_registration_status",{p_user_id:uid,p_status:status});if(r.error)throw r.error;toast(status==='approved'?"✓ Реєстрацію схвалено":"✓ Реєстрацію відхилено");if(status!=='approved')await load();scheduleMailStatusRefresh();return true}
   catch(e){if(button)button.disabled=false;toast("Не вдалося змінити статус: "+String(e&&e.message?e.message:e));return false}
 }
 async function initializeWorkspace(uid,copy,button,overwrite){
@@ -305,7 +308,7 @@ async function resendRegistrationEmail(uid,button){
     var c=sb();if(!c)throw new Error('Немає зв’язку із Supabase.');
     var r=await c.rpc('aceil_admin_resend_registration_mail',{p_user_id:uid});
     if(r.error)throw r.error;
-    toast('✓ Лист додано до черги');await load();
+    toast('✓ Лист додано до черги');await load();scheduleMailStatusRefresh();
   }catch(e){toast('Не вдалося додати лист: '+String(e&&e.message?e.message:e))}
   finally{if(button)button.disabled=false}
 }
