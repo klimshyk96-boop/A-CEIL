@@ -1,19 +1,22 @@
-name: A·CEIL regression gate
+name: A·CEIL critical gate
 on:
   pull_request:
     branches: [main]
   push:
     branches: [main]
+
 permissions:
   contents: read
+
 concurrency:
-  group: aceil-tests-${{ github.ref }}
+  group: aceil-critical-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
-  regression:
-    name: Runtime, security, browser, and geometry regressions
+  critical:
+    name: Security, project sync, PWA, and geometry
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -21,30 +24,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install browser harness
-        run: |
-          npm install --no-save --no-package-lock playwright@1.56.1
-          npx playwright install --with-deps chromium
-      - name: Run full regression suite
+      - name: Run fast critical checks without Chromium
         env:
           CI: 'true'
-        shell: bash
-        run: |
-          # Store verbose browser output locally so failed jobs show the
-          # actual exception, not 100+ KB of unrelated stack/HTML logs.
-          set +e
-          bash scripts/run-all-tests.sh > /tmp/aceil-regression.log 2>&1 &
-          test_pid=$!
-          while kill -0 "$test_pid" 2>/dev/null; do
-            sleep 25
-            kill -0 "$test_pid" 2>/dev/null || break
-            printf '%s %s\n' "Suite running:" "$(grep '^## ' /tmp/aceil-regression.log | tail -n 1)"
-          done
-          wait "$test_pid"
-          result=$?
-          if [ "$result" -ne 0 ]; then
-            echo "::error::A·CEIL regression failed; last test output:"
-            tail -n 95 /tmp/aceil-regression.log
-            exit "$result"
-          fi
-          tail -n 24 /tmp/aceil-regression.log
+        run: bash scripts/check-critical-ci.sh
