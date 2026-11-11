@@ -63,6 +63,21 @@ function norm(v){ return String(v==null?'':v).trim().toLowerCase(); }
    bulk change, even though it lives in the same NOMENCLATURE_SOURCES table
    and often sits in the same nomenclature group as fixtures. */
 var LIGHT_SOURCE_KEYS = ['spot_light','chandelier','linear_length','linear_corner','linear_break'];
+/* Only corner fixing for the ceiling contour. Never sweep lighting-line,
+   track, or cornice corners into an estimate variant. */
+var CONTOUR_CORNER_SOURCES = ['corners','shadow_corners','floating_corners'];
+function isContourCornerItem(it){
+  if(!it) return false;
+  var source=norm(it.source);
+  if(CONTOUR_CORNER_SOURCES.indexOf(source)>=0) return true;
+  // Historical/custom corner fixing may have no source, but it is a valid
+  // target for a differently priced variant.
+  return !source && /^(фіксація|фіксацiя)\s+кут/i.test(norm(it.name))
+    && (!it.unit || /^(шт|шт\.)$/i.test(String(it.unit).trim()));
+}
+function contourCornerItems(items){
+  return (items||[]).filter(isContourCornerItem);
+}
 
 function colorWordOf(it){
   if(it && (it.sourceVariant==='white'||it.sourceVariant==='black')) return it.sourceVariant;
@@ -483,6 +498,22 @@ function applySingleSourceChange(items, change, sourceItem){
   }
 }
 
+function applyCornerChange(items, change, forcedItems){
+  if(!change) return;
+  var sources=forcedItems || contourCornerItems(items);
+  if(change.mode==='remove'){
+    sources.forEach(function(it){ it.qty=0; });
+    return;
+  }
+  if(change.mode!=='replace') return;
+  var target=items.find(function(it){ return it && change.targetItemId!=null && String(it.id)===String(change.targetItemId); });
+  if(!target || !isContourCornerItem(target)) return;
+  // If the target is already one of the base sources, count it exactly once.
+  // A mixed profile may have basic and shadow/floating corner fixing at once.
+  var qty=sources.reduce(function(total,it){ return total+Math.max(0,num(it.qty)); },0);
+  sources.forEach(function(it){ it.qty=0; });
+  target.qty=qty;
+}
 function applyLightingChange(items, change, forcedItems){
   if(!change) return;
   /* forcedItems, when given, is the previous variant's actual active
@@ -538,6 +569,19 @@ function applySemanticCategoryChange(cat, items, change, tracker){
     }
     return;
   }
+  if(cat==='corners'){
+    var currentIds=tracker ? tracker.corners : null;
+    var forced=currentIds!==null
+      ? items.filter(function(it){ return currentIds.indexOf(String(it.id))>=0; })
+      : null;
+    applyCornerChange(items, change, forced);
+    if(tracker){
+      if(change.mode==='remove') tracker.corners=[];
+      else if(change.mode==='replace' && change.targetItemId!=null)
+        tracker.corners=[String(change.targetItemId)];
+    }
+    return;
+  }
   if(cat==='lighting'){
     var activeLightId = tracker ? tracker.lighting : null;
     var forcedItems = null;
@@ -568,12 +612,12 @@ function computeRoomItems(project, room, variantId){
   var chain=resolveChain(project, variantId);
   var items=clone(base.items);
   var groups=base.groups;
-  var tracker={profile:null, insert:null, lighting:null};
+  var tracker={profile:null, insert:null, corners:null, lighting:null};
   var warnings=[];
   chain.forEach(function(v){
     var catChanges = v.overrides && room && v.overrides[room.id];
     if(!catChanges) return;
-    ['profile','insert','lighting'].forEach(function(cat){
+    ['profile','insert','corners','lighting'].forEach(function(cat){
       applySemanticCategoryChange(cat, items, catChanges[cat], tracker);
     });
     if(catChanges.film) applyFilmChange(items, groups, catChanges.film, room, warnings);
@@ -670,11 +714,12 @@ function catalogGroupsUnion(project){
 function detectCategoryGroups(project){
   var groups=catalogGroupsUnion(project);
   function has(name, words){ var n=String(name||'').toLowerCase(); return words.some(function(w){ return n.indexOf(w)>=0; }); }
-  var profile=[], insert=[], lighting=[];
+  var profile=[], insert=[], corners=[], lighting=[];
   groups.forEach(function(g){
     var id=String(g.id);
     if(has(g.name,['\u043F\u0440\u043E\u0444\u0456\u043B'])) profile.push(id);
     if(has(g.name,['\u0432\u0441\u0442\u0430\u0432\u043A','\u0432\u043A\u043B\u0430\u0434'])) insert.push(id);
+    if(has(g.name,['фіксація кутів','фіксація кута'])) corners.push(id);
     if(has(g.name,['\u0441\u0432\u0456\u0442','\u043E\u0441\u0432\u0456\u0442\u043B','\u043B\u044E\u0441\u0442\u0440'])) lighting.push(id);
   });
   var items=catalogItemsUnion(project);
@@ -684,13 +729,14 @@ function detectCategoryGroups(project){
     var n=norm(it&&it.name);
     return /\u0432\u0441\u0442\u0430\u0432\u043A|insert/.test(n) && !!colorWordOf(it);
   });
+  var cornersFound=contourCornerItems(items).length>0;
   var lightingFound=lightingSourceItems(items).length>0;
   var filmFound = groups.some(function(g){ return hasWord(g&&g.name, FILM_GROUP_WORDS); })
     || items.some(function(it){ return it && it.roomScopedKind==='film-color'; });
   return {
-    profile:profile, insert:insert, lighting:lighting,
-    profileFound:profileFound, insertFound:insertFound, lightingFound:lightingFound, filmFound:filmFound,
-    profileSourceKey:'main_profile', insertSourceKey:'white_insert', lightingSourceKeys:LIGHT_SOURCE_KEYS.slice(),
+    profile:profile, insert:insert, corners:corners, lighting:lighting,
+    profileFound:profileFound, insertFound:insertFound, cornersFound:cornersFound, lightingFound:lightingFound, filmFound:filmFound,
+    profileSourceKey:'main_profile', insertSourceKey:'white_insert', cornerSourceKeys:CONTOUR_CORNER_SOURCES.slice(), lightingSourceKeys:LIGHT_SOURCE_KEYS.slice(),
     allGroups:groups.map(function(g){ return {id:String(g.id),name:g.name||''}; })
   };
 }
@@ -722,6 +768,19 @@ function buildSemanticChange(cat, baseItems, catBulk, assumptions){
         return null;
       }
       return {mode:'replace', seriesId:catBulk.seriesId, code:catBulk.code};
+    }
+    return null;
+  }
+
+  if(cat==='corners'){
+    if(catBulk.mode==='remove') return {mode:'remove'};
+    if(catBulk.mode==='item'){
+      var target=(baseItems||[]).find(function(it){ return it && String(it.id)===String(catBulk.targetItemId); });
+      if(!target || !isContourCornerItem(target)){
+        if(assumptions) assumptions.push('Позицію фіксації кутів не знайдено в кімнаті — заміну не застосовано.');
+        return null;
+      }
+      return {mode:'replace', targetItemId:catBulk.targetItemId};
     }
     return null;
   }
@@ -782,7 +841,7 @@ function createVariant(project, opts){
        mode + targetItemId (never a computed qty) end up in roomChanges. */
     var baseItems = computeRoomItems(project, room, baseId).items;
     var roomChanges = {};
-    ['profile','insert','lighting','film'].forEach(function(cat){
+    ['profile','insert','corners','lighting','film'].forEach(function(cat){
       var catBulk = opts.changes && opts.changes[cat];
       var change = buildSemanticChange(cat, baseItems, catBulk, assumptions);
       if(change) roomChanges[cat]=change;
@@ -938,6 +997,8 @@ window.A_CEIL_EstimateVariants = {
   deleteVariant: deleteVariant,
   virtualizeProjectForRender: virtualizeProjectForRender,
   LIGHT_SOURCE_KEYS: LIGHT_SOURCE_KEYS.slice(),
+  CONTOUR_CORNER_SOURCES: CONTOUR_CORNER_SOURCES.slice(),
+  isContourCornerItem: isContourCornerItem,
   filmSeriesRegistry: filmSeriesRegistry,
   filmCatalogForSeries: filmCatalogForSeries,
   filmPricingForSeries: filmPricingForSeries,
@@ -1165,6 +1226,7 @@ if(typeof oldLoadRoomToCanvas==='function' && !oldLoadRoomToCanvas.__aceilVarian
     '.aceilv-room-list label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#334155;padding:3px 0;text-transform:none;letter-spacing:0;}' +
     '.aceilv-cat{border:1px solid #eef2f7;border-radius:14px;padding:10px;margin-bottom:10px;}' +
     '.aceilv-cat-title{font-weight:900;font-size:13px;color:#1e293b;margin-bottom:8px;}' +
+    '.aceilv-corner-note{font-size:11px;line-height:1.45;color:#64748b;background:#f8fafc;border-radius:9px;padding:8px 10px;margin:2px 0 8px;}' +
     '.aceilv-mode-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}' +
     '.aceilv-mode-btn{padding:6px 10px;border-radius:9px;background:#f1f5f9;color:#475569;font-size:11.5px;font-weight:800;cursor:pointer;border:1.5px solid transparent;}' +
     '.aceilv-mode-btn.active{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;}' +
@@ -1580,6 +1642,7 @@ if(typeof oldOpenElementsModal==='function'&&!oldOpenElementsModal.__aceilVarian
 var CAT_DEFS=[
   {key:'profile', label:'\u041F\u0440\u043E\u0444\u0456\u043B'},
   {key:'insert', label:'\u0412\u0441\u0442\u0430\u0432\u043A\u0430'},
+  {key:'corners', label:'Кути'},
   {key:'lighting', label:'\u041E\u0441\u0432\u0456\u0442\u043B\u0435\u043D\u043D\u044F'}
 ];
 
@@ -1652,12 +1715,14 @@ function openBulkModal(project, baseVariantId){
   var CAT_SOURCE_KEYS={
     profile:[cats.profileSourceKey||'main_profile'],
     insert:[cats.insertSourceKey||'white_insert'],
+    corners:cats.cornerSourceKeys||ENGINE.CONTOUR_CORNER_SOURCES||[],
     lighting:cats.lightingSourceKeys||ENGINE.LIGHT_SOURCE_KEYS||[]
   };
-  var CAT_FOUND={ profile:cats.profileFound, insert:cats.insertFound, lighting:cats.lightingFound };
+  var CAT_FOUND={ profile:cats.profileFound, insert:cats.insertFound, corners:cats.cornersFound, lighting:cats.lightingFound };
   var CAT_NOT_FOUND_NOTE={
     profile:'\u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E \u043F\u043E\u0437\u0438\u0446\u0456\u044E \u0437 \u0434\u0436\u0435\u0440\u0435\u043B\u043E\u043C \u00ABmain_profile\u00BB \u2014 \u0437\u0430\u043C\u0456\u043D\u0438\u0442\u0438 \u0431\u0443\u0434\u0435 \u043D\u0435\u043C\u0430 \u0447\u043E\u0433\u043E',
     insert:'\u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0457 \u0432\u0441\u0442\u0430\u0432\u043A\u0438 (white_insert)',
+    corners:'немає позицій фіксації кутів у номенклатурі',
     lighting:'\u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E \u043F\u043E\u0437\u0438\u0446\u0456\u0439 \u0437 \u0434\u0436\u0435\u0440\u0435\u043B\u043E\u043C \u0430\u0432\u0442\u043E\u0437\u0430\u043F\u043E\u0432\u043D\u0435\u043D\u043D\u044F \u0441\u0432\u0456\u0442\u043B\u0430'
   };
 
@@ -1667,6 +1732,8 @@ function openBulkModal(project, baseVariantId){
     var groupIds = cats[def.key] && cats[def.key].length ? cats[def.key] : null;
     var sourceKeys = CAT_SOURCE_KEYS[def.key]||[];
     var options = catalogItems.filter(function(it){
+      // Only perimeter fixing, not the corners of lights, tracks or cornices.
+      if(def.key==='corners') return ENGINE.isContourCornerItem(it);
       var inGroup = groupIds && groupIds.indexOf(String(it.groupId||''))>=0;
       var hasSource = sourceKeys.indexOf(String(it.source||''))>=0;
       return inGroup || hasSource || !groupIds;
@@ -1682,6 +1749,7 @@ function openBulkModal(project, baseVariantId){
         '<span class="aceilv-mode-btn" data-mode="remove">\u041F\u0440\u0438\u0431\u0440\u0430\u0442\u0438</span>'+
       '</div>'+
       '<select class="aceilv-item-select" style="display:none">'+itemOptionsHtml(options,null)+'</select>'+
+      (def.key==='corners'?'<div class="aceilv-corner-note">Кількість кутів — із заміру. Змінюється лише позиція та її ціна; кути світлових ліній, треків і карнизів не зачіпаємо.</div>':'')+
       (showQty?'<input type="number" class="aceilv-qty-input" min="0" step="1" placeholder="\u041A\u0456\u043B\u044C\u043A\u0456\u0441\u0442\u044C" style="display:none;margin-top:8px">':'')+
     '</div>';
   }).join('');
