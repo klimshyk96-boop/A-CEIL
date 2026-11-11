@@ -28,14 +28,24 @@ const elements={};
 const cache=new Map();
 const intervals=new Map();let tickId=0;
 const gates=[];
+function fakeElement(){
+  let txt='';
+  return {
+    id:'',className:'',style:{},children:[],isConnected:false,
+    setAttribute(){},appendChild(child){this.children.push(child);child.isConnected=this.isConnected;},
+    get textContent(){return txt+this.children.map(c=>c.textContent||'').join('')},
+    set textContent(v){txt=String(v)},
+    remove(){this.isConnected=false;delete elements[this.id]}
+  };
+}
 const ctx=vm.createContext({
   Date,JSON,Math,Number,String,clearInterval:id=>intervals.delete(id),
   setInterval:(fn)=>{const id=++tickId;intervals.set(id,fn);return id},
   localStorage:{getItem:key=>cache.get(key)||null,setItem:(key,value)=>cache.set(key,value),removeItem:key=>cache.delete(key)},
   document:{
     getElementById:id=>elements[id]||null,
-    createElement:()=>({id:'',style:{},isConnected:false,
-      remove(){this.isConnected=false;delete elements[this.id]}}),
+    createElement:fakeElement,
+    querySelector:()=>null,
     body:{appendChild(el){elements[el.id]=el;el.isConnected=true}}
   },
   A_CEIL_showAccessGate:mode=>gates.push(mode)
