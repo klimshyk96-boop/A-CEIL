@@ -362,8 +362,20 @@ function profileRowIsChosen(source,item,variant){
   }else pool=rows.filter(function(row){return !profileVariantOfItem(row);});
   return !pool.length||String(pool[0].id)===String(item&&item.id);
 }
+/* Legacy catalogues saved black masking insert with source="".
+   It must still participate in the SAME colour choice as the white row.
+   Without it preview(white_insert,black) returns 0 and reopen silently erases
+   both quantities despite a valid closed room. */
+function isContourInsertRow(row){
+  if(!row)return false;
+  if(row.source==="white_insert")return true;
+  if(String(row.source||"").trim())return false;
+  var name=norm(row.name);
+  return /^(вставка|вставки|insert)(?:\s|$)/.test(name)
+    && (profileVariantOfItem(row)==="white"||profileVariantOfItem(row)==="black");
+}
 function insertRowIsChosen(item){
-  var rows=getElemItems().filter(function(row){return row&&row.source==="white_insert";});
+  var rows=getElemItems().filter(isContourInsertRow);
   if(!rows.length)return true;
   var selected=rows.filter(function(row){return row.insertSelected===true;});
   if(selected.length>1)return false;
@@ -537,7 +549,7 @@ window.A_CEIL_ReconcileContourInsert=function(){
   var list=getElemItems(),whole=manualContourStyle(list)||explicitContourProfile(list)||inferredContourProfile(list),suppress=!!whole||list.some(function(row){return row&&row.manualQtyOverride&&Number(row.qty)>0&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(row));}),changed=false;
   list.forEach(function(row){
     if(!row)return;
-    var source=row.source==="white_insert"?"white_insert":contourSourceOfItem(row);
+    var source=isContourInsertRow(row)?"white_insert":contourSourceOfItem(row);
     if(source!=="white_insert"&&!/^(main_profile|corners|shadow_corners|floating_corners)$/.test(source))return;
     var active=source==="white_insert"?suppress:(source==="main_profile"?(!!whole||(suppress&&row.manualQtyOverride!==true)):!!whole);
     if(active){
@@ -692,7 +704,22 @@ function applyUniversal(opts){
   });
   allItems.forEach(function(it){
     if(!it)return;
-    if(it.manualQtyOverride===true)return;
+    // Upgrade legacy black insert rows BEFORE the manual override check.
+    // This is a source binding only: the room's chosen colour remains unchanged.
+    if(!it.source&&isContourInsertRow(it)){
+      it.source="white_insert";
+      if(it.sourceVariant!=="white"&&it.sourceVariant!=="black")it.sourceVariant=profileVariantOfItem(it);
+      changed++;
+    }
+    if(it.manualQtyOverride===true){
+      // Historical broken snapshots can say "black selected, qty 0, manual".
+      // Repair only when the verified contour has a positive insert remainder.
+      var staleSelectedZero=isContourInsertRow(it)&&it.insertSelected===true
+        && !(Number(it.qty)>0)
+        && Number(window.aceilWholeContourCompute("white_insert",it))>0;
+      if(!staleSelectedZero)return;
+      it.manualQtyOverride=false;changed++;
+    }
     var contourSource=contourSourceOfItem(it);
     // Name-only legacy H rows can hold an entered estimate before any plan exists.
     // Binding a default must not erase it while editing an icon or opening the list.

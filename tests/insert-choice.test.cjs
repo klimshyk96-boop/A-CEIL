@@ -142,3 +142,70 @@ for(const [file,start,end,name] of mergeCases){
  }
 }
 console.log('Insert catalog isolation (all four merge paths): OK');
+
+
+/* Regression: production-era catalogues stored "Вставка чорна" with source="".
+   After re-login, a closed 14 m room could have black selected but BOTH rows
+   at zero. Exercise the actual universal auto-count decision code. */
+const universalSource = fs.readFileSync(
+  path.join(__dirname, '..', 'js', 'nomenclature', '140-aceil-universal-autocount.js'),
+  'utf8'
+);
+const universalChoiceSection = universalSource.slice(
+  universalSource.indexOf('function isContourInsertRow('),
+  universalSource.indexOf('function manualInsertExtraCm(')
+);
+const universalApplySection = universalSource.slice(
+  universalSource.indexOf('function applyUniversal(opts)'),
+  universalSource.indexOf('window.rmUniversalAutoCountV319=applyUniversal;')
+);
+assert.ok(universalChoiceSection.includes('function insertRowIsChosen('));
+assert.ok(universalApplySection.includes('function applyUniversal('));
+function simulateLegacyInsertReopen(blackOptions, whiteSelected) {
+  const rows = [
+    { id:'white',name:'Вставка біла',source:'white_insert',sourceVariant:'white',
+      insertSelected:whiteSelected,qty:0 },
+    Object.assign({ id:'black',name:'Вставка чорна',source:'',sourceVariant:'',
+      insertSelected:!whiteSelected,qty:0 },blackOptions||{})
+  ];
+  const context = {
+    window:{}, getElemItems:()=>rows, autoCountEnabled:()=>true,
+    norm:x=>String(x||'').trim().toLowerCase(),
+    profileVariantOfItem:x=>x.sourceVariant||(/чорн/i.test(x.name||'')?'black':/біл/i.test(x.name||'')?'white':''),
+    colorFromName:x=>/чорн/i.test(x||'')?'black':/біл/i.test(x||'')?'white':'',
+    contourSourceOfItem:()=>'', exactAutoSourceForName:()=>null,
+    computeSource:(source,item)=>source==='white_insert'
+      ?{qty:context.window.aceilWholeContourCompute(source,item),unit:'м'}:null,
+    console
+  };
+  vm.createContext(context);
+  vm.runInContext(universalChoiceSection+'\n'+universalApplySection+
+    '\nthis.applyLegacyAutoCount=applyUniversal;this.isLegacyInsertChosen=insertRowIsChosen;',context);
+  context.window.aceilWholeContourCompute=(source,item)=>
+    context.isLegacyInsertChosen(item)?14:0;
+  context.applyLegacyAutoCount({noSave:true});
+  return rows;
+}
+{
+  const rows=simulateLegacyInsertReopen({},false);
+  assert.equal(rows[0].qty,0,'white stays 0 after restoring a black choice');
+  assert.equal(rows[1].qty,14,'legacy black insert regains the 14 m contour');
+  assert.equal(rows[1].source,'white_insert','legacy missing calculation source repaired');
+  assert.equal(rows[1].sourceVariant,'black','legacy black colour recognized');
+}
+{
+  const rows=simulateLegacyInsertReopen({manualQtyOverride:true},false);
+  assert.equal(rows[1].qty,14,'a stale manual zero must not erase selected black');
+  assert.equal(rows[1].manualQtyOverride,false,'stale zero manual override is removed');
+}
+{
+  const rows=simulateLegacyInsertReopen({qty:12,manualQtyOverride:true},false);
+  assert.equal(rows[1].qty,12,'a genuine positive manual quantity is preserved');
+  assert.equal(rows[1].manualQtyOverride,true);
+}
+{
+  const rows=simulateLegacyInsertReopen({},true);
+  assert.equal(rows[0].qty,14,'new room still defaults to white');
+  assert.equal(rows[1].qty,0,'black stays zero in a new white room');
+}
+console.log('Legacy black insert restore/zero repair regression: OK');
