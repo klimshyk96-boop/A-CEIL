@@ -12,6 +12,7 @@ for name in \
   security-config \
   p0-hardening \
   pending-sync-queue \
+  project-sync-revision \
   project-mode \
   demo-access-ui \
   demo-support-visible \
