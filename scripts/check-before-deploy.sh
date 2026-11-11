@@ -57,6 +57,7 @@ node tests/light-placement.test.cjs || exit 1
 node tests/chandelier-sketch.test.cjs || exit 1
 node tests/linear-autocount.test.cjs || exit 1
 node tests/insert-choice.test.cjs || exit 1
+node tests/estimate-variant-corners.test.cjs || exit 1
 node tests/canvas-hit-guard.test.cjs || exit 1
 node tests/honest-geometry.test.cjs || exit 1
 node tests/curve-geometry.test.cjs || exit 1
