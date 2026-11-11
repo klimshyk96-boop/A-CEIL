@@ -1757,3 +1757,10 @@ body.rm-hybrid-only-active #cv{pointer-events:none!important;}
 .aceil-demo-admin-status{display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;gap:8px;margin:8px 0 12px;padding:12px 13px;border:1px solid #bfdbfe;border-radius:13px;background:#eff6ff;color:#1d4ed8;font-size:12px;}
 .aceil-demo-admin-status button{border:0;border-radius:10px;padding:9px 12px;background:#2563eb;color:white;font-size:12px;font-weight:800;cursor:pointer;}
 @media(max-width:600px){.aceil-approval-actions{width:100%;flex-wrap:wrap;}.aceil-approval-actions button{flex:1 1 120px;min-height:42px;}.aceil-demo-approval{width:100%;box-sizing:border-box;}}
+
+/* DEMO offer for already approved customers (iPhone / desktop). */
+.aceil-demo-admin-status>div{flex:1 1 185px;min-width:0;}
+.aceil-demo-admin-status b{display:block;font-size:13px;line-height:1.45;}
+.aceil-demo-admin-status small{display:block;font-size:11px;line-height:1.5;color:#475569;margin-top:4px;}
+.aceil-demo-admin-status button{flex:0 0 auto;min-height:40px;}
+@media(max-width:600px){.aceil-demo-admin-status button{flex:1 1 100%;width:100%;}}
