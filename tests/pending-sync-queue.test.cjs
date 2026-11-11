@@ -10,7 +10,8 @@ const copy = value => JSON.parse(JSON.stringify(value));
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function fixture(initial = [{id:'local-a', _dbId:'db-a', name:'old', state:'{}', _dirty:true}]) {
   let owner = 'owner-a', quota = false;
-  const states = new Map([[owner, copy(initial)]]), disk = new Map(), requests = [], listeners = {};
+  const seeded = initial.map(p=>p._dbId && !Object.prototype.hasOwnProperty.call(p,'_cloudRevision') ? {...p,_cloudRevision:'1'} : p);
+  const states = new Map([[owner, copy(seeded)]]), disk = new Map(), requests = [], listeners = {};
   const status = {textContent:'', title:''};
   const later=(fn,ms)=>{const timer=setTimeout(fn,ms);if(ms>=1000)timer.unref?.();return timer};
   const c = {console, Map, Set, Math, Date, Promise, AbortController, setTimeout:later, clearTimeout,
@@ -22,9 +23,9 @@ function fixture(initial = [{id:'local-a', _dbId:'db-a', name:'old', state:'{}',
   c['A·CEIL'] = {ProjectRepository:{list:() => copy(states.get(owner) || []), replaceAll:items => states.set(owner,copy(items))}};
   c._sbUser = {id:owner};
   c._sb = {from(){
-    let method, payload, id;
-    function request(){return new Promise(resolve => requests.push({method,payload:copy(payload || {}),id,resolve}))}
-    const q = {update(value){method='update';payload=value;return q},insert(value){method='insert';payload=value;return q},delete(){method='delete';return q},eq(key,value){id=value;return q},select(){return method==='delete'?request():q},single:request};
+    let method, payload, id, filters={};
+    function request(){return new Promise(resolve => requests.push({method,payload:copy(payload || {}),id,filters:{...filters},resolve}))}
+    const q = {update(value){method='update';payload=value;return q},insert(value){method='insert';payload=value;return q},delete(){method='delete';return q},eq(key,value){filters[key]=value;if(key==='id')id=value;return q},select(){return method==='delete'?request():q},single:request};
     return q;
   }};
   const hashRoom = r => JSON.stringify([r && r.name, r && r.state]);
@@ -32,7 +33,7 @@ function fixture(initial = [{id:'local-a', _dbId:'db-a', name:'old', state:'{}',
   vm.createContext(c); vm.runInContext(modeSource,c); vm.runInContext(source,c);
   const items = () => states.get(owner) || [];
   const enqueue = (id='local-a', extra={}) => c.addToPendingQueue({type:'save',payload:{localId:id},addedAt:1,...extra});
-  const reply = (index,id='db-a',error=null) => requests[index].resolve({data:error?null:{id},error});
+  const reply = (index,id='db-a',error=null) => { const r=requests[index], rev=r.method==='update'?String(Number(r.filters.sync_revision||1)+1):'1'; r.resolve({data:error?null:{id,sync_revision:rev},error}); };
   return {c,requests,status,disk,states,items,enqueue,reply,listeners,quota(value){quota=value},switchTo(value){owner=value;c._sbUser={id:value};if(!states.has(owner))states.set(owner,[])}};
 }
 test('a later edit survives acknowledgement; concurrent flush calls share one request', async () => {
@@ -87,31 +88,35 @@ test('a response without a saved row is not acknowledged', async () => {
 });
 test('a deleted cloud project is never silently recreated; local edits are preserved', async () => {
   const f=fixture();f.enqueue();const done=f.c.flushPendingQueue();await tick();
-  f.reply(0,null,{code:'PGRST116',message:'JSON object requested, multiple (or no) rows returned'});
+  f.reply(0,null,{code:'PGRST116',message:'JSON object requested, 0 rows'});
+  await tick();
+  assert.equal(f.requests.length,2,'zero-row CAS checks whether row was deleted');
+  f.requests[1].resolve({data:null,error:{code:'PGRST116',message:'JSON object requested, 0 rows'}});
   assert.equal(await done,false);
-  assert.equal(f.requests.length,1,'must not INSERT an orphaned old project with a new ID');
+  assert.equal(f.requests.length,2,'must not INSERT an orphaned project');
   assert.equal(f.requests[0].method,'update');
   assert.equal(f.c.getPendingQueue().length,1,'local save remains queued');
   assert.equal(f.c.getPendingQueue()[0]._manualRestoreRequired,true);
   assert.match(f.status.textContent,/очікує відновлення/);
   assert.match(f.c.__A_CEIL_LAST_CLOUD_ERROR.message,/Локальні зміни збережено/);
-  assert.equal(f.items()[0]._dbId,'db-a','original project identity is preserved');
+  assert.equal(f.items()[0]._dbId,'db-a');
 });
 test('only explicit cloud-trash restoration unblocks a missing project revision', async () => {
   const f=fixture();f.enqueue();const done=f.c.flushPendingQueue();await tick();
-  f.reply(0,null,{code:'PGRST116',message:'JSON object requested, multiple (or no) rows returned'});
+  f.reply(0,null,{code:'PGRST116',message:'JSON object requested, 0 rows'});
+  await tick();f.requests[1].resolve({data:null,error:{code:'PGRST116',message:'JSON object requested, 0 rows'}});
   assert.equal(await done,false);
   f.listeners['aceil:project-recovered']({detail:{source:'local-cache',id:'db-a'}});
   await tick();
-  assert.equal(f.requests.length,1,'local-only recovery cannot resurrect a deleted cloud project');
+  assert.equal(f.requests.length,2,'local-only recovery cannot resurrect a cloud deletion');
   assert.equal(f.c.getPendingQueue()[0]._manualRestoreRequired,true);
   f.listeners['aceil:project-recovered']({detail:{source:'cloud-trash',id:'db-a'}});
   await tick();
-  assert.equal(f.requests.length,2,'explicit cloud restoration allows retrying the original UPDATE');
-  assert.equal(f.requests[1].method,'update');
-  assert.equal(f.requests[1].id,'db-a');
-  f.reply(1,'db-a');await tick();
-  assert.equal(f.c.getPendingQueue().length,0,'restored project can sync safely');
+  assert.equal(f.requests.length,3,'explicit cloud restoration retries the original UPDATE');
+  assert.equal(f.requests[2].method,'update');
+  assert.equal(f.requests[2].id,'db-a');
+  f.reply(2,'db-a');await tick();
+  assert.equal(f.c.getPendingQueue().length,0);
 });
 test('a hung Safari request times out and releases the queue flight', async () => {
   const f=fixture();f.c.__A_CEIL_SYNC_TIMEOUT_MS=20;f.enqueue();
@@ -189,7 +194,7 @@ test('rooms changed only on another device are adopted instead of overwritten', 
   const f=roomsFixture([orig1,mine2],base);f.enqueue();const done=f.c.flushPendingQueue();await tick();
   assert.equal(f.requests[0].method,undefined,'live cloud rows are read first');
   const remote1={...orig1,state:drawn(11)}, remote3={id:'r3',name:'Bath',state:drawn(3)};
-  f.requests[0].resolve({data:{state:JSON.stringify({rooms:[remote1,orig2,remote3]})},error:null});await tick();
+  f.requests[0].resolve({data:{state:JSON.stringify({rooms:[remote1,orig2,remote3]}),sync_revision:1},error:null});await tick();
   assert.equal(f.requests[1].method,'update');
   const sent=f.requests[1].payload.state.rooms;
   assert.deepEqual(sent.map(r=>[r.id,r.state]),[['r1',remote1.state],['r2',mine2.state],['r3',remote3.state]]);
@@ -198,14 +203,17 @@ test('rooms changed only on another device are adopted instead of overwritten', 
   assert.equal(f.items()[0].rooms[0].state,remote1.state);
   assert.equal(f.items()[0]._cloudBase.r1,JSON.stringify(['Hall',remote1.state]));
 });
-test('a room changed on both devices keeps this device version', async () => {
+test('a room changed on two devices must remain queued without overwriting either drawing', async () => {
   const orig={id:'r1',name:'Hall',state:drawn(1)};
   const base={r1:JSON.stringify([orig.name,orig.state])};
   const mine={...orig,state:drawn(5)};
   const f=roomsFixture([mine],base);f.enqueue();const done=f.c.flushPendingQueue();await tick();
-  f.requests[0].resolve({data:{state:JSON.stringify({rooms:[{...orig,state:drawn(9)}]})},error:null});await tick();
-  assert.equal(f.requests[1].payload.state.rooms[0].state,mine.state);
-  f.reply(1);assert.equal(await done,true);
+  f.requests[0].resolve({data:{state:JSON.stringify({rooms:[{...orig,state:drawn(9)}]}),sync_revision:1},error:null});await tick();
+  assert.equal(await done,false,'automatic sync must stop at the conflict');
+  assert.equal(f.requests.length,1,'must not issue a destructive UPDATE');
+  assert.equal(f.c.getPendingQueue().length,1,'unsynced local drawing remains in queue');
+  assert.equal(f.items()[0].rooms[0].state,mine.state,'local drawing remains intact');
+  assert.match(f.c.__A_CEIL_LAST_CLOUD_ERROR.message,/Хмарну версію не перезаписано/);
 });
 test('a failed cloud pre-check stays queued without a blind update and retries safely', async () => {
   const orig={id:'r1',name:'Hall',state:drawn(1)};
@@ -213,7 +221,7 @@ test('a failed cloud pre-check stays queued without a blind update and retries s
   f.requests[0].resolve({data:null,error:{status:400,message:'boom'}});await tick();
   assert.equal(await done,false);assert.equal(f.requests.length,1);assert.equal(f.c.getPendingQueue().length,1);
   const retry=f.c.flushPendingQueue();await tick();
-  f.requests[1].resolve({data:{state:{rooms:[orig]}},error:null});await tick();
+  f.requests[1].resolve({data:{state:{rooms:[orig]},sync_revision:1},error:null});await tick();
   assert.equal(f.requests[2].method,'update');f.reply(2);assert.equal(await retry,true);
 });
 
@@ -222,12 +230,12 @@ for(const moment of ['read','write']) for(const removal of [false,true]) {
   const orig={id:'r1',name:'Hall',state:drawn(1)},remote={...orig,state:drawn(9)},latest={...orig,state:drawn(42)};
   const f=roomsFixture([orig],{r1:JSON.stringify([orig.name,orig.state])});f.enqueue();const done=f.c.flushPendingQueue();await tick();
   if(moment==='read')f.items()[0].rooms=[latest];
-  f.requests[0].resolve({data:{state:{rooms:removal?[]:[remote]}},error:null});await tick();
+  f.requests[0].resolve({data:{state:{rooms:removal?[]:[remote]},sync_revision:1},error:null});await tick();
   if(moment==='write')f.items()[0].rooms=[latest];
   f.reply(1);await tick();
   assert.equal(f.items()[0].rooms[0].state,latest.state,'new local geometry must not be replaced or deleted by acknowledgement');
   assert.equal(f.items()[0]._dirty,true);assert.equal(f.c.getPendingQueue().length,1);
-  f.requests[2].resolve({data:{state:{rooms:f.requests[1].payload.state.rooms}},error:null});await tick();
+  f.requests[2].resolve({data:{state:{rooms:f.requests[1].payload.state.rooms},sync_revision:2},error:null});await tick();
   assert.equal(f.requests[3].payload.state.rooms[0].state,latest.state,'next pass uploads the edit retained locally');
   f.reply(3);assert.equal(await done,true);assert.equal(f.items()[0].rooms[0].state,latest.state);
  });
@@ -235,13 +243,55 @@ for(const moment of ['read','write']) for(const removal of [false,true]) {
 
 for(const state of [null,'broken json',{}])test('unreadable cloud state blocks destructive update: '+JSON.stringify(state),async()=>{
  const orig={id:'r1',name:'Hall',state:drawn(1)},f=roomsFixture([orig],{r1:JSON.stringify([orig.name,orig.state])});
- f.enqueue();const done=f.c.flushPendingQueue();await tick();f.requests[0].resolve({data:{state},error:null});
+ f.enqueue();const done=f.c.flushPendingQueue();await tick();f.requests[0].resolve({data:{state,sync_revision:1},error:null});
  assert.equal(await done,false);assert.equal(f.requests.length,1);assert.equal(f.c.getPendingQueue().length,1);
 });
 
 test('account switch during cloud pre-check prevents the subsequent update',async()=>{
  const orig={id:'r1',name:'Hall',state:drawn(1)},f=roomsFixture([orig],{r1:JSON.stringify([orig.name,orig.state])});
  f.enqueue();const done=f.c.flushPendingQueue();await tick();f.switchTo('owner-b');
- f.requests[0].resolve({data:{state:{rooms:[orig]}},error:null});assert.equal(await done,false);assert.equal(f.requests.length,1);
+ f.requests[0].resolve({data:{state:{rooms:[orig]},sync_revision:1},error:null});assert.equal(await done,false);assert.equal(f.requests.length,1);
  f.switchTo('owner-a');assert.equal(f.c.getPendingQueue().length,1);
+});
+
+test('atomic CAS includes the last acknowledged server revision in the UPDATE filter',async()=>{
+  const f=fixture();f.enqueue();const done=f.c.flushPendingQueue();await tick();
+  assert.equal(f.requests[0].method,'update');
+  assert.equal(f.requests[0].filters.id,'db-a');
+  assert.equal(f.requests[0].filters.sync_revision,'1');
+  f.reply(0);assert.equal(await done,true);
+  assert.equal(f.items()[0]._cloudRevision,'2');
+});
+
+test('stale server revision blocks overwrite and retains local edits',async()=>{
+  const f=fixture();f.enqueue();const done=f.c.flushPendingQueue();await tick();
+  f.reply(0,null,{code:'PGRST116',message:'JSON object requested, 0 rows'});
+  await tick();assert.equal(f.requests[1].method,undefined,'read current revision after failed CAS');
+  f.requests[1].resolve({data:{sync_revision:2},error:null});
+  assert.equal(await done,false);
+  assert.equal(f.requests.length,2);
+  assert.equal(f.c.getPendingQueue().length,1);
+  assert.equal(f.c.getPendingQueue()[0]._manualConflictRequired,true);
+  assert.equal(f.items()[0]._dirty,true);
+  assert.match(f.status.textContent,/конфлікт змін/);
+  assert.equal(await f.c.flushPendingQueue(),false);
+  assert.equal(f.requests.length,2,'blocked conflict cannot auto-retry');
+});
+
+test('legacy local project without verified revision cannot overwrite cloud data',async()=>{
+  const f=fixture([{id:'local-a',_dbId:'db-a',name:'offline',state:'{}',_dirty:true,_cloudRevision:null}]);
+  f.enqueue();assert.equal(await f.c.flushPendingQueue(),false);
+  assert.equal(f.requests.length,0);
+  assert.equal(f.c.getPendingQueue()[0]._manualConflictRequired,true);
+  assert.equal(f.items()[0].name,'offline');
+});
+
+test('remote room revision change prevents destructive write',async()=>{
+  const orig={id:'r1',name:'Hall',state:drawn(1)};
+  const f=roomsFixture([orig],{r1:JSON.stringify([orig.name,orig.state])});
+  f.enqueue();const done=f.c.flushPendingQueue();await tick();
+  f.requests[0].resolve({data:{sync_revision:2,state:{rooms:[{...orig,state:drawn(20)}]}},error:null});
+  assert.equal(await done,false);
+  assert.equal(f.requests.length,1,'newer revision must not be overwritten');
+  assert.equal(f.c.getPendingQueue()[0]._manualConflictRequired,true);
 });

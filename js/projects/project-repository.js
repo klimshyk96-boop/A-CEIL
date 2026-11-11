@@ -715,6 +715,21 @@
         /* Only unsynced local work is protected. A synced project that is absent
            from the cloud was deleted elsewhere and must not come back. */
         const preserved=union(before.filter(project=>isUnsynced(project)||after.some(item=>sameProject(item,project))),after);
+        // An in-flight/offline local revision is authoritative until it is
+        // acknowledged. Cloud refresh must not silently rebase its revision
+        // or overwrite its geometry (which would bypass the CAS guard).
+        preserved.forEach(project=>{
+          const local=before.find(item=>sameProject(item,project));
+          if(!local||!isUnsynced(local))return;
+          ['name','addr','phone','comment','area','per','inC','outC','thumb',
+           'state','rooms','multiRoom','archivedAt','_dirty','_syncStatus',
+           '_localUpdatedAt','_roomRevision','_cloudBase'].forEach(key=>{
+            if(Object.prototype.hasOwnProperty.call(local,key))project[key]=cloneSafe(local[key]);
+          });
+          if(Object.prototype.hasOwnProperty.call(local,'_cloudRevision'))
+            project._cloudRevision=local._cloudRevision;
+          else delete project._cloudRevision;
+        });
         if(JSON.stringify(after)!==JSON.stringify(preserved))api.replaceAll(preserved);
         return preserved;
       };
