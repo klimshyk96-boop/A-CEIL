@@ -1795,3 +1795,6 @@ body.rm-hybrid-only-active #cv{pointer-events:none!important;}
 .aceil-support-link span{font-size:17px;flex:0 0 auto;color:#2563eb;}
 .aceil-support-note{margin:10px 0 0!important;padding:12px;border-radius:10px;background:#f1f5f9;color:#334155!important;}
 @media(max-width:600px){.aceil-support-fields{grid-template-columns:1fr;}.aceil-support-field:has(textarea){grid-column:auto;}.aceil-support-dialog{padding:18px 15px;}.aceil-support-link b{min-width:68px;}}
+
+.aceil-auth-help{display:block;margin:11px auto 0;padding:7px 10px;border:0;background:transparent;color:#2563eb;font-size:12px;font-weight:700;text-align:center;cursor:pointer;}
+.aceil-auth-help:focus-visible{outline:2px solid #2563eb;border-radius:8px;}
