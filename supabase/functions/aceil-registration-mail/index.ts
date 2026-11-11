@@ -14,9 +14,14 @@ function escapeHtml(value: string): string {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   })[c] || c);
 }
-function message(kind: Job["kind"], name: string) {
+function message(kind: Job["kind"], name: string, isDemo = false) {
   const firstName = (name || "").trim().slice(0, 100);
   const greeting = firstName ? `Вітаємо, ${firstName}!` : "Вітаємо!";
+  if (kind === "approved" && isDemo) return {
+    subject: "A·CEIL — ваш DEMO-доступ на 1 годину",
+    text: `${greeting}\n\nВаш DEMO-доступ до A·CEIL схвалено!\n\nВам доступна 1 година для знайомства з можливостями застосунку. Відлік почнеться під час вашого першого входу, а час, що залишився, буде показано в A·CEIL.\n\nУвійдіть: https://a-ceil.pp.ua/\n\nПісля завершення DEMO ваші проєкти збережуться. Відповідайте на цей лист, щоб обговорити придбання повного доступу.\n\nЗ повагою, команда A·CEIL.`,
+    html: `<!doctype html><html lang="uk"><body style="margin:0;padding:32px 12px;background:#f3f6fb;font-family:Arial,sans-serif;color:#152238"><main style="max-width:560px;margin:auto;padding:32px;border-radius:18px;background:white;border:1px solid #dce5f1"><h1 style="margin:0 0 18px;color:#1d4ed8">A·CEIL</h1><h2>${escapeHtml(greeting)}</h2><p>Ваш <b>DEMO-доступ на 1 годину</b> схвалено!</p><p style="line-height:1.6">Відлік почнеться під час першого входу. У застосунку ви бачитимете час, що залишився.</p><p style="margin:30px 0"><a href="https://a-ceil.pp.ua/" style="background:#2563eb;border-radius:11px;padding:14px 22px;color:#fff;text-decoration:none;font-weight:bold">Спробувати A·CEIL</a></p><p style="line-height:1.6">Після DEMO усі ваші проєкти залишаться збереженими. Щоб обговорити повний доступ, просто <b>відповідайте на цей лист</b>.</p><p style="font-size:13px;color:#64748b">З повагою, команда A·CEIL</p></main></body></html>`
+  };
   if (kind === "approved") return {
     subject: "A·CEIL — ваш акаунт активовано",
     text: `${greeting}\n\nВаш обліковий запис A·CEIL успішно активовано.\n\nУвійдіть: https://a-ceil.pp.ua/\n\nЗ повагою, команда A·CEIL.`,
@@ -74,7 +79,11 @@ export default {
       const to = user?.email || "";
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new Error("User email not available");
       const name = String(user?.user_metadata?.name || user?.user_metadata?.full_name || "");
-      const contents = message(job.kind, name);
+      const demoResponse = job.kind === "approved"
+        ? await ctx.supabaseAdmin.from("profiles").select("demo_enabled").eq("id", job.user_id).maybeSingle()
+        : null;
+      if (demoResponse?.error) throw demoResponse.error;
+      const contents = message(job.kind, name, demoResponse?.data?.demo_enabled === true);
 
       // Free A·CEIL mail uses its own Gmail account over TLS (SMTP port 465).
       // No app password is ever sent to the browser or committed to the repo.

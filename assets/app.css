@@ -1746,3 +1746,14 @@ body.rm-hybrid-only-active #cv{pointer-events:none!important;}
     margin-bottom:12px!important;
   }
 }
+
+/* A·CEIL administrator: optional timed demo on registration approval. */
+.aceil-approval-box{flex-direction:column!important;align-items:stretch!important;}
+.aceil-demo-approval{display:flex;align-items:center;gap:11px;padding:13px 14px;border:1.5px solid #93c5fd;border-radius:13px;background:#eff6ff;color:#1e40af;cursor:pointer;}
+.aceil-demo-approval input[type=checkbox]{appearance:auto!important;display:block!important;flex:0 0 auto!important;position:static!important;opacity:1!important;width:20px!important;height:20px!important;accent-color:#2563eb;}
+.aceil-demo-approval span{flex:1;min-width:0;}
+.aceil-demo-approval b{display:block;color:#1d4ed8!important;font-size:13px;}
+.aceil-demo-approval small{display:block;font-size:11px!important;color:#475569!important;line-height:1.4;margin-top:3px;}
+.aceil-demo-admin-status{display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;gap:8px;margin:8px 0 12px;padding:12px 13px;border:1px solid #bfdbfe;border-radius:13px;background:#eff6ff;color:#1d4ed8;font-size:12px;}
+.aceil-demo-admin-status button{border:0;border-radius:10px;padding:9px 12px;background:#2563eb;color:white;font-size:12px;font-weight:800;cursor:pointer;}
+@media(max-width:600px){.aceil-approval-actions{width:100%;flex-wrap:wrap;}.aceil-approval-actions button{flex:1 1 120px;min-height:42px;}.aceil-demo-approval{width:100%;box-sizing:border-box;}}
