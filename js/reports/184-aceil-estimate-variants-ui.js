@@ -1226,6 +1226,7 @@ if(typeof oldLoadRoomToCanvas==='function' && !oldLoadRoomToCanvas.__aceilVarian
     '.aceilv-room-list label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#334155;padding:3px 0;text-transform:none;letter-spacing:0;}' +
     '.aceilv-cat{border:1px solid #eef2f7;border-radius:14px;padding:10px;margin-bottom:10px;}' +
     '.aceilv-cat-title{font-weight:900;font-size:13px;color:#1e293b;margin-bottom:8px;}' +
+    '.aceilv-corner-note{font-size:11px;line-height:1.45;color:#64748b;background:#f8fafc;border-radius:9px;padding:8px 10px;margin:2px 0 8px;}' +
     '.aceilv-mode-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}' +
     '.aceilv-mode-btn{padding:6px 10px;border-radius:9px;background:#f1f5f9;color:#475569;font-size:11.5px;font-weight:800;cursor:pointer;border:1.5px solid transparent;}' +
     '.aceilv-mode-btn.active{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;}' +
