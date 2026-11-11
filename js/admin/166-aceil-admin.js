@@ -490,10 +490,128 @@ async function clearExpiry(uid,button){
   try{var c=sb();var r=await c.rpc('admin_clear_access_expiry',{p_user_id:uid});if(r.error)throw r.error;toast('✓ Тимчасовий доступ скасовано');await load()}
   catch(e){if(button)button.disabled=false;toast('Не вдалося скасувати термін: '+String(e&&e.message?e.message:e))}
 }
+
+/* Editable public support contacts. Read only on demand: zero extra RPCs
+   during iPhone startup. Each clickable URL is also validated client-side. */
+var SUPPORT_FIELDS=[
+  ['phone','Телефон','+380...'],
+  ['email','Email','support@example.com'],
+  ['telegram','Telegram','@username або https://t.me/username'],
+  ['viber','Viber','номер телефону або посилання-запрошення'],
+  ['whatsapp','WhatsApp','номер телефону або https://wa.me/...'],
+  ['facebook','Facebook','https://facebook.com/...'],
+  ['instagram','Instagram','https://instagram.com/...'],
+  ['website','Сайт','https://...'],
+  ['extra_title','Назва іншого контакту','Наприклад: Signal'],
+  ['extra_url','Посилання на інший контакт','https://...'],
+  ['note','Додаткова інформація','Коли краще звертатися']
+];
+function supportFieldsRoot(){return document.getElementById('aceilSupportFields')}
+function renderSupportFields(data){
+  var box=supportFieldsRoot();
+  if(!box)return;
+  data=data&&typeof data==='object'?data:{};
+  box.innerHTML=SUPPORT_FIELDS.map(function(field){
+    var key=field[0],multiline=key==='note',value=esc(data[key]||'');
+    return '<label class="aceil-support-field"><b>'+esc(field[1])+'</b>'+
+      (multiline
+        ?'<textarea data-support-key="'+esc(key)+'" maxlength="500" rows="3" placeholder="'+esc(field[2])+'">'+value+'</textarea>'
+        :'<input data-support-key="'+esc(key)+'" type="text" maxlength="300" inputmode="text" autocapitalize="none" placeholder="'+esc(field[2])+'" value="'+value+'">')+
+      '</label>';
+  }).join('');
+}
+async function loadSupportEditor(){
+  var box=supportFieldsRoot();if(!box)return;
+  box.innerHTML='<div class="aceil-admin-note">Завантажуємо контакти…</div>';
+  try{
+    var c=sb();if(!c)throw Error('Немає підключення до Supabase');
+    var r=await c.rpc('aceil_support_public');
+    if(r.error)throw r.error;
+    renderSupportFields(r.data||{});
+  }catch(e){box.textContent='Не вдалося завантажити контакти: '+String(e.message||e)}
+}
+async function saveSupportEditor(button){
+  if(button)button.disabled=true;
+  try{
+    var c=sb();if(!c)throw Error('Немає з’єднання із Supabase');
+    var data={};
+    var box=supportFieldsRoot();if(!box)throw Error('Форма контактів не відкрита');
+    box.querySelectorAll('[data-support-key]').forEach(function(input){
+      data[input.getAttribute('data-support-key')]=String(input.value||'').trim();
+    });
+    var r=await c.rpc('aceil_support_save',{p_contacts:data});
+    if(r.error||r.data!==true)throw(r.error||Error('Сервер не підтвердив збереження'));
+    toast('✓ Контакти збережено. Клієнти побачать їх одразу.');
+  }catch(e){toast('Помилка контактів: '+String(e.message||e))}
+  finally{if(button)button.disabled=false}
+}
+function supportLink(key,value){
+  value=String(value||'').trim();
+  if(!value)return '';
+  if(key==='phone'){
+    var digits=value.replace(/[^+0-9]/g,'');
+    return /^\+?[0-9]{6,18}$/.test(digits)?'tel:'+digits:'';
+  }
+  if(key==='email'){
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)?'mailto:'+encodeURIComponent(value):'';
+  }
+  if(key==='telegram'){
+    if(/^@?[a-z0-9_]{5,32}$/i.test(value))return 'https://t.me/'+value.replace(/^@/,'');
+    return /^https:\/\/t\.me\/[a-z0-9_+/.-]+$/i.test(value)?value:'';
+  }
+  if(key==='whatsapp'){
+    if(/^\+?[0-9 ()-]{6,40}$/.test(value))return 'https://wa.me/'+value.replace(/\D/g,'');
+    return /^https:\/\/wa\.me\/[0-9]+(?:\?[^\s]*)?$/i.test(value)?value:'';
+  }
+  if(key==='viber'){
+    if(/^\+?[0-9 ()-]{6,40}$/.test(value))return 'viber://chat?number='+encodeURIComponent(value.replace(/[^+0-9]/g,''));
+    return /^(?:viber:\/\/[^\s]+|https:\/\/[^\s]+)$/i.test(value)?value:'';
+  }
+  if(['facebook','instagram','website','extra_url'].includes(key)){
+    return /^https:\/\/[a-z0-9][a-z0-9._-]*(?:[/?#][^\s]*)?$/i.test(value)?value:'';
+  }
+  return '';
+}
+function closeSupport(){var node=document.getElementById('aceilSupportModal');if(node)node.remove()}
+async function openSupport(){
+  closeSupport();
+  var overlay=document.createElement('div');
+  overlay.id='aceilSupportModal';overlay.className='aceil-support-overlay';
+  overlay.onclick=function(e){if(e.target===overlay)closeSupport()};
+  overlay.innerHTML='<section class="aceil-support-dialog" role="dialog" aria-modal="true" aria-label="Контакти A·CEIL">'+
+    '<div class="aceil-support-dialog-head"><div><b>Допомога та зв’язок</b><small>A·CEIL · підтримка користувачів</small></div>'+
+    '<button type="button" onclick="A_CEIL_Support.close()" aria-label="Закрити">×</button></div>'+
+    '<div id="aceilSupportLinks" class="aceil-support-links"><p>Завантажуємо контакти…</p></div></section>';
+  document.body.appendChild(overlay);
+  var target=document.getElementById('aceilSupportLinks');
+  try{
+    var c=sb();if(!c)throw Error('З’єднання поки що недоступне');
+    var r=await c.rpc('aceil_support_public');
+    if(r.error)throw r.error;
+    if(!target.isConnected)return;
+    var data=r.data&&typeof r.data==='object'?r.data:{};
+    var labels={phone:'Телефон',email:'Email',telegram:'Telegram',viber:'Viber',
+      whatsapp:'WhatsApp',facebook:'Facebook',instagram:'Instagram',website:'Сайт',extra_url:data.extra_title||'Інший контакт'};
+    var fields=['phone','email','telegram','viber','whatsapp','facebook','instagram','website','extra_url'];
+    var cards=fields.map(function(key){
+      var url=supportLink(key,data[key]);if(!url)return '';
+      var display=key==='extra_url'?data.extra_url:data[key];
+      return '<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" class="aceil-support-link">'+
+        '<b>'+esc(labels[key])+'</b><small>'+esc(display)+'</small><span aria-hidden="true">↗</span></a>';
+    }).filter(Boolean);
+    target.innerHTML=(cards.length?cards.join(''):'<p>Контактні дані ще не додані власником A·CEIL.</p>')+
+      (data.note?'<p class="aceil-support-note">'+esc(data.note)+'</p>':'');
+  }catch(e){
+    if(target.isConnected)target.textContent='Не вдалося отримати контакти. Спробуйте ще раз.';
+  }
+}
+window.A_CEIL_Support={open:openSupport,close:closeSupport,link:supportLink};
+
 function showTab(name,btn){
   document.querySelectorAll('.aceil-admin-tabs button').forEach(function(b){b.classList.toggle('active',b===btn)});
-  var up=document.getElementById('aceilUsersPane'),ap=document.getElementById('aceilActivityPane'),dp=document.getElementById('aceilDebugPane'),sp=document.getElementById('aceilSettingsPane');
-  if(up)up.style.display=name==='users'?'block':'none'; if(ap)ap.style.display=name==='activity'?'block':'none'; if(dp)dp.style.display=name==='debug'?'block':'none'; if(sp)sp.style.display=name==='settings'?'block':'none';
+  var up=document.getElementById('aceilUsersPane'),ap=document.getElementById('aceilActivityPane'),dp=document.getElementById('aceilDebugPane'),sp=document.getElementById('aceilSettingsPane'),cp=document.getElementById('aceilSupportPane');
+  if(up)up.style.display=name==='users'?'block':'none'; if(ap)ap.style.display=name==='activity'?'block':'none'; if(dp)dp.style.display=name==='debug'?'block':'none'; if(sp)sp.style.display=name==='settings'?'block':'none'; if(cp)cp.style.display=name==='support'?'block':'none';
+  if(name==='support'&&cp)loadSupportEditor();
   if(name==='activity'&&ap)renderActivity();
   if(name==='debug'&&window.A·CEIL&&window.A·CEIL.DebugPanel&&typeof window.A·CEIL.DebugPanel.renderAdmin==='function')window.A·CEIL.DebugPanel.renderAdmin();
 }
@@ -501,7 +619,7 @@ function setDebugCount(value){var count=Math.max(0,Number(value)||0),label=count
 function open(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.add("open");m.setAttribute("aria-hidden","false");load()}
 function close(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 
-window.A_CEIL_Admin={open:open,close:close,load:load,upgradeDemo:upgradeDemo,startDemo:startDemo,resendRegistrationEmail:resendRegistrationEmail,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,setFilmAccess:setFilmAccess,replaceFilmCatalog:replaceFilmCatalog,restoreFilmCatalog:restoreFilmCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab,setDebugCount:setDebugCount};
+window.A_CEIL_Admin={open:open,close:close,load:load,saveSupportEditor:saveSupportEditor,upgradeDemo:upgradeDemo,startDemo:startDemo,resendRegistrationEmail:resendRegistrationEmail,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,setFilmAccess:setFilmAccess,replaceFilmCatalog:replaceFilmCatalog,restoreFilmCatalog:restoreFilmCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab,setDebugCount:setDebugCount};
 
 function boot(){
   removeLegacyMenuItem();
