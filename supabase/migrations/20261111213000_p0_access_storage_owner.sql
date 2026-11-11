@@ -25,8 +25,9 @@ begin
   end if;
 
   if p_payload is null
-     or jsonb_typeof(p_payload) <> 'object' then
-    raise exception 'invalid report payload';
+     or jsonb_typeof(p_payload) <> 'object'
+     or octet_length(p_payload::text) > 10485760 then
+    raise exception 'invalid or oversized report payload (10 MiB max)';
   end if;
 
   if p_expires_at <= now()
@@ -126,8 +127,16 @@ begin
   end if;
 
   if p_payload is null
-     or jsonb_typeof(p_payload) <> 'object' then
-    raise exception 'invalid report payload'
+     or jsonb_typeof(p_payload) <> 'object'
+     or octet_length(p_payload::text) > 10485760 then
+    raise exception 'invalid or oversized report payload (10 MiB max)'
+      using errcode = '22023';
+  end if;
+
+  if p_expires_at is null
+     or p_expires_at <= now()
+     or p_expires_at > now() + interval '366 days' then
+    raise exception 'invalid report expiry'
       using errcode = '22023';
   end if;
 
