@@ -3,6 +3,7 @@
 // Webhook: HTTP POST, selected Edge Function, secret "apikey" header.
 // Client JWT verification must be disabled ONLY for this service-key-authenticated function.
 import { withSupabase } from "npm:@supabase/server@1";
+import nodemailer from "npm:nodemailer@9.1.1";
 
 type Job = { job_id: string; user_id: string; kind: "approved" | "rejected" };
 const json = (body: unknown, status = 200) =>
@@ -52,30 +53,72 @@ export default {
     if (!job) return json({ ok: true, skipped: true }); // duplicate, already sent, or obsolete
     let providerId: string | null = null;
     try {
-      const from = Deno.env.get("ACEIL_MAIL_FROM");
-      const apiKey = Deno.env.get("RESEND_API_KEY");
-      if (!from || !apiKey) throw new Error("Email sender or API key is not configured");
       const userResp = await ctx.supabaseAdmin.auth.admin.getUserById(job.user_id);
       if (userResp.error) throw userResp.error;
       const user = userResp.data?.user;
       const to = user?.email || "";
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new Error("User email not available");
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(to)) throw new Error("User email not available");
       const name = String(user?.user_metadata?.name || user?.user_metadata?.full_name || "");
       const contents = message(job.kind, name);
-      const sent = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "Idempotency-Key": `aceil-registration-${id}`
-        },
-        body: JSON.stringify({ from, to: [to], ...contents })
-      });
-      const response = await sent.json().catch(() => ({}));
-      if (!sent.ok || !response.id) {
-        throw new Error(`Resend status ${sent.status}: ${JSON.stringify(response).slice(0, 220)}`);
+
+      // Free A·CEIL mail uses its own Gmail account over TLS (SMTP port 465).
+      // No app password is ever sent to the browser or committed to the repo.
+      // Keep Resend as a future optional provider. Gmail wins when configured.
+      const gmailAddress = Deno.env.get("ACEIL_GMAIL_ADDRESS")?.trim() || "";
+      const gmailAppPassword = Deno.env.get("ACEIL_GMAIL_APP_PASSWORD")?.replace(/\\s+/g, "") || "";
+      if (gmailAddress || gmailAppPassword) {
+        if (!/^[^\\s@]+@gmail\\.com$/i.test(gmailAddress) || !gmailAppPassword) {
+          throw new Error("A·CEIL Gmail SMTP is only partially configured");
+        }
+        const transport = nodemailer.createTransport({
+          host: "smtp.gmail.com",
+          port: 465,
+          secure: true,
+          auth: { user: gmailAddress, pass: gmailAppPassword },
+          connectionTimeout: 15000,
+          greetingTimeout: 12000,
+          socketTimeout: 20000,
+          disableFileAccess: true,
+          disableUrlAccess: true
+        });
+        try {
+          const result = await transport.sendMail({
+            from: { name: "A·CEIL", address: gmailAddress },
+            to,
+            subject: contents.subject,
+            text: contents.text,
+            html: contents.html,
+            disableFileAccess: true,
+            disableUrlAccess: true
+          });
+          if (!Array.isArray(result.accepted) || !result.accepted.length) {
+            throw new Error("Gmail SMTP did not accept the recipient");
+          }
+          providerId = String(result.messageId || `aceil-gmail-${id}`);
+        } finally {
+          transport.close();
+        }
+      } else {
+        const from = Deno.env.get("ACEIL_MAIL_FROM");
+        const apiKey = Deno.env.get("RESEND_API_KEY");
+        if (!from || !apiKey) {
+          throw new Error("Configure A·CEIL Gmail secrets or Resend sender/API key");
+        }
+        const sent = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "Idempotency-Key": `aceil-registration-${id}`
+          },
+          body: JSON.stringify({ from, to: [to], ...contents })
+        });
+        const response = await sent.json().catch(() => ({}));
+        if (!sent.ok || !response.id) {
+          throw new Error(`Resend status ${sent.status}: ${JSON.stringify(response).slice(0, 220)}`);
+        }
+        providerId = String(response.id);
       }
-      providerId = String(response.id);
       const finished = await ctx.supabaseAdmin.rpc("aceil_mail_finish", {
         p_job_id: id, p_sent: true, p_provider_id: providerId, p_error: null
       });
