@@ -1,0 +1,5 @@
+# A·CEIL Supabase Edge Functions
+# This endpoint MUST only accept a Supabase secret API key on the apikey header.
+# It uses auth:'secret' via @supabase/server in the handler; never use auth:'none'.
+[functions.aceil-registration-mail]
+verify_jwt = false
