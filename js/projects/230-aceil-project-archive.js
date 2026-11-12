@@ -54,6 +54,94 @@
     var action=card.querySelector('[onclick*="editProject"]'),raw=action&&action.getAttribute("onclick")||"";
     var match=raw.match(/editProject\(['\"]([^'\"]+)['\"]\)/);return match&&byId.get(match[1])||null;
   }
+  // Keep the original and its independent copies visible as two compact
+  // report options. Never invent a report URL for an unpublished copy.
+  function reportStatusFor(project){
+    var api=window.A_CEIL_ReportLinks,record=null;
+    try{if(api&&typeof api.status==="function")record=api.status(project&&project.id)}catch(_){}
+    if(!record)return {status:"none",url:""};
+    var url=String(record.url||"");
+    if(record.status==="active"&&/^https:\/\/a-ceil\.pp\.ua\/r\/[a-f0-9]{20,64}$/i.test(url))
+      return {status:"active",url:url};
+    return {status:record.status==="expired"?"expired":"none",url:""};
+  }
+  function pairReports(project,all){
+    if(!project||project._comparisonSourceId)return [];
+    var sourceId=cloudId(project);
+    if(!sourceId)return [];
+    var copies=(Array.isArray(all)?all:[]).filter(function(p){
+      return p&&p!==project&&String(p._comparisonSourceId||"")===sourceId;
+    });
+    if(!copies.length)return [];
+    return [project].concat(copies).map(function(p,index){
+      var report=reportStatusFor(p);
+      return {projectId:p.id,name:String(p.name||"Без назви"),number:index+1,
+        status:report.status,url:report.url};
+    });
+  }
+  function decoratePairReports(card,project,all){
+    var variants=pairReports(project,all),old=card.querySelector(".aceil-quote-reports");
+    if(variants.length<2){if(old)old.remove();return}
+    var group=old||document.createElement("section");
+    group.className="aceil-quote-reports";
+    group.setAttribute("aria-label","Незалежні звіти за об'єктом");
+    group.style.cssText="margin-top:9px;padding:9px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff;";
+    group.replaceChildren();
+    var title=document.createElement("div");
+    title.style.cssText="font-weight:800;font-size:12px;color:#1e40af;margin-bottom:7px;";
+    title.textContent="📄 Звіти за об'єктом · "+variants.length+" варіанти";
+    if(variants.length!==2)title.textContent="📄 Звіти за об'єктом · "+variants.length+" варіантів";
+    group.appendChild(title);
+    var grid=document.createElement("div");
+    grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;";
+    variants.forEach(function(variant){
+      var tile=document.createElement("div");
+      tile.className="aceil-quote-report-option";
+      tile.style.cssText="min-width:0;padding:9px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;display:flex;flex-direction:column;gap:5px;";
+      var heading=document.createElement("strong");
+      heading.style.cssText="font-size:12px;line-height:1.3;color:#0f172a;overflow-wrap:anywhere;";
+      heading.textContent=(variant.number===1?"① Основний":"② Варіант "+variant.number);
+      tile.appendChild(heading);
+      var name=document.createElement("span");
+      name.style.cssText="color:#64748b;font-size:11px;line-height:1.35;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;";
+      name.textContent=variant.name;
+      name.title=variant.name;tile.appendChild(name);
+      var status=document.createElement("span");
+      status.style.cssText="font-size:11px;font-weight:750;color:"+(variant.status==="active"?"#15803d":variant.status==="expired"?"#b45309":"#64748b")+";";
+      status.textContent=variant.status==="active"?"● Звіт опубліковано":variant.status==="expired"?"● Посилання прострочене":"○ Звіт ще не сформовано";
+      tile.appendChild(status);
+      var actions=document.createElement("div");
+      actions.style.cssText="display:flex;gap:5px;flex-wrap:wrap;margin-top:2px;";
+      if(variant.status==="active"){
+        var open=document.createElement("a");
+        open.href=variant.url;open.target="_blank";open.rel="noopener noreferrer";
+        open.textContent="Відкрити ↗";
+        open.style.cssText="display:inline-flex;align-items:center;padding:7px 9px;border-radius:8px;background:#2563eb;color:white;font-size:11px;font-weight:800;text-decoration:none;";
+        actions.appendChild(open);
+        var copy=document.createElement("button");copy.type="button";copy.textContent="Копіювати";
+        copy.style.cssText="border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#334155;padding:7px 9px;font-size:11px;font-weight:800;";
+        copy.onclick=function(){
+          if(navigator.clipboard&&typeof navigator.clipboard.writeText==="function"){
+            navigator.clipboard.writeText(variant.url).then(function(){notify("✓ Посилання скопійовано")},function(){notify("Не вдалося скопіювати посилання")});
+          }else if(typeof window.prompt==="function")window.prompt("Скопіюйте посилання на звіт:",variant.url);
+          else notify("Копіювання недоступне. Відкрийте звіт.");
+        };
+        actions.appendChild(copy);
+      }else{
+        var go=document.createElement("button");go.type="button";
+        go.textContent="До проєкту";go.title="Перейти до проєкту, щоб сформувати звіт";
+        go.style.cssText="border:1px solid #cbd5e1;border-radius:8px;background:#f1f5f9;color:#334155;padding:7px 9px;font-size:11px;font-weight:800;";
+        go.onclick=function(){
+          jumpToProject(variant.projectId);
+          if(typeof window.editProject==="function")window.editProject(variant.projectId);
+        };
+        actions.appendChild(go);
+      }
+      tile.appendChild(actions);grid.appendChild(tile);
+    });
+    group.appendChild(grid);
+    if(!old)card.appendChild(group);
+  }
   function decorate(){
     var all=list(),byId=new Map();
     all.forEach(function(project){
@@ -84,6 +172,7 @@
         copyButton.disabled=copyInFlight.has(String(project.id));
         copyButton.onclick=function(){window.A_CEIL_ProjectArchive.copyForQuote(project.id)};
       }
+      decoratePairReports(card,project,all);
       // The generic "Локально" badge must expose the real failure on mobile.
       // A tap opens the non-destructive retry/recovery options for this record.
       var syncChip=card.querySelector(".rp-project-head span[title]");
@@ -364,7 +453,7 @@
     baseRender=current;var wrapped=function(){return render()};wrapped.__projectArchiveV1=true;window.renderProjects=wrapped;try{renderProjects=wrapped}catch(_){}
     if(document.getElementById("projectsModal")&&document.getElementById("projectsModal").classList.contains("open"))render();
   }
-  window.A_CEIL_ProjectArchive={toggle:toggle,copyForQuote:copyForQuote,syncHelp:syncHelp,retryCloudSave:retryCloudSave,rescueCloudCopy:rescueCloudCopy,syncIssue:syncIssue,arrangeQuotePairs:arrangeQuotePairs,jumpToProject:jumpToProject,setView:function(next){view=next==="archive"?"archive":"active";render()},count:function(){return totals().archive},isArchived:function(project){return !!archivedAt(project)}};
+  window.A_CEIL_ProjectArchive={toggle:toggle,copyForQuote:copyForQuote,syncHelp:syncHelp,retryCloudSave:retryCloudSave,rescueCloudCopy:rescueCloudCopy,syncIssue:syncIssue,arrangeQuotePairs:arrangeQuotePairs,pairReports:pairReports,jumpToProject:jumpToProject,setView:function(next){view=next==="archive"?"archive":"active";render()},count:function(){return totals().archive},isArchived:function(project){return !!archivedAt(project)}};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
   [100,700,1800].forEach(function(delay){setTimeout(install,delay)});
 })();
