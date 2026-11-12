@@ -44,7 +44,7 @@ function fixture(){
     }
   };
   vm.createContext(c);vm.runInContext(source,c);
-  return{c,initial,projects:()=>projects,queue,copies,messages,nodes,writeTexts};
+  return{c,initial,projects:()=>projects,replaceProjects(next){projects=copy(next)},queue,copies,messages,nodes,writeTexts};
 }
 test('independent quote copy never overwrites original or inherits its report links',async()=>{
   const f=fixture(),result=await f.c.A_CEIL_ProjectArchive.copyForQuote('original-uuid');
@@ -197,8 +197,8 @@ test('expired and legacy reports stay distinct; never expose unavailable links',
   assert.equal(pair.length,3,'old extra copies remain accessible rather than silently removed');
   assert.equal(pair[0].status,'active');
   // Supply legacy rows through the same project repository so status lookup is realistic.
-  f.c['A·CEIL'].ProjectRepository.list=()=>[origin,copy1,copy2];
-  const states=api.pairReports(origin,[origin,copy1,copy2]);
+  f.replaceProjects([origin,copy1,copy2]);
+  const states=api.pairReports(origin,f.projects());
   assert.equal(states[1].status,'expired');
   assert.equal(states[1].url,'','expired report must not open');
   assert.equal(states[2].status,'active');
