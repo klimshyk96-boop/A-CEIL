@@ -377,3 +377,45 @@ console.log('PASS ↔ perimeter button switches both ways between shadow/floatin
   assert.equal(room.qty('corners','base-corners'),2);
 }
 console.log('PASS no-insert profile: catalog names, full/manual/partial perimeter and corner conversion');
+
+
+{
+  // Regression: the actual saved Supabase catalog incorrectly binds the
+  // "Безвставочний металевий" row to main_profile, just like aluminium H.
+  // On a fresh room the profile may never receive a second default 12 m.
+  const items=baseItems();
+  const noinsert=items.find(it=>it.id==='noinsert');
+  noinsert.source='main_profile';noinsert.qty=12;noinsert.autoFilled=true;
+  const room=makeRoom({items});room.recalculate();
+  assert.equal(noinsert.source,'noinsert_profile','repair wrong catalog source on first calculation');
+  assert.equal(noinsert.qty,0,'non-insert is an optional alternative, not another baseline H');
+  assert.equal(items.find(it=>it.id==='base').qty,12,'H alone owns the base contour');
+  assert.equal(items.find(it=>it.id==='insert').qty,12,'base H still needs 12 m masking insert');
+  assert.equal(items.find(it=>it.id==='base-corners').qty,4);
+  assert.equal(items.find(it=>it.id==='noinsert-corners').qty,0);
+}
+{
+  // Correct even previously saved manual entries WITHOUT changing entered
+  // quantities or charging both profiles for the same length.
+  const items=baseItems(),noinsert=items.find(it=>it.id==='noinsert');
+  noinsert.source='main_profile';noinsert.qty=5;noinsert.manualQtyOverride=true;
+  const room=makeRoom({items});room.recalculate();
+  assert.equal(noinsert.source,'noinsert_profile');
+  assert.equal(noinsert.qty,5,'preserve explicit no-insert metres');
+  assert.equal(items.find(it=>it.id==='base').qty,7);
+  assert.equal(items.find(it=>it.id==='insert').qty,7);
+  assert.equal(items.find(it=>it.id==='base-corners').qty,4);
+  assert.equal(items.find(it=>it.id==='noinsert-corners').qty,0,'do not invent unmarked corner locations');
+}
+{
+  const items=baseItems(),noinsert=items.find(it=>it.id==='noinsert');
+  noinsert.source='main_profile';noinsert.qty=12;noinsert.manualQtyOverride=true;
+  const room=makeRoom({items});room.recalculate();
+  assert.equal(noinsert.source,'noinsert_profile');
+  assert.equal(noinsert.qty,12);
+  assert.equal(items.find(it=>it.id==='base').qty,0);
+  assert.equal(items.find(it=>it.id==='insert').qty,0);
+  assert.equal(items.find(it=>it.id==='base-corners').qty,0);
+  assert.equal(items.find(it=>it.id==='noinsert-corners').qty,4,'replace all ordinary corners');
+}
+console.log('PASS wrong legacy no-insert main_profile mapping: H is sole default and manual swaps stay reversible');
