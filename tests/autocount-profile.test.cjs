@@ -525,4 +525,28 @@ console.log('PASS wrong legacy no-insert main_profile mapping: H is sole default
   assert.equal(items.find(x=>x.id==='noinsert').qty,3);
   assert.equal(items.find(x=>x.id==='noinsert-corners').qty,2);
 }
+{
+  // Every side marked no-insert is equivalent to an explicit full contour,
+  // without requiring any manual H edit or perimeter button.
+  const items=baseItems(),marks=[0,1,2,3].map(i=>fullWall('n'+i,i,'Безвставочний металевий'));
+  const room=makeRoom({items,marks});room.recalculate();
+  assert.equal(items.find(x=>x.id==='base').qty,0);
+  assert.equal(items.find(x=>x.id==='insert').qty,0);
+  assert.equal(items.find(x=>x.id==='noinsert').qty,12);
+  assert.equal(items.find(x=>x.id==='base-corners').qty,0);
+  assert.equal(items.find(x=>x.id==='noinsert-corners').qty,4);
+}
+{
+  // A short piece in the middle of a wall has no corner endpoints. It removes
+  // only its actual metre count from H and the masking insert.
+  const items=baseItems(),room=makeRoom({items,marks:[
+    {id:'middle',sideIndex:0,type:'Безвставочний металевий',lenCm:100,offsetCm:100}
+  ]});
+  room.recalculate();
+  assert.equal(items.find(x=>x.id==='base').qty,11);
+  assert.equal(items.find(x=>x.id==='insert').qty,11);
+  assert.equal(items.find(x=>x.id==='noinsert').qty,1);
+  assert.equal(items.find(x=>x.id==='base-corners').qty,4);
+  assert.equal(items.find(x=>x.id==='noinsert-corners').qty,0);
+}
 console.log('PASS contour replacement scenarios: H-only baseline, manual full/partial, marked walls and unique corners');
