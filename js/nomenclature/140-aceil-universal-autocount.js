@@ -796,17 +796,19 @@ function applyUniversal(opts){
     // A manually zeroed H belongs to the *whole* no-insert selection only.
     // When a wall mark or shorter manual no-insert length is present, restore
     // the automatically calculated H remainder instead of leaving a gap.
-    var manualProfileWithMarks=/^(shadow_profile|floating_profile|noinsert_profile)$/.test(corrected)
-      && specialProfileMarks().some(function(mark){return profileFamilyOfMark(mark)===corrected;});
-    var partialManualNoInsert=allItems.some(function(other){
-      return other&&other.manualQtyOverride===true&&Number(other.qty)>0
-        &&contourSourceOfItem(other)==="noinsert_profile";
-    });
-    var autoRepairH=corrected==="main_profile"&&it.manualQtyOverride===true
-      &&!(Number(it.qty)>0)&&!billableWholeContour()
-      &&(specialProfileMarks().length>0||partialManualNoInsert);
-    if(autoRepairH||manualProfileWithMarks&&it.manualQtyOverride===true){
-      it.manualQtyOverride=false;it.autoFilled=true;it.universalAuto=true;changed++;
+    if(it.manualQtyOverride===true){
+      var markedSpecial=specialProfileMarks(),
+        manualProfileWithMarks=/^(shadow_profile|floating_profile|noinsert_profile)$/.test(corrected)
+          &&markedSpecial.some(function(mark){return profileFamilyOfMark(mark)===corrected;}),
+        autoRepairH=corrected==="main_profile"&&!(Number(it.qty)>0)
+          &&!billableWholeContour()
+          &&(markedSpecial.length>0||allItems.some(function(other){
+            return other&&other.manualQtyOverride===true&&Number(other.qty)>0
+              &&contourSourceOfItem(other)==="noinsert_profile";
+          }));
+      if(autoRepairH||manualProfileWithMarks){
+        it.manualQtyOverride=false;it.autoFilled=true;it.universalAuto=true;changed++;
+      }
     }
     if(it.manualQtyOverride===true){
       // Historical broken snapshots can say "black selected, qty 0, manual".
