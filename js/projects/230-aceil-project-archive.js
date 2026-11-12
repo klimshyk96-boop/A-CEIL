@@ -99,7 +99,7 @@
     title.textContent="📄 Звіти за об'єктом · "+variants.length+" "+unit+" · опубліковано "+publishedCount;
     group.appendChild(title);
     var grid=document.createElement("div");
-    grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;";
+    grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;max-width:880px;";
     var key=cloudId(project),expanded=expandedReportGroups.has(key);
     var displayed=expanded?variants:variants.slice(0,2);
     displayed.forEach(function(variant){
