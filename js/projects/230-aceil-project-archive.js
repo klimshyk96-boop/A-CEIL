@@ -195,12 +195,14 @@
     }
     copyInFlight.add(sourceId);
     try{
-      var userId=String(window._sbUser.id),copy=quoteCopy(source,userId),localId=copy.id;
+      var userId=String(window._sbUser.id),client=window._sb,copy=quoteCopy(source,userId),localId=copy.id;
       repo.upsert(copy,{append:true});render();
       if(typeof window.addToPendingQueue!=="function"||typeof window.flushPendingQueue!=="function")
         throw new Error("Черга збереження недоступна — копія збережена локально");
       window.addToPendingQueue({type:"save",payload:{localId:localId,dbId:null},addedAt:Date.now()});
       await window.flushPendingQueue();
+      // Never expose another account's quote links after a sign-in switch.
+      if(!window._sbUser||String(window._sbUser.id)!==userId||window._sb!==client)return false;
       var saved=projectBy(localId);
       if(!saved||!cloudId(saved)||saved._dirty||pending(saved)){
         notify("Копію створено локально. Дочекайтеся хмарного збереження перед публікацією.");
