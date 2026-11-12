@@ -425,7 +425,14 @@ function partialContourQty(source,item,ctx){
   var familyCorners=profileCornerSet(profileMarksFor(family,variant,ctx),ctx);
   if(source===(family==="shadow_profile"?"shadow_corners":family==="noinsert_profile"?"noinsert_corners":"floating_corners")){
     if(!profileRowIsChosen(source,item,variant))return 0;
-    return Object.keys(familyCorners).length;
+    // At a junction of two special profiles one physical corner may not be
+    // charged twice. Assign it deterministically to no-insert > shadow >
+    // floating; ordinary H corners own only those not claimed by any special.
+    var priority=["noinsert_profile","shadow_profile","floating_profile"],higher={};
+    priority.slice(0,priority.indexOf(family)).forEach(function(other){
+      mergeCornerSets(higher,profileCornerSet(profileMarksFor(other,"",ctx),ctx));
+    });
+    return Object.keys(familyCorners).filter(function(key){return !higher[key]}).length;
   }
   if(source==="corners"){
     var claimed=mergeCornerSets(mergeCornerSets(profileCornerSet(shadow,ctx),profileCornerSet(floating,ctx)),profileCornerSet(noinsert,ctx));
@@ -768,6 +775,21 @@ function applyUniversal(opts){
     if((it.source==="main_profile"||it.source==="corners")
        &&(corrected==="noinsert_profile"||corrected==="noinsert_corners")){
       it.source=corrected;changed++;
+    }
+    // A manually zeroed H belongs to the *whole* no-insert selection only.
+    // When a wall mark or shorter manual no-insert length is present, restore
+    // the automatically calculated H remainder instead of leaving a gap.
+    var manualProfileWithMarks=/^(shadow_profile|floating_profile|noinsert_profile)$/.test(corrected)
+      && specialProfileMarks().some(function(mark){return profileFamilyOfMark(mark)===corrected;});
+    var partialManualNoInsert=allItems.some(function(other){
+      return other&&other.manualQtyOverride===true&&Number(other.qty)>0
+        &&contourSourceOfItem(other)==="noinsert_profile";
+    });
+    var autoRepairH=corrected==="main_profile"&&it.manualQtyOverride===true
+      &&!(Number(it.qty)>0)&&!billableWholeContour()
+      &&(specialProfileMarks().length>0||partialManualNoInsert);
+    if(autoRepairH||manualProfileWithMarks&&it.manualQtyOverride===true){
+      it.manualQtyOverride=false;it.autoFilled=true;it.universalAuto=true;changed++;
     }
     if(it.manualQtyOverride===true){
       // Historical broken snapshots can say "black selected, qty 0, manual".
