@@ -85,7 +85,11 @@
     var group=old||document.createElement("section");
     group.className="aceil-quote-reports";
     group.setAttribute("aria-label","Незалежні звіти за об'єктом");
-    group.style.cssText="margin-top:9px;padding:9px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff;";
+    // Desktop project cards use flex, mobile cards force a three-column grid.
+    // Without both rules this fourth child becomes a tiny first-grid-column
+    // tile on iPhone or a narrow right-hand side panel on desktop.
+    card.style.flexWrap="wrap";
+    group.style.cssText="grid-column:1 / -1;flex:0 0 100%;order:99;width:100%;min-width:0;box-sizing:border-box;margin-top:9px;padding:9px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff;";
     group.replaceChildren();
     var title=document.createElement("div");
     title.style.cssText="font-weight:800;font-size:12px;color:#1e40af;margin-bottom:7px;";
