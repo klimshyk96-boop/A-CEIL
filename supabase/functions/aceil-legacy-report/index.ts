@@ -19,7 +19,7 @@ function headers(req: Request): Headers {
   if (origin && approvedOrigins.has(origin)) {
     values.set("Access-Control-Allow-Origin", origin);
     values.set("Vary", "Origin");
-    values.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+    values.set("Access-Control-Allow-Methods", "POST, OPTIONS");
     values.set("Access-Control-Allow-Headers", "content-type");
   }
   return values;
@@ -35,15 +35,20 @@ Deno.serve(async (req: Request) => {
     if (origin && !approvedOrigins.has(origin)) return reply(req, 403, { status: "forbidden" });
     return new Response(null, { status: 204, headers: headers(req) });
   }
-  if (req.method !== "GET") return reply(req, 405, { status: "method_not_allowed" });
-
-  const url = new URL(req.url);
-  if (url.searchParams.has("health")) {
-    return reply(req, 200, { ok: true, configured: Boolean(
-      Deno.env.get("SUPABASE_URL") && Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
-    ) });
+  if (req.method !== "POST") return reply(req, 405, { status: "method_not_allowed" });
+  // Reading from JSON body avoids putting bearer capabilities in URLs, access
+  // logs, analytics, or referrers. An oversized body is always rejected.
+  if (Number(req.headers.get("content-length") || 0) > 4096) {
+    return reply(req, 413, { status: "oversized" });
   }
-  const token = (url.searchParams.get("token") || "").toLowerCase();
+  let input: unknown;
+  try {
+    const raw = await req.text();
+    if (raw.length > 4096) return reply(req, 413, { status: "oversized" });
+    input = JSON.parse(raw);
+  } catch { return reply(req, 404, { status: "not_found" }); }
+  const token = (input && typeof input === "object" && !Array.isArray(input)
+    ? String((input as Record<string, unknown>).token || "") : "").toLowerCase();
   if (!/^[a-f0-9]{20}$/.test(token)) return reply(req, 404, { status: "not_found" });
 
   const projectUrl = Deno.env.get("SUPABASE_URL") || "";
