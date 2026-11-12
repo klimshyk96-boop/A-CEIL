@@ -80,6 +80,22 @@
       copyButton.setAttribute("aria-label",copyButton.title);
       copyButton.disabled=copyInFlight.has(String(project.id));
       copyButton.onclick=function(){window.A_CEIL_ProjectArchive.copyForQuote(project.id)};
+      // The generic "Локально" badge must expose the real failure on mobile.
+      // A tap opens the non-destructive retry/recovery options for this record.
+      var syncChip=card.querySelector(".rp-project-head span[title]");
+      if(syncChip&&(project._dirty||project._localUpdatedAt||pending(project)||!project._dbId)){
+        var issue=syncIssue(project);
+        syncChip.textContent=issue.label;
+        syncChip.title=issue.description+" Торкніться для перевірки.";
+        syncChip.style.cursor="pointer";
+        syncChip.style.background=issue.blocked?"#fee2e2":issue.failed?"#fef3c7":"#fef3c7";
+        syncChip.style.color=issue.blocked?"#b91c1c":"#92400e";
+        syncChip.setAttribute("role","button");
+        syncChip.setAttribute("tabindex","0");
+        syncChip.setAttribute("aria-label","Перевірити синхронізацію: "+issue.description);
+        syncChip.onclick=function(){window.A_CEIL_ProjectArchive.syncHelp(project.id)};
+        syncChip.onkeydown=function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();syncChip.click()}};
+      }
       if(project._comparisonSourceId){
         var pair=actions.querySelector("[data-project-quote-links]");
         if(!pair){
@@ -120,6 +136,116 @@
     })}catch(_){return true}
   }
   function notify(message){if(typeof window.showToast==="function")window.showToast(message,4800)}
+
+  function queuedSave(project){
+    if(!project)return null;
+    var ids=[project.id,project._dbId,project._localId].filter(function(x){return x!=null}).map(String);
+    try{
+      return typeof window.getPendingQueue==="function"&&window.getPendingQueue().find(function(op){
+        if(!op||op.type!=="save")return false;
+        var data=op.payload||{};
+        return [data.localId,data.dbId].some(function(x){return x!=null&&ids.includes(String(x))});
+      })||null;
+    }catch(_){return null}
+  }
+  function syncIssue(project){
+    var op=queuedSave(project),error=String(op&&op._lastError||"").slice(0,220),failed=!!(op&&op._failures);
+    if(op&&op._manualRestoreRequired)return {blocked:true,failed:true,label:"⚠️ Відновлення",description:"Хмарний проєкт видалено або доступ відкликано. Локальні правки не видалено."};
+    if(op&&op._manualConflictRequired)return {blocked:true,failed:true,label:"⚠️ Конфлікт",description:error||"Інша версія змінилася в хмарі. Потрібне ручне узгодження."};
+    if(project&&project._dbId&&!project._cloudRevision)return {blocked:true,failed:true,label:"⚠️ Перевірка",description:"Немає перевіреної серверної ревізії. Автоматичний запис заборонено, щоб не затерти креслення."};
+    if(failed)return {blocked:false,failed:true,label:"⚠️ Хмара",description:error||"Попередня спроба синхронізації не вдалася."};
+    return {blocked:false,failed:false,label:"⏳ Локально",description:op?"Збережено на пристрої, очікує синхронізації.":"Немає підтвердження хмарного збереження."};
+  }
+  function syncHelp(id){
+    var project=projectBy(id);if(!project)return false;
+    var target=document.getElementById("projectsList"),parent=target&&target.parentNode;
+    if(!parent)return false;
+    var panel=document.getElementById("aceilSyncRescuePanel");
+    if(!panel){panel=document.createElement("section");panel.id="aceilSyncRescuePanel";parent.insertBefore(panel,target)}
+    panel.replaceChildren();
+    panel.style.cssText="margin:10px 0 14px;padding:14px;border:1px solid #fbbf24;border-radius:14px;background:#fffbeb;color:#78350f;";
+    var heading=document.createElement("strong");heading.textContent="☁️ Синхронізація: "+String(project.name||"Проєкт");
+    panel.appendChild(heading);
+    var issue=syncIssue(project),detail=document.createElement("p");
+    detail.style.cssText="font-size:13px;line-height:1.5;margin:8px 0 12px";
+    detail.textContent=issue.description+" Не очищуйте дані браузера і не видаляйте цей проєкт, доки зміни не опиняться у хмарі.";
+    panel.appendChild(detail);
+    var actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap";
+    var retry=document.createElement("button");retry.type="button";retry.textContent="↻ Повторити синхронізацію";
+    retry.style.cssText="border:0;border-radius:9px;padding:10px 12px;background:#2563eb;color:#fff;font-weight:800";
+    retry.disabled=issue.blocked;
+    retry.onclick=function(){retryCloudSave(project.id)};
+    actions.appendChild(retry);
+    var rescue=document.createElement("button");rescue.type="button";rescue.textContent="☁️ Зберегти окрему копію";
+    rescue.style.cssText="border:1px solid #fdba74;border-radius:9px;padding:10px 12px;background:#fff;color:#9a3412;font-weight:800";
+    rescue.onclick=function(){rescueCloudCopy(project.id)};
+    actions.appendChild(rescue);panel.appendChild(actions);
+    return true;
+  }
+  async function retryCloudSave(id){
+    var project=projectBy(id),op=queuedSave(project);
+    if(!project)return false;
+    if(!navigator.onLine||!window._sb||!window._sbUser){notify("Немає підключення до хмари");return false}
+    if(op&&(op._manualRestoreRequired||op._manualConflictRequired)||project._dbId&&!project._cloudRevision){
+      notify("Автоматичний запис заблокований для захисту хмарної версії. Створіть окрему резервну копію.");syncHelp(id);return false;
+    }
+    try{
+      notify("Спроба синхронізації…");
+      if(!op){
+        var persistence=window.A·CEIL&&window.A·CEIL.ProjectPersistence;
+        if(!persistence||typeof persistence.syncProject!=="function")throw new Error("Модуль хмарного збереження недоступний");
+        await persistence.syncProject(project);
+      }else{
+        if(typeof window.flushPendingQueue!=="function")throw new Error("Черга збереження недоступна");
+        await window.flushPendingQueue();
+      }
+      var updated=projectBy(id),waiting=updated&&queuedSave(updated);
+      render();
+      if(updated&&!waiting&&!updated._dirty&&!updated._localUpdatedAt&&updated._dbId){
+        notify("✅ Останні зміни підтверджено в хмарі");return true;
+      }
+      notify("Ще не збережено. Перевірте причину в панелі синхронізації.");
+      syncHelp(updated?updated.id:id);return false;
+    }catch(error){
+      notify("Не вдалося синхронізувати: "+String(error&&error.message||error).slice(0,140));
+      syncHelp(id);return false;
+    }
+  }
+  async function rescueCloudCopy(id){
+    var source=projectBy(id),repo=window.A·CEIL&&window.A·CEIL.ProjectRepository;
+    if(!source||!repo||!window._sb||!window._sbUser||!navigator.onLine){notify("Для створення хмарної копії потрібні інтернет і вхід у акаунт");return false}
+    if(source._shared){notify("Редагування цього проєкту обмежено власником");return false}
+    var sourceKey=String(source._dbId||source.id);
+    var existing=list().find(function(p){return p&&p._recoverySourceId===sourceKey});
+    if(existing){notify("Резервна копія вже створена: "+String(existing.name||""));return false}
+    if(copyInFlight.has(sourceKey))return false;
+    if(typeof window.confirm==="function"&&!window.confirm("Створити окрему хмарну копію поточного локального креслення? Оригінал залишиться незмінним."))return false;
+    copyInFlight.add(sourceKey);
+    try{
+      var uid=String(window._sbUser.id),client=window._sb,copy=quoteCopy(source,uid),localId=copy.id;
+      copy.name=String(source.name||"Проєкт")+" — Резервна копія";
+      delete copy._comparisonSourceId;
+      copy._recoverySourceId=sourceKey;
+      var st=stateOf(copy);
+      delete st.comparisonSourceId;st.recoverySourceId=sourceKey;
+      copy.state=JSON.stringify(st);
+      repo.upsert(copy,{append:true});
+      if(typeof window.addToPendingQueue!=="function"||typeof window.flushPendingQueue!=="function")
+        throw new Error("Черга збереження недоступна; копія залишилась локально");
+      window.addToPendingQueue({type:"save",payload:{localId:localId},addedAt:Date.now()});
+      await window.flushPendingQueue();
+      if(!window._sbUser||String(window._sbUser.id)!==uid||window._sb!==client)return false;
+      var saved=projectBy(localId);
+      render();
+      if(saved&&saved._dbId&&!saved._dirty&&!queuedSave(saved)){
+        notify("✅ Резервну копію збережено в хмарі. Оригінал не змінювали.");return saved.id;
+      }
+      notify("Копія збережена локально, але сервер ще не підтвердив її. Не видаляйте її.");return false;
+    }catch(error){
+      notify("Не вдалося створити хмарну копію: "+String(error&&error.message||error).slice(0,140));return false;
+    }finally{copyInFlight.delete(sourceKey);render()}
+  }
+
   function safeCopyName(name){return String(name||"Без назви").replace(/ — Безвставочний$/,"")+" — Безвставочний"}
   function quoteCopy(source,userId){
     // Deep copy preserves rooms, measurements, material prices and drawing.
@@ -232,7 +358,7 @@
     baseRender=current;var wrapped=function(){return render()};wrapped.__projectArchiveV1=true;window.renderProjects=wrapped;try{renderProjects=wrapped}catch(_){}
     if(document.getElementById("projectsModal")&&document.getElementById("projectsModal").classList.contains("open"))render();
   }
-  window.A_CEIL_ProjectArchive={toggle:toggle,copyForQuote:copyForQuote,showPair:showPair,setView:function(next){view=next==="archive"?"archive":"active";render()},count:function(){return totals().archive},isArchived:function(project){return !!archivedAt(project)}};
+  window.A_CEIL_ProjectArchive={toggle:toggle,copyForQuote:copyForQuote,showPair:showPair,syncHelp:syncHelp,retryCloudSave:retryCloudSave,rescueCloudCopy:rescueCloudCopy,syncIssue:syncIssue,setView:function(next){view=next==="archive"?"archive":"active";render()},count:function(){return totals().archive},isArchived:function(project){return !!archivedAt(project)}};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
   [100,700,1800].forEach(function(delay){setTimeout(install,delay)});
 })();
