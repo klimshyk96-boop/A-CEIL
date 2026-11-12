@@ -41,6 +41,7 @@ const rows=()=>[
         const group=cards[0]?.querySelector('.aceil-quote-reports');
         const tiles=[...(group?.querySelectorAll('.aceil-quote-report-option')||[])];
         const openLinks=tiles.map(tile=>tile.querySelector('a[href]')?.href||'');
+        const grid=group?.querySelector('.aceil-quote-report-option')?.parentElement;
         const rect=group?.getBoundingClientRect();
         const cardRect=cards[0]?.getBoundingClientRect();
         const actionsRect=cards[0]?.querySelector('.rp-project-actions')?.getBoundingClientRect();
@@ -54,6 +55,7 @@ const rows=()=>[
           width:innerWidth,
           groupBox:rect?{left:rect.left,right:rect.right,width:rect.width,top:rect.top}:null,
           cardBox:cardRect?{left:cardRect.left,right:cardRect.right,width:cardRect.width}:null,
+          gridWidth:grid?.getBoundingClientRect().width||0,
           actionBottom:actionsRect?actionsRect.bottom:null,
           modalBox:{left:modal.getBoundingClientRect().left,right:modal.getBoundingClientRect().right}
         };
@@ -68,6 +70,7 @@ const rows=()=>[
       assert(data.groupBox.left>=-2&&data.groupBox.right<=width+2,'reports fit viewport');
       assert(Math.abs(data.groupBox.width-data.cardBox.width)<8,'report panel must span the whole project card, not a grid column or sidebar');
       assert(data.groupBox.top>=data.actionBottom-3,'report panel must appear below project actions, not beside them');
+      assert(data.gridWidth<=883,'desktop report tiles must remain compact instead of stretching 1400px');
       assert(data.modalBox.left>=-2&&data.modalBox.right<=width+2,'project modal fits viewport');
       const more=page.locator('#projectsList .aceil-quote-reports-toggle').first();
       await more.click();
