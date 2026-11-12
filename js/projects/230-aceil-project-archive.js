@@ -157,7 +157,7 @@
   function projectBy(id){return list().find(function(project){return matches(project,id)})||null}
   function jumpToProject(id){
     if(view!=="active"){view="active";render()}
-    var project=projectBy(id),cards=document.querySelectorAll("#projectsList .rp-project-card");
+    var project=projectBy(id),cards=typeof document.querySelectorAll==="function"?document.querySelectorAll("#projectsList .rp-project-card"):[];
     for(var i=0;i<cards.length;i++){
       var action=cards[i].querySelector('[onclick*="editProject"]'),
           raw=action&&action.getAttribute("onclick")||"",
