@@ -42,6 +42,8 @@ const rows=()=>[
         const tiles=[...(group?.querySelectorAll('.aceil-quote-report-option')||[])];
         const openLinks=tiles.map(tile=>tile.querySelector('a[href]')?.href||'');
         const rect=group?.getBoundingClientRect();
+        const cardRect=cards[0]?.getBoundingClientRect();
+        const actionsRect=cards[0]?.querySelector('.rp-project-actions')?.getBoundingClientRect();
         const modal=document.querySelector('#projectsModal .modal')||document.getElementById('projectsModal');
         return {
           count:cards.length,hasGroup:!!group,visible:tiles.length,
@@ -50,7 +52,9 @@ const rows=()=>[
           links:openLinks,
           bodyOverflow:document.documentElement.scrollWidth>innerWidth+2,
           width:innerWidth,
-          groupBox:rect?{left:rect.left,right:rect.right,width:rect.width}:null,
+          groupBox:rect?{left:rect.left,right:rect.right,width:rect.width,top:rect.top}:null,
+          cardBox:cardRect?{left:cardRect.left,right:cardRect.right,width:cardRect.width}:null,
+          actionBottom:actionsRect?actionsRect.bottom:null,
           modalBox:{left:modal.getBoundingClientRect().left,right:modal.getBoundingClientRect().right}
         };
       });
@@ -62,6 +66,8 @@ const rows=()=>[
       assert.equal(data.links[1],'https://a-ceil.pp.ua/r/'+'b'.repeat(20),'second report has its own compact public URL');
       assert.equal(data.bodyOverflow,false,'no horizontal page overflow');
       assert(data.groupBox.left>=-2&&data.groupBox.right<=width+2,'reports fit viewport');
+      assert(Math.abs(data.groupBox.width-data.cardBox.width)<8,'report panel must span the whole project card, not a grid column or sidebar');
+      assert(data.groupBox.top>=data.actionBottom-3,'report panel must appear below project actions, not beside them');
       assert(data.modalBox.left>=-2&&data.modalBox.right<=width+2,'project modal fits viewport');
       const more=page.locator('#projectsList .aceil-quote-reports-toggle').first();
       await more.click();
@@ -80,6 +86,11 @@ const rows=()=>[
       assert.equal(data.accessible.filter(Boolean).length,2,'never invent URLs for 4 unavailable links');
       await more.click();
       assert.equal(await page.locator('#projectsList .aceil-quote-report-option').count(),2,'collapse returns to two tiles');
+      await page.evaluate(()=>{
+        const list=document.getElementById('projectsList');
+        if(list)list.scrollTop=0;
+      });
+      await page.screenshot({path:path.join(screenshots,'reports-'+width+'.png'),fullPage:false});
       // Filter hides the source; the navigation helper must restore it
       // without rewriting the cloud project collection.
       const jump=await page.evaluate(id=>{
@@ -90,7 +101,6 @@ const rows=()=>[
         return {hidden,found,search:search.value,restored:!!document.querySelector('.aceil-quote-reports'),projects:window.getProjects().length};
       },baseId);
       assert.deepEqual(jump,{hidden:true,found:true,search:'',restored:true,projects:6});
-      await page.screenshot({path:path.join(screenshots,'reports-'+width+'.png'),fullPage:false});
       assert.equal(errors.length,0,'unexpected page errors: '+errors.join(' | '));
       console.log('PASS',JSON.stringify({width,reportTiles:2,expandedCount:6,restoreSearch:true,overflow:false,missingAssets:missing.length}));
       await page.close();
