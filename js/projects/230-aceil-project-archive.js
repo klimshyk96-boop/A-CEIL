@@ -4,6 +4,9 @@
   window.__A_CEIL_PROJECT_ARCHIVE_V1=true;
 
   var view="active",baseRender=null,rendering=false;
+  // Project cards need only the archive date. Parse each unchanged JSON state
+  // once, not several times per render. Invalidate on state replacement.
+  var archiveDates=new WeakMap();
   function clone(value){try{return JSON.parse(JSON.stringify(value))}catch(_){return value}}
   function stateOf(project){
     try{return typeof project.state==="string"?JSON.parse(project.state||"{}"):clone(project.state||{})}
@@ -12,6 +15,15 @@
   function archivedAt(project){
     if(!project)return null;
     if(project.archivedAt)return project.archivedAt;
+    if(typeof project.state==="string"){
+      var cached=archiveDates.get(project);
+      if(cached&&cached.source===project.state)return cached.value;
+      var date=null;
+      try{var parsed=JSON.parse(project.state||"{}");date=parsed&&parsed.archivedAt||null}
+      catch(_){}
+      archiveDates.set(project,{source:project.state,value:date});
+      return date;
+    }
     var state=stateOf(project);return state.archivedAt||null;
   }
   function setArchived(project,value){
@@ -38,14 +50,19 @@
     tabs.innerHTML='<button type="button" data-project-view="active" class="'+(view==="active"?"active":"")+'"><span>Проєкти</span><b>'+count.active+'</b></button><button type="button" data-project-view="archive" class="'+(view==="archive"?"active":"")+'"><span>Архів</span><b>'+count.archive+'</b></button>';
     tabs.querySelectorAll("[data-project-view]").forEach(function(button){button.onclick=function(){view=button.dataset.projectView;render()}});
   }
-  function cardProject(card,all){
+  function cardProject(card,byId){
     var action=card.querySelector('[onclick*="editProject"]'),raw=action&&action.getAttribute("onclick")||"";
-    var match=raw.match(/editProject\(['\"]([^'\"]+)['\"]\)/);return match&&all.find(function(p){return matches(p,match[1])})||null;
+    var match=raw.match(/editProject\(['\"]([^'\"]+)['\"]\)/);return match&&byId.get(match[1])||null;
   }
   function decorate(){
-    var all=list();
+    var all=list(),byId=new Map();
+    all.forEach(function(project){
+      [project&&project.id,project&&project._dbId,project&&project._localId].forEach(function(id){
+        if(id!=null&&!byId.has(String(id)))byId.set(String(id),project);
+      });
+    });
     document.querySelectorAll("#projectsList .rp-project-card").forEach(function(card){
-      var project=cardProject(card,all),actions=card.querySelector(".rp-project-actions");if(!project||!actions||project._shared)return;
+      var project=cardProject(card,byId),actions=card.querySelector(".rp-project-actions");if(!project||!actions||project._shared)return;
       var button=actions.querySelector("[data-project-archive]");if(!button){button=document.createElement("button");button.type="button";button.dataset.projectArchive="1";button.className="aceil-project-archive-action";var danger=actions.querySelector('[onclick*="deleteProject"]');actions.insertBefore(button,danger||null)}
       var isArchived=!!archivedAt(project);button.textContent=isArchived?"↩":"📦";button.title=isArchived?"Повернути з архіву":"Перенести в архів";button.setAttribute("aria-label",button.title);
       button.onclick=function(){window.A_CEIL_ProjectArchive.toggle(project.id,!isArchived)};
@@ -56,7 +73,11 @@
     if(typeof baseRender!=="function"||rendering)return;
     var originalWindow=window.getProjects,originalBinding=null,all=originalWindow?originalWindow():[];
     try{originalBinding=getProjects}catch(_){originalBinding=originalWindow}
-    var filtered=function(){return all.filter(function(project){return view==="archive"?!!archivedAt(project):!archivedAt(project)})};
+    var filteredOnce=null;
+    var filtered=function(){
+      if(!filteredOnce)filteredOnce=all.filter(function(project){return view==="archive"?!!archivedAt(project):!archivedAt(project)});
+      return filteredOnce;
+    };
     rendering=true;window.getProjects=filtered;try{getProjects=filtered}catch(_){}
     try{baseRender()}finally{window.getProjects=originalWindow;try{getProjects=originalBinding}catch(_){}rendering=false}
     ensureTabs();decorate();

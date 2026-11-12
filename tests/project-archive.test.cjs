@@ -30,6 +30,29 @@ vm.createContext(context);vm.runInContext(source,context);
   assert.equal(projects[0].archivedAt,null);
   assert.equal(JSON.parse(projects[0].state).archivedAt,undefined);
   assert.deepEqual(synced,['p1','p1']);
+  // Dense project lists previously parsed the entire drawing on every count
+  // and render pass, including each card. Cache must also invalidate after a
+  // project state is replaced (archiving/unarchiving and cloud refresh).
+  projects=Array.from({length:120},(_,i)=>({
+    id:'perf-'+i,name:'Object '+i,state:JSON.stringify({
+      schemaVersion:3,pts:Array.from({length:80},(_,n)=>({x:n,y:n*2})),
+      archivedAt:null
+    })
+  }));
+  const originalJSON=context.JSON;
+  let parseCalls=0;
+  context.JSON={
+    parse(value){parseCalls++;return originalJSON.parse(value)},
+    stringify:originalJSON.stringify
+  };
+  assert.equal(context.A_CEIL_ProjectArchive.count(),0);
+  assert.equal(parseCalls,120,'first pass parses 120 uncached drawings');
+  assert.equal(context.A_CEIL_ProjectArchive.count(),0);
+  assert.equal(parseCalls,120,'a second pass does not reparse 120 unchanged drawings');
+  projects[0].state=JSON.stringify({archivedAt:'2026-11-12T06:00:00Z'});
+  assert.equal(context.A_CEIL_ProjectArchive.count(),1,'cache invalidates when cloud state changes');
+  assert.equal(parseCalls,121,'only the changed project is parsed again');
+  context.JSON=originalJSON;
   assert.match(source,/aceilProjectArchiveTabs/,'projects modal must show archive tabs');
   assert.match(source,/count\.archive/,'archive tab must show the count');
   assert.match(queue,/state\.archivedAt=local\.archivedAt/,'cloud payload must preserve archive state');
