@@ -220,7 +220,7 @@ function contourPerimeterM(state){
 }
 function contourSourceOfItem(item){
   var source=String(item&&(item.source||item.autoMatchedSource)||'');
-  if(/^(main_profile|shadow_profile|floating_profile|noinsert_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners|noinsert_corners)$/.test(source))return source;
+  if(/^(main_profile|shadow_profile|floating_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners)$/.test(source))return source;
   var label=!source&&item?String(item.name||''):'';
   if(source==='full_perimeter'&&item)label=String(item.name||'');
   if(source.indexOf('walltype:')===0)label=source.slice(9);
@@ -402,7 +402,7 @@ function manualInsertExtraCm(ctx){
   return extra;
 }
 function partialContourQty(source,item,ctx){
-  var relevant=/^(main_profile|shadow_profile|floating_profile|noinsert_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners|noinsert_corners|white_insert)$/;
+  var relevant=/^(main_profile|shadow_profile|floating_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners|white_insert)$/;
   if(!relevant.test(source))return null;
   var perimeterCm=Math.max(0,Number(ctx&&ctx.perimeterCm)||contourPerimeterM()*100),cornersTotal=currentCornersTotal(ctx);
   var shadow=profileMarksFor("shadow_profile","",ctx),floating=profileMarksFor("floating_profile","",ctx),
@@ -531,7 +531,7 @@ window.A_CEIL_SelectWholeContourItem=function(item){
   try{setElemFromPerimeter=wrapped;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 })(window.setElemFromPerimeter);
 window.aceilWholeContourCompute=function(source,item,ctx){
-  var selected=(/corners$/.test(source)?manualContourStyle(getElemItems()):null)||activeWholeContourProfile(item),profile=selected?{item:selected,source:contourSourceOfItem(selected)||selected.source}:null,relevant=/^(main_profile|shadow_profile|floating_profile|noinsert_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners|noinsert_corners|white_insert)$/;
+  var selected=(/corners$/.test(source)?manualContourStyle(getElemItems()):null)||activeWholeContourProfile(item),profile=selected?{item:selected,source:contourSourceOfItem(selected)||selected.source}:null,relevant=/^(main_profile|shadow_profile|floating_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners|white_insert)$/;
   if(!relevant.test(source))return null;
   if(source==="white_insert"&&manualContourStyle(getElemItems()))return 0;
   if(!profile)return partialContourQty(source,item,ctx);
