@@ -142,6 +142,7 @@ const PENDING_KEY = "ceiling_pendingSync";
       // Keep the alternative quote's source link in its own cloud state.
       // It is only metadata; it must never alter the original project.
       if(local._comparisonSourceId)state.comparisonSourceId=String(local._comparisonSourceId);
+      if(local._recoverySourceId)state.recoverySourceId=String(local._recoverySourceId);
     } else if(mode&&typeof mode.cleanSingleState==='function') state=mode.cleanSingleState(local);
     if(local.archivedAt)state.archivedAt=local.archivedAt;else delete state.archivedAt;
     const value = field => local[field] == null ? fallback[field] || "" : local[field];
