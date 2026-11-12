@@ -63,7 +63,9 @@ async function precacheCoreShell(){
       const request=new Request(url,{cache:"reload"});
       const response=await fetch(request);
       await putIfUsable(cache,request,response);
-      if(url==="/index.html"&&response.ok)entryLoaded=true;
+      // A 200 response alone is insufficient: iOS can reject cache.put
+      // because of storage quota, leaving offline clients without HTML.
+      if(url==="/index.html"&&response.ok)entryLoaded=!!(await cache.match(request));
     }catch(_){ /* Retry optional assets on their first normal request. */ }
   }));
   if(!entryLoaded)throw new Error("A·CEIL shell index unavailable; preserve previous worker");
