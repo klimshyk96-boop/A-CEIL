@@ -13,6 +13,7 @@ for name in \
   p0-hardening \
   pending-sync-queue \
   project-sync-revision \
+  project-revision-content \
   project-mode \
   demo-access-ui \
   demo-support-visible \
