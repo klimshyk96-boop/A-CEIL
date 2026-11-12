@@ -220,6 +220,12 @@ function contourPerimeterM(state){
 }
 function contourSourceOfItem(item){
   var source=String(item&&(item.source||item.autoMatchedSource)||'');
+  // Existing cloud catalog can bind "Безвставочний металевий" to main_profile.
+  // The name identifies a different physical family: it must NEVER be counted
+  // as another baseline H (including previously saved room snapshots).
+  if((source==="main_profile"||source==="corners")&&/безвстав|без вставк/.test(norm(item&&item.name))){
+    return /кут/.test(norm(item.name))?"noinsert_corners":"noinsert_profile";
+  }
   if(/^(main_profile|shadow_profile|floating_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners)$/.test(source))return source;
   var label=!source&&item?String(item.name||''):'';
   if(source==='full_perimeter'&&item)label=String(item.name||'');
@@ -715,6 +721,13 @@ function applyUniversal(opts){
       it.source="white_insert";
       if(it.sourceVariant!=="white"&&it.sourceVariant!=="black")it.sourceVariant=profileVariantOfItem(it);
       changed++;
+    }
+    // Repair the legacy wrong H binding before the manual-qty early return.
+    // A user-entered non-insert length is preserved, never reset to auto.
+    var corrected=contourSourceOfItem(it);
+    if((it.source==="main_profile"||it.source==="corners")
+       &&(corrected==="noinsert_profile"||corrected==="noinsert_corners")){
+      it.source=corrected;changed++;
     }
     if(it.manualQtyOverride===true){
       // Historical broken snapshots can say "black selected, qty 0, manual".

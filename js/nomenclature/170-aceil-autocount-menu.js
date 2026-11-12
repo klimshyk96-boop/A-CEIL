@@ -499,6 +499,7 @@
     white_insert:["wall","Вставка","Довжина з відніманнями, м"],
     floating_profile:["wall","Парящий профіль","Довжина, м"],floating_corners:["wall","Парящий профіль","Кути, шт"],
     shadow_profile:["wall","Тіньовий профіль","Довжина, м"],shadow_corners:["wall","Тіньовий профіль","Кути, шт"],
+    noinsert_profile:["wall","Безвставочний профіль","Довжина, м"],noinsert_corners:["wall","Безвставочний профіль","Кути, шт"],
     profile_beam:["wall","Профіль-брус","Довжина, м"],hidden_curtain:["wall","Карниз","Довжина, м"],
     cornice_corners:["wall","Прихований карниз","Кути, шт"],cornice_break:["wall","Прихований карниз","Обриви, шт"],
     curve_length:["wall","Криволінійні ділянки","Довжина, м"],
@@ -553,7 +554,7 @@
   }
   function contourDraft(item){
     var enabled=gid("acEditEnabled").checked,source=gid("editElemSource").value;
-    var eligible=/^(main_profile|shadow_profile|floating_profile)$/.test(source);
+    var eligible=/^(main_profile|shadow_profile|floating_profile|noinsert_profile)$/.test(source);
     gid("acWholeContourRow").hidden=!enabled||!eligible;
     gid("acContourPresetLabel").hidden=!gid("acWholeContour").checked||source==="main_profile";
     var keepDefaultBase=source==="main_profile"&&gid("acWholeContour").dataset.defaultBase==="1"&&gid("acWholeContour").checked;

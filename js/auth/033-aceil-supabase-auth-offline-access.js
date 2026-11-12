@@ -199,6 +199,7 @@ function _nomenV339MergeCatalogWithRoom(catalog,current){
   var fields=["qty","manualQtyOverride","contourInsertSuppressed","autoFilled","autoZero","insertSelected","calculatedQty","autoQty","resultQty","computedQty","lineTotal","total","sum","amount","price","optionalEstimateEnabled"];
   var out=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(scopedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0)}).map(function(src){
     var it=_nomenV339Clone(src||{}),old=by[_nomenV339Key(src)];
+    if(it.source==="main_profile"&&/безвстав|без вставк/i.test(String(it.name||"")))it.source="noinsert_profile";
     delete it.contourInsertSuppressed;it.insertSelected=aceilDefaultInsertSelection(it);
     if(old)fields.forEach(function(f){if(Object.prototype.hasOwnProperty.call(old,f))it[f]=_nomenV339Clone(old[f])});
     return it;
