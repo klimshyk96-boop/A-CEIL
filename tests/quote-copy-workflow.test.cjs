@@ -48,7 +48,7 @@ test('independent quote copy never overwrites original or inherits its report li
   assert.equal(p._comparisonSourceId,'original-uuid');
   assert.equal(raw.comparisonSourceId,'original-uuid');
   assert.equal(raw.multiRoom,true);
-  assert.equal(p.name,'Вітальня — Безвставочний');
+  assert.equal(p.name,'Вітальня — Копія');
   assert.equal(p.report_token,undefined,'copy requires its own publication');
   assert.equal(p.calcLinks,undefined);
   assert.equal(p.rooms[0]._aceilVariantsShadow,undefined,'no inherited estimate links');
@@ -63,20 +63,23 @@ test('unsaved and offline projects cannot claim cloud comparison copies',async()
   assert.equal(await f.c.A_CEIL_ProjectArchive.copyForQuote('original-uuid'),false);
   assert.equal(f.projects().length,1);
 });
-test('two links are available only when original and copy published independently',async()=>{
-  const f=fixture();await f.c.A_CEIL_ProjectArchive.copyForQuote('original-uuid');
-  const panel=f.nodes.aceilQuotePairPanel;
-  assert(panel);
-  assert.equal(panel.children.at(-2).disabled,true,'cannot send one link as two quotations');
-  assert.match(panel.children.at(-1).textContent,/Показати копію/);
+test('one copy means two visible editable projects, each with its own cloud report link',async()=>{
+  const f=fixture(),result=await f.c.A_CEIL_ProjectArchive.copyForQuote('original-uuid');
+  assert.equal(result,'new-cloud-uuid');
+  const cards=f.c.A_CEIL_ProjectArchive.arrangeQuotePairs(f.projects());
+  assert.deepEqual(Array.from(cards,p=>p.id),['original-uuid','new-cloud-uuid']);
+  assert.equal(f.nodes.aceilQuotePairPanel,undefined,'no large extra quote panel is created');
+  assert.equal(f.c.A_CEIL_ProjectArchive.showPair,undefined,'no extra combined-links button');
+  assert.equal(f.projects()[1].report_token,undefined,'copy starts unpublished');
   f.projects()[1].report_token='b'.repeat(20);
-  assert.equal(f.c.A_CEIL_ProjectArchive.showPair('new-cloud-uuid'),true);
-  const button=panel.children.at(-2);
-  assert.equal(button.disabled,false);await button.onclick();
-  assert.equal(f.writeTexts[0],'https://a-ceil.pp.ua/r/'+ 'a'.repeat(20)+'\nhttps://a-ceil.pp.ua/r/'+'b'.repeat(20));
-  f.projects()[1].report_token='a'.repeat(20);
-  assert.equal(f.c.A_CEIL_ProjectArchive.showPair('new-cloud-uuid'),false,'duplicate URLs must be blocked');
+  assert.notEqual(f.projects()[0].report_token,f.projects()[1].report_token,
+    'original and edited copy keep independent immutable report links');
+  assert.doesNotMatch(source,/data-project-quote-links|Два незалежні кошториси/);
+  assert.match(source,/copyButton\.textContent=alreadyCopied\?"⧉ Копія":"⧉ Копіювати"/);
+  assert.match(source,/render\(\);jumpToProject\(localId\)/,
+    'copy becomes a visible card before cloud sync has completed');
 });
+
 test('cloud persistence restores lineage and does not share original report identity',()=>{
   assert.match(sync,/state\.comparisonSourceId=String\(local\._comparisonSourceId\)/);
   assert.match(auth,/_comparisonSourceId:stateObj\.comparisonSourceId\|\|null/);
@@ -146,7 +149,7 @@ test('second tap reopens existing quote instead of creating a duplicate cloud re
   assert.equal(second,'new-cloud-uuid');
   assert.equal(f.projects().length,2);
   assert.equal(f.copies.length,1,'never writes a second copy after successful first copy');
-  assert(f.messages.some(message=>/Копію вже створено/.test(message)));
+  assert(f.messages.some(message=>/Копія вже є/.test(message)));
   assert.equal(await api.copyForQuote('new-cloud-uuid'),'new-cloud-uuid',
     'pressing 2 КП on the copy does not create nested copies');
 });
