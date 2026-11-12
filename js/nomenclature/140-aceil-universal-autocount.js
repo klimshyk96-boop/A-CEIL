@@ -495,7 +495,24 @@ function billableWholeContour(draft,ctx){
   return inferredContourProfile(list);
 }
 function contourProfile(draft,collection,state){
-  var list=Array.isArray(collection)?collection:getElemItems(),selected=(draft&&draft.fullContourSelected?explicitContourProfile(list,draft):null)||manualContourStyle(list)||explicitContourProfile(list,draft)||inferredContourProfile(list,state),whole=!!selected;
+  var list=Array.isArray(collection)?collection:getElemItems(),
+    selected=(draft&&draft.fullContourSelected?explicitContourProfile(list,draft):null)
+      ||manualContourStyle(list)||explicitContourProfile(list,draft)||inferredContourProfile(list,state);
+  // The contour colour must follow the same physical no-insert coverage as
+  // the bill: a 3 m wall or a 6 m manual replacement cannot paint all 12 m.
+  if(selected&&contourSourceOfItem(selected)==="noinsert_profile"){
+    var per=contourPerimeterM(state),
+      marks=specialProfileMarks(state&&Array.isArray(state.wallMarks)?{marksWall:state.wallMarks}:null),
+      markedNoInsert=marks.filter(function(mark){return profileFamilyOfMark(mark)==="noinsert_profile";}),
+      tolerance=Math.max(.02,per*.002);
+    if(marks.length){
+      if(marks.length!==markedNoInsert.length
+        ||Math.abs(mergedProfileLengthCm(markedNoInsert,{lengths:currentSideLengths()})/100-per)>tolerance)
+        selected=null;
+    }else if(!selected.fullContourSelected&&per>0
+      &&Math.abs((Number(selected.qty)||0)-per)>tolerance)selected=null;
+  }
+  var whole=!!selected;
   if(!selected)selected=list.find(function(it){return it&&contourSourceOfItem(it)==="main_profile"})||{id:"__base_aluminium__",source:"main_profile",name:"Базовий алюмінієвий профіль"};
   var presets=typeof window.rwe2WallPresetRead==="function"?window.rwe2WallPresetRead():[];
   presets=Array.isArray(presets)?presets:[];
