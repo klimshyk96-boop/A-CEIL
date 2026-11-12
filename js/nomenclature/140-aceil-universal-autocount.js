@@ -464,6 +464,29 @@ function manualContourStyle(list){
   else chosen=chosen.filter(function(it){return !it.autoFilled;});
   return chosen.length===1?chosen[0]:null;
 }
+/* Presentation of a manually selected profile and materials charged in the
+   estimate are separate. Wall marks always determine real lengths and
+   junctions. For the no-insert profile, manually entering only part of the
+   perimeter must NOT silently turn it into a full-contour selection. */
+function specialProfileMarks(ctx){
+  var marks=ctx&&Array.isArray(ctx.marksWall)?ctx.marksWall:getWallMarks();
+  return marks.filter(function(mark){return !!profileFamilyOfMark(mark)&&Number(mark&&mark.lenCm)>0;});
+}
+function billableWholeContour(draft,ctx){
+  var list=getElemItems(),marks=specialProfileMarks(ctx);
+  if(marks.length)return null; // geometry is authoritative, even after a stale H=0
+  var explicit=explicitContourProfile(list,draft);
+  if(explicit)return explicit;
+  var manual=manualContourStyle(list);
+  if(manual){
+    if(contourSourceOfItem(manual)==="noinsert_profile"){
+      var per=Math.max(0,Number(ctx&&ctx.perimeterCm)||contourPerimeterM()*100)/100;
+      if(per>0&&Math.abs((Number(manual.qty)||0)-per)>Math.max(.02,per*.002))return null;
+    }
+    return manual;
+  }
+  return inferredContourProfile(list);
+}
 function contourProfile(draft,collection,state){
   var list=Array.isArray(collection)?collection:getElemItems(),selected=(draft&&draft.fullContourSelected?explicitContourProfile(list,draft):null)||manualContourStyle(list)||explicitContourProfile(list,draft)||inferredContourProfile(list,state),whole=!!selected;
   if(!selected)selected=list.find(function(it){return it&&contourSourceOfItem(it)==="main_profile"})||{id:"__base_aluminium__",source:"main_profile",name:"Базовий алюмінієвий профіль"};
@@ -537,9 +560,9 @@ window.A_CEIL_SelectWholeContourItem=function(item){
   try{setElemFromPerimeter=wrapped;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 })(window.setElemFromPerimeter);
 window.aceilWholeContourCompute=function(source,item,ctx){
-  var selected=(/corners$/.test(source)?manualContourStyle(getElemItems()):null)||activeWholeContourProfile(item),profile=selected?{item:selected,source:contourSourceOfItem(selected)||selected.source}:null,relevant=/^(main_profile|shadow_profile|floating_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners|white_insert)$/;
+  var selected=billableWholeContour(item,ctx),profile=selected?{item:selected,source:contourSourceOfItem(selected)||selected.source}:null,relevant=/^(main_profile|shadow_profile|floating_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners|white_insert)$/;
   if(!relevant.test(source))return null;
-  if(source==="white_insert"&&manualContourStyle(getElemItems()))return 0;
+  if(source==="white_insert"&&selected)return 0;
   if(!profile)return partialContourQty(source,item,ctx);
   var circle=typeof circleMode!=="undefined"&&circleMode;
   var ready=circle?typeof circleDiamCm!=="undefined"&&circleDiamCm>0:typeof closed!=="undefined"&&closed&&typeof pts!=="undefined"&&pts.length>=3;
@@ -557,20 +580,37 @@ window.aceilWholeContourCompute=function(source,item,ctx){
 // AutoCount off. The room-only backup field preserves their previous values so
 // returning to the ordinary contour is reversible.
 window.A_CEIL_ReconcileContourInsert=function(){
-  var list=getElemItems(),whole=manualContourStyle(list)||explicitContourProfile(list)||inferredContourProfile(list),suppress=!!whole||list.some(function(row){return row&&row.manualQtyOverride&&Number(row.qty)>0&&/^(shadow_profile|floating_profile|noinsert_profile)$/.test(contourSourceOfItem(row));}),changed=false;
+  var list=getElemItems(),whole=billableWholeContour(),hasWallReplacement=specialProfileMarks().length>0,
+    hasManualReplacement=list.some(function(row){return row&&row.manualQtyOverride&&Number(row.qty)>0
+      &&/^(shadow_profile|floating_profile|noinsert_profile)$/.test(contourSourceOfItem(row));}),
+    needsPartial=hasWallReplacement||hasManualReplacement,
+    suppress=!!whole||needsPartial,changed=false;
   list.forEach(function(row){
     if(!row)return;
     var source=isContourInsertRow(row)?"white_insert":contourSourceOfItem(row);
     if(source!=="white_insert"&&!/^(main_profile|corners|shadow_corners|floating_corners|noinsert_corners)$/.test(source))return;
-    var active=source==="white_insert"?suppress:(source==="main_profile"?(!!whole||(suppress&&row.manualQtyOverride!==true)):!!whole);
+    var zeroManualH=source==="main_profile"&&row.manualQtyOverride===true&&!(Number(row.qty)>0);
+    // A stale manually-zeroed H cannot leave a gap after the user marks only
+    // one wall or enters a partial no-insert replacement.
+    var restorePartialH=!whole&&needsPartial&&zeroManualH;
+    var active=source==="white_insert"?suppress
+      :source==="main_profile"?(!!whole||(needsPartial&&(row.manualQtyOverride!==true||restorePartialH)))
+      :!!whole||needsPartial;
     if(active){
-      if(!row.contourInsertSuppressed){row.contourInsertSuppressed={qty:Number(row.qty)||0,manual:row.manualQtyOverride===true};changed=true;}
+      if(!row.contourInsertSuppressed){
+        row.contourInsertSuppressed={qty:Number(row.qty)||0,manual:row.manualQtyOverride===true&&!restorePartialH};
+        changed=true;
+      }
+      if(restorePartialH){
+        row.manualQtyOverride=false;row.autoFilled=true;row.universalAuto=true;
+        row.contourInsertSuppressed.manual=false;changed=true;
+      }
       var qty=source==="main_profile"&&whole?0:window.aceilWholeContourCompute(source,row);
       if(Number(row.qty)!==qty){row.qty=qty;changed=true;}
       row.autoZero=!(Number(row.qty)>0);
     }else if(row.contourInsertSuppressed){
       var previous=row.contourInsertSuppressed;delete row.contourInsertSuppressed;
-      row.qty=previous.manual?previous.qty:window.aceilWholeContourCompute(source,row);
+      row.qty=previous.manual&&row.manualQtyOverride===true?previous.qty:window.aceilWholeContourCompute(source,row);
       row.autoZero=!(Number(row.qty)>0);changed=true;
     }
     if(changed&&typeof document!=="undefined"){
