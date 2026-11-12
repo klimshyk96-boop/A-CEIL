@@ -1,0 +1,43 @@
+name: A·CEIL mobile browser QA (targeted)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/mobile-browser-qa.test.cjs'
+      - '.github/workflows/aceil-mobile-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aceil-mobile-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromium:
+    name: Mobile 320/390 and desktop 1440, mock data only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned browser harness (not part of app runtime)
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Real Chromium browser QA, synthetic projects
+        run: node tests/mobile-browser-qa.test.cjs
+        env:
+          CI: 'true'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aceil-mobile-qa-screenshots
+          path: qa-artifacts/*.png
+          if-no-files-found: ignore
+          retention-days: 3
