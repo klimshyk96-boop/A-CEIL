@@ -58,8 +58,8 @@ const rows=()=>[
       assert.equal(data.hasGroup,true,'source must display report links');
       assert.equal(data.visible,2,'compact display shows only 2 links');
       assert.match(data.showMore,/Показати ще 4/);
-      assert.equal(data.links[0],'https://a-ceil.pp.ua/r/'+'a'.repeat(64));
-      assert.equal(data.links[1],'https://a-ceil.pp.ua/r/'+'b'.repeat(64));
+      assert.equal(data.links[0],'https://a-ceil.pp.ua/r/'+'a'.repeat(20),'legacy 64-hex token is compacted for the public URL');
+      assert.equal(data.links[1],'https://a-ceil.pp.ua/r/'+'b'.repeat(20),'second report has its own compact public URL');
       assert.equal(data.bodyOverflow,false,'no horizontal page overflow');
       assert(data.groupBox.left>=-2&&data.groupBox.right<=width+2,'reports fit viewport');
       assert(data.modalBox.left>=-2&&data.modalBox.right<=width+2,'project modal fits viewport');
