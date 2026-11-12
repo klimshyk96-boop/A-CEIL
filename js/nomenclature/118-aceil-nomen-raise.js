@@ -36,7 +36,7 @@ window.rmRaiseNomenclature=function(opts){
       try{if(typeof recalcElemTotal==="function")recalcElemTotal();}catch(e){window.__diagSilent&&window.__diagSilent(e)}
       try{if(typeof saveState==="function")saveState();}catch(e){window.__diagSilent&&window.__diagSilent(e)}
     }
-    if(opts&&opts.toast){try{if(typeof showToast==="function")showToast("\u2705 \u041d\u043e\u043c\u0435\u043d\u043a\u043b\u0430\u0442\u0443\u0440\u0443 \u0432\u0456\u0434\u043d\u043e\u0432\u043b\u0435\u043d\u043e: +"+addedI+" \u043f\u043e\u0437., +"+addedG+" \u0433\u0440\u0443\u043f");}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
+    if(opts&&opts.toast&&(addedI>0||addedG>0)){try{if(typeof showToast==="function")showToast("\u2705 \u041d\u043e\u043c\u0435\u043d\u043a\u043b\u0430\u0442\u0443\u0440\u0443 \u0432\u0456\u0434\u043d\u043e\u0432\u043b\u0435\u043d\u043e: +"+addedI+" \u043f\u043e\u0437., +"+addedG+" \u0433\u0440\u0443\u043f");}catch(e){window.__diagSilent&&window.__diagSilent(e)}}
     return addedI+addedG;
   }catch(e){return 0;}
 };
