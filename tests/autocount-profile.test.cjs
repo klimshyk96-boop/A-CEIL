@@ -429,3 +429,97 @@ console.log('PASS wrong legacy no-insert main_profile mapping: H is sole default
   assert.match(read('js/nomenclature/170-aceil-autocount-menu.js'),
     /var eligible=\/\^\(main_profile\|shadow_profile\|floating_profile\|noinsert_profile\)\$\//);
 }
+
+
+{
+  // Full manual swap (H was explicitly set to zero before the user entered
+  // 100% no-insert). All four corners must change family; no masking insert.
+  const items=baseItems(),h=items.find(x=>x.id==='base'),n=items.find(x=>x.id==='noinsert');
+  h.qty=0;h.manualQtyOverride=true;n.qty=12;n.manualQtyOverride=true;
+  const room=makeRoom({items});room.recalculate();room.reconcileInsert();
+  assert.equal(h.qty,0);
+  assert.equal(items.find(x=>x.id==='insert').qty,0);
+  assert.equal(items.find(x=>x.id==='base-corners').qty,0);
+  assert.equal(n.qty,12);
+  assert.equal(items.find(x=>x.id==='noinsert-corners').qty,4);
+}
+{
+  // A previously zeroed manual H must recover its remainder if only 6m of
+  // no-insert is entered instead of the complete 12m contour.
+  const items=baseItems(),h=items.find(x=>x.id==='base'),n=items.find(x=>x.id==='noinsert');
+  h.qty=0;h.manualQtyOverride=true;n.qty=6;n.manualQtyOverride=true;
+  const room=makeRoom({items});room.recalculate();
+  assert.equal(h.qty,6);
+  assert.equal(h.manualQtyOverride,false,'restored H now follows automatic remainder');
+  assert.equal(items.find(x=>x.id==='insert').qty,6);
+  assert.equal(n.qty,6);
+  assert.equal(items.find(x=>x.id==='base-corners').qty,4,'unmarked corners cannot be guessed');
+  assert.equal(items.find(x=>x.id==='noinsert-corners').qty,0);
+}
+{
+  // A wall element, not stale saved whole-contour quantities or manual H=0,
+  // determines which length uses the no-insert profile and which uses H.
+  const items=baseItems(),h=items.find(x=>x.id==='base'),n=items.find(x=>x.id==='noinsert');
+  h.qty=0;h.manualQtyOverride=true;n.qty=12;n.manualQtyOverride=true;
+  const wall=[fullWall('noinsert-wall',0,'Безвставочний металевий')];
+  const room=makeRoom({items,marks:wall});room.recalculate();
+  assert.equal(h.qty,9);
+  assert.equal(n.qty,3);
+  assert.equal(items.find(x=>x.id==='insert').qty,9);
+  assert.equal(items.find(x=>x.id==='base-corners').qty,2);
+  assert.equal(items.find(x=>x.id==='noinsert-corners').qty,2);
+  assert.equal(h.qty+n.qty,12,'no metre of the ceiling perimeter is double charged');
+  assert.equal(items.find(x=>x.id==='base-corners').qty+items.find(x=>x.id==='noinsert-corners').qty,4);
+  wall.splice(0,1);room.recalculate();
+  assert.equal(h.qty,12,'removing wall restores default H');
+  assert.equal(items.find(x=>x.id==='insert').qty,12,'removing wall restores masking insert');
+  assert.equal(n.qty,0);
+  assert.equal(items.find(x=>x.id==='base-corners').qty,4);
+  assert.equal(items.find(x=>x.id==='noinsert-corners').qty,0);
+}
+{
+  // Two adjacent no-insert walls use three no-insert corners; the fourth corner
+  // is ordinary H. No insert is used on the replaced six metres.
+  const items=baseItems(),room=makeRoom({items,marks:[
+    fullWall('n0',0,'Безвставочний металевий'),
+    fullWall('n1',1,'Безвставочний металевий')
+  ]});
+  room.recalculate();
+  assert.equal(items.find(x=>x.id==='base').qty,6);
+  assert.equal(items.find(x=>x.id==='insert').qty,6);
+  assert.equal(items.find(x=>x.id==='noinsert').qty,6);
+  assert.equal(items.find(x=>x.id==='base-corners').qty,1);
+  assert.equal(items.find(x=>x.id==='noinsert-corners').qty,3);
+}
+{
+  // Adjacent no-insert and shadow walls share one actual corner. It must not
+  // be charged twice across the two special profile families.
+  const items=baseItems(),room=makeRoom({items,marks:[
+    fullWall('noinsert',0,'Безвставочний металевий'),
+    fullWall('shadow',1,'Тіньовий профіль')
+  ]});
+  room.recalculate();
+  assert.equal(items.find(x=>x.id==='base').qty,6);
+  assert.equal(items.find(x=>x.id==='insert').qty,6);
+  assert.equal(items.find(x=>x.id==='noinsert').qty,3);
+  assert.equal(items.find(x=>x.id==='shadow').qty,3);
+  assert.equal(items.find(x=>x.id==='base-corners').qty,1);
+  assert.equal(items.find(x=>x.id==='noinsert-corners').qty,2);
+  assert.equal(items.find(x=>x.id==='shadow-corners').qty,1);
+  assert.equal(items.find(x=>x.id==='base-corners').qty
+    +items.find(x=>x.id==='noinsert-corners').qty
+    +items.find(x=>x.id==='shadow-corners').qty,4);
+}
+{
+  // Explicit whole-room selection must not override real partial geometry
+  // after a special wall element is marked.
+  const items=baseItems();
+  items.find(x=>x.id==='noinsert').fullContourSelected=true;
+  const room=makeRoom({items,marks:[fullWall('noinsert-wall',0,'Безвставочний металевий')]});
+  room.recalculate();
+  assert.equal(items.find(x=>x.id==='base').qty,9);
+  assert.equal(items.find(x=>x.id==='insert').qty,9);
+  assert.equal(items.find(x=>x.id==='noinsert').qty,3);
+  assert.equal(items.find(x=>x.id==='noinsert-corners').qty,2);
+}
+console.log('PASS contour replacement scenarios: H-only baseline, manual full/partial, marked walls and unique corners');
