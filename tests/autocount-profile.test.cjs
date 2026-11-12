@@ -442,6 +442,7 @@ console.log('PASS wrong legacy no-insert main_profile mapping: H is sole default
   assert.equal(items.find(x=>x.id==='base-corners').qty,0);
   assert.equal(n.qty,12);
   assert.equal(items.find(x=>x.id==='noinsert-corners').qty,4);
+  assert.equal(room.profile().source,'noinsert_profile','full replacement also changes whole-contour style');
 }
 {
   // A previously zeroed manual H must recover its remainder if only 6m of
@@ -455,6 +456,7 @@ console.log('PASS wrong legacy no-insert main_profile mapping: H is sole default
   assert.equal(n.qty,6);
   assert.equal(items.find(x=>x.id==='base-corners').qty,4,'unmarked corners cannot be guessed');
   assert.equal(items.find(x=>x.id==='noinsert-corners').qty,0);
+  assert.equal(room.profile().source,'main_profile','partial manual replacement must not paint the whole room');
 }
 {
   // A wall element, not stale saved whole-contour quantities or manual H=0,
@@ -468,6 +470,7 @@ console.log('PASS wrong legacy no-insert main_profile mapping: H is sole default
   assert.equal(items.find(x=>x.id==='insert').qty,9);
   assert.equal(items.find(x=>x.id==='base-corners').qty,2);
   assert.equal(items.find(x=>x.id==='noinsert-corners').qty,2);
+  assert.equal(room.profile().source,'main_profile','marked no-insert wall must not colour the whole room');
   assert.equal(h.qty+n.qty,12,'no metre of the ceiling perimeter is double charged');
   assert.equal(items.find(x=>x.id==='base-corners').qty+items.find(x=>x.id==='noinsert-corners').qty,4);
   wall.splice(0,1);room.recalculate();
