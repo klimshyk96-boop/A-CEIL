@@ -305,65 +305,14 @@ function profileVariantOfItem(item){
   if(!variant&&item&&String(item.source||"").indexOf("walltypecolor:")===0)variant=String(item.source).slice(14).split(":")[0];
   return variant==="white"||variant==="black"?variant:colorFromName(item&&item.name||"");
 }
-// A wall may contain overlapping marks from different profile families.
-// Resolve physical ownership before counting metres and corners. Each interval
-// has exactly one owner: no-insert > shadow > floating (same as corner logic).
-// Within one family, the last mark wins when different colours overlap.
-function resolvedProfileMarks(ctx){
-  var raw=ctx&&Array.isArray(ctx.marksWall)?ctx.marksWall:getWallMarks(),
-    lengths=currentSideLengths(ctx),bySide={},resolved=[],priority={
-      noinsert_profile:0,shadow_profile:1,floating_profile:2
-    };
-  raw.forEach(function(mark,index){
-    var family=profileFamilyOfMark(mark),side=Number(mark&&mark.sideIndex),
-      len=Math.max(0,Number(mark&&mark.lenCm)||0),
-      sideLen=Number(lengths[side])||0;
-    if(!family||!(len>0))return;
-    // Unpositioned legacy marks stay unchanged, because their overlap
-    // cannot be proved without reliable wall geometry.
-    if(!isFinite(side)||side<0||!isFinite(sideLen)||!(sideLen>0)){
-      resolved.push(mark);return;
-    }
-    var start=Math.min(Math.max(0,Number(mark.offsetCm)||0),sideLen),
-      end=Math.min(sideLen,start+len);
-    if(end<=start)return;
-    (bySide[side]||(bySide[side]=[])).push({
-      mark:mark,index:index,family:family,start:start,end:end
-    });
-  });
-  Object.keys(bySide).forEach(function(side){
-    var entries=bySide[side],cuts=[];
-    entries.forEach(function(entry){cuts.push(entry.start,entry.end);});
-    cuts.sort(function(a,b){return a-b;});
-    var last=null;
-    for(var i=1;i<cuts.length;i++){
-      var a=cuts[i-1],b=cuts[i];
-      if(b-a<=.00001)continue;
-      var mid=(a+b)/2,winner=null;
-      entries.forEach(function(entry){
-        if(entry.start>mid||entry.end<mid)return;
-        if(!winner||priority[entry.family]<priority[winner.family]
-          ||priority[entry.family]===priority[winner.family]&&entry.index>winner.index)
-          winner=entry;
-      });
-      if(!winner)continue;
-      if(last&&last.index===winner.index&&Math.abs(last.end-a)<.00001){
-        last.end=b;
-      }else{
-        last={index:winner.index,mark:winner.mark,start:a,end:b,side:Number(side)};
-        resolved.push(last);
-      }
-    }
-  });
-  return resolved.map(function(entry){
-    if(!entry||!entry.mark)return entry;
-    return Object.assign({},entry.mark,{
-      sideIndex:entry.side,offsetCm:entry.start,lenCm:entry.end-entry.start
-    });
-  });
-}
+// Profile coverage is a pure module loaded immediately before this script.
+// Preserve original calculation as an offline fallback if the optional
+// helper was not available, but never mutate the user's wall marks.
 function profileMarksFor(family,variant,ctx){
-  return resolvedProfileMarks(ctx).filter(function(mark){
+  var marks=ctx&&Array.isArray(ctx.marksWall)?ctx.marksWall:getWallMarks(),
+    resolve=window.A_CEIL_ProfileMarkCoverage;
+  if(typeof resolve==="function")marks=resolve(marks,currentSideLengths(ctx),profileFamilyOfMark);
+  return marks.filter(function(mark){
     return profileFamilyOfMark(mark)===family&&(!variant||wallProfileColor(mark)===variant);
   });
 }
