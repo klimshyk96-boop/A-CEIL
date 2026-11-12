@@ -38,6 +38,11 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "GET") return reply(req, 405, { status: "method_not_allowed" });
 
   const url = new URL(req.url);
+  if (url.searchParams.has("health")) {
+    return reply(req, 200, { ok: true, configured: Boolean(
+      Deno.env.get("SUPABASE_URL") && Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+    ) });
+  }
   const token = (url.searchParams.get("token") || "").toLowerCase();
   if (!/^[a-f0-9]{20}$/.test(token)) return reply(req, 404, { status: "not_found" });
 
