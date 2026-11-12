@@ -29,3 +29,42 @@ assert(manifest.icons.some(icon=>icon.sizes==='512x512'&&icon.purpose==='maskabl
 assert.match(sw,/aceil-icon-180\.png/);
 assert.match(sw,/aceil-icon-maskable-512\.png/);
 console.log('PWA icon assets: OK');
+
+
+// Slash-named feature/fix branches must not create a Vercel deployment per
+// intermediate commit. In minimatch, "*" does not traverse "/" but "**" does.
+const vercel=JSON.parse(text('vercel.json'));
+assert.equal(vercel.git.deploymentEnabled['**'],false,
+  'globstar disables slash-containing preview branch deploys');
+assert.equal(vercel.git.deploymentEnabled.main,true,
+  'production deploys from main must remain enabled');
+
+// A single failed optional icon must not trap iOS on the previous PWA
+// version. Missing the actual HTML shell is different: keep the old worker.
+const vm=require('node:vm');
+function simulateInstall(shouldFail){
+  const handlers={};
+  const worker={addEventListener(type,callback){handlers[type]=callback},
+    skipWaiting:async()=>{}};
+  const cache={put:async()=>{}};
+  const context={
+    self:worker,
+    caches:{open:async()=>cache},
+    Request:class{constructor(url){this.url=url}},
+    fetch:async(req)=>{
+      if(shouldFail(req.url))throw new Error('Simulated offline asset: '+req.url);
+      return {ok:true,clone(){return this}};
+    },
+    setTimeout,clearTimeout,URL,console
+  };
+  vm.runInNewContext(sw,context);
+  const install={waitUntil(promise){this.promise=promise}};
+  handlers.install(install);
+  return install.promise;
+}
+(async()=>{
+  await simulateInstall(url=>url.includes('aceil-icon-180.png'));
+  await assert.rejects(simulateInstall(url=>url==='/index.html'),
+    /shell index unavailable/);
+  console.log('PWA precache recovery and preview branch controls: OK');
+})().catch(error=>{console.error(error);process.exitCode=1});
