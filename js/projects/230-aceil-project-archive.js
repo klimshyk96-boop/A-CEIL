@@ -90,7 +90,9 @@
     var title=document.createElement("div");
     title.style.cssText="font-weight:800;font-size:12px;color:#1e40af;margin-bottom:7px;";
     var publishedCount=variants.filter(function(v){return v.status==="active"}).length;
-    title.textContent="📄 Звіти за об'єктом · "+variants.length+" варіантів · опубліковано "+publishedCount;
+    var ending=variants.length%100,ones=variants.length%10;
+    var unit=ending>=11&&ending<=14?"варіантів":ones===1?"варіант":ones>=2&&ones<=4?"варіанти":"варіантів";
+    title.textContent="📄 Звіти за об'єктом · "+variants.length+" "+unit+" · опубліковано "+publishedCount;
     group.appendChild(title);
     var grid=document.createElement("div");
     grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;";
