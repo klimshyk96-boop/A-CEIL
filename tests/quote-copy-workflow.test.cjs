@@ -21,7 +21,9 @@ function fixture(){
     _sb:{},_sbUser:{id:'user-1'},getPendingQueue(){return queue},
     addToPendingQueue(op){queue.push(copy(op))},
     async flushPendingQueue(){
-      const op=queue.shift();
+      const index=queue.findIndex(op=>!op._manualConflictRequired&&!op._manualRestoreRequired);
+      if(index<0)return false;
+      const op=queue.splice(index,1)[0];
       const found=projects.find(p=>p.id===op.payload.localId);
       found._localId=found.id;found.id='new-cloud-uuid';found._dbId='new-cloud-uuid';found._cloudRevision='1';
       delete found._dirty;delete found._localUpdatedAt;delete found._syncStatus;
