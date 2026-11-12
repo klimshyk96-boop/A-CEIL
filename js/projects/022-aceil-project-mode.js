@@ -35,6 +35,11 @@
     project.state=typeof project.state==='string'?JSON.stringify(state):state;
     return project;
   }
-  var api=Object.freeze({inspect:inspect,isMulti:function(project){return inspect(project).multi;},stateOf:stateOf,cleanSingleState:cleanSingleState,repair:repair});
+  var api=Object.freeze({inspect:inspect,isMulti:function(project){
+    // Existing in-memory rooms already make a project multiroom. Avoid parsing
+    // and cloning the entire state JSON on every load/render/autosave check.
+    if(project&&Array.isArray(project.rooms)&&project.rooms.some(function(room){return room&&typeof room==='object'}))return true;
+    return inspect(project).multi;
+  },stateOf:stateOf,cleanSingleState:cleanSingleState,repair:repair});
   window.A·CEIL.ProjectMode=api;window.A_CEIL_ProjectMode=api;
 })();
