@@ -85,5 +85,11 @@
       "source": "/report/:id",
       "destination": "/"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "*": false,
+      "main": true
+    }
+  }
 }
