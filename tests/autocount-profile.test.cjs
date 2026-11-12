@@ -419,3 +419,13 @@ console.log('PASS no-insert profile: catalog names, full/manual/partial perimete
   assert.equal(items.find(it=>it.id==='noinsert-corners').qty,4,'replace all ordinary corners');
 }
 console.log('PASS wrong legacy no-insert main_profile mapping: H is sole default and manual swaps stay reversible');
+
+{
+  // Both catalog loaders must repair the same bad Supabase source before
+  // showing a new room. The UI must allow choosing no-insert as a REPLACEMENT.
+  const read=relative=>fs.readFileSync(path.join(__dirname,'..',relative),'utf8');
+  assert.match(read('js/admin/159-aceil-access-clean.js'),/it\.source==="main_profile"&&\/безвстав\|без вставк\/i/);
+  assert.match(read('js/auth/033-aceil-supabase-auth-offline-access.js'),/it\.source==="main_profile"&&\/безвстав\|без вставк\/i/);
+  assert.match(read('js/nomenclature/170-aceil-autocount-menu.js'),
+    /var eligible=\/\^\(main_profile\|shadow_profile\|floating_profile\|noinsert_profile\)\$\//);
+}
