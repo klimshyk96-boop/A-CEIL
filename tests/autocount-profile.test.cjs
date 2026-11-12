@@ -43,6 +43,8 @@ function makeRoom({ items, marks = [], lengths = [300, 300, 300, 300], presets =
     console
   };
   vm.createContext(context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', 'nomenclature', '232-aceil-profile-coverage.js'),'utf8'), context,
+    { filename: '232-aceil-profile-coverage.js' });
   vm.runInContext(source, context, { filename: '140-aceil-universal-autocount.js' });
   const ctx = {
     marksWall: marks,
