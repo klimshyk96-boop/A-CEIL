@@ -42,11 +42,14 @@ assert.equal(vercel.git.deploymentEnabled.main,true,
 // A single failed optional icon must not trap iOS on the previous PWA
 // version. Missing the actual HTML shell is different: keep the old worker.
 const vm=require('node:vm');
-function simulateInstall(shouldFail){
+function simulateInstall(shouldFail,shouldFailStore=()=>false){
   const handlers={};
   const worker={addEventListener(type,callback){handlers[type]=callback},
     skipWaiting:async()=>{}};
-  const cache={put:async()=>{}};
+  const saved=new Map(),cache={
+    put:async(req,res)=>{if(shouldFailStore(req.url))throw new Error('Simulated storage quota');saved.set(req.url,res)},
+    match:async req=>saved.get(req.url)
+  };
   const context={
     self:worker,
     caches:{open:async()=>cache},
@@ -66,5 +69,8 @@ function simulateInstall(shouldFail){
   await simulateInstall(url=>url.includes('aceil-icon-180.png'));
   await assert.rejects(simulateInstall(url=>url==='/index.html'),
     /shell index unavailable/);
+  await assert.rejects(simulateInstall(()=>false,url=>url==='/index.html'),
+    /shell index unavailable/,
+    'a successful HTTP response is not enough if iOS failed to persist the shell');
   console.log('PWA precache recovery and preview branch controls: OK');
 })().catch(error=>{console.error(error);process.exitCode=1});
