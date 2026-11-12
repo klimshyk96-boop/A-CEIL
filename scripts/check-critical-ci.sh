@@ -6,6 +6,7 @@ cd "$(dirname "$0")/.."
 python3 scripts/check-runtime.py
 node --check sw.js
 node --check js/projects/032-aceil-pending-sync-queue.js
+node --check js/nomenclature/232-aceil-profile-coverage.js
 node --check js/nomenclature/140-aceil-universal-autocount.js
 node --check js/projects/230-aceil-project-archive.js
 node --check js/projects/230-aceil-project-archive.js

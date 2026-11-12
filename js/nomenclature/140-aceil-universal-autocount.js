@@ -305,8 +305,13 @@ function profileVariantOfItem(item){
   if(!variant&&item&&String(item.source||"").indexOf("walltypecolor:")===0)variant=String(item.source).slice(14).split(":")[0];
   return variant==="white"||variant==="black"?variant:colorFromName(item&&item.name||"");
 }
+// Profile coverage is a pure module loaded immediately before this script.
+// Preserve original calculation as an offline fallback if the optional
+// helper was not available, but never mutate the user's wall marks.
 function profileMarksFor(family,variant,ctx){
-  var marks=ctx&&Array.isArray(ctx.marksWall)?ctx.marksWall:getWallMarks();
+  var marks=ctx&&Array.isArray(ctx.marksWall)?ctx.marksWall:getWallMarks(),
+    resolve=window.A_CEIL_ProfileMarkCoverage;
+  if(typeof resolve==="function")marks=resolve(marks,currentSideLengths(ctx),profileFamilyOfMark);
   return marks.filter(function(mark){
     return profileFamilyOfMark(mark)===family&&(!variant||wallProfileColor(mark)===variant);
   });
