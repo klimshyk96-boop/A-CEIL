@@ -77,6 +77,8 @@ function baseItems(extra = []) {
     { id: 'shadow-corners', source: 'shadow_corners', name: 'Кути тіньового профілю' },
     { id: 'floating', source: 'floating_profile', name: 'Парящий профіль' },
     { id: 'floating-corners', source: 'floating_corners', name: 'Кути парящого профілю' },
+    { id: 'noinsert', source: 'noinsert_profile', name: 'Безвставочний металевий', unit:'м' },
+    { id: 'noinsert-corners', source: 'noinsert_corners', name: 'Фіксація кутів - безвставочний профіль', unit:'шт' },
     ...extra
   ];
 }
@@ -326,3 +328,52 @@ console.log('PASS ↔ perimeter button switches both ways between shadow/floatin
  const items=[{id:'estimate-h',name:'Профіль H',unit:'м',price:185,qty:2}];
  const room=makeRoom({items,lengths:[]});room.recalculate();assert.equal(items[0].qty,2,'no-plan legacy estimate must survive icon/list editing');
 }
+
+{
+  const items=baseItems().filter(item=>!['noinsert','noinsert-corners'].includes(item.id));
+  items.push({id:'noinsert',source:'',name:'Безвставочний металевий',unit:'м',price:350,qty:0});
+  items.push({id:'noinsert-corners',source:'',name:'Фіксація кутів - безвставочний профіль',unit:'м',price:200,qty:0});
+  const room=makeRoom({items});room.recalculate();
+  assert.equal(items.find(i=>i.id==='noinsert').source,'noinsert_profile');
+  assert.equal(items.find(i=>i.id==='noinsert-corners').source,'noinsert_corners');
+  assert.equal(items.find(i=>i.id==='noinsert-corners').unit,'шт','corners counted in pieces');
+  assert.equal(items.find(i=>i.id==='noinsert-corners').price,200,'catalog price unchanged');
+  assert.equal(room.qty('main_profile','base'),12);
+  assert.equal(room.qty('white_insert','insert'),12);
+}
+{
+  const items=baseItems(),special=items.find(i=>i.id==='noinsert');
+  special.qty=12;special.manualQtyOverride=true;
+  const room=makeRoom({items});
+  room.reconcileInsert();
+  assert.equal(room.profile().source,'noinsert_profile');
+  assert.equal(items.find(i=>i.id==='base').qty,0,'full manually entered no-insert replaces base profile');
+  assert.equal(items.find(i=>i.id==='insert').qty,0,'no masking insert is needed');
+  assert.equal(items.find(i=>i.id==='base-corners').qty,0,'ordinary corners removed');
+  assert.equal(items.find(i=>i.id==='noinsert-corners').qty,4,'matching corners charged');
+  special.qty=0;room.reconcileInsert();
+  assert.equal(items.find(i=>i.id==='base').qty,12,'removing option restores H');
+  assert.equal(items.find(i=>i.id==='insert').qty,12,'removing option restores insert');
+  assert.equal(items.find(i=>i.id==='base-corners').qty,4,'ordinary corners restored');
+  assert.equal(items.find(i=>i.id==='noinsert-corners').qty,0,'special corners cleared');
+}
+{
+  const items=baseItems(),special=items.find(i=>i.id==='noinsert');
+  special.qty=6;special.manualQtyOverride=true;
+  const room=makeRoom({items});
+  room.recalculate();
+  assert.equal(items.find(i=>i.id==='base').qty,6,'partial 6m deducted from 12m H');
+  assert.equal(items.find(i=>i.id==='insert').qty,6,'partial 6m deducted from insert');
+  assert.equal(items.find(i=>i.id==='base-corners').qty,4,'partial unmarked length does not guess corners');
+  assert.equal(items.find(i=>i.id==='noinsert-corners').qty,0);
+  assert.equal(special.qty,6,'manual profile length stays unchanged');
+}
+{
+  const room=makeRoom({items:baseItems(),marks:[fullWall('noinsert1',0,'Безвставочний металевий')]});
+  assert.equal(room.qty('noinsert_profile','noinsert'),3);
+  assert.equal(room.qty('main_profile','base'),9);
+  assert.equal(room.qty('white_insert','insert'),9);
+  assert.equal(room.qty('noinsert_corners','noinsert-corners'),2);
+  assert.equal(room.qty('corners','base-corners'),2);
+}
+console.log('PASS no-insert profile: catalog names, full/manual/partial perimeter and corner conversion');

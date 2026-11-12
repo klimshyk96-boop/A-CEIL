@@ -139,6 +139,9 @@ const PENDING_KEY = "ceiling_pendingSync";
       });
       if (!drawn) { const empty = new Error("Порожній об'єкт не замінює хмарний проєкт"); empty.aceilEmptyObject = true; throw empty; }
       state = {schemaVersion: state.schemaVersion || 3, projectType: "apartment", multiRoom: true, rooms};
+      // Keep the alternative quote's source link in its own cloud state.
+      // It is only metadata; it must never alter the original project.
+      if(local._comparisonSourceId)state.comparisonSourceId=String(local._comparisonSourceId);
     } else if(mode&&typeof mode.cleanSingleState==='function') state=mode.cleanSingleState(local);
     if(local.archivedAt)state.archivedAt=local.archivedAt;else delete state.archivedAt;
     const value = field => local[field] == null ? fallback[field] || "" : local[field];
