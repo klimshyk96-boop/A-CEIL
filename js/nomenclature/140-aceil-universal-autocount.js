@@ -220,7 +220,7 @@ function contourPerimeterM(state){
 }
 function contourSourceOfItem(item){
   var source=String(item&&(item.source||item.autoMatchedSource)||'');
-  if(/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners)$/.test(source))return source;
+  if(/^(main_profile|shadow_profile|floating_profile|noinsert_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners|noinsert_corners)$/.test(source))return source;
   var label=!source&&item?String(item.name||''):'';
   if(source==='full_perimeter'&&item)label=String(item.name||'');
   if(source.indexOf('walltype:')===0)label=source.slice(9);
@@ -228,7 +228,9 @@ function contourSourceOfItem(item){
   try{label=decodeURIComponent(label);}catch(_){}
   label=norm(label);
   if(/обрив|демонтаж/.test(label))return '';
-  var corner=/кут/.test(label),family=label.indexOf('тіньов')>=0?'shadow':label.indexOf('парящ')>=0?'floating':'';
+  var corner=/кут/.test(label),family=label.indexOf('тіньов')>=0?'shadow'
+    :label.indexOf('парящ')>=0?'floating'
+    :/безвстав|без вставк/.test(label)?'noinsert':'';
   if(family)return corner?family+'_corners':(!item.unit||/^(м|м.п.)$/.test(item.unit)?family+'_profile':'');
   if(corner)return /базов|класич/.test(label)||/^фіксаці[яї] кут(ів|а)$/.test(label)?'corners':'';
   if(/^(профіль (h|н)( |$)|профіль базов|базов.*профіль|алюмінієв.*профіль (h|н)( |$))/.test(label))return 'main_profile';
@@ -241,8 +243,8 @@ function explicitContourProfile(list,draft){
      essential: otherwise a shadow/floating wall is never subtracted from the
      aluminium profile or from the insert. Only a special profile may replace
      the whole contour explicitly. */
-  if(draft&&draft.fullContourSelected&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(draft)))return draft;
-  return list.find(function(it){return it&&it.fullContourSelected&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(it))})||null;
+  if(draft&&draft.fullContourSelected&&/^(shadow_profile|floating_profile|noinsert_profile)$/.test(contourSourceOfItem(draft)))return draft;
+  return list.find(function(it){return it&&it.fullContourSelected&&/^(shadow_profile|floating_profile|noinsert_profile)$/.test(contourSourceOfItem(it))})||null;
 }
 function inferredContourProfile(list,state){
   var perimeter=contourPerimeterM(state);if(!(perimeter>0))return null;
@@ -262,10 +264,10 @@ function inferredContourProfile(list,state){
   var hasProfileMarks=marks.some(function(m){
     var source=String(m&&m.profileSource||m&&m.autoCountSource||"");
     var name=norm(m&&m.type||m&&m.name||m&&m.title||"");
-    return /^(shadow_profile|floating_profile)$/.test(source)||name.indexOf("тіньов")>=0||name.indexOf("парящ")>=0;
+    return /^(shadow_profile|floating_profile|noinsert_profile)$/.test(source)||name.indexOf("тіньов")>=0||name.indexOf("парящ")>=0||/безвстав|без вставк/.test(name);
   });
-  var families=["shadow_profile","floating_profile"].map(function(source){
-    var rows=list.filter(function(it){return it&&contourSourceOfItem(it)===source}),total=rows.reduce(function(sum,it){return sum+(Number(it.qty)||0)},0),keyword=source==="shadow_profile"?"тіньов":"парящ";
+  var families=["shadow_profile","floating_profile","noinsert_profile"].map(function(source){
+    var rows=list.filter(function(it){return it&&contourSourceOfItem(it)===source}),total=rows.reduce(function(sum,it){return sum+(Number(it.qty)||0)},0),keyword=source==="shadow_profile"?"тіньов":source==="noinsert_profile"?"безвстав":"парящ";
     var marked=marks.filter(function(m){return m&&norm(m.type||m.name||m.title).indexOf(keyword)>=0}).reduce(function(sum,m){return sum+(Number(m.lenCm)||0)},0)/100;
     return {total:total,marked:marked,manual:rows.some(function(it){return it.manualQtyOverride===true}),positive:rows.filter(function(it){return Number(it.qty)>0;}).length,item:rows.sort(function(a,b){return (Number(b.qty)||0)-(Number(a.qty)||0)})[0]};
   }).filter(function(entry){
@@ -285,10 +287,11 @@ function inferredContourProfile(list,state){
 function profileFamilyOfMark(mark){
   if(!mark)return "";
   var source=String(mark.profileSource||mark.autoCountSource||"");
-  if(source==="shadow_profile"||source==="floating_profile")return source;
+  if(source==="shadow_profile"||source==="floating_profile"||source==="noinsert_profile")return source;
   var name=norm(mark.type||mark.name||mark.title||"");
   if(name.indexOf("тіньов")>=0)return "shadow_profile";
   if(name.indexOf("парящ")>=0)return "floating_profile";
+  if(/безвстав|без вставк/.test(name))return "noinsert_profile";
   return "";
 }
 function profileVariantOfItem(item){
@@ -390,7 +393,7 @@ function manualInsertExtraCm(ctx){
   var groups={},extra=0;
   getElemItems().forEach(function(row){
     var family=contourSourceOfItem(row);
-    if(!row||!row.manualQtyOverride||!(Number(row.qty)>0)||! /^(shadow_profile|floating_profile)$/.test(family))return;
+    if(!row||!row.manualQtyOverride||!(Number(row.qty)>0)||! /^(shadow_profile|floating_profile|noinsert_profile)$/.test(family))return;
     var variant=profileVariantOfItem(row),key=family+":"+variant;
     if(!groups[key])groups[key]={family:family,variant:variant,cm:0};
     groups[key].cm+=Number(row.qty)*100;
@@ -399,25 +402,27 @@ function manualInsertExtraCm(ctx){
   return extra;
 }
 function partialContourQty(source,item,ctx){
-  var relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
+  var relevant=/^(main_profile|shadow_profile|floating_profile|noinsert_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners|noinsert_corners|white_insert)$/;
   if(!relevant.test(source))return null;
   var perimeterCm=Math.max(0,Number(ctx&&ctx.perimeterCm)||contourPerimeterM()*100),cornersTotal=currentCornersTotal(ctx);
-  var shadow=profileMarksFor("shadow_profile","",ctx),floating=profileMarksFor("floating_profile","",ctx),special=shadow.concat(floating);
+  var shadow=profileMarksFor("shadow_profile","",ctx),floating=profileMarksFor("floating_profile","",ctx),
+    noinsert=profileMarksFor("noinsert_profile","",ctx),special=shadow.concat(floating,noinsert);
   var specialCm=Math.min(perimeterCm,mergedProfileLengthCm(special,ctx));
   if(source==="main_profile")return Math.round(Math.max(0,perimeterCm-specialCm-manualInsertExtraCm(ctx)))/100;
   if(source==="white_insert")return insertRowIsChosen(item)?Math.round(Math.max(0,perimeterCm-specialCm-manualInsertExtraCm(ctx)))/100:0;
-  var family=source.indexOf("shadow_")===0?"shadow_profile":"floating_profile",variant=profileVariantOfItem(item);
+  var family=source.indexOf("shadow_")===0?"shadow_profile"
+    :source.indexOf("noinsert_")===0?"noinsert_profile":"floating_profile",variant=profileVariantOfItem(item);
   if(source===family){
     if(!profileRowIsChosen(source,item,variant))return 0;
     return Math.round(mergedProfileLengthCm(profileMarksFor(family,variant,ctx),ctx))/100;
   }
   var familyCorners=profileCornerSet(profileMarksFor(family,variant,ctx),ctx);
-  if(source===(family==="shadow_profile"?"shadow_corners":"floating_corners")){
+  if(source===(family==="shadow_profile"?"shadow_corners":family==="noinsert_profile"?"noinsert_corners":"floating_corners")){
     if(!profileRowIsChosen(source,item,variant))return 0;
     return Object.keys(familyCorners).length;
   }
   if(source==="corners"){
-    var claimed=mergeCornerSets(profileCornerSet(shadow,ctx),profileCornerSet(floating,ctx));
+    var claimed=mergeCornerSets(mergeCornerSets(profileCornerSet(shadow,ctx),profileCornerSet(floating,ctx)),profileCornerSet(noinsert,ctx));
     return Math.max(0,cornersTotal-Object.keys(claimed).length);
   }
   return null;
@@ -428,7 +433,7 @@ function presetColorFor(selected,presets,state){
   var valid=function(value){return /^#[0-9a-f]{3,8}$/i.test(String(value||''));};
   var preset=presets.find(function(p){return p&&p.name===selected.fullContourPresetName&&valid(p.color);});
   if(preset)return preset.color;
-  var keyword=source==='shadow_profile'?'тіньов':'парящ',variant=profileVariantOfItem(selected),marks=state&&Array.isArray(state.wallMarks)?state.wallMarks:getWallMarks();
+  var keyword=source==='shadow_profile'?'тіньов':source==='noinsert_profile'?'безвстав':'парящ',variant=profileVariantOfItem(selected),marks=state&&Array.isArray(state.wallMarks)?state.wallMarks:getWallMarks();
   var mark=marks.find(function(m){return m&&norm(m.type||m.name||m.title).indexOf(keyword)>=0&&(!variant||wallProfileColor(m)===variant)&&valid(m.color);});
   if(mark)return mark.color;
   var family=presets.filter(function(p){return p&&norm(p.name).indexOf(keyword)>=0&&valid(p.color);});
@@ -447,7 +452,7 @@ function manualContourStyle(list){
   if(!base.length||!base.some(function(it){return it.manualQtyOverride===true;})
     ||base.some(function(it){return (Number(it.qty)||0)!==0;}))return null;
   var chosen=list.filter(function(it){return it&&Number(it.qty)>0
-    &&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(it));});
+    &&/^(shadow_profile|floating_profile|noinsert_profile)$/.test(contourSourceOfItem(it));});
   var manual=chosen.filter(function(it){return it.manualQtyOverride===true;});
   if(manual.length)chosen=manual;
   else chosen=chosen.filter(function(it){return !it.autoFilled;});
@@ -469,7 +474,7 @@ window.aceilContourProfileColor=function(){var p=contourProfile();return p?p.col
 // copied number. Keep that decision in the room state so H, insert and corners
 // are reconciled immediately and survive save/reopen.
 window.A_CEIL_SelectWholeContourItem=function(item){
-  var list=getElemItems(),source=contourSourceOfItem(item),special=/^(shadow_profile|floating_profile)$/.test(source);
+  var list=getElemItems(),source=contourSourceOfItem(item),special=/^(shadow_profile|floating_profile|noinsert_profile)$/.test(source);
   if(!special&&source!=="main_profile")return false;
   var previous=manualContourStyle(list)||explicitContourProfile(list)||inferredContourProfile(list),changed=false;
   /* The perimeter button beside H is the reverse of choosing a whole
@@ -478,12 +483,12 @@ window.A_CEIL_SelectWholeContourItem=function(item){
      special-profile quantity remains in the estimate next to the restored H.
      Wall marks are not deleted: if the drawing itself contains a special wall,
      the normal auto-count remains authoritative for that wall. */
-  if(source==="main_profile"&&previous&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(previous))){
+  if(source==="main_profile"&&previous&&/^(shadow_profile|floating_profile|noinsert_profile)$/.test(contourSourceOfItem(previous))){
     if(item.manualQtyOverride===true){item.manualQtyOverride=false;changed=true;}
     if(item.autoFilled!==true){item.autoFilled=true;changed=true;}
     if(item.universalAuto!==true){item.universalAuto=true;changed=true;}
     list.forEach(function(row){
-      if(!row||! /^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(row)))return;
+      if(!row||! /^(shadow_profile|floating_profile|noinsert_profile)$/.test(contourSourceOfItem(row)))return;
       if(row!==previous&&row.fullContourSelected!==true&&row.manualQtyOverride!==true)return;
       if(Number(row.qty)!==0){row.qty=0;changed=true;}
       if(row.manualQtyOverride===true){row.manualQtyOverride=false;changed=true;}
@@ -503,7 +508,7 @@ window.A_CEIL_SelectWholeContourItem=function(item){
   var wrapped=function(itemId){
     var item=getElemItems().find(function(row){return row&&String(row.id)===String(itemId);});
     var source=contourSourceOfItem(item),before=getElemItems(),previous=source==="main_profile"&&(manualContourStyle(before)||explicitContourProfile(before)||inferredContourProfile(before));
-    var restoreAutoH=!!previous&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(previous));
+    var restoreAutoH=!!previous&&/^(shadow_profile|floating_profile|noinsert_profile)$/.test(contourSourceOfItem(previous));
     var changed=item&&window.A_CEIL_SelectWholeContourItem(item),result=original.apply(this,arguments);
     /* setElemFromPerimeter marks every filled row as non-auto. H is different:
        when it reverses a whole special contour it must return to the automatic
@@ -526,7 +531,7 @@ window.A_CEIL_SelectWholeContourItem=function(item){
   try{setElemFromPerimeter=wrapped;}catch(_){window.__diagSilent&&window.__diagSilent(_)}
 })(window.setElemFromPerimeter);
 window.aceilWholeContourCompute=function(source,item,ctx){
-  var selected=(/corners$/.test(source)?manualContourStyle(getElemItems()):null)||activeWholeContourProfile(item),profile=selected?{item:selected,source:contourSourceOfItem(selected)||selected.source}:null,relevant=/^(main_profile|shadow_profile|floating_profile|corners|shadow_corners|floating_corners|white_insert)$/;
+  var selected=(/corners$/.test(source)?manualContourStyle(getElemItems()):null)||activeWholeContourProfile(item),profile=selected?{item:selected,source:contourSourceOfItem(selected)||selected.source}:null,relevant=/^(main_profile|shadow_profile|floating_profile|noinsert_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners|noinsert_corners|white_insert)$/;
   if(!relevant.test(source))return null;
   if(source==="white_insert"&&manualContourStyle(getElemItems()))return 0;
   if(!profile)return partialContourQty(source,item,ctx);
@@ -536,7 +541,7 @@ window.aceilWholeContourCompute=function(source,item,ctx){
   var count=ready&&!circle?currentCornersTotal(ctx):0;
   if(source==="white_insert")return insertRowIsChosen(item)&&profile.source==="main_profile"?Math.round(per)/100:0;
   if(/_profile$/.test(source))return source===profile.source&&String(item.id)===String(profile.item.id)?Math.round(per)/100:0;
-  var cornerSource={main_profile:"corners",shadow_profile:"shadow_corners",floating_profile:"floating_corners"}[profile.source];
+  var cornerSource={main_profile:"corners",shadow_profile:"shadow_corners",floating_profile:"floating_corners",noinsert_profile:"noinsert_corners"}[profile.source];
   var variant=profileVariantOfItem(profile.item);
   var rows=getElemItems().filter(function(row){return row&&contourSourceOfItem(row)===cornerSource;});
   var chosen=rows.find(function(row){return profileVariantOfItem(row)===variant;})||rows.find(function(row){return !profileVariantOfItem(row);});
@@ -546,11 +551,11 @@ window.aceilWholeContourCompute=function(source,item,ctx){
 // AutoCount off. The room-only backup field preserves their previous values so
 // returning to the ordinary contour is reversible.
 window.A_CEIL_ReconcileContourInsert=function(){
-  var list=getElemItems(),whole=manualContourStyle(list)||explicitContourProfile(list)||inferredContourProfile(list),suppress=!!whole||list.some(function(row){return row&&row.manualQtyOverride&&Number(row.qty)>0&&/^(shadow_profile|floating_profile)$/.test(contourSourceOfItem(row));}),changed=false;
+  var list=getElemItems(),whole=manualContourStyle(list)||explicitContourProfile(list)||inferredContourProfile(list),suppress=!!whole||list.some(function(row){return row&&row.manualQtyOverride&&Number(row.qty)>0&&/^(shadow_profile|floating_profile|noinsert_profile)$/.test(contourSourceOfItem(row));}),changed=false;
   list.forEach(function(row){
     if(!row)return;
     var source=isContourInsertRow(row)?"white_insert":contourSourceOfItem(row);
-    if(source!=="white_insert"&&!/^(main_profile|corners|shadow_corners|floating_corners)$/.test(source))return;
+    if(source!=="white_insert"&&!/^(main_profile|corners|shadow_corners|floating_corners|noinsert_corners)$/.test(source))return;
     var active=source==="white_insert"?suppress:(source==="main_profile"?(!!whole||(suppress&&row.manualQtyOverride!==true)):!!whole);
     if(active){
       if(!row.contourInsertSuppressed){row.contourInsertSuppressed={qty:Number(row.qty)||0,manual:row.manualQtyOverride===true};changed=true;}
@@ -726,7 +731,7 @@ function applyUniversal(opts){
     if(contourSource==="main_profile"&&!it.source&&Number(it.qty)>0
       &&!(typeof closed!=="undefined"&&closed&&typeof pts!=="undefined"&&pts.length>=3)
       &&!(typeof circleMode!=="undefined"&&circleMode&&typeof circleDiamCm!=="undefined"&&circleDiamCm>0))return;
-    if(/^(main_profile|corners|shadow_corners|floating_corners)$/.test(contourSource))it.source=contourSource;
+    if(/^(main_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners)$/.test(contourSource))it.source=contourSource;
     var src=String(it.source||"");
     if(src==="ceilingcornice:uno"&&hasColoredUnoRows&&it.sourceVariant!=="white"&&it.sourceVariant!=="black"){
       it.qty=0;it.unit="м";it.autoFilled=true;it.autoZero=true;it.universalAuto=true;changed++;return;
@@ -746,7 +751,7 @@ function applyUniversal(opts){
     var auto=exactAutoSourceForName(it.name);
     if(!auto)return;
     if(auto.variant)it.sourceVariant=auto.variant;
-    if(/^(main_profile|corners|shadow_corners|floating_corners)$/.test(auto.source))it.source=auto.source;
+    if(/^(main_profile|noinsert_profile|corners|shadow_corners|floating_corners|noinsert_corners)$/.test(auto.source))it.source=auto.source;
     if(auto.source==="ceilingcornice:uno"&&hasColoredUnoRows&&!auto.variant){
       it.qty=0;it.unit="м";it.autoFilled=true;it.autoZero=true;it.universalAuto=true;changed++;return;
     }
