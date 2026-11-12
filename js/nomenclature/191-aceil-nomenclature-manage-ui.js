@@ -85,6 +85,7 @@
     {key:"profile",label:"Профіль",color:"#2563eb",shape:'<path d="M4 6v12h16V6"/><path d="M8 6v8h8V6"/>'},
     {key:"shadow-profile",label:"Тіньовий профіль",color:"#2563eb",shape:'<path d="M4 5v14h7v-6h9"/><path d="M13 8h7" stroke-dasharray="2 2"/>'},
     {key:"floating-profile",label:"Парящий профіль",color:"#2563eb",shape:'<path d="M4 5v14h8v-6h8"/><path d="M15 8l1.5-2M18 9l2-1M15 18l1.5 2M18 17l2 1"/>'},
+    {key:"noinsert-profile",label:"Безвставочний профіль",color:"#2563eb",shape:'<path d="M4 5v14h7v-5h9"/><path d="M11 14v-5"/>'},
     {key:"insert",label:"Вставка",color:"#2563eb",shape:'<path d="M5 5h14M12 5v14"/><path d="M8 10l4 4 4-4"/>'},
     {key:"corner",label:"Кут",color:"#2563eb",shape:'<path d="M5 5v14h14"/><path d="M9 9v6h6"/>'},
     {key:"break",label:"Обрив",color:"#2563eb",shape:'<circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/><path d="M9 15L19 5M15 15L5 5"/>'},
