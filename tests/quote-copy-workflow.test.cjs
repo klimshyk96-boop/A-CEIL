@@ -212,3 +212,93 @@ test('report buttons use independent URLs and do not recreate removed oversized 
   assert.match(source,/Звіт ще не сформовано/);
   assert.doesNotMatch(source,/aceilQuotePairPanel|data-project-quote-links|Два незалежні кошториси/);
 });
+
+
+test('compact report section limits 5 old copies to 2 tiles and expands without deleting projects',()=>{
+  const all=[{id:'source',_dbId:'source',name:'Дім',report_token:'a'.repeat(20)}]
+    .concat(Array.from({length:5},(_,index)=>({
+      id:'copy-'+index,_dbId:'copy-'+index,_comparisonSourceId:'source',
+      name:'Дім — Копія '+(index+1),report_token:null
+    })));
+  const elements={},screen={cards:[]},search={value:''};
+  function element(tag){
+    return{
+      tagName:tag||'div',style:{},children:[],dataset:{},attrs:{},className:'',textContent:'',
+      appendChild(child){this.children.push(child);return child},
+      replaceChildren(...children){this.children=children},
+      insertBefore(child){this.children.push(child);if(child.id)elements[child.id]=child;return child},
+      setAttribute(name,value){this.attrs[name]=value},
+      getAttribute(name){return this.attrs[name]||''},
+      querySelectorAll(){return[]},
+      remove(){this.removed=true},
+      querySelector(selector){
+        if(selector==='[onclick*="editProject"]')return this.editAction||null;
+        if(selector==='.rp-project-actions')return this.actions||null;
+        if(selector==='.aceil-quote-reports')
+          return this.children.find(child=>child.className==='aceil-quote-reports')||null;
+        if(selector==='[data-project-archive]')
+          return this.children.find(child=>child.dataset&&child.dataset.projectArchive)||null;
+        if(selector==='[data-project-quote-copy]')
+          return this.children.find(child=>child.dataset&&child.dataset.projectQuoteCopy)||null;
+        return null;
+      },
+      scrollIntoView(){screen.scrolled=true}
+    };
+  }
+  const listElement=element('div'),parent=element('div');
+  listElement.parentNode=parent;elements.projectsList=listElement;elements.projSearch=search;
+  const c={Date,Math,JSON,Map,Set,WeakMap,Promise,console,
+    navigator:{onLine:true,clipboard:{async writeText(){}}},
+    document:{readyState:'complete',createElement:element,
+      getElementById(id){return elements[id]||null},
+      querySelectorAll(sel){return sel==='#projectsList .rp-project-card'?screen.cards:[]},
+      addEventListener(){}},
+    setTimeout(){return 0},clearTimeout(){},getProjects(){return all},
+    showToast(){},A_CEIL_ReportLinks:{status(id){
+      const p=all.find(item=>item.id===id);
+      return p&&p.report_token?
+        {status:'active',url:'https://a-ceil.pp.ua/r/'+p.report_token}:
+        {status:'none'};
+    }}
+  };
+  c.window=c;c['A·CEIL']={ProjectRepository:{list(){return all}}};
+  c.renderProjects=function(){
+    screen.cards=c.getProjects().filter(p=>p.name.includes(search.value)).map(p=>{
+      const card=element('div'),actions=element('div'),edit=element('button');
+      edit.attrs.onclick="editProject('"+p.id+"')";
+      card.actions=actions;card.editAction=edit;return card;
+    });
+  };
+  vm.createContext(c);vm.runInContext(source,c);
+  c.renderProjects();
+  function reportGroup(){
+    return screen.cards[0]&&screen.cards[0].children.find(child=>child.className==='aceil-quote-reports');
+  }
+  let group=reportGroup();
+  assert(group,'original card must show report group');
+  let grid=group.children.find(child=>child.children.length===2);
+  assert(grid,'there must be a responsive tile grid');
+  assert.equal(grid.children.length,2,'only the original and first alternative are initially visible');
+  assert.match(group.children[0].textContent,/6 варіантів/);
+  assert.match(group.children[0].textContent,/опубліковано 1/);
+  let more=group.children.find(child=>child.className==='aceil-quote-reports-toggle');
+  assert(more,'old variants remain accessible using a disclosure control');
+  assert.equal(more.textContent,'Показати ще 4');
+  assert.equal(more.attrs['aria-expanded'],'false');
+  more.onclick();
+  group=reportGroup();grid=group.children.find(child=>child.children.length===6);
+  assert(grid,'expansion restores all six report options');
+  assert.equal(group.children.find(child=>child.className==='aceil-quote-reports-toggle').attrs['aria-expanded'],'true');
+  group.children.find(child=>child.className==='aceil-quote-reports-toggle').onclick();
+  group=reportGroup();grid=group.children.find(child=>child.children.length===2);
+  assert(grid,'collapse removes the extra tiles again');
+  assert.equal(all.length,6,'show/hide actions must not mutate the cloud/project collection');
+  // Search may hide the source. Jump to its card should clear only the search,
+  // and must not require the user to guess which search filter was active.
+  search.value='Копія 5';c.renderProjects();
+  assert.equal(screen.cards.length,1);
+  assert.equal(c.A_CEIL_ProjectArchive.jumpToProject('source'),true);
+  assert.equal(search.value,'');
+  assert.equal(screen.cards.length,6);
+  assert.equal(screen.scrolled,true);
+});
