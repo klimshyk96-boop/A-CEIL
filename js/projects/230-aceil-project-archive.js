@@ -110,9 +110,36 @@
       if(isArchived){var head=card.querySelector(".rp-project-head"),main=card.querySelector(".rp-project-main");if(head&&main&&!card.querySelector(".aceil-project-archived-date")){var note=document.createElement("div");note.className="aceil-project-archived-date";note.textContent="В архіві з "+new Date(archivedAt(project)).toLocaleDateString("uk-UA");main.insertBefore(note,head.nextSibling)}}
     });
   }
+  // Keep each comparison copy next to its source in the visible project list.
+  // Only presentation order changes; do not rewrite the local cache or cloud.
+  function arrangeQuotePairs(projects){
+    var all=Array.isArray(projects)?projects:[],byId=new Map(),children=new Map(),seen=new Set(),ordered=[];
+    all.forEach(function(p){
+      if(!p)return;
+      [p.id,p._dbId,p._localId].forEach(function(id){if(id!=null)byId.set(String(id),p)});
+    });
+    all.forEach(function(p){
+      if(!p||!p._comparisonSourceId)return;
+      var key=String(p._comparisonSourceId),parent=byId.get(key);
+      if(!parent||parent===p)return;
+      var group=children.get(parent)||[];
+      group.push(p);children.set(parent,group);
+    });
+    function append(p){
+      if(!p||seen.has(p))return;
+      seen.add(p);ordered.push(p);
+      (children.get(p)||[]).forEach(append);
+    }
+    all.forEach(function(p){
+      var parent=p&&p._comparisonSourceId?byId.get(String(p._comparisonSourceId)):null;
+      if(!parent||parent===p)append(p);
+    });
+    all.forEach(append);
+    return ordered;
+  }
   function render(){
     if(typeof baseRender!=="function"||rendering)return;
-    var originalWindow=window.getProjects,originalBinding=null,all=originalWindow?originalWindow():[];
+    var originalWindow=window.getProjects,originalBinding=null,all=arrangeQuotePairs(originalWindow?originalWindow():[]);
     try{originalBinding=getProjects}catch(_){originalBinding=originalWindow}
     var filteredOnce=null;
     var filtered=function(){
@@ -128,6 +155,21 @@
 
   function cloudId(project){return project&&String(project._dbId||"")}
   function projectBy(id){return list().find(function(project){return matches(project,id)})||null}
+  function jumpToProject(id){
+    if(view!=="active"){view="active";render()}
+    var project=projectBy(id),cards=document.querySelectorAll("#projectsList .rp-project-card");
+    for(var i=0;i<cards.length;i++){
+      var action=cards[i].querySelector('[onclick*="editProject"]'),
+          raw=action&&action.getAttribute("onclick")||"",
+          match=raw.match(/editProject\(['"]([^'"]+)['"]\)/);
+      if(project&&match&&matches(project,match[1])){
+        if(typeof cards[i].scrollIntoView==="function")cards[i].scrollIntoView({behavior:"smooth",block:"center"});
+        return true;
+      }
+    }
+    notify("Копія збережена. Зніміть фільтр пошуку або прокрутіть список проєктів.");
+    return false;
+  }
   function pending(project){
     var ids=[project.id,project._dbId,project._localId].filter(function(v){return v!=null}).map(String);
     try{return typeof window.getPendingQueue==="function"&&window.getPendingQueue().some(function(op){
@@ -309,11 +351,28 @@
       var text=urls.join("\n");
       if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(function(){notify("✅ Два посилання скопійовано")}).catch(function(){notify("Не вдалося скопіювати посилання")});
     };
-    panel.appendChild(copyBoth);return urls.length===2&&urls[0]!==urls[1];
+    panel.appendChild(copyBoth);
+    var jump=document.createElement("button");jump.type="button";
+    jump.style.cssText="margin:8px 0 0 8px;padding:10px 14px;border:1px solid #bfdbfe;border-radius:10px;background:#fff;color:#1d4ed8;font-weight:800";
+    jump.textContent="⬇ Показати копію в списку";
+    jump.onclick=function(){jumpToProject(copy.id)};
+    panel.appendChild(jump);
+    return urls.length===2&&urls[0]!==urls[1];
   }
   async function copyForQuote(id){
     var source=projectBy(id),sourceId=source&&String(source.id),repo=window.A·CEIL&&window.A·CEIL.ProjectRepository;
     if(!source||!repo)return false;
+    if(source._comparisonSourceId){
+      showPair(source.id);jumpToProject(source.id);
+      notify("Це вже окрема копія. Для іншого прорахунку відкрийте її.");
+      return source.id;
+    }
+    var prior=list().find(function(p){return p&&p._comparisonSourceId===cloudId(source)});
+    if(prior){
+      showPair(prior.id);jumpToProject(prior.id);
+      notify("Копію вже створено. Показую існуючий варіант, новий дубль не створено.");
+      return prior.id;
+    }
     if(copyInFlight.has(sourceId))return false;
     if(!navigator.onLine||!window._sb||!window._sbUser){notify("Для створення незалежної копії потрібна хмара");return false}
     if(source._shared||!cloudId(source)||source._dirty||source._localUpdatedAt||pending(source)){
@@ -358,7 +417,7 @@
     baseRender=current;var wrapped=function(){return render()};wrapped.__projectArchiveV1=true;window.renderProjects=wrapped;try{renderProjects=wrapped}catch(_){}
     if(document.getElementById("projectsModal")&&document.getElementById("projectsModal").classList.contains("open"))render();
   }
-  window.A_CEIL_ProjectArchive={toggle:toggle,copyForQuote:copyForQuote,showPair:showPair,syncHelp:syncHelp,retryCloudSave:retryCloudSave,rescueCloudCopy:rescueCloudCopy,syncIssue:syncIssue,setView:function(next){view=next==="archive"?"archive":"active";render()},count:function(){return totals().archive},isArchived:function(project){return !!archivedAt(project)}};
+  window.A_CEIL_ProjectArchive={toggle:toggle,copyForQuote:copyForQuote,showPair:showPair,syncHelp:syncHelp,retryCloudSave:retryCloudSave,rescueCloudCopy:rescueCloudCopy,syncIssue:syncIssue,arrangeQuotePairs:arrangeQuotePairs,jumpToProject:jumpToProject,setView:function(next){view=next==="archive"?"archive":"active";render()},count:function(){return totals().archive},isArchived:function(project){return !!archivedAt(project)}};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
   [100,700,1800].forEach(function(delay){setTimeout(install,delay)});
 })();
