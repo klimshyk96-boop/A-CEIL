@@ -67,10 +67,11 @@ test('two links are available only when original and copy published independentl
   const f=fixture();await f.c.A_CEIL_ProjectArchive.copyForQuote('original-uuid');
   const panel=f.nodes.aceilQuotePairPanel;
   assert(panel);
-  assert.equal(panel.children.at(-1).disabled,true,'cannot send one link as two quotations');
+  assert.equal(panel.children.at(-2).disabled,true,'cannot send one link as two quotations');
+  assert.match(panel.children.at(-1).textContent,/Показати копію/);
   f.projects()[1].report_token='b'.repeat(20);
   assert.equal(f.c.A_CEIL_ProjectArchive.showPair('new-cloud-uuid'),true);
-  const button=panel.children.at(-1);
+  const button=panel.children.at(-2);
   assert.equal(button.disabled,false);await button.onclick();
   assert.equal(f.writeTexts[0],'https://a-ceil.pp.ua/r/'+ 'a'.repeat(20)+'\nhttps://a-ceil.pp.ua/r/'+'b'.repeat(20));
   f.projects()[1].report_token='a'.repeat(20);
@@ -123,4 +124,29 @@ test('cloud recovery lineage survives login, and blocked saves are visibly disti
   assert.match(admin,/_recoverySourceId:st\.recoverySourceId\|\|null/);
   assert.match(source,/syncChip\.textContent=issue\.label/);
   assert.match(source,/syncChip\.onclick=function\(\)\{window\.A_CEIL_ProjectArchive\.syncHelp/);
+});
+
+test('two existing cloud copies remain visible adjacent to their original in list order',()=>{
+  const f=fixture(),api=f.c.A_CEIL_ProjectArchive;
+  const original=f.projects()[0],other={id:'other',name:'Other',state:'{}'};
+  const a={id:'copy-a',_dbId:'copy-a',_comparisonSourceId:'original-uuid',name:'Соборна — Безвставочний'};
+  const b={id:'copy-b',_dbId:'copy-b',_comparisonSourceId:'original-uuid',name:'Соборна — Безвставочний'};
+  const order=api.arrangeQuotePairs([original,other,a,b]);
+  assert.deepEqual(Array.from(order,x=>x.id),['original-uuid','copy-a','copy-b','other']);
+  assert.equal(new Set(order).size,4);
+  assert.deepEqual(Array.from(api.arrangeQuotePairs([a,b,other]),x=>x.id),['copy-a','copy-b','other'],
+    'copies without a visible source are still listed');
+});
+
+test('second tap reopens existing quote instead of creating a duplicate cloud record',async()=>{
+  const f=fixture(),api=f.c.A_CEIL_ProjectArchive;
+  const first=await api.copyForQuote('original-uuid');
+  assert.equal(first,'new-cloud-uuid');
+  const second=await api.copyForQuote('original-uuid');
+  assert.equal(second,'new-cloud-uuid');
+  assert.equal(f.projects().length,2);
+  assert.equal(f.copies.length,1,'never writes a second copy after successful first copy');
+  assert(f.messages.some(message=>/Копію вже створено/.test(message)));
+  assert.equal(await api.copyForQuote('new-cloud-uuid'),'new-cloud-uuid',
+    'pressing 2 КП on the copy does not create nested copies');
 });
