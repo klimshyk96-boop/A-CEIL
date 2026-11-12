@@ -100,7 +100,7 @@
       tile.style.cssText="min-width:0;padding:9px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;display:flex;flex-direction:column;gap:5px;";
       var heading=document.createElement("strong");
       heading.style.cssText="font-size:12px;line-height:1.3;color:#0f172a;overflow-wrap:anywhere;";
-      heading.textContent=(variant.number===1?"① Основний":"② Варіант "+variant.number);
+      heading.textContent=variant.number===1?"① Основний":(variant.number===2?"② Варіант 2":"№"+variant.number+" Варіант "+variant.number);
       tile.appendChild(heading);
       var name=document.createElement("span");
       name.style.cssText="color:#64748b;font-size:11px;line-height:1.35;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;";
@@ -129,12 +129,9 @@
         actions.appendChild(copy);
       }else{
         var go=document.createElement("button");go.type="button";
-        go.textContent="До проєкту";go.title="Перейти до проєкту, щоб сформувати звіт";
+        go.textContent="До картки";go.title="Знайти картку проєкту, щоб сформувати звіт";
         go.style.cssText="border:1px solid #cbd5e1;border-radius:8px;background:#f1f5f9;color:#334155;padding:7px 9px;font-size:11px;font-weight:800;";
-        go.onclick=function(){
-          jumpToProject(variant.projectId);
-          if(typeof window.editProject==="function")window.editProject(variant.projectId);
-        };
+        go.onclick=function(){jumpToProject(variant.projectId)};
         actions.appendChild(go);
       }
       tile.appendChild(actions);grid.appendChild(tile);
