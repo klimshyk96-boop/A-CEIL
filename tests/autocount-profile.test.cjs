@@ -550,3 +550,69 @@ console.log('PASS wrong legacy no-insert main_profile mapping: H is sole default
   assert.equal(items.find(x=>x.id==='noinsert-corners').qty,0);
 }
 console.log('PASS contour replacement scenarios: H-only baseline, manual full/partial, marked walls and unique corners');
+
+{
+  // Regression: two different profile marks covering the same 3-metre wall
+  // previously billed 15 metres of profiles on a 12-metre perimeter.
+  // Resolve the physical segment once, using the same no-insert > shadow
+  // > floating precedence already used for shared corners.
+  const items=baseItems();
+  const wall=[
+    fullWall('shadow-overlap',0,'Тіньовий профіль'),
+    fullWall('noinsert-overlap',0,'Безвставочний металевий')
+  ];
+  const room=makeRoom({items,marks:wall});room.recalculate();
+  assert.equal(items.find(x=>x.id==='base').qty,9);
+  assert.equal(items.find(x=>x.id==='insert').qty,9);
+  assert.equal(items.find(x=>x.id==='noinsert').qty,3);
+  assert.equal(items.find(x=>x.id==='shadow').qty,0);
+  assert.equal(items.find(x=>x.id==='floating').qty,0);
+  assert.equal(items.find(x=>x.id==='noinsert-corners').qty,2);
+  assert.equal(items.find(x=>x.id==='shadow-corners').qty,0);
+  assert.equal(items.find(x=>x.id==='base-corners').qty,2);
+  const billableMetres=items.filter(x=>['base','noinsert','shadow','floating'].includes(x.id))
+    .reduce((sum,x)=>sum+(Number(x.qty)||0),0);
+  assert.equal(billableMetres,12,'physical perimeter must never be billed twice');
+  wall.reverse();room.recalculate();
+  assert.equal(items.find(x=>x.id==='noinsert').qty,3,'family precedence independent of insertion order');
+  assert.equal(items.find(x=>x.id==='shadow').qty,0);
+}
+{
+  // Partial overlap: no-insert [0,200] and shadow [100,300] on a 3m side.
+  // The common 1m belongs to no-insert; shadow is billed only its last 1m.
+  const items=baseItems();
+  const room=makeRoom({items,marks:[
+    {id:'no-insert-first',sideIndex:0,type:'Безвставочний металевий',lenCm:200,offsetCm:0},
+    {id:'shadow-second',sideIndex:0,type:'Тіньовий профіль',lenCm:200,offsetCm:100}
+  ]});
+  room.recalculate();
+  assert.equal(items.find(x=>x.id==='base').qty,9);
+  assert.equal(items.find(x=>x.id==='insert').qty,9);
+  assert.equal(items.find(x=>x.id==='noinsert').qty,2);
+  assert.equal(items.find(x=>x.id==='shadow').qty,1);
+  assert.equal(items.find(x=>x.id==='base-corners').qty,2);
+  assert.equal(items.find(x=>x.id==='noinsert-corners').qty,1);
+  assert.equal(items.find(x=>x.id==='shadow-corners').qty,1);
+}
+{
+  // Mark order can determine which variant of the same special family owns
+  // a repeated length, without charging two colours for one profile.
+  const items=baseItems([
+    {id:'shadow-white',source:'shadow_profile',name:'Тіньовий білий',sourceVariant:'white',qty:0},
+    {id:'shadow-black',source:'shadow_profile',name:'Тіньовий чорний',sourceVariant:'black',qty:0}
+  ]);
+  // The base uncoloured row is omitted when named colour variants exist.
+  const wall=[
+    {id:'s-white',sideIndex:0,type:'Тіньовий профіль',profileColor:'white',lenCm:300,offsetCm:0},
+    {id:'s-black',sideIndex:0,type:'Тіньовий профіль',profileColor:'black',lenCm:300,offsetCm:0}
+  ];
+  const room=makeRoom({items,marks:wall});
+  room.recalculate();
+  assert.equal(items.find(x=>x.id==='shadow-white').qty,0);
+  assert.equal(items.find(x=>x.id==='shadow-black').qty,3);
+  assert.equal(items.find(x=>x.id==='base').qty,9);
+  wall.reverse();room.recalculate();
+  assert.equal(items.find(x=>x.id==='shadow-white').qty,3);
+  assert.equal(items.find(x=>x.id==='shadow-black').qty,0);
+}
+console.log('PASS overlapping physical profile intervals: no double-billed metres or corners');
