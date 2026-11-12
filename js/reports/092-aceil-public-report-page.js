@@ -46,11 +46,20 @@
   }
   async function legacyPayload() {
     if (value.length !== 20) return null;
-    var response = await fetch(baseUrl() + "/storage/v1/object/public/roomator-reports/r/" + value + ".json", { cache: "no-store" });
-    if (!response.ok) return null;
-    var payload = await response.json();
-    if (payload && payload.revoked === true) throw new Error("Посилання закрито власником");
-    if (payload && payload.expiresAt && new Date(payload.expiresAt).getTime() <= Date.now()) throw new Error("Термін дії посилання закінчився");
+    // All legacy report objects are fetched through the validated server
+    // gateway. Never use /object/public: revocation cannot protect that URL.
+    var response = await fetch(baseUrl() + "/functions/v1/aceil-legacy-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: value.toLowerCase() }),
+      cache: "no-store",
+      referrerPolicy: "no-referrer"
+    });
+    if (response.status === 404) return null;
+    var payload = await response.json().catch(function () { return {}; });
+    if (response.status === 410 && payload.status === "revoked") throw new Error("Посилання закрито власником");
+    if (response.status === 410 && payload.status === "expired") throw new Error("Термін дії посилання закінчився");
+    if (!response.ok) throw new Error("Сервіс старих звітів тимчасово недоступний");
     return payload;
   }
   async function securePayload() {
