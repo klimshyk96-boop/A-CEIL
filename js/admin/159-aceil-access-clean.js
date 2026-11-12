@@ -49,6 +49,8 @@ function mergeCatalogWithRoomResults(catalog,current){
   var roomFields=['qty','manualQtyOverride','contourInsertSuppressed','autoFilled','autoZero','insertSelected','calculatedQty','autoQty','resultQty','computedQty','lineTotal','total','sum','amount','price'];
   var out=(Array.isArray(catalog)?catalog:[]).filter(function(it){return !(scopedGroups[String(it&&it.groupId)]&&Number(it&&it.filmWidth)>0)}).map(function(src){
     var it=clone(src||{}),old=by[nomItemKey(src)];
+    // Historical catalog mistake: no-insert is not a second default H.
+    if(it.source==="main_profile"&&/безвстав|без вставк/i.test(String(it.name||"")))it.source="noinsert_profile";
     if(!it.unit)it.unit='шт';
     if(it.groupId===undefined)it.groupId=null;
     if(it.price===undefined)it.price=0;
