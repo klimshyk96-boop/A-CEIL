@@ -10,4 +10,14 @@ assert.equal(mode.isMulti({multiRoom:true,rooms:[{id:'r1',state:JSON.stringify(s
 const damaged={multiRoom:true,projectType:'apartment',rooms:[],state:JSON.stringify({...singleState,multiRoom:true,rooms:[]})};
 mode.repair(damaged);assert.equal(damaged.multiRoom,undefined);assert.equal(damaged.rooms,undefined);assert.equal(damaged.projectType,'room');
 const restored=JSON.parse(damaged.state);assert.equal(restored.multiRoom,undefined);assert.equal(restored.rooms,undefined);assert.equal(restored.closed,true);
+// A restored apartment already has its room array in memory. Multiroom
+// detection must not reparse a potentially huge project.state on every call.
+let expensiveParseCalls=0;
+c.JSON={parse:function(input){expensiveParseCalls++;return JSON.parse(input)},stringify:JSON.stringify};
+const bigRooms=Array.from({length:80},(_,i)=>({id:'room_'+i,state:JSON.stringify(singleState)}));
+for(let i=0;i<20;i++){
+  assert.equal(mode.isMulti({rooms:bigRooms,multiRoom:true,state:'{"broken":'}),true);
+}
+assert.equal(expensiveParseCalls,0,'loaded multiroom checks cannot parse full state');
+delete c.JSON;
 console.log('PASS project mode distinguishes a standalone drawing from a real multi-room object and repairs stale flags');
