@@ -33,9 +33,18 @@ function fixture(){
     upsert(p){projects.push(copy(p));copies.push(copy(p));return p},
     list(){return projects}
   }};
-  c.A_CEIL_ReportLinks={publicUrl(token){return 'https://a-ceil.pp.ua/r/'+token}};
+  c.A_CEIL_ReportLinks={
+    publicUrl(token){return 'https://a-ceil.pp.ua/r/'+token},
+    status(reference){
+      const project=projects.find(p=>[p.id,p._dbId,p._localId].some(v=>v!=null&&String(v)===String(reference)));
+      if(!project||!project.report_token)return {status:'none',project};
+      if(project.report_expires_at&&new Date(project.report_expires_at).getTime()<=Date.now())
+        return {status:'expired',project};
+      return {status:'active',project,url:'https://a-ceil.pp.ua/r/'+project.report_token};
+    }
+  };
   vm.createContext(c);vm.runInContext(source,c);
-  return{c,initial,projects:()=>projects,queue,copies,messages,nodes,writeTexts};
+  return{c,initial,projects:()=>projects,replaceProjects(next){projects=copy(next)},queue,copies,messages,nodes,writeTexts};
 }
 test('independent quote copy never overwrites original or inherits its report links',async()=>{
   const f=fixture(),result=await f.c.A_CEIL_ProjectArchive.copyForQuote('original-uuid');
@@ -152,4 +161,54 @@ test('second tap reopens existing quote instead of creating a duplicate cloud re
   assert(f.messages.some(message=>/Копія вже є/.test(message)));
   assert.equal(await api.copyForQuote('new-cloud-uuid'),'new-cloud-uuid',
     'pressing 2 КП on the copy does not create nested copies');
+});
+
+test('two report cards reveal two independent published links or explain what is missing',async()=>{
+  const f=fixture(),api=f.c.A_CEIL_ProjectArchive;
+  assert.deepEqual(Array.from(api.pairReports(f.projects()[0],f.projects())),[],
+    'no paired report strip before an alternative project exists');
+  const result=await api.copyForQuote('original-uuid');
+  assert.equal(result,'new-cloud-uuid');
+  let pair=api.pairReports(f.projects()[0],f.projects());
+  assert.equal(pair.length,2,'one object now has original and independent option');
+  assert.equal(pair[0].number,1);
+  assert.equal(pair[1].number,2);
+  assert.equal(pair[0].status,'active');
+  assert.equal(pair[0].url,'https://a-ceil.pp.ua/r/'+ 'a'.repeat(20));
+  assert.equal(pair[1].status,'none','unpublished copy must be visibly unavailable');
+  assert.equal(pair[1].url,'','no guessed or inherited link for an unpublished report');
+  assert.deepEqual(Array.from(api.pairReports(f.projects()[1],f.projects())),[],
+    'only parent project shows the combined compact strip');
+  f.projects()[1].report_token='b'.repeat(20);
+  pair=api.pairReports(f.projects()[0],f.projects());
+  assert.equal(pair[1].status,'active');
+  assert.equal(pair[1].url,'https://a-ceil.pp.ua/r/'+ 'b'.repeat(20));
+  assert.notEqual(pair[0].url,pair[1].url,'reports are genuinely independent');
+});
+test('expired and legacy reports stay distinct; never expose unavailable links',()=>{
+  const f=fixture(),api=f.c.A_CEIL_ProjectArchive;
+  const origin=f.projects()[0];
+  const copy1={id:'copy-1',_dbId:'copy-1',_comparisonSourceId:origin.id,
+    name:'Вітальня — Безвставочний',report_token:'b'.repeat(20),
+    report_expires_at:'2020-01-01T00:00:00Z'};
+  const copy2={id:'copy-2',_dbId:'copy-2',_comparisonSourceId:origin.id,
+    name:'Вітальня — Копія',report_token:'c'.repeat(20)};
+  const pair=api.pairReports(origin,[origin,copy1,copy2]);
+  assert.equal(pair.length,3,'old extra copies remain accessible rather than silently removed');
+  assert.equal(pair[0].status,'active');
+  // Supply legacy rows through the same project repository so status lookup is realistic.
+  f.replaceProjects([origin,copy1,copy2]);
+  const states=api.pairReports(origin,f.projects());
+  assert.equal(states[1].status,'expired');
+  assert.equal(states[1].url,'','expired report must not open');
+  assert.equal(states[2].status,'active');
+  assert.equal(states[2].url,'https://a-ceil.pp.ua/r/'+ 'c'.repeat(20));
+});
+test('report buttons use independent URLs and do not recreate removed oversized panel',()=>{
+  assert.match(source,/className="aceil-quote-reports"/);
+  assert.match(source,/aria-label","Незалежні звіти за об'єктом"/);
+  assert.match(source,/open\.href=variant\.url;open\.target="_blank"/);
+  assert.match(source,/navigator\.clipboard\.writeText\(variant\.url\)/);
+  assert.match(source,/Звіт ще не сформовано/);
+  assert.doesNotMatch(source,/aceilQuotePairPanel|data-project-quote-links|Два незалежні кошториси/);
 });
