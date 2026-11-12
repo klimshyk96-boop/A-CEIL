@@ -3,7 +3,7 @@
   if(window.__A_CEIL_PROJECT_ARCHIVE_V1)return;
   window.__A_CEIL_PROJECT_ARCHIVE_V1=true;
 
-  var view="active",baseRender=null,rendering=false,copyInFlight=new Set();
+  var view="active",baseRender=null,rendering=false,copyInFlight=new Set(),expandedReportGroups=new Set();
   // Project cards need only the archive date. Parse each unchanged JSON state
   // once, not several times per render. Invalidate on state replacement.
   var archiveDates=new WeakMap();
@@ -89,12 +89,14 @@
     group.replaceChildren();
     var title=document.createElement("div");
     title.style.cssText="font-weight:800;font-size:12px;color:#1e40af;margin-bottom:7px;";
-    title.textContent="📄 Звіти за об'єктом · "+variants.length+" варіанти";
-    if(variants.length!==2)title.textContent="📄 Звіти за об'єктом · "+variants.length+" варіантів";
+    var publishedCount=variants.filter(function(v){return v.status==="active"}).length;
+    title.textContent="📄 Звіти за об'єктом · "+variants.length+" варіантів · опубліковано "+publishedCount;
     group.appendChild(title);
     var grid=document.createElement("div");
     grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;";
-    variants.forEach(function(variant){
+    var key=cloudId(project),expanded=expandedReportGroups.has(key);
+    var displayed=expanded?variants:variants.slice(0,2);
+    displayed.forEach(function(variant){
       var tile=document.createElement("div");
       tile.className="aceil-quote-report-option";
       tile.style.cssText="min-width:0;padding:9px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;display:flex;flex-direction:column;gap:5px;";
@@ -137,6 +139,18 @@
       tile.appendChild(actions);grid.appendChild(tile);
     });
     group.appendChild(grid);
+    if(variants.length>2){
+      var toggle=document.createElement("button");
+      toggle.type="button";toggle.className="aceil-quote-reports-toggle";
+      toggle.textContent=expanded?"Згорнути зайві варіанти":"Показати ще "+(variants.length-2);
+      toggle.setAttribute("aria-expanded",expanded?"true":"false");
+      toggle.style.cssText="width:100%;margin-top:7px;padding:8px 10px;text-align:center;border:1px solid #bfdbfe;border-radius:9px;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:800;";
+      toggle.onclick=function(){
+        if(expanded)expandedReportGroups.delete(key);else expandedReportGroups.add(key);
+        decoratePairReports(card,project,list());
+      };
+      group.appendChild(toggle);
+    }
     if(!old)card.appendChild(group);
   }
   function decorate(){
@@ -235,18 +249,32 @@
   function cloudId(project){return project&&String(project._dbId||"")}
   function projectBy(id){return list().find(function(project){return matches(project,id)})||null}
   function jumpToProject(id){
-    if(view!=="active"){view="active";render()}
-    var project=projectBy(id),cards=typeof document.querySelectorAll==="function"?document.querySelectorAll("#projectsList .rp-project-card"):[];
-    for(var i=0;i<cards.length;i++){
-      var action=cards[i].querySelector('[onclick*="editProject"]'),
+    var project=projectBy(id);
+    if(!project){notify("Проєкт не знайдено в списку.");return false;}
+    var destination=archivedAt(project)?"archive":"active";
+    if(view!==destination){view=destination;render()}
+    function scrollToCard(){
+      var cards=typeof document.querySelectorAll==="function"?document.querySelectorAll("#projectsList .rp-project-card"):[];
+      for(var i=0;i<cards.length;i++){
+        var action=cards[i].querySelector('[onclick*="editProject"]'),
           raw=action&&action.getAttribute("onclick")||"",
           match=raw.match(/editProject\(['"]([^'"]+)['"]\)/);
-      if(project&&match&&matches(project,match[1])){
-        if(typeof cards[i].scrollIntoView==="function")cards[i].scrollIntoView({behavior:"smooth",block:"center"});
-        return true;
+        if(match&&matches(project,match[1])){
+          if(typeof cards[i].scrollIntoView==="function")cards[i].scrollIntoView({behavior:"smooth",block:"center"});
+          return true;
+        }
       }
+      return false;
     }
-    notify("Копія збережена. Зніміть фільтр пошуку або прокрутіть список проєктів.");
+    if(scrollToCard())return true;
+    // A parent/copy may be outside the current search. Clear only the visible
+    // search filter, not the saved project or archive status.
+    var search=document.getElementById("projSearch");
+    if(search&&search.value){
+      search.value="";render();
+      if(scrollToCard())return true;
+    }
+    notify("Проєкт у списку не видно. Перевірте фільтр і архів.");
     return false;
   }
   function pending(project){

@@ -1,8 +1,8 @@
 /* A·CEIL offline shell — fast activation and versioned runtime cache. */
 "use strict";
 
-const BUILD_ID="20261112-compact-two-report-links1";
-const SHELL_CACHE="aceil-shell-20261112-compact-two-report-links1";
+const BUILD_ID="20261112-report-compact-preview-globstar1";
+const SHELL_CACHE="aceil-shell-20261112-report-compact-preview-globstar1";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
   "/index.html",
@@ -55,11 +55,18 @@ async function purgeCachedReports(){
 
 async function precacheCoreShell(){
   const cache=await caches.open(SHELL_CACHE);
+  let entryLoaded=false;
   await Promise.all(CORE_SHELL.map(async url=>{
-    const request=new Request(url,{cache:"reload"});
-    const response=await fetch(request);
-    await putIfUsable(cache,request,response);
+    // A temporarily unavailable icon or script must not block installation of
+    // the entire new version. Only the HTML shell is mandatory for offline use.
+    try{
+      const request=new Request(url,{cache:"reload"});
+      const response=await fetch(request);
+      await putIfUsable(cache,request,response);
+      if(url==="/index.html"&&response.ok)entryLoaded=true;
+    }catch(_){ /* Retry optional assets on their first normal request. */ }
   }));
+  if(!entryLoaded)throw new Error("A·CEIL shell index unavailable; preserve previous worker");
 }
 
 self.addEventListener("install",event=>{
