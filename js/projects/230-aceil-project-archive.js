@@ -85,15 +85,21 @@
     var group=old||document.createElement("section");
     group.className="aceil-quote-reports";
     group.setAttribute("aria-label","Незалежні звіти за об'єктом");
-    group.style.cssText="margin-top:9px;padding:9px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff;";
+    // Desktop project cards use flex, mobile cards force a three-column grid.
+    // Without both rules this fourth child becomes a tiny first-grid-column
+    // tile on iPhone or a narrow right-hand side panel on desktop.
+    card.style.flexWrap="wrap";
+    group.style.cssText="grid-column:1 / -1;flex:0 0 100%;order:99;width:100%;min-width:0;box-sizing:border-box;margin-top:9px;padding:9px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff;";
     group.replaceChildren();
     var title=document.createElement("div");
     title.style.cssText="font-weight:800;font-size:12px;color:#1e40af;margin-bottom:7px;";
     var publishedCount=variants.filter(function(v){return v.status==="active"}).length;
-    title.textContent="📄 Звіти за об'єктом · "+variants.length+" варіантів · опубліковано "+publishedCount;
+    var ending=variants.length%100,ones=variants.length%10;
+    var unit=ending>=11&&ending<=14?"варіантів":ones===1?"варіант":ones>=2&&ones<=4?"варіанти":"варіантів";
+    title.textContent="📄 Звіти за об'єктом · "+variants.length+" "+unit+" · опубліковано "+publishedCount;
     group.appendChild(title);
     var grid=document.createElement("div");
-    grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;";
+    grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;max-width:880px;";
     var key=cloudId(project),expanded=expandedReportGroups.has(key);
     var displayed=expanded?variants:variants.slice(0,2);
     displayed.forEach(function(variant){

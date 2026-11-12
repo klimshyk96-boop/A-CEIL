@@ -1,8 +1,8 @@
 /* A·CEIL offline shell — fast activation and versioned runtime cache. */
 "use strict";
 
-const BUILD_ID="20261112-report-compact-preview-globstar1";
-const SHELL_CACHE="aceil-shell-20261112-report-compact-preview-globstar1";
+const BUILD_ID="20261112-mobile-qa-cache-safe2";
+const SHELL_CACHE="aceil-shell-20261112-mobile-qa-cache-safe2";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
   "/index.html",
@@ -63,7 +63,9 @@ async function precacheCoreShell(){
       const request=new Request(url,{cache:"reload"});
       const response=await fetch(request);
       await putIfUsable(cache,request,response);
-      if(url==="/index.html"&&response.ok)entryLoaded=true;
+      // A 200 response alone is insufficient: iOS can reject cache.put
+      // because of storage quota, leaving offline clients without HTML.
+      if(url==="/index.html"&&response.ok)entryLoaded=!!(await cache.match(request));
     }catch(_){ /* Retry optional assets on their first normal request. */ }
   }));
   if(!entryLoaded)throw new Error("A·CEIL shell index unavailable; preserve previous worker");
