@@ -81,3 +81,44 @@ test('cloud persistence restores lineage and does not share original report iden
   assert.match(auth,/report_token:p\.report_token\|\|null/);
   assert.match(sync,/sync_revision/);
 });
+
+test('pending cloud conflict exposes the real reason and does not blind-retry',async()=>{
+  const f=fixture(),p=f.projects()[0];
+  p._dirty=true;p._syncStatus='pending_update';
+  f.queue.push({type:'save',payload:{localId:'original-uuid',dbId:'original-uuid'},_manualConflictRequired:true,_failures:1,_lastError:'Хмарна ревізія змінилася'});
+  const issue=f.c.A_CEIL_ProjectArchive.syncIssue(p);
+  assert.equal(issue.blocked,true);
+  assert.equal(issue.label,'⚠️ Конфлікт');
+  assert.match(issue.description,/Хмарна ревізія/);
+  assert.equal(await f.c.A_CEIL_ProjectArchive.retryCloudSave('original-uuid'),false);
+  assert.equal(f.queue.length,1,'conflicting edit remains in the queue, never overwritten');
+});
+test('stuck local project can be rescued as a separate cloud record, original unchanged',async()=>{
+  const f=fixture(),p=f.projects()[0];
+  p._dirty=true;p._localUpdatedAt=Date.now();p._syncStatus='pending_update';
+  f.queue.push({type:'save',payload:{localId:p.id,dbId:p._dbId},_manualConflictRequired:true,_lastError:'Застаріла ревізія'});
+  const result=await f.c.A_CEIL_ProjectArchive.rescueCloudCopy(p.id);
+  assert.equal(result,'new-cloud-uuid');
+  assert.deepEqual(f.projects()[0],Object.assign({},f.initial[0],{
+    _dirty:true,_localUpdatedAt:p._localUpdatedAt,_syncStatus:'pending_update'
+  }),'source stays unchanged with its conflict intact');
+  assert.equal(f.projects().length,2);
+  const copy=f.projects()[1],state=JSON.parse(copy.state);
+  assert.equal(copy._dbId,'new-cloud-uuid');
+  assert.equal(copy._recoverySourceId,'original-uuid');
+  assert.equal(state.recoverySourceId,'original-uuid');
+  assert.equal(copy._comparisonSourceId,undefined);
+  assert.equal(state.comparisonSourceId,undefined);
+  assert.equal(copy.report_token,undefined);
+  assert.equal(f.queue.length,1,'original conflict queue is preserved after rescue');
+  assert.equal(await f.c.A_CEIL_ProjectArchive.rescueCloudCopy('original-uuid'),false,
+    'repeat tap must not create a second emergency copy');
+  assert.equal(f.projects().length,2);
+});
+test('cloud recovery lineage survives login, and blocked saves are visibly distinguishable',()=>{
+  assert.match(sync,/state\.recoverySourceId=String\(local\._recoverySourceId\)/);
+  assert.match(auth,/_recoverySourceId:stateObj\.recoverySourceId\|\|null/);
+  assert.match(admin,/_recoverySourceId:st\.recoverySourceId\|\|null/);
+  assert.match(source,/syncChip\.textContent=issue\.label/);
+  assert.match(source,/syncChip\.onclick=function\(\)\{window\.A_CEIL_ProjectArchive\.syncHelp/);
+});
