@@ -66,6 +66,8 @@ test('selection used by the report plan is exactly the editor selection',()=>{
 test('report renderer draws all six visible pairs and still respects none/manual modes',()=>{
   assert.match(core,/if\(\(rs\.diagMode\|\|"manual"\)==="visible"\)/);
   assert.match(renderer,/diagMode\|\|"manual"\)!=="visible"/);
+  assert.match(renderer,/!\(_reportDiagOverrideValue\(diagonalOverrides,d\[0\],d\[1\]\)>0\)/,
+    'drawing uses order-independent confirmed lengths, including EB stored as BE');
   assert.match(core,/if\(rs\.diagonals!==true\) return \[\]/);
   assert.match(renderer,/label=`\$\{NL\(d\[0\]\)\}\$\{NL\(d\[1\]\)\}/);
 });
