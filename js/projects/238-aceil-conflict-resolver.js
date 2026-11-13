@@ -177,7 +177,7 @@ async function open(id){
           var val=await verifyFresh(),p=val.latest;
           if(choice==="mine"){
             p._cloudRevision=String(val.newest.sync_revision);
-            var base=cloudBase(val.newest);if(base)p._cloudBase=base;
+            var base=cloudBase(val.newest);if(base)p._cloudBase=base;else delete p._cloudBase;
             p._dirty=true;p._syncStatus="pending_update";
             p._localUpdatedAt=Date.now();
             putLocal(p);unblocked(p);
@@ -209,8 +209,8 @@ async function open(id){
         }catch(e){notice(section,"Не завершено: "+String(e.message||e),true)}
         finally{button.disabled=false}
       }
-      mine.onclick=function(){perform("mine",mine)};
-      theirs.onclick=function(){perform("theirs",theirs)};
+      mine.onclick=function(){return perform("mine",mine)};
+      theirs.onclick=function(){return perform("theirs",theirs)};
     }
     return true;
   }catch(e){
