@@ -372,7 +372,17 @@
     retry.style.cssText="border:0;border-radius:9px;padding:10px 12px;background:#2563eb;color:#fff;font-weight:800";
     retry.disabled=issue.blocked;
     retry.onclick=function(){retryCloudSave(project.id)};
-    actions.appendChild(retry);
+    if(!issue.blocked)actions.appendChild(retry);
+    else if(project._dbId){
+      var reconcile=document.createElement("button");reconcile.type="button";
+      reconcile.textContent="🔎 Узгодити дві версії";
+      reconcile.style.cssText="border:0;border-radius:9px;padding:11px 13px;background:#2563eb;color:#fff;font-weight:850;";
+      reconcile.onclick=function(){
+        if(window.A_CEIL_ConflictResolver)window.A_CEIL_ConflictResolver.open(project.id);
+        else notify("Модуль узгодження ще завантажується.");
+      };
+      actions.appendChild(reconcile);
+    }
     var rescue=document.createElement("button");rescue.type="button";
     var existingRescue=list().find(function(p){return p&&p!==project&&String(p._recoverySourceId||"")===String(project._dbId||project.id)});
     rescue.textContent=existingRescue?"☁️ Відкрити збережену резервну":isRecovery(project)?"☁️ Резервна — повторення вимкнено":"☁️ Створити захисну копію";

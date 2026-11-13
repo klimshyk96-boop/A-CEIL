@@ -1,8 +1,8 @@
 /* A·CEIL offline shell — fast activation and versioned runtime cache. */
 "use strict";
 
-const BUILD_ID="20261113-two-variants-recovery-history1";
-const SHELL_CACHE="aceil-shell-20261113-two-variants-recovery-history1";
+const BUILD_ID="20261113-conflict-safe-pdf-download1";
+const SHELL_CACHE="aceil-shell-20261113-conflict-safe-pdf-download1";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
   "/index.html",
@@ -16,12 +16,15 @@ const CORE_SHELL=[
   "/assets/layout.css?v="+BUILD_ID,
   "/assets/theme-mode.css?v="+BUILD_ID,
   "/js/core/229-aceil-theme-selector.js?v="+BUILD_ID,
-  "/js/projects/230-aceil-project-archive.js?v="+BUILD_ID
+  "/js/projects/230-aceil-project-archive.js?v="+BUILD_ID,
+  "/vendor/jspdf-2.5.2.umd.min.js"
 ];
 
 function isReportRequest(request){
   try{
     const url=new URL(request.url);
+    // Static report JS is application code, not private report content.
+    if(/^\/js\/reports\/[^/]+\.js$/i.test(url.pathname))return false;
     return /\/(?:reports?|export|pdf|print|download|share|public|cloud)/i.test(url.pathname)
       || url.searchParams.has("report")
       || url.searchParams.has("view");

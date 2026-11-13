@@ -9,6 +9,8 @@ node --check js/projects/032-aceil-pending-sync-queue.js
 node --check js/nomenclature/232-aceil-profile-coverage.js
 node --check js/nomenclature/140-aceil-universal-autocount.js
 node --check js/projects/230-aceil-project-archive.js
+node --check js/projects/238-aceil-conflict-resolver.js
+node --check js/reports/237-aceil-image-report-pdf.js
 node --check js/projects/230-aceil-project-archive.js
 node --check js/auth/033-aceil-supabase-auth-offline-access.js
 
@@ -28,6 +30,8 @@ for name in \
   support-contacts \
   report-link-snapshots \
   report-publication-session \
+  report-pdf-export \
+  sync-conflict-resolver \
   legacy-report-privacy \
   pwa-icon \
   stability-regression \
