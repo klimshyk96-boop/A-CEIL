@@ -10,6 +10,7 @@ node --check js/nomenclature/232-aceil-profile-coverage.js
 node --check js/nomenclature/140-aceil-universal-autocount.js
 node --check js/projects/230-aceil-project-archive.js
 node --check js/projects/238-aceil-conflict-resolver.js
+node --check js/canvas/135-aceil-curve-fixed-ends.js
 node --check js/reports/237-aceil-image-report-pdf.js
 node --check js/nomenclature/163-aceil-price-stability.js
 node --check js/rooms/multiroom-lifecycle.js
@@ -38,7 +39,8 @@ for name in \
   legacy-report-privacy \
   pwa-icon \
   stability-regression \
-  honest-geometry
+  honest-geometry \
+  curve-corrupt-geometry
 do
   echo "▶ Checking: $name"
   node "tests/$name.test.cjs"
