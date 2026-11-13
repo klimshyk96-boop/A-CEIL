@@ -70,6 +70,13 @@
     });
   }
   function activeAlternative(source,all){return alternativesFor(source,all)[0]||null}
+
+  function isCurrentAlternative(project,all){
+    var parentId=comparisonParent(project);
+    if(!parentId)return false;
+    var parent=(all||list()).find(function(p){return cloudId(p)===parentId});
+    return !!(parent&&activeAlternative(parent,all)===project);
+  }
   function isHistory(project,all){
     if(isRecovery(project))return true;
     var parentId=comparisonParent(project);
@@ -81,7 +88,7 @@
     return all.filter(function(p){
       if(selected==="archive")return !!archivedAt(p);
       if(archivedAt(p))return false;
-      return selected==="history"?isHistory(p,all):!isHistory(p,all);
+      return selected==="history"?isHistory(p,all):!isHistory(p,all)&&!isCurrentAlternative(p,all);
     });
   }
   function totals(){
@@ -126,80 +133,165 @@
         status:report.status,url:report.url};
     });
   }
-  function decoratePairReports(card,project,all){
-    var variants=pairReports(project,all),old=card.querySelector(".aceil-quote-reports");
-    if(variants.length<2){if(old)old.remove();return}
-    var group=old||document.createElement("section");
-    group.className="aceil-quote-reports";
-    group.setAttribute("aria-label","Незалежні звіти за об'єктом");
-    // Desktop project cards use flex, mobile cards force a three-column grid.
-    // Without both rules this fourth child becomes a tiny first-grid-column
-    // tile on iPhone or a narrow right-hand side panel on desktop.
-    card.style.flexWrap="wrap";
-    group.style.cssText="grid-column:1 / -1;flex:0 0 100%;order:99;width:100%;min-width:0;box-sizing:border-box;margin-top:9px;padding:9px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff;";
-    group.replaceChildren();
-    var title=document.createElement("div");
-    title.style.cssText="font-weight:800;font-size:12px;color:#1e40af;margin-bottom:7px;";
-    var publishedCount=variants.filter(function(v){return v.status==="active"}).length;
-    var ending=variants.length%100,ones=variants.length%10;
-    var unit=ending>=11&&ending<=14?"варіантів":ones===1?"варіант":ones>=2&&ones<=4?"варіанти":"варіантів";
-    title.textContent="📄 Звіти за об'єктом · "+variants.length+" "+unit+" · опубліковано "+publishedCount;
-    group.appendChild(title);
-    var grid=document.createElement("div");
-    grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;max-width:880px;";
-    variants.forEach(function(variant){
-      var tile=document.createElement("div");
-      tile.className="aceil-quote-report-option";
-      tile.style.cssText="min-width:0;padding:9px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;display:flex;flex-direction:column;gap:5px;";
-      var heading=document.createElement("strong");
-      heading.style.cssText="font-size:12px;line-height:1.3;color:#0f172a;overflow-wrap:anywhere;";
-      heading.textContent=variant.number===1?"① Основний — H":"② Варіант без вставки";
-      tile.appendChild(heading);
-      var name=document.createElement("span");
-      name.style.cssText="color:#64748b;font-size:11px;line-height:1.35;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;";
-      name.textContent=variant.name;
-      name.title=variant.name;tile.appendChild(name);
-      var status=document.createElement("span");
-      status.style.cssText="font-size:11px;font-weight:750;color:"+(variant.status==="active"?"#15803d":variant.status==="expired"?"#b45309":"#64748b")+";";
-      status.textContent=variant.status==="active"?"● Звіт опубліковано":variant.status==="expired"?"● Посилання прострочене":"○ Звіт ще не сформовано";
-      tile.appendChild(status);
-      var actions=document.createElement("div");
-      actions.style.cssText="display:flex;gap:5px;flex-wrap:wrap;margin-top:2px;";
-      if(variant.status==="active"){
-        var open=document.createElement("a");
-        open.href=variant.url;open.target="_blank";open.rel="noopener noreferrer";
-        open.textContent="Відкрити ↗";
-        open.style.cssText="display:inline-flex;align-items:center;padding:7px 9px;border-radius:8px;background:#2563eb;color:white;font-size:11px;font-weight:800;text-decoration:none;";
-        actions.appendChild(open);
-        var copy=document.createElement("button");copy.type="button";copy.textContent="Копіювати";
-        copy.style.cssText="border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#334155;padding:7px 9px;font-size:11px;font-weight:800;";
+
+  // One card represents one physical object. It opens a small chooser; the
+  // alternative is still a distinct cloud project, never a second list card.
+  var activePicker=null;
+  function closeVariantPicker(){
+    if(!activePicker)return;
+    activePicker.remove();
+    activePicker=null;
+  }
+  function openVariantProject(project,edit){
+    closeVariantPicker();
+    if(!project)return false;
+    if(edit){
+      if(typeof window.editProject==="function")return window.editProject(project.id);
+      notify("Редагування картки недоступне.");return false;
+    }
+    var multi=window.A_CEIL_ProjectMode&&typeof window.A_CEIL_ProjectMode.isMulti==="function"
+      ?window.A_CEIL_ProjectMode.isMulti(project)
+      :!!(project.multiRoom||Array.isArray(project.rooms)&&project.rooms.length);
+    if(multi&&typeof window.openObjectRooms==="function")return window.openObjectRooms(project.id);
+    if(typeof window.loadProject==="function")return window.loadProject(project.id);
+    notify("Не вдалося відкрити креслення. Оновіть сторінку.");return false;
+  }
+  function variantName(project,primary){
+    return primary?"① Основний — H":"② Безвставочний";
+  }
+  function openVariantPicker(id){
+    var source=projectBy(id);
+    if(!source)return false;
+    if(comparisonParent(source)){
+      var parent=list().find(function(p){return cloudId(p)===comparisonParent(source)});
+      if(parent)source=parent;
+    }
+    if(isRecovery(source)){return openVariantProject(source,false)}
+    closeVariantPicker();
+    var variants=[source],alt=activeAlternative(source,list());
+    if(alt)variants.push(alt);
+    var overlay=document.createElement("div");overlay.className="aceil-variant-picker-backdrop";
+    overlay.setAttribute("role","presentation");
+    overlay.style.cssText="position:fixed;inset:0;z-index:2147483450;background:rgba(15,23,42,.65);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;";
+    var dialog=document.createElement("section");dialog.className="aceil-variant-picker";
+    dialog.setAttribute("role","dialog");
+    dialog.setAttribute("aria-modal","true");
+    dialog.setAttribute("aria-label","Виберіть варіант розрахунку");
+    dialog.style.cssText="width:min(100%,470px);max-height:calc(100dvh - 28px);overflow-y:auto;box-sizing:border-box;border-radius:20px;padding:16px 14px max(16px,env(safe-area-inset-bottom));background:white;color:#0f172a;box-shadow:0 20px 55px rgba(0,0,0,.25);display:grid;gap:12px;";
+    var head=document.createElement("div");head.style.cssText="display:flex;align-items:flex-start;gap:12px;";
+    var headText=document.createElement("div");headText.style.cssText="flex:1;min-width:0;";
+    var title=document.createElement("strong");title.textContent=String(source.name||"Об'єкт");
+    title.style.cssText="font-size:18px;line-height:1.25;display:block;overflow-wrap:anywhere;";
+    var subtitle=document.createElement("div");subtitle.textContent="Оберіть розрахунок для цього об'єкта";
+    subtitle.style.cssText="color:#64748b;font-size:12px;margin-top:5px;";
+    headText.appendChild(title);headText.appendChild(subtitle);
+    var dismiss=document.createElement("button");dismiss.type="button";dismiss.className="aceil-variant-picker-close";
+    dismiss.textContent="✕";dismiss.setAttribute("aria-label","Закрити вибір");
+    dismiss.style.cssText="border:0;border-radius:10px;background:#f1f5f9;color:#475569;width:40px;height:40px;font-size:19px;flex-shrink:0;";
+    dismiss.onclick=closeVariantPicker;
+    head.appendChild(headText);head.appendChild(dismiss);dialog.appendChild(head);
+    variants.forEach(function(project,index){
+      var main=index===0,report=reportStatusFor(project),sync=(project._dirty||project._localUpdatedAt||queuedSave(project))
+        ?syncIssue(project):null;
+      var box=document.createElement("div");box.className="aceil-variant-choice";
+      box.style.cssText="min-width:0;border:1px solid "+(main?"#bfdbfe":"#ddd6fe")+";border-radius:14px;padding:10px;background:"+(main?"#f8fbff":"#faf8ff")+";display:grid;gap:7px;";
+      var open=document.createElement("button");open.type="button";
+      open.className="aceil-variant-choice-open";
+      open.dataset.variantProject=String(project.id);
+      open.style.cssText="display:flex;gap:10px;align-items:center;text-align:left;width:100%;padding:4px 0;border:0;background:transparent;color:#0f172a;cursor:pointer;";
+      var label=document.createElement("span");label.style.cssText="flex:1;display:grid;gap:4px;min-width:0";
+      var labelTitle=document.createElement("strong");labelTitle.textContent=variantName(project,main);
+      labelTitle.style.cssText="font-size:15px;line-height:1.25;";
+      var hint=document.createElement("small");hint.textContent=main?"Базове креслення та кошторис":"Окреме креслення і розрахунок";
+      hint.style.cssText="font-size:11px;color:#64748b;line-height:1.3;";
+      label.appendChild(labelTitle);label.appendChild(hint);open.appendChild(label);
+      var chevron=document.createElement("span");chevron.textContent="Відкрити ›";
+      chevron.style.cssText="color:#1d4ed8;font-size:12px;font-weight:850;white-space:nowrap;";
+      open.appendChild(chevron);open.onclick=function(){openVariantProject(project,false)};
+      box.appendChild(open);
+      var status=document.createElement("div");status.className="aceil-variant-report-status";
+      status.textContent=sync&&sync.blocked?"⚠️ "+sync.label+": перевірте зміни":report.status==="active"?"● Звіт опубліковано":report.status==="expired"?"● Посилання закінчилося":"○ Звіт ще не опубліковано";
+      status.style.cssText="font-size:11px;font-weight:750;color:"+(sync&&sync.blocked?"#b91c1c":report.status==="active"?"#15803d":"#64748b")+";";
+      box.appendChild(status);
+      var actions=document.createElement("div");actions.style.cssText="display:flex;flex-wrap:wrap;gap:7px;align-items:center;";
+      if(report.status==="active"){
+        var reportLink=document.createElement("a");reportLink.href=report.url;reportLink.target="_blank";
+        reportLink.rel="noopener noreferrer";reportLink.textContent="📄 Переглянути звіт";
+        reportLink.style.cssText="font-size:12px;font-weight:800;background:#dcfce7;color:#15803d;padding:8px 10px;border-radius:9px;text-decoration:none;";
+        actions.appendChild(reportLink);
+        var copy=document.createElement("button");copy.type="button";copy.textContent="🔗 Копіювати";
+        copy.style.cssText="font-size:11px;font-weight:800;border:1px solid #cbd5e1;border-radius:9px;background:#fff;padding:8px 10px;color:#334155;";
         copy.onclick=function(){
-          if(navigator.clipboard&&typeof navigator.clipboard.writeText==="function"){
-            navigator.clipboard.writeText(variant.url).then(function(){notify("✓ Посилання скопійовано")},function(){notify("Не вдалося скопіювати посилання")});
-          }else if(typeof window.prompt==="function")window.prompt("Скопіюйте посилання на звіт:",variant.url);
-          else notify("Копіювання недоступне. Відкрийте звіт.");
+          if(navigator.clipboard&&typeof navigator.clipboard.writeText==="function")
+            navigator.clipboard.writeText(report.url).then(function(){notify("✓ Посилання скопійовано")},function(){notify("Не вдалося скопіювати посилання")});
+          else if(typeof window.prompt==="function")window.prompt("Скопіюйте посилання:",report.url);
         };
         actions.appendChild(copy);
       }else{
-        var go=document.createElement("button");go.type="button";
-        go.textContent="До картки";go.title="Знайти картку проєкту, щоб сформувати звіт";
-        go.style.cssText="border:1px solid #cbd5e1;border-radius:8px;background:#f1f5f9;color:#334155;padding:7px 9px;font-size:11px;font-weight:800;";
-        go.onclick=function(){jumpToProject(variant.projectId)};
-        actions.appendChild(go);
+        var noReport=document.createElement("span");noReport.textContent="Звіт можна створити після відкриття креслення";
+        noReport.style.cssText="font-size:11px;color:#64748b;";
+        actions.appendChild(noReport);
       }
-      tile.appendChild(actions);grid.appendChild(tile);
+      var edit=document.createElement("button");edit.type="button";edit.textContent="✎ Дані";
+      edit.style.cssText="font-size:11px;font-weight:800;border:1px solid #cbd5e1;border-radius:9px;background:white;color:#475569;padding:8px 10px;margin-left:auto;";
+      edit.onclick=function(){openVariantProject(project,true)};actions.appendChild(edit);
+      box.appendChild(actions);dialog.appendChild(box);
     });
-    group.appendChild(grid);
-    var older=Math.max(0,alternativesFor(project,all).length-1);
+    if(!alt){
+      var create=document.createElement("button");create.type="button";
+      create.className="aceil-variant-create";
+      create.textContent="＋ Створити варіант без вставки";
+      create.style.cssText="padding:12px;border:1px dashed #93c5fd;border-radius:12px;background:#eff6ff;color:#1d4ed8;font-weight:850;font-size:13px;";
+      create.onclick=function(){closeVariantPicker();copyForQuote(source.id)};
+      dialog.appendChild(create);
+    }
+    var older=Math.max(0,alternativesFor(source,list()).length-1);
     if(older){
       var history=document.createElement("button");history.type="button";
-      history.className="aceil-quote-reports-history";
-      history.textContent="Попередні версії: "+older+" · Відкрити «Резервні»";
-      history.style.cssText="width:100%;margin-top:7px;padding:7px 10px;text-align:center;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#64748b;font-size:11px;font-weight:700;";
-      history.onclick=function(){view="history";render()};
-      group.appendChild(history);
+      history.className="aceil-variant-history";
+      history.textContent="Попередні версії ("+older+") — у «Резервні»";
+      history.style.cssText="border:0;background:transparent;padding:5px;color:#64748b;font-weight:750;font-size:12px;text-decoration:underline;";
+      history.onclick=function(){closeVariantPicker();view="history";render()};
+      dialog.appendChild(history);
     }
-    if(!old)card.appendChild(group);
+    overlay.appendChild(dialog);
+    overlay.onclick=function(e){if(e.target===overlay)closeVariantPicker()};
+    document.body.appendChild(overlay);activePicker=overlay;
+    dismiss.focus();
+    return true;
+  }
+  function decorateVariantBadge(card,project,all){
+    if(comparisonParent(project)||isRecovery(project))return;
+    var alt=activeAlternative(project,all),main=card.querySelector(".rp-project-main");
+    if(!main)return;
+    var badge=main.querySelector(".aceil-variants-badge");
+    if(!badge){badge=document.createElement("button");badge.type="button";
+      badge.className="aceil-variants-badge";main.appendChild(badge)}
+    badge.textContent=alt?"◫ 2 варіанти · Обрати":"＋ Варіант без вставки";
+    badge.style.cssText="align-self:flex-start;margin-top:8px;padding:7px 10px;border:1px solid #bfdbfe;border-radius:10px;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:850;cursor:pointer;";
+    badge.setAttribute("aria-label",alt?"Обрати основний або безвставочний розрахунок":"Відкрити вибір розрахунку");
+    badge.onclick=function(e){e.stopPropagation();openVariantPicker(project.id)};
+    if(alt&&(alt._dirty||alt._localUpdatedAt||queuedSave(alt))){
+      badge.textContent+=" ⚠️";
+      badge.title="Альтернативний кошторис має незбережені зміни.";
+    }
+    card.style.cursor="pointer";
+    card.setAttribute("tabindex","0");
+    card.setAttribute("aria-label","Картка об'єкта "+String(project.name||"")+" — вибір розрахунку");
+    card.onclick=function(e){
+      if(e.target&&e.target.closest&&e.target.closest("button,a,input,select,textarea,.rp-project-actions"))return;
+      openVariantPicker(project.id);
+    };
+    card.onkeydown=function(e){
+      if(e.target===card&&(e.key==="Enter"||e.key===" ")){e.preventDefault();openVariantPicker(project.id)}
+    };
+    var actions=card.querySelector(".rp-project-actions");
+    if(actions){
+      var mainOpen=actions.querySelector('button[onclick*="openObjectRooms"],button[onclick*="loadProject"]');
+      if(mainOpen){mainOpen.onclick=function(e){e.stopPropagation();openVariantPicker(project.id)};mainOpen.title="Обрати варіант креслення";}
+      var pen=actions.querySelector('button[onclick*="editProject"]');
+      if(pen){pen.onclick=function(e){e.stopPropagation();openVariantPicker(project.id)};pen.title="Обрати варіант для редагування";}
+    }
   }
   function decorate(){
     var all=list(),byId=new Map();
@@ -213,25 +305,7 @@
       var button=actions.querySelector("[data-project-archive]");if(!button){button=document.createElement("button");button.type="button";button.dataset.projectArchive="1";button.className="aceil-project-archive-action";var danger=actions.querySelector('[onclick*="deleteProject"]');actions.insertBefore(button,danger||null)}
       var isArchived=!!archivedAt(project);button.textContent=isArchived?"↩":"📦";button.title=isArchived?"Повернути з архіву":"Перенести в архів";button.setAttribute("aria-label",button.title);
       button.onclick=function(){window.A_CEIL_ProjectArchive.toggle(project.id,!isArchived)};
-      // One action only: original → independent copy, shown directly in list.
-      // A copy is already editable; never offer to copy it again here.
-      if(!comparisonParent(project)&&!isRecovery(project)){
-        var copyButton=actions.querySelector("[data-project-quote-copy]");
-        if(!copyButton){
-          copyButton=document.createElement("button");copyButton.type="button";
-          copyButton.dataset.projectQuoteCopy="1";copyButton.className="aceil-project-archive-action";
-          copyButton.style.cssText="background:#e0f2fe;color:#075985;font-weight:800;font-size:11px;";
-          var trash=actions.querySelector('[onclick*="deleteProject"]');
-          actions.insertBefore(copyButton,trash||null);
-        }
-        var alreadyCopied=!!activeAlternative(project,list());
-        copyButton.textContent=alreadyCopied?"⧉ Альтернатива":"⧉ Створити альтернативу";
-        copyButton.title=alreadyCopied?"Відкрити наявний альтернативний кошторис":"Створити один незалежний варіант для безвставочного профілю";
-        copyButton.setAttribute("aria-label",copyButton.title);
-        copyButton.disabled=copyInFlight.has(String(project.id));
-        copyButton.onclick=function(){window.A_CEIL_ProjectArchive.copyForQuote(project.id)};
-      }
-      decoratePairReports(card,project,all);
+      decorateVariantBadge(card,project,all);
       // The generic "Локально" badge must expose the real failure on mobile.
       // A tap opens the non-destructive retry/recovery options for this record.
       var syncChip=card.querySelector(".rp-project-head span[title]");
@@ -299,6 +373,11 @@
   function jumpToProject(id){
     var project=projectBy(id);
     if(!project){notify("Проєкт не знайдено в списку.");return false;}
+    var parent=comparisonParent(project)&&list().find(function(p){return cloudId(p)===comparisonParent(project)});
+    if(parent&&isCurrentAlternative(project,list())&&!archivedAt(project)&&!archivedAt(parent)){
+      if(view!=="active"){view="active";render()}
+      return openVariantPicker(parent.id);
+    }
     var destination=archivedAt(project)?"archive":isHistory(project,list())?"history":"active";
     if(view!==destination){view=destination;render()}
     function scrollToCard(){
@@ -564,7 +643,7 @@
     baseRender=current;var wrapped=function(){return render()};wrapped.__projectArchiveV1=true;window.renderProjects=wrapped;try{renderProjects=wrapped}catch(_){}
     if(document.getElementById("projectsModal")&&document.getElementById("projectsModal").classList.contains("open"))render();
   }
-  window.A_CEIL_ProjectArchive={toggle:toggle,copyForQuote:copyForQuote,syncHelp:syncHelp,retryCloudSave:retryCloudSave,rescueCloudCopy:rescueCloudCopy,syncIssue:syncIssue,arrangeQuotePairs:arrangeQuotePairs,pairReports:pairReports,projectsForView:projectsForView,jumpToProject:jumpToProject,setView:function(next){view=next==="archive"?"archive":next==="history"?"history":"active";render()},count:function(){return totals().archive},isArchived:function(project){return !!archivedAt(project)}};
+  window.A_CEIL_ProjectArchive={toggle:toggle,copyForQuote:copyForQuote,syncHelp:syncHelp,retryCloudSave:retryCloudSave,rescueCloudCopy:rescueCloudCopy,syncIssue:syncIssue,arrangeQuotePairs:arrangeQuotePairs,pairReports:pairReports,projectsForView:projectsForView,openVariants:openVariantPicker,jumpToProject:jumpToProject,setView:function(next){view=next==="archive"?"archive":next==="history"?"history":"active";render()},count:function(){return totals().archive},isArchived:function(project){return !!archivedAt(project)}};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
   [100,700,1800].forEach(function(delay){setTimeout(install,delay)});
 })();
