@@ -1,8 +1,8 @@
 /* A·CEIL offline shell — fast activation and versioned runtime cache. */
 "use strict";
 
-const BUILD_ID="20261113-conflict-safe-pdf-download1";
-const SHELL_CACHE="aceil-shell-20261113-conflict-safe-pdf-download1";
+const BUILD_ID="20261113-one-object-two-variants-picker1";
+const SHELL_CACHE="aceil-shell-20261113-one-object-two-variants-picker1";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
   "/index.html",
