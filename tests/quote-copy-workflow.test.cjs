@@ -85,6 +85,8 @@ test('one quote copy is kept as a separate editable cloud record but is presente
     'original and edited copy keep independent immutable report links');
   assert.doesNotMatch(source,/data-project-quote-links|Два незалежні кошториси/);
   assert.match(source,/badge\.textContent=alt\?"◫ 2 варіанти · Обрати"/);
+  assert.match(source,/badge\.textContent=alt\?.*":"＋ Додати прорахунок"/);
+  assert.match(source,/create\.textContent="＋ Додати прорахунок"/);
   assert.match(source,/openVariantPicker\(project\.id\)/);
   assert.equal(f.c.A_CEIL_ProjectArchive.projectsForView(f.projects(),'active').length,1,
     'one object appears once, even though both drawings remain separate project records');
