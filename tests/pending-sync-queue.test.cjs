@@ -46,6 +46,34 @@ test('a later edit survives acknowledgement; concurrent flush calls share one re
   assert(!f.status.textContent.includes('синхронізовано'));
   f.reply(1); assert.equal(await done,true); assert.equal(f.c.getPendingQueue().length,0); assert.equal(f.items()[0]._dirty,undefined);
 });
+test('conflict stays blocked after editing the same project again', async () => {
+  const f=fixture();
+  f.c.setPendingQueue([{type:'save',payload:{localId:'local-a',dbId:'db-a'},
+    _queueId:'old-conflict',_manualConflictRequired:true,_lastError:'Different revision'}]);
+  f.items()[0].name='newer local drawing'; f.items()[0]._localUpdatedAt=15;
+  f.enqueue('local-a');
+  assert.equal(f.c.getPendingQueue().length,1);
+  assert.equal(f.c.getPendingQueue()[0]._manualConflictRequired,true);
+  assert.match(f.status.textContent,/конфлікт/);
+  assert.equal(await f.c.flushPendingQueue(),false);
+  assert.equal(f.requests.length,0,'new edit must not bypass manual conflict reconciliation');
+  const op=f.c.getPendingQueue()[0];delete op._manualConflictRequired;
+  f.c.setPendingQueue([op]); // Explicit recovery UI clears the gate.
+  const done=f.c.flushPendingQueue();await tick();
+  assert.equal(f.requests.length,1);
+  assert.equal(f.requests[0].payload.name,'newer local drawing');
+  f.reply(0);assert.equal(await done,true);
+});
+test('cloud-trash restoration gate stays blocked across repeated edits', async () => {
+  const f=fixture();
+  f.c.setPendingQueue([{type:'save',payload:{localId:'local-a',dbId:'db-a'},
+    _queueId:'old-missing',_manualRestoreRequired:true,_lastError:'Missing cloud project'}]);
+  f.items()[0].name='edited after deletion';f.enqueue('local-a');
+  assert.equal(f.c.getPendingQueue()[0]._manualRestoreRequired,true);
+  assert.match(f.status.textContent,/відновлення/);
+  assert.equal(await f.c.flushPendingQueue(),false);
+  assert.equal(f.requests.length,0,'deletion cannot be undone by a new local edit');
+});
 test('a changed repository snapshot is sent again even without a new queue entry', async () => {
   const f=fixture();f.enqueue();const done=f.c.flushPendingQueue();await tick();
   f.items()[0].state='{"lengths":[123]}';f.items()[0]._localUpdatedAt=3;

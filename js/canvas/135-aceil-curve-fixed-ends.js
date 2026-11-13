@@ -112,9 +112,21 @@ function choose(candidates,item,previous,previousPrevious,end,a,b){
   }
   return candidates.slice().sort(function(x,y){return score(x)-score(y)})[0];
 }
+function validCurvePolygon(i,state){
+  // Historical cloud snapshots may have missing/null points after a partial
+  // save. Reject such geometry BEFORE sourceGeometry can dereference it.
+  // Never generate NaN pricing/area from a corrupt corner.
+  var poly=state?(state.pts||state.realPts||state.points||[]):typeof pts!=="undefined"?pts:[];
+  if(!Array.isArray(poly)||poly.length<3||!Number.isInteger(i)||i<0||i>=poly.length)return false;
+  return poly.every(function(point){
+    return !!point&&Number.isFinite(Number(point.x))&&Number.isFinite(Number(point.y));
+  });
+}
 function solveWithData(i,data,state){
-  if(data&&Number(data.version)===3)return solveSegments(i,data,state);
-  if(!data||!Array.isArray(data.points)||!data.points.length)return{ok:false,error:"no_points",points:[]};
+  if(!data)return{ok:false,error:"no_points",points:[]};
+  if(!validCurvePolygon(i,state))return{ok:false,error:"invalid_geometry",points:[]};
+  if(Number(data.version)===3)return solveSegments(i,data,state);
+  if(!Array.isArray(data.points)||!data.points.length)return{ok:false,error:"no_points",points:[]};
   var rp=sourceGeometry(i,state),n=rp.length,j=(i+1)%n,startIndex=Number(data.startCorner);
   if(startIndex!==i&&startIndex!==j)startIndex=i;
   var endIndex=startIndex===i?j:i,startVertex=rp[startIndex],endVertex=rp[endIndex];
@@ -372,7 +384,7 @@ function segmentPath(solution){var result=[];solution.segments.forEach(function(
 function measureState(state){
   var live=!state;state=state||currentState();
   var poly=state.pts||state.realPts||state.points||[];
-  if(state.circleMode||poly.length<3)return null;
+  if(state.circleMode||!validCurvePolygon(0,state))return null;
   var rp=sourceGeometry(0,state),measurementState=Object.assign({},state,{realPts:rp}),boundary=[rp[0]],sides=[],hasCurves=false;
   var cachedLive=live&&Array.isArray(realPts)&&realPts.length===rp.length&&realPts.every(function(p){return p&&Number.isFinite(Number(p.x))&&Number.isFinite(Number(p.y))});
   for(var i=0;i<rp.length;i++){
