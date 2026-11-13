@@ -11,12 +11,12 @@ function fixture(){
     rooms:[{id:'r1',name:'Кімната 1',state:JSON.stringify({closed:true,pts:[{x:1},{x:2},{x:3}]}),_aceilVariantsShadow:{links:[{token:'old'}]}}],
     state:JSON.stringify({multiRoom:true,projectType:'apartment',rooms:[{id:'r1',state:'{}'}],report_token:'old'})}];
   const initial=copy(projects),queue=[],copies=[],messages=[],nodes={},writeTexts=[];
-  function node(tag){return{tagName:tag||'',style:{},children:[],appendChild(el){this.children.push(el)},replaceChildren(){this.children=[]},setAttribute(){},insertBefore(el){nodes[el.id]=el},querySelectorAll(){return[]}}}
+  function node(tag){return{tagName:tag||'',style:{},children:[],dataset:{},appendChild(el){this.children.push(el)},replaceChildren(){this.children=[]},setAttribute(){},insertBefore(el){nodes[el.id]=el},querySelectorAll(){return[]},remove(){},focus(){},querySelector(){return null}}}
   const parent=node('div'),list=node('div');list.parentNode=parent;nodes.projectsList=list;
   const c={console,Date,Math,JSON,Promise,Map,Set,WeakMap,setTimeout(){return 1},clearTimeout(){},
     crypto:{randomUUID(){return 'copy-uuid'}},
     navigator:{onLine:true,clipboard:{async writeText(v){writeTexts.push(v)}}},
-    document:{readyState:'loading',addEventListener(){},getElementById(id){return nodes[id]||null},createElement:node},
+    document:{readyState:'loading',addEventListener(){},getElementById(id){return nodes[id]||null},createElement:node,body:node('body')},
     getProjects(){return projects},setProjects(next){projects=copy(next)},showToast(m){messages.push(m)},
     _sb:{},_sbUser:{id:'user-1'},getPendingQueue(){return queue},
     addToPendingQueue(op){queue.push(copy(op))},
@@ -72,7 +72,7 @@ test('unsaved and offline projects cannot claim cloud comparison copies',async()
   assert.equal(await f.c.A_CEIL_ProjectArchive.copyForQuote('original-uuid'),false);
   assert.equal(f.projects().length,1);
 });
-test('one copy means two visible editable projects, each with its own cloud report link',async()=>{
+test('one quote copy is kept as a separate editable cloud record but is presented as one object card',async()=>{
   const f=fixture(),result=await f.c.A_CEIL_ProjectArchive.copyForQuote('original-uuid');
   assert.equal(result,'new-cloud-uuid');
   const cards=f.c.A_CEIL_ProjectArchive.arrangeQuotePairs(f.projects());
@@ -84,7 +84,10 @@ test('one copy means two visible editable projects, each with its own cloud repo
   assert.notEqual(f.projects()[0].report_token,f.projects()[1].report_token,
     'original and edited copy keep independent immutable report links');
   assert.doesNotMatch(source,/data-project-quote-links|Два незалежні кошториси/);
-  assert.match(source,/copyButton\.textContent=alreadyCopied\?"⧉ Альтернатива":"⧉ Створити альтернативу"/);
+  assert.match(source,/badge\.textContent=alt\?"◫ 2 варіанти · Обрати"/);
+  assert.match(source,/openVariantPicker\(project\.id\)/);
+  assert.equal(f.c.A_CEIL_ProjectArchive.projectsForView(f.projects(),'active').length,1,
+    'one object appears once, even though both drawings remain separate project records');
   assert.match(source,/render\(\);jumpToProject\(localId\)/,
     'copy becomes a visible card before cloud sync has completed');
 });
@@ -206,102 +209,32 @@ test('expired and legacy reports stay distinct; never expose unavailable links',
   assert.equal(f.projects().length,3,'older distinct drawing is not deleted');
   assert.equal(api.projectsForView(f.projects(),'history').length,1,'older variant goes to recoverable history');
 });
-test('report buttons use independent URLs and do not recreate removed oversized panel',()=>{
-  assert.match(source,/className="aceil-quote-reports"/);
-  assert.match(source,/aria-label","Незалежні звіти за об'єктом"/);
-  assert.match(source,/open\.href=variant\.url;open\.target="_blank"/);
-  assert.match(source,/navigator\.clipboard\.writeText\(variant\.url\)/);
-  assert.match(source,/Звіт ще не сформовано/);
-  assert.doesNotMatch(source,/aceilQuotePairPanel|data-project-quote-links|Два незалежні кошториси/);
+test('published links appear inside one two-choice dialog instead of a second list card or report panel',()=>{
+  assert.match(source,/className="aceil-variant-picker"/);
+  assert.match(source,/className="aceil-variant-choice-open"/);
+  assert.match(source,/reportLink\.href=report\.url;reportLink\.target="_blank"/);
+  assert.match(source,/navigator\.clipboard\.writeText\(report\.url\)/);
+  assert.match(source,/Звіт ще не опубліковано/);
+  assert.doesNotMatch(source,/aceil-quote-reports|data-project-quote-links|Два незалежні кошториси/);
 });
 
-
-test('one current alternative stays visible; older versions are in recovery history without deletion',()=>{
-  const all=[{id:'source',_dbId:'source',name:'Дім',report_token:'a'.repeat(20)}]
-    .concat(Array.from({length:5},(_,index)=>({
-      id:'copy-'+index,_dbId:'copy-'+index,_comparisonSourceId:'source',
-      name:'Дім — Копія '+(index+1),report_token:null
-    })));
-  const elements={},screen={cards:[]},search={value:''};
-  function element(tag){
-    return{
-      tagName:tag||'div',style:{},children:[],dataset:{},attrs:{},className:'',textContent:'',
-      appendChild(child){this.children.push(child);return child},
-      replaceChildren(...children){this.children=children},
-      insertBefore(child){this.children.push(child);if(child.id)elements[child.id]=child;return child},
-      setAttribute(name,value){this.attrs[name]=value},
-      getAttribute(name){return this.attrs[name]||''},
-      querySelectorAll(){return[]},
-      remove(){this.removed=true},
-      querySelector(selector){
-        if(selector==='[onclick*="editProject"]')return this.editAction||null;
-        if(selector==='.rp-project-actions')return this.actions||null;
-        if(selector==='.aceil-quote-reports')
-          return this.children.find(child=>child.className==='aceil-quote-reports')||null;
-        if(selector==='[data-project-archive]')
-          return this.children.find(child=>child.dataset&&child.dataset.projectArchive)||null;
-        if(selector==='[data-project-quote-copy]')
-          return this.children.find(child=>child.dataset&&child.dataset.projectQuoteCopy)||null;
-        return null;
-      },
-      scrollIntoView(){screen.scrolled=true}
-    };
-  }
-  const listElement=element('div'),parent=element('div');
-  listElement.parentNode=parent;elements.projectsList=listElement;elements.projSearch=search;
-  const c={Date,Math,JSON,Map,Set,WeakMap,Promise,console,
-    navigator:{onLine:true,clipboard:{async writeText(){}}},
-    document:{readyState:'complete',createElement:element,
-      getElementById(id){return elements[id]||null},
-      querySelectorAll(sel){return sel==='#projectsList .rp-project-card'?screen.cards:[]},
-      addEventListener(){}},
-    setTimeout(){return 0},clearTimeout(){},getProjects(){return all},
-    showToast(){},A_CEIL_ReportLinks:{status(id){
-      const p=all.find(item=>item.id===id);
-      return p&&p.report_token?
-        {status:'active',url:'https://a-ceil.pp.ua/r/'+p.report_token}:
-        {status:'none'};
-    }}
-  };
-  c.window=c;c['A·CEIL']={ProjectRepository:{list(){return all}}};
-  c.renderProjects=function(){
-    screen.cards=c.getProjects().filter(p=>p.name.includes(search.value)).map(p=>{
-      const card=element('div'),actions=element('div'),edit=element('button');
-      edit.attrs.onclick="editProject('"+p.id+"')";
-      card.actions=actions;card.editAction=edit;return card;
-    });
-  };
-  vm.createContext(c);vm.runInContext(source,c);
-  c.renderProjects();
-  function reportGroup(){
-    return screen.cards[0]&&screen.cards[0].children.find(child=>child.className==='aceil-quote-reports');
-  }
-  let group=reportGroup();
-  assert(group,'original card must show report group');
-  let grid=group.children.find(child=>child.children.length===2);
-  assert(grid,'there must be a responsive tile grid');
-  assert.equal(grid.children.length,2,'only the original and first alternative are initially visible');
-  assert.match(group.children[0].textContent,/2 варіанти/);
-  assert.match(group.children[0].textContent,/опубліковано 1/);
-  assert.equal(screen.cards.length,2,'only the current quote pair appears in normal Projects');
-  const history=group.children.find(child=>child.className==='aceil-quote-reports-history');
-  assert(history,'four old copies must be clearly accessible in the history section');
-  assert.match(history.textContent,/Попередні версії: 4/);
-  history.onclick();
-  assert.equal(screen.cards.length,4,'historical copies are available under Reserves');
-  assert.equal(all.length,6,'show/hide actions must not mutate the cloud/project collection');
-  c.A_CEIL_ProjectArchive.setView('active');
-  assert.equal(screen.cards.length,2,'returning to Projects only shows the current pair');
-  // Search may hide the source. Jump to its card should clear only the search,
-  // and must not require the user to guess which search filter was active.
-  search.value='Копія 5';c.renderProjects();
-  assert.equal(screen.cards.length,0);
-  assert.equal(c.A_CEIL_ProjectArchive.jumpToProject('source'),true);
-  assert.equal(search.value,'');
-  assert.equal(screen.cards.length,2);
-  assert.equal(screen.scrolled,true);
+test('current alternative is hidden as a separate object card while old copies stay in Reserves',()=>{
+  const f=fixture(),api=f.c.A_CEIL_ProjectArchive,origin=f.projects()[0];
+  const copies=Array.from({length:5},(_,i)=>({
+    id:'copy-'+(i+1),_dbId:'copy-'+(i+1),_comparisonSourceId:origin.id,
+    _cloudRevision:String(i+1),name:'Вітальня — Безвставочний'
+  }));
+  const all=[origin].concat(copies);
+  assert.deepEqual(Array.from(api.projectsForView(all,'active'),p=>p.id),[origin.id],
+    'the physical object must appear once in the active list');
+  assert.deepEqual(Array.from(api.projectsForView(all,'history'),p=>p.id),
+    copies.slice(0,4).map(p=>p.id),'historical versions are available, not deleted');
+  const variants=api.pairReports(origin,all);
+  assert.equal(variants.length,2);
+  assert.equal(variants[1].projectId,copies[4].id,'latest cloud revision is active quote');
+  assert.equal(all.length,6,'all original/alternate cloud records remain intact');
+  assert.equal(typeof api.openVariants,'function','object card has a direct two-option selector');
 });
-
 test('backup copies never become quote alternatives or spawn nested rescue chains',async()=>{
   const f=fixture(),api=f.c.A_CEIL_ProjectArchive;
   const source=f.projects()[0];
