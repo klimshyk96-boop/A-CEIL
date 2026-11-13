@@ -16,14 +16,14 @@ function fixture(){
       click(){events.click&&events.click()}
     };
   };
-  const items=['none','manual','all'].map(item);
+  const items=['none','manual','visible','all'].map(item);
   const choice=Object.fromEntries(items.map(x=>[x.dataset.value,x]));
   const title={textContent:''},checkboxListeners=[];
   const checkbox={checked:true,closest(){return {
     insertAdjacentElement(_,menu){nodes.set(menu.id,menu)}
   }},addEventListener(name,fn){if(name==='change')checkboxListeners.push(fn)},
     dispatchEvent(){checkboxListeners.forEach(fn=>fn());return true;}};
-  const select={value:'all',hidden:false,closest(){return null},dispatchEvent(){return true}};
+  const select={value:'all',hidden:false,options:[],closest(){return null},querySelector(q){return q==='option[value="visible"]'?this.options.find(o=>o.value==='visible')||null:null},appendChild(o){this.options.push(o)},dispatchEvent(){return true}};
   const sheet={querySelector(){return null}};
   const modal={querySelector(){return sheet}};
   nodes.set('reportSettingsModal',modal);nodes.set('rs_diagonals',checkbox);nodes.set('rsDiagMode',select);
@@ -36,6 +36,7 @@ function fixture(){
     addEventListener(name,fn){listeners[name]=fn},
     createElement(tag){
       if(tag==='style')return {id:'',textContent:''};
+      if(tag==='option')return {value:'',textContent:''};
       if(tag==='div')return {id:'',className:'',hidden:false,innerHTML:'',children:[],
         querySelector(s){if(s==='.rsdiag-title')return title;const m=s.match(/data-value="([^"]+)"/);return m?choice[m[1]]:null},
         querySelectorAll(s){return s==='[data-value]'?items:[]},
@@ -53,7 +54,7 @@ function fixture(){
 
 test('explicit no-diagonals button disables both lines and text in report settings',()=>{
   const f=fixture();
-  assert.equal(f.items.length,3);
+  assert.equal(f.items.length,4);
   assert.equal(f.menu.hidden,false,'option must remain accessible while disabled');
   assert.equal(f.choice.all.classList.active,true);
   f.choice.none.click();
@@ -65,6 +66,10 @@ test('explicit no-diagonals button disables both lines and text in report settin
   assert.equal(f.checkbox.checked,true);
   assert.equal(f.select.value,'manual');
   assert.deepEqual(f.written.at(-1),{diagonals:true,diagMode:'manual'});
+  f.choice.visible.click();
+  assert.equal(f.select.value,'visible');
+  assert.deepEqual(f.written.at(-1),{diagonals:true,diagMode:'visible'});
+  assert.equal(f.choice.visible.classList.active,true);
   f.choice.all.click();
   assert.deepEqual(f.written.at(-1),{diagonals:true,diagMode:'all'});
 });

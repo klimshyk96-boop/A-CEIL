@@ -223,19 +223,26 @@
       if(pendingId!=null){
         window.__A·CEILPendingMultiRoomReportId=null;
         try{
-          if(typeof window.saveCurrentRoom==='function'&&
-             typeof _activeRoomIdx!=='undefined'&&_activeRoomIdx!==null){
-            Promise.resolve(window.saveCurrentRoom()).catch(function(e){
-              try{
-                if(window.A·CEIL&&window.A·CEIL.DebugLog){
-                  window.A·CEIL.DebugLog.warn('report_presave_failed',{
-                    objectId:pendingId,
-                    message:e&&e.message?e.message:String(e),
-                    source:'saveToPhone'
-                  });
-                }
-              }catch(_){window.__diagSilent&&window.__diagSilent(_)}
-            });
+          // A report of the ACTIVE room must use the newest local snapshot.
+          // Do not race a cloud request while rendering; cloud autosave remains
+          // independently queued. If the local save fails, never silently
+          // present an older copy under the same project name.
+          var activeId=(typeof _activeObjectId!=='undefined')?_activeObjectId:null;
+          var activeRoom=window._activeRoomId;
+          if(typeof window.saveCurrentRoom==='function'&&activeRoom!=null&&
+             typeof _activeRoomIdx!=='undefined'&&_activeRoomIdx!==null&&
+             activeId!=null&&String(activeId)===String(pendingId)){
+            var savedLatest=false;
+            try{
+              savedLatest=await window.saveCurrentRoom({silent:true,skipCloud:true});
+            }catch(e){
+              try{window.__diagSilent&&window.__diagSilent(e,'report_presave_failed')}catch(_){}
+            }
+            if(!savedLatest){
+              if(typeof showToast==='function')
+                showToast('Не вдалося зберегти актуальну кімнату для звіту. Повторіть збереження.');
+              return;
+            }
           }
           var obj=findReportObject(pendingId);
           if(obj&&Array.isArray(obj.rooms)&&obj.rooms.length&&

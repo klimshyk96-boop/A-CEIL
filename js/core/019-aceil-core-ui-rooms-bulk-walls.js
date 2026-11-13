@@ -516,9 +516,14 @@ function _wallSideEndName(m){return N(((Number(m?.sideIndex)||0)+1)%pts.length)}
     var rs=typeof _loadRS==="function"?_loadRS():(window.reportSettings||{});
     if(rs.diagonals!==true) return [];
 
-    /* У режимі "Всі" діагоналі показуються лише окремим блоком у звіті.
-       На план їх не накладаємо, інакше складна кімната стає нечитабельною. */
+    /* "Усі можливі" залишається текстовим переліком; WYSIWYG "Як на
+       кресленні" відтворює ТІЛЬКИ обрані в редакторі пари.
+       Режим не створює нових вимірів або діагоналей. */
     if((rs.diagMode||"manual")==="all") return [];
+    if((rs.diagMode||"manual")==="visible")
+      return (Array.isArray(diagonals)?diagonals:[]).filter(function(d){
+        return Array.isArray(d)&&d.length>=2&&pts[d[0]]&&pts[d[1]];
+      }).map(function(d){return [Number(d[0]),Number(d[1])];});
 
     /* У режимі "Ручні" на плані залишаються тільки підтверджені заміри. */
     return _getReportDiagPairs({
@@ -527,7 +532,13 @@ function _wallSideEndName(m){return N(((Number(m?.sideIndex)||0)+1)%pts.length)}
       lengths:lengths,
       diagonals:diagonals,
       diagonalOverrides:diagonalOverrides
-    },"manual").map(function(d){return[d.a,d.b];});
+    },"manual").map(function(d){
+      var original=(Array.isArray(diagonals)?diagonals:[]).find(function(pair){
+        return Array.isArray(pair)&&Math.min(Number(pair[0]),Number(pair[1]))===d.a&&
+          Math.max(Number(pair[0]),Number(pair[1]))===d.b;
+      });
+      return original?[Number(original[0]),Number(original[1])]:[d.a,d.b];
+    });
   }catch(e){return[];}
 }
 window._formatReportCm=window._formatReportCm||function(value){
@@ -747,6 +758,17 @@ function _getReportDiagPairs(data,mode){
     pairs.push({key:key,a:x,b:y,value:value});
   }
 
+  if(mode==='visible'){
+    /* Mirror precisely the pairs selected in the working drawing; calculated
+       values are not presented as field-confirmed measurements. */
+    (data.diagonals||[]).forEach(function(d){
+      // A pair already selected in the editor is authoritative for this
+      // display-only mode; do not silently hide it due to a geometry hint.
+      if(Array.isArray(d)&&d.length>=2)add(d[0],d[1],true);
+    });
+    return pairs;
+  }
+
   if(mode==='all'){
     /* Усі можливі — усі внутрішні діагоналі, що не проходять крізь стіни
        та не виходять за межі контуру. */
@@ -779,8 +801,17 @@ function _getReportDiagPairs(data,mode){
 }
 function _getReportDiagLines(data,mode){
   return _getReportDiagPairs(data,mode).map(function(d){
-    var key=NL(d.a,data)+NL(d.b,data),len=d.value;
-    return key+' — '+window._formatReportCm(len)+' см ('+(len/100).toFixed(2)+' м)';
+    // Report labels must keep the original endpoint order shown on canvas:
+    // EB remains EB, never silently becomes BE after pair normalization.
+    var original=mode!=='all'&&(data.diagonals||[]).find(function(pair){
+      return Array.isArray(pair)&&Math.min(Number(pair[0]),Number(pair[1]))===d.a&&
+        Math.max(Number(pair[0]),Number(pair[1]))===d.b;
+    });
+    var key=original?NL(Number(original[0]),data)+NL(Number(original[1]),data):
+      NL(d.a,data)+NL(d.b,data),len=d.value;
+    var measured=_reportDiagOverrideValue((data||{}).diagonalOverrides,d.a,d.b)>0;
+    var approximate=mode==='visible'&&!measured?'≈ ':'';
+    return key+' — '+approximate+window._formatReportCm(len)+' см ('+(len/100).toFixed(2)+' м)';
   }).concat(window.A·CEILCurveGeometryV306?window.A·CEILCurveGeometryV306.diagonalRows(data).map(function(d){return d.label+' — '+window._formatReportCm(d.value)+' см (до точки кривої)'}):[]);
 }
 function getCurrentReportDiagLines(mode){return circleMode?[]:_getReportDiagLines({pts:pts,realPts:realPts,lengths:lengths,wallTypes:wallTypes,arcPoints:arcPoints,diagonals:diagonals,diagonalOverrides:diagonalOverrides},mode||"manual")}function touchDistance(t1,t2){return Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY)}function resetZoom(){viewScale=1,viewOffsetX=0,viewOffsetY=0,draw()}function segmentsIntersect(a,b,c,d){function ccw(p1,p2,p3){return(p3.y-p1.y)*(p2.x-p1.x)>(p2.y-p1.y)*(p3.x-p1.x)}return ccw(a,c,d)!=ccw(b,c,d)&&ccw(a,b,c)!=ccw(a,b,d)}function pointInPolygon(pt,poly){return A·CEILUtils.pointInPolygon(pt,poly)}function isValidInnerDiagonal(i,j){const a=pts[i],b=pts[j];for(let k=0;k<pts.length;k++){const l=(k+1)%pts.length;if(k!==i&&k!==j&&l!==i&&l!==j&&segmentsIntersect(a,b,pts[k],pts[l]))return!1}return pointInPolygon({x:(a.x+b.x)/2,y:(a.y+b.y)/2},pts)}function autoDiagonals(){if(!closed)return;let h="";for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const diff=Math.abs(i-j);if(1===diff||diff===pts.length-1)continue;if(!isValidInnerDiagonal(i,j))continue;const a=NL(i),b=NL(j);h+=`<label style="display:block;margin:8px 0"><input type="checkbox" ${diagonals.some(d=>d[0]===i&&d[1]===j||d[0]===j&&d[1]===i)?"checked":""}\nonchange="toggleDiagPair(${i},${j},this.checked)">\n${a}${b}\n</label>`}if(window.A·CEILCurveGeometryV306)h+=window.A·CEILCurveGeometryV306.controlDiagonalMenu();document.getElementById("diagSelector").innerHTML=h||"Немає доступних діагоналей",document.getElementById("diagModal").classList.add("open")}function toggleDiagPair(a,b,state){const idx=diagonals.findIndex(d=>d[0]===a&&d[1]===b||d[0]===b&&d[1]===a);if(state&&idx<0){let currentLen=Math.hypot(pts[b].x-pts[a].x,pts[b].y-pts[a].y);realPts.length&&realPts[a]&&realPts[b]&&(currentLen=Math.hypot(realPts[b].x-realPts[a].x,realPts[b].y-realPts[a].y)),setTimeout(()=>editDiagonal(N(a)+N(b),Math.round(currentLen),a,b),80)}if(!state&&idx>=0){const key=N(Math.min(a,b))+N(Math.max(a,b));diagonals.splice(idx,1),delete diagonalOverrides[key]}updateDiagList(),updateChecks(),draw()}function updateChecks(){

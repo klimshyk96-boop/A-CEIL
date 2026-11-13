@@ -12,6 +12,10 @@ node --check js/projects/230-aceil-project-archive.js
 node --check js/projects/238-aceil-conflict-resolver.js
 node --check js/canvas/135-aceil-curve-fixed-ends.js
 node --check js/reports/237-aceil-image-report-pdf.js
+node --check js/core/019-aceil-core-ui-rooms-bulk-walls.js
+node --check js/canvas/renderer.js
+node --check js/reports/224-aceil-report-diagonals-menu-fix.js
+node --check js/reports/104-aceil-multiroom-report-sandbox-fix.js
 node --check js/nomenclature/163-aceil-price-stability.js
 node --check js/rooms/multiroom-lifecycle.js
 node --check js/auth/033-aceil-supabase-auth-offline-access.js
@@ -36,6 +40,7 @@ for name in \
   report-publication-session \
   report-pdf-export \
   report-diagonal-choices \
+  diagonal-visible-report \
   sync-conflict-resolver \
   legacy-report-privacy \
   pwa-icon \
