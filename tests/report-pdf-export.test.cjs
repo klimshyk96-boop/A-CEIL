@@ -45,6 +45,19 @@ test('approved PNG image yields downloadable multi-page A4 PDF, never a PNG link
   assert.match(f.files[0].href,/^blob:pdf/);
   assert.equal(f.urls.at(-1).type,'application/pdf');
 });
+
+test('each new room begins on its own A4 sheet; legacy image still paginates',async()=>{
+  const f=fixture(),url='data:image/png;base64,aGVsbG8=';
+  assert.deepEqual(Array.from(f.api.pageSlices(1200,3600,[1100,2200]),p=>[p.y,p.height]),
+    [[0,1100],[1100,1100],[2200,1400]]);
+  assert.deepEqual(Array.from(f.api.pageSlices(1200,3600,[],null),p=>p.y),
+    [0,1738,3476], 'legacy reports keep safe fixed-height fallback without pixel access');
+  await f.api.createBlob(url,{roomStartsPx:[1100,2200]});
+  assert.equal(f.pdfs[0].pages,3);
+  assert.equal(f.pdfs[0].images.length,3);
+  assert(f.pdfs[0].images.every(p=>p.h>0&&p.h<=281));
+});
+
 test('report UIs expose one-tap PDF downloads for iPhone, desktop and public viewer',()=>{
   const mobile=read('js/reports/172-aceil-plan-report-pwa.js');
   const desktop=read('js/reports/091-aceil-pdf-cloud-report.js');
