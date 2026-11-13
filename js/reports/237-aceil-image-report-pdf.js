@@ -36,10 +36,8 @@
     return (stem||"A-CEIL-report")+".pdf";
   }
 
-  // Build room-aware pages. A fixed-width A4 cut used to create almost-empty
-  // spill pages when the last ~2-8% of one room exceeded the printable height.
-  // Keep every room independent; scale mild overflows to one A4 page and
-  // balance genuinely long rooms across multiple readable pages.
+  // Room-aware PDF pagination. Fill A4 sheets instead of balancing content into
+  // two half-empty pages. Preserve a modest fit-to-page scale for small overflows.
   function whitespaceNear(source,width,ideal,minY,maxY){
     if(!source||maxY-minY<16)return Math.round(ideal);
     var sample=document.createElement("canvas");
@@ -84,28 +82,32 @@
     boundaries.push(height);
     var pages=[];
     for(var index=0;index<boundaries.length-1;index++){
-      var from=boundaries[index],to=boundaries[index+1],roomHeight=to-from;
-      // Up to 18% shrinkage avoids a page consisting of a few trailing lines.
-      // For longer room sections split them into equally occupied sheets.
-      var count=Math.max(1,Math.ceil(roomHeight/(maxHeight*1.18)));
-      if(pages.length+count>120)throw new Error("Звіт завеликий для PDF");
+      var from=boundaries[index],to=boundaries[index+1];
       var cursor=from;
-      for(var remaining=count;remaining>0;remaining--){
-        var finish=to;
-        if(remaining>1){
-          var desired=cursor+(to-cursor)/remaining;
-          var tolerance=Math.min(maxHeight*.08,(to-cursor)/remaining*.13);
-          finish=whitespaceNear(source,width,desired,
-            Math.round(desired-tolerance),Math.round(desired+tolerance));
-          finish=Math.max(cursor+1,Math.min(to-(remaining-1),Math.round(finish)));
-        }
-        var sliceHeight=finish-cursor;
-        pages.push({
-          y:cursor,height:sliceHeight,
-          scale:Math.min(1,maxHeight/sliceHeight)
-        });
+      // Never split an entire room into half-filled pages just to make them
+      // equally long. Fill the first A4 before starting the next one.
+      // A modest (<18%) uniform reduction avoids nearly empty orphan sheets.
+      while(to-cursor>maxHeight*1.22){
+        if(pages.length>=119)throw new Error("Звіт завеликий для PDF");
+        var desired=cursor+maxHeight;
+        var tail=to-desired;
+        // Reserve some visible content on the next sheet if the tail is tiny.
+        if(tail<maxHeight*.28)desired-=(maxHeight*.28-tail);
+        var lower=Math.max(cursor+maxHeight*.82,desired-maxHeight*.075);
+        var upper=Math.min(to-maxHeight*.22,desired+maxHeight*.025);
+        var finish=lower<upper
+          ?whitespaceNear(source,width,desired,Math.round(lower),Math.round(upper))
+          :Math.round(desired);
+        finish=Math.max(cursor+1,Math.min(to-1,Math.round(finish)));
+        var heightPx=finish-cursor;
+        pages.push({y:cursor,height:heightPx,scale:Math.min(1,maxHeight/heightPx)});
         cursor=finish;
       }
+      if(cursor<to){
+        var lastHeight=to-cursor;
+        pages.push({y:cursor,height:lastHeight,scale:Math.min(1,maxHeight/lastHeight)});
+      }
+      if(pages.length>120)throw new Error("Звіт завеликий для PDF");
     }
     return pages;
   }
