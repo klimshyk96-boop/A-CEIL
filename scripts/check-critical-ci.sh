@@ -27,6 +27,7 @@ for name in \
   demo-existing-user \
   support-contacts \
   report-link-snapshots \
+  report-publication-session \
   legacy-report-privacy \
   pwa-icon \
   stability-regression \
