@@ -33,10 +33,14 @@ function signature(row){
   var state=parsedState(row.state);
   if(state===null)return "";
   var result={state:ordered(state)};
-  ["name","addr","phone","comment","area","per","in_corners","out_corners","thumb",
-    "order_source","deal_status","report_token"].forEach(function(k){
-    result[k]=String(row[k]||"");
-  });
+  // Canonicalize local inC/outC against the Supabase in_corners/out_corners.
+  // Report/CRM metadata is not written by the drawing sync queue.
+  ["name","addr","phone","comment","area","per","in_corners","out_corners","thumb"]
+    .forEach(function(k){
+      var value=k==="in_corners"?(row.in_corners??row.inC):
+        k==="out_corners"?(row.out_corners??row.outC):row[k];
+      result[k]=String(value??"");
+    });
   return JSON.stringify(result);
 }
 function supportedLocal(p){return p&&p._dbId&&repo()&&typeof window.setPendingQueue==="function"}
@@ -96,6 +100,25 @@ function el(tag,text,css){
   if(css)node.style.cssText=css;
   return node;
 }
+function detailOf(local,cloud){
+  var a=parsedState(local&&local.state),b=parsedState(cloud&&cloud.state);
+  if(!a||!b)return "Не вдалося прочитати одну з версій. Автоматичне узгодження заборонено.";
+  var ar=Array.isArray(local&&local.rooms)?local.rooms:Array.isArray(a.rooms)?a.rooms:null,
+      br=Array.isArray(b.rooms)?b.rooms:null;
+  if(!ar||!br)return "Є відмінності в кресленні або реквізитах. Обидва оригінали залишаються без змін.";
+  var dict=new Map(br.filter(Boolean).map(function(room){return[String(room.id),room]}));
+  var changed=ar.filter(function(room){
+    var other=dict.get(String(room.id));
+    return !other||JSON.stringify(ordered(room))!==JSON.stringify(ordered(other));
+  }).map(function(room){return String(room.name||"Кімната")});
+  br.forEach(function(room){
+    if(room&&!ar.some(function(other){return other&&String(other.id)===String(room.id)}))
+      changed.push(String(room.name||"Нова кімната")+" (лише в хмарі)");
+  });
+  return "Кімнат: тут "+ar.length+", у хмарі "+br.length+
+    (changed.length?". Відмінності: "+changed.slice(0,3).join(", ")+
+      (changed.length>3?" та ще "+(changed.length-3):"")+".":"; креслення кімнат збігаються, перевіряємо реквізити.");
+}
 function notice(root,message,problem){
   var line=root.querySelector("[data-resolve-status]");
   if(line){line.textContent=message;line.style.color=problem?"#b91c1c":"#166534"}
@@ -113,29 +136,32 @@ async function open(id){
   openInFlight.add(key);
   var section=host.querySelector(".aceil-conflict-resolver");
   if(!section){section=el("section");section.className="aceil-conflict-resolver";host.appendChild(section)}
-  section.style.cssText="margin-top:12px;border-top:1px solid #fbbf24;padding-top:12px;display:grid;gap:9px";
+  section.style.cssText="margin-top:10px;padding-top:10px;display:grid;gap:8px;font-size:13px;line-height:1.35;box-sizing:border-box;max-width:100%;min-width:0";
   section.replaceChildren(el("strong","Звіряємо дві версії креслення…"));
   try{
     var cloud=await remoteRecord(accountAtStart,key);
     var localSignature=signature(local),cloudSignature=signature(cloud),equal=!!localSignature&&localSignature===cloudSignature,
       readAt=cloud.sync_revision,downloaded=false;
     section.replaceChildren();
-    section.appendChild(el("strong",equal?"✅ Креслення збігаються":"⚠️ Є дві різні версії креслення"));
-    section.appendChild(el("div","Серверна ревізія: "+readAt+" · Локальний запис: "+(local._cloudRevision||"без ревізії"),
+    section.appendChild(el("strong",equal?"✅ Креслення збігаються":"Є відмінності між локальною та хмарною версіями"));
+    section.appendChild(el("div","Хмара: ревізія "+readAt+" · Телефон: "+(local._cloudRevision||"без ревізії"),
       "font-size:12px;color:#78350f;overflow-wrap:anywhere"));
     section.appendChild(el("p",equal
       ?"Можна безпечно відновити зв'язок із хмарою: креслення й реквізити вже однакові."
-      :"Спочатку збережіть обидві версії у файл JSON. Потім виберіть, яку версію залишити. Інша версія залишиться у завантаженому файлі.",
+      :"Ревізії відрізняються — це не обов'язково другий пристрій. Перш ніж обирати версію, збережіть резервний JSON.",
       "font-size:13px;line-height:1.45;margin:2px 0"));
+    if(!equal)section.appendChild(el("p",detailOf(local,cloud),
+      "font-size:12px;color:#78350f;margin:0;overflow-wrap:anywhere"));
     var status=el("div","", "font-size:12px;font-weight:700;line-height:1.4");status.dataset.resolveStatus="1";section.appendChild(status);
     function btn(label){
-      var b=el("button",label,"padding:11px 12px;border:1px solid #d97706;border-radius:10px;background:#fff;color:#78350f;font-weight:800;text-align:left;min-height:44px");
+      var b=el("button",label,"padding:10px 12px;border:1px solid #d97706;border-radius:10px;background:#fff;color:#78350f;font-size:13px;line-height:1.25;font-weight:750;text-align:left;min-height:42px;max-width:100%;white-space:normal");
       b.type="button";section.appendChild(b);return b;
     }
     if(!equal){
-      var backup=btn("⬇ Завантажити обидві версії (JSON)");
+      var backup=btn("⬇ Зберегти обидві версії (JSON)");
       backup.onclick=function(){
-        try{downloadBundle(local,cloud);downloaded=true;notice(section,"Після збереження файлу можна вибрати версію.",false)}
+        try{downloadBundle(local,cloud);downloaded=true;notice(section,"Перевірте збереження JSON у «Файлах» / «Завантаженнях».",false);
+          if(mine)mine.hidden=false;if(theirs)theirs.hidden=false;
         catch(e){notice(section,"Помилка завантаження: "+String(e.message||e),true)}
       };
     }
@@ -165,8 +191,8 @@ async function open(id){
         finally{equalButton.disabled=false}
       };
     }else{
-      var mine=btn("Залишити моє креслення у хмарі");
-      var theirs=btn("Залишити хмарне креслення на пристрої");
+      var mine=btn("Замінити хмару локальним кресленням");
+      var theirs=btn("Замінити локальне креслення хмарним");mine.hidden=true;theirs.hidden=true;
       var resolving=false;
       async function perform(choice,button){
         if(resolving)return;
