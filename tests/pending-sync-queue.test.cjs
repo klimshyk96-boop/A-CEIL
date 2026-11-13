@@ -295,3 +295,42 @@ test('remote room revision change prevents destructive write',async()=>{
   assert.equal(f.requests.length,1,'newer revision must not be overwritten');
   assert.equal(f.c.getPendingQueue()[0]._manualConflictRequired,true);
 });
+
+
+test('single-room alternative quote retains original lineage after canvas autosave stripped it from state',async()=>{
+  const f=fixture([{
+    id:'local-copy',name:'Кухня — Копія',_comparisonSourceId:'original-cloud-id',
+    _recoverySourceId:'recovery-cloud-id',
+    state:JSON.stringify({projectType:'room',closed:true,pts:[{x:0},{x:1},{x:2}]}),
+    _dirty:true
+  }]);
+  f.enqueue('local-copy');
+  const done=f.c.flushPendingQueue();await tick();
+  assert.equal(f.requests.length,1,'one cloud insert for local quote');
+  assert.equal(f.requests[0].method,'insert');
+  assert.equal(f.requests[0].payload.state.comparisonSourceId,'original-cloud-id',
+    'lineage must follow the project record, not the current canvas state');
+  assert.equal(f.requests[0].payload.state.recoverySourceId,'recovery-cloud-id');
+  assert.equal(f.requests[0].payload.state.multiRoom,undefined,
+    'single-room copy must not accidentally become an apartment');
+  f.reply(0,'copy-cloud-id');
+  assert.equal(await done,true);
+  assert.equal(f.items()[0]._comparisonSourceId,'original-cloud-id');
+  assert.equal(f.items()[0]._dbId,'copy-cloud-id');
+});
+test('single-room copy also preserves lineage through an UPDATE after offline edits',async()=>{
+  const f=fixture([{
+    id:'copy-cloud-id',_dbId:'copy-cloud-id',_cloudRevision:'7',
+    name:'Соборна — Копія',_comparisonSourceId:'original-cloud-id',
+    state:JSON.stringify({projectType:'room',closed:true,lengths:[300,400,300,400]}),
+    _dirty:true
+  }]);
+  f.enqueue('copy-cloud-id');
+  const done=f.c.flushPendingQueue();await tick();
+  assert.equal(f.requests.length,1);
+  assert.equal(f.requests[0].method,'update');
+  assert.equal(f.requests[0].filters.sync_revision,'7','CAS protects original cloud revision');
+  assert.equal(f.requests[0].payload.state.comparisonSourceId,'original-cloud-id');
+  f.reply(0,'copy-cloud-id');
+  assert.equal(await done,true);
+});
