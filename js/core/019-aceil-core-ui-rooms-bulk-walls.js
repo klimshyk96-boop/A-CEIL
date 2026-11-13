@@ -756,8 +756,9 @@ function _getReportDiagPairs(data,mode){
     /* Mirror precisely the pairs selected in the working drawing; calculated
        values are not presented as field-confirmed measurements. */
     (data.diagonals||[]).forEach(function(d){
-      if(Array.isArray(d)&&d.length>=2&&_isValidInnerDiagForData(
-        Number(d[0]),Number(d[1]),poly))add(d[0],d[1],true);
+      // A pair already selected in the editor is authoritative for this
+      // display-only mode; do not silently hide it due to a geometry hint.
+      if(Array.isArray(d)&&d.length>=2)add(d[0],d[1],true);
     });
     return pairs;
   }
