@@ -104,6 +104,25 @@ const rows=()=>[
         return {hidden,found,search:search.value,restored:!!document.querySelector('.aceil-quote-reports'),projects:window.getProjects().length};
       },baseId);
       assert.deepEqual(jump,{hidden:true,found:true,search:'',restored:true,projects:6});
+      if(width===390){
+        // Real browser and real bundled jsPDF: verify download from the image,
+        // without any account, cloud write or external conversion service.
+        const downloadWait=page.waitForEvent('download',{timeout:20000});
+        await page.evaluate(async()=>{
+          const canvas=document.createElement('canvas');
+          canvas.width=800;canvas.height=1900;
+          const ctx=canvas.getContext('2d');
+          ctx.fillStyle='#fff';ctx.fillRect(0,0,800,1900);
+          ctx.fillStyle='#0f172a';ctx.font='bold 32px Arial';
+          ctx.fillText('A-CEIL PDF REPORT',50,110);
+          await window.A_CEIL_ReportPdf.download(canvas.toDataURL('image/png'),'A-CEIL-qa-report.png');
+        });
+        const file=await downloadWait;
+        assert.equal(file.suggestedFilename(),'A-CEIL-qa-report.pdf');
+        const bytes=fs.readFileSync(await file.path());
+        assert.equal(bytes.subarray(0,5).toString(),'%PDF-','download must be a valid PDF, not PNG with a new extension');
+        assert(bytes.length>1000);
+      }
       assert.equal(errors.length,0,'unexpected page errors: '+errors.join(' | '));
       console.log('PASS',JSON.stringify({width,reportTiles:2,expandedCount:6,restoreSearch:true,overflow:false,missingAssets:missing.length}));
       await page.close();
