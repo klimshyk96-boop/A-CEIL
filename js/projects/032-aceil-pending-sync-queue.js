@@ -235,6 +235,37 @@ const PENDING_KEY = "ceiling_pendingSync";
     try { const st = typeof raw === "string" ? JSON.parse(raw || "{}") : (raw || {}); return Array.isArray(st.rooms) ? st.rooms : null; }
     catch (_) { return null; }
   }
+  // An acknowledged write can be lost to Safari during a tab switch or a
+  // network timeout. The cloud may then hold the SAME drawing at a later
+  // revision. Verify every editable field before treating this as conflict.
+  // Never auto-rebase when even one field differs.
+  function canonical(value) {
+    if(Array.isArray(value))return value.map(canonical);
+    if(value&&typeof value==="object") {
+      const out={};
+      Object.keys(value).sort().forEach(key=>{out[key]=canonical(value[key])});
+      return out;
+    }
+    return value;
+  }
+  function identicalEditable(payload,row){
+    if(!payload||!row||row.sync_revision==null)return false;
+    let remoteState=row.state;
+    try{if(typeof remoteState==="string")remoteState=JSON.parse(remoteState)}catch(_){return false}
+    if(!remoteState||typeof remoteState!=="object")return false;
+    const columns=["name","addr","phone","comment","area","per",
+      "in_corners","out_corners","thumb"];
+    if(!columns.every(key=>String(payload[key]??"")===String(row[key]??"")))return false;
+    return JSON.stringify(canonical(payload.state))===JSON.stringify(canonical(remoteState));
+  }
+  async function confirmedIdenticalInCloud(session,dbId,payload){
+    const columns="id,sync_revision,name,addr,phone,comment,area,per,in_corners,out_corners,thumb,state";
+    const res=await runQuery(session.client.from("projects").select(columns).eq("id",dbId).single(),
+      "Безпечна перевірка однакових версій");
+    if(!sameSession(session))throw new Error("Акаунт змінився під час перевірки");
+    if(res.error)throw res.error;
+    return identicalEditable(payload,res.data)?res.data:null;
+  }
   /* Rooms edited on another device must survive this device's whole-project
      UPDATE. Compare the live cloud rows with the last cloud state this device
      saw (_cloudBase): a room changed only remotely is adopted, a room changed on
@@ -287,7 +318,16 @@ const PENDING_KEY = "ceiling_pendingSync";
         if (!expectedRevision) {
           throw concurrentEdit("Немає перевіреної серверної ревізії проєкту. Локальні правки збережені; необхідне ручне узгодження перед записом.");
         }
-        merge = await mergeRemoteRooms(session, local, payload, dbId);
+        try {
+          merge = await mergeRemoteRooms(session, local, payload, dbId);
+        } catch (error) {
+          if(error&&error.aceilConcurrentEdit){
+            const confirmed=await confirmedIdenticalInCloud(session,dbId,payload);
+            if(confirmed)return {row:confirmed,sentSignature,merge:null,
+              sentRooms:payload.state&&payload.state.rooms,identicalWithoutWrite:true};
+          }
+          throw error;
+        }
         if (!sameSession(session)) throw new Error("Обліковий запис змінився під час перевірки хмари");
         // Two devices changed the same room since the last common cloud state.
         // Never silently prefer this device and overwrite the other drawing.
@@ -312,7 +352,10 @@ const PENDING_KEY = "ceiling_pendingSync";
           // Distinguish with a read before ever offering recovery; do not INSERT.
           const check = await runQuery(session.client.from("projects").select("sync_revision").eq("id", dbId).single(), "Перевірка конфлікту проєкту");
           if (check && check.data && check.data.sync_revision != null) {
-            throw concurrentEdit("Проєкт змінено на іншому пристрої під час збереження. Локальні правки збережені; хмарну версію не перезаписано.");
+            const confirmed=await confirmedIdenticalInCloud(session,dbId,payload);
+            if(confirmed)return {row:confirmed,sentSignature,merge:null,
+              sentRooms:payload.state&&payload.state.rooms,identicalWithoutWrite:true};
+            throw concurrentEdit("Хмарна версія змінилася після останнього підтвердження. Локальні правки збережені; хмарну версію не перезаписано.");
           }
           if (check && check.error && !isMissingRowError(check.error)) throw check.error;
           const missing = new Error("Проєкт відсутній у хмарі або доступ відкликано. Локальні зміни збережено. Відновіть проєкт із кошика вручну.");

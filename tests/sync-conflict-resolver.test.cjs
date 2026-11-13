@@ -71,14 +71,28 @@ test('missing revision resolves automatically only when local and cloud contents
   assert.equal(f.queue().length,0);
   assert.equal(f.flushes(),0,'no remote write for exactly equal project');
 });
+test('same drawing with local inC/outC aliases and cloud-only metadata is not a false conflict',async()=>{
+  const f=fixture({local:{inC:6,outC:2},
+    cloud:{in_corners:6,out_corners:2,report_token:'share-token',deal_status:'new'}});
+  assert.equal(await f.api.open('project-1'),true);
+  assert.equal(f.buttons().length,1);
+  await f.buttons()[0].onclick();
+  assert.equal(f.local()._cloudRevision,'7');
+  assert.equal(f.queue().length,0);
+  assert.equal(f.flushes(),0,'only local acknowledgement; no cloud write');
+});
 test('different versions cannot overwrite without a downloaded backup and explicit selection',async()=>{
   const f=fixture({cloud:{state:{closed:true,lengths:[333,300,300,300]}}});
   assert.equal(await f.api.open('project-1'),true);
   let buttons=f.buttons();assert.equal(buttons.length,3);
+  assert.equal(buttons[1].hidden,true,'dangerous choices remain hidden until backup');
+  assert.equal(buttons[2].hidden,true);
   await buttons[1].onclick();
   assert.equal(f.local()._cloudRevision,null,'no changes without backup');
   assert.equal(f.flushes(),0);
   buttons[0].onclick();assert.equal(f.downloads(),1);
+  assert.equal(buttons[1].hidden,false);
+  assert.equal(buttons[2].hidden,false);
   assert.equal(await buttons[1].onclick(),undefined);
   assert.equal(f.flushes(),1,'queued CAS save resumes only after verified download and manual choice');
   assert.equal(f.queue().length,0);
