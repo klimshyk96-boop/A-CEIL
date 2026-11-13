@@ -36,72 +36,86 @@ const rows=()=>[
       },rows());
       const selector='#projectsList .rp-project-card';
       await page.waitForSelector(selector);
+      // A single visible object card represents the original and the
+      // independent alternative in cloud storage.
+      const first=page.locator('#projectsList .rp-project-card').first();
       let data=await page.evaluate(()=>{
         const cards=[...document.querySelectorAll('#projectsList .rp-project-card')];
-        const group=cards[0]?.querySelector('.aceil-quote-reports');
-        const tiles=[...(group?.querySelectorAll('.aceil-quote-report-option')||[])];
-        const openLinks=tiles.map(tile=>tile.querySelector('a[href]')?.href||'');
-        const grid=group?.querySelector('.aceil-quote-report-option')?.parentElement;
-        const rect=group?.getBoundingClientRect();
-        const cardRect=cards[0]?.getBoundingClientRect();
-        const actionsRect=cards[0]?.querySelector('.rp-project-actions')?.getBoundingClientRect();
+        const badge=cards[0]?.querySelector('.aceil-variants-badge');
         const modal=document.querySelector('#projectsModal .modal')||document.getElementById('projectsModal');
-        return {
-          count:cards.length,hasGroup:!!group,visible:tiles.length,
-          history:group?.querySelector('.aceil-quote-reports-history')?.textContent||'',
-          statuses:tiles.map(tile=>tile.textContent),
-          links:openLinks,
+        return {count:cards.length,badge:badge?.textContent||'',hasOldPanel:!!document.querySelector('.aceil-quote-reports'),
           bodyOverflow:document.documentElement.scrollWidth>innerWidth+2,
-          width:innerWidth,
-          groupBox:rect?{left:rect.left,right:rect.right,width:rect.width,top:rect.top}:null,
-          cardBox:cardRect?{left:cardRect.left,right:cardRect.right,width:cardRect.width}:null,
-          gridWidth:grid?.getBoundingClientRect().width||0,
-          actionBottom:actionsRect?actionsRect.bottom:null,
-          modalBox:{left:modal.getBoundingClientRect().left,right:modal.getBoundingClientRect().right}
+          cardBox:cards[0]?.getBoundingClientRect().toJSON(),
+          modalBox:modal.getBoundingClientRect().toJSON()};
+      });
+      assert.equal(data.count,1,'one physical object = one card, never two separate quote cards');
+      assert.match(data.badge,/2 варіанти/);
+      assert.equal(data.hasOldPanel,false,'no confusing two-report panel under the card');
+      assert.equal(data.bodyOverflow,false,'no horizontal page overflow');
+      assert(data.cardBox.left>=-2&&data.cardBox.right<=width+2,'project card fits viewport');
+      assert(data.modalBox.left>=-2&&data.modalBox.right<=width+2,'project modal fits viewport');
+      await page.screenshot({path:path.join(screenshots,'reports-'+width+'.png'),fullPage:false});
+
+      // The card (not merely the little badge) must open exactly two clear
+      // options with independent report state and correct URLs.
+      await first.click({position:{x:15,y:25}});
+      await page.waitForSelector('.aceil-variant-picker');
+      data=await page.evaluate(()=>{
+        const picker=document.querySelector('.aceil-variant-picker');
+        const backdrop=document.querySelector('.aceil-variant-picker-backdrop');
+        const rows=[...picker.querySelectorAll('.aceil-variant-choice')];
+        return {
+          count:rows.length,
+          names:rows.map(row=>row.querySelector('.aceil-variant-choice-open')?.textContent),
+          reportStatus:rows.map(row=>row.querySelector('.aceil-variant-report-status')?.textContent),
+          links:rows.map(row=>row.querySelector('a[href]')?.href||''),
+          history:picker.querySelector('.aceil-variant-history')?.textContent||'',
+          panel:picker.getBoundingClientRect().toJSON(),
+          backdrop:backdrop.getBoundingClientRect().toJSON()
         };
       });
-      assert.equal(data.count,2,'only original plus one alternative in normal Projects; old copies are in recovery history');
-      assert.equal(data.hasGroup,true,'source must display report links');
-      assert.equal(data.visible,2,'compact display shows only 2 links');
-      assert.match(data.history,/Попередні версії: 4/);
-      assert.equal(data.links[0],'https://a-ceil.pp.ua/r/'+'a'.repeat(20),'legacy 64-hex token is compacted for the public URL');
-      assert.equal(data.links[1],'https://a-ceil.pp.ua/r/'+'b'.repeat(20),'second report has its own compact public URL');
-      assert.equal(data.bodyOverflow,false,'no horizontal page overflow');
-      assert(data.groupBox.left>=-2&&data.groupBox.right<=width+2,'reports fit viewport');
-      assert(Math.abs(data.groupBox.width-data.cardBox.width)<8,'report panel must span the whole project card, not a grid column or sidebar');
-      assert(data.groupBox.top>=data.actionBottom-3,'report panel must appear below project actions, not beside them');
-      assert(data.gridWidth<=883,'desktop report tiles must remain compact instead of stretching 1400px');
-      assert(data.modalBox.left>=-2&&data.modalBox.right<=width+2,'project modal fits viewport');
-      const historyButton=page.locator('#projectsList .aceil-quote-reports-history').first();
-      await historyButton.click();
+      assert.equal(data.count,2,'one selector, exactly H and the current no-insert alternative');
+      assert.match(data.names[0],/Основний — H/);
+      assert.match(data.names[1],/Безвставочний/);
+      assert.equal(data.links[0],'https://a-ceil.pp.ua/r/'+'a'.repeat(20));
+      assert.equal(data.links[1],'https://a-ceil.pp.ua/r/'+'b'.repeat(20));
+      assert.match(data.reportStatus[0],/опубліковано/);
+      assert.match(data.history,/Попередні версії \(4\)/);
+      assert(data.panel.left>=-2&&data.panel.right<=width+2,'variant chooser fits mobile viewport');
+      await page.screenshot({path:path.join(screenshots,'variant-picker-'+width+'.png'),fullPage:false});
+
+      // Choose alternative drawing. It must open that saved project ID,
+      // not the original and not a newly created copy.
+      await page.evaluate(()=>{window.__qaSelectedVariant=null;window.loadProject=function(id){window.__qaSelectedVariant=id}});
+      await page.locator('.aceil-variant-choice-open').nth(1).click();
+      assert.equal(await page.evaluate(()=>window.__qaSelectedVariant),ids[0]);
+      assert.equal(await page.locator('.aceil-variant-picker').count(),0,'selector closes on selection');
+      assert.equal(await page.locator('#projectsList .rp-project-card').count(),1);
+
+      // Older drawings remain available separately, never as 3rd/4th
+      // quote choice or duplicate cards on the active tab.
+      await page.locator('#projectsList .aceil-variants-badge').first().click();
+      await page.locator('.aceil-variant-history').click();
       data=await page.evaluate(()=>{
         const cards=[...document.querySelectorAll('#projectsList .rp-project-card')];
         const tabs=document.getElementById('aceilProjectArchiveTabs');
-        return {
-          count:cards.length,
+        return {count:cards.length,
           activeTab:tabs?.querySelector('[data-project-view="history"]')?.classList.contains('active'),
-          names:cards.map(card=>card.textContent),
-          reportStrips:document.querySelectorAll('#projectsList .aceil-quote-reports').length
-        };
+          badges:document.querySelectorAll('#projectsList .aceil-variants-badge').length};
       });
-      assert.equal(data.count,4,'four distinct historic drawings remain accessible, none silently deleted');
-      assert.equal(data.activeTab,true,'history tab is active after clicking the previous versions control');
-      assert.equal(data.reportStrips,0,'historic copies are not advertised as a third/fourth live quote');
+      assert.equal(data.count,4,'four historical distinct cloud drawings are kept in Reserves');
+      assert.equal(data.activeTab,true);
+      assert.equal(data.badges,0);
       await page.locator('#aceilProjectArchiveTabs [data-project-view="active"]').click();
-      assert.equal(await page.locator('#projectsList .aceil-quote-report-option').count(),2,'main view returns to exactly two quote tiles');
-      await page.evaluate(()=>{
-        const list=document.getElementById('projectsList');
-        if(list)list.scrollTop=0;
-      });
-      await page.screenshot({path:path.join(screenshots,'reports-'+width+'.png'),fullPage:false});
+      assert.equal(await page.locator('#projectsList .rp-project-card').count(),1);
       // Filter hides the source; the navigation helper must restore it
       // without rewriting the cloud project collection.
       const jump=await page.evaluate(id=>{
         const search=document.getElementById('projSearch');
         search.value='Копія 5';window.renderProjects();
-        const hidden=!document.querySelector('.aceil-quote-reports');
+        const hidden=!document.querySelector('.aceil-variants-badge');
         const found=window.A_CEIL_ProjectArchive.jumpToProject(id);
-        return {hidden,found,search:search.value,restored:!!document.querySelector('.aceil-quote-reports'),projects:window.getProjects().length};
+        return {hidden,found,search:search.value,restored:!!document.querySelector('.aceil-variants-badge'),projects:window.getProjects().length};
       },baseId);
       assert.deepEqual(jump,{hidden:true,found:true,search:'',restored:true,projects:6});
       if(width===390){
@@ -124,7 +138,7 @@ const rows=()=>[
         assert(bytes.length>1000);
       }
       assert.equal(errors.length,0,'unexpected page errors: '+errors.join(' | '));
-      console.log('PASS',JSON.stringify({width,reportTiles:2,expandedCount:6,restoreSearch:true,overflow:false,missingAssets:missing.length}));
+      console.log('PASS',JSON.stringify({width,visibleObjectCards:1,variantChoices:2,historyCount:4,restoreSearch:true,overflow:false,missingAssets:missing.length}));
       await page.close();
     }
   }finally{await browser.close()}
