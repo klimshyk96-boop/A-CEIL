@@ -24,7 +24,7 @@ const corners=[
  {x:0,y:500},{x:0,y:0},{x:500,y:0},{x:500,y:200},
  {x:250,y:200},{x:250,y:400},{x:500,y:400},{x:500,y:500}
 ];
-const selected=[[1,4],[1,5],[0,4],[0,5],[0,6],[5,7]];
+const selected=[[4,1],[1,5],[0,4],[0,5],[0,6],[5,7]];
 const state={pts:corners,realPts:corners,lengths:[500,500,200,250,200,250,100,500],
   diagonals:selected,diagonalOverrides:{BE:320}};
 test('editor-selected 6 diagonals appear in the WYSIWYG report, not only the confirmed one',()=>{
@@ -35,7 +35,7 @@ test('editor-selected 6 diagonals appear in the WYSIWYG report, not only the con
   assert.equal(pairs(state,'manual')[0].value,320);
   assert.equal(lines(state,'visible').length,6);
   assert.equal(lines(state,'manual').length,1);
-  assert(lines(state,'visible').some(x=>x.startsWith('BE — 320 см')),'confirmed pair uses measured length');
+  assert(lines(state,'visible').some(x=>x.startsWith('EB — 320 см')),'confirmed pair uses measured length');
   assert(lines(state,'visible').some(x=>x.startsWith('BF — ≈ ')),'unconfirmed calculated length must be visibly approximate');
 });
 test('selection is never confused with mathematically possible diagonals',()=>{
@@ -56,7 +56,7 @@ test('selection used by the report plan is exactly the editor selection',()=>{
   const selected=()=>Array.from(n._diagonalsForCurrentDraw(),x=>Array.from(x));
   assert.deepEqual(selected(),state.diagonals);
   n.window.reportSettings.diagMode='manual';
-  assert.deepEqual(selected(),[[1,4]],'only one confirmed field measurement');
+  assert.deepEqual(selected(),[[4,1]],'only one confirmed field measurement, with editor order preserved');
   n.window.reportSettings.diagMode='all';
   assert.equal(selected().length,0,'legacy all-possible mode keeps plan uncluttered');
   n.window.reportSettings.diagMode='visible';
