@@ -43,6 +43,26 @@ test('selection is never confused with mathematically possible diagonals',()=>{
   assert.equal(pairs({...state,diagonals:[]},'visible').length,0);
   assert.deepEqual(state.diagonals,selected,'report generation does not write back into original drawing');
 });
+test('selection used by the report plan is exactly the editor selection',()=>{
+  const n=sandbox;
+  n.window.reportSettings={diagonals:true,diagMode:'visible'};
+  n.window._loadRS=function(){return n.window.reportSettings};
+  n.pts=state.pts;n.realPts=state.realPts;n.lengths=state.lengths;
+  n.diagonals=state.diagonals;n.diagonalOverrides=state.diagonalOverrides;
+  n._reportMode=true;
+  const begin=core.indexOf('function _diagonalsForCurrentDraw()'),end=core.indexOf('window._formatReportCm=window._formatReportCm||',begin);
+  assert(begin>0&&end>begin);
+  vm.runInContext(core.slice(begin,end),n);
+  const selected=()=>Array.from(n._diagonalsForCurrentDraw(),x=>Array.from(x));
+  assert.deepEqual(selected(),state.diagonals);
+  n.window.reportSettings.diagMode='manual';
+  assert.deepEqual(selected(),[[1,4]],'only one confirmed field measurement');
+  n.window.reportSettings.diagMode='all';
+  assert.equal(selected().length,0,'legacy all-possible mode keeps plan uncluttered');
+  n.window.reportSettings.diagMode='visible';
+  n.window.reportSettings.diagonals=false;
+  assert.equal(selected().length,0,'none remains none in every rendering path');
+});
 test('report renderer draws all six visible pairs and still respects none/manual modes',()=>{
   assert.match(core,/if\(\(rs\.diagMode\|\|"manual"\)==="visible"\)/);
   assert.match(renderer,/diagMode\|\|"manual"\)!=="visible"/);
