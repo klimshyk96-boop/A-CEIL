@@ -36,33 +36,36 @@
     return (stem||"A-CEIL-report")+".pdf";
   }
 
-  // Room starts are exact pixel boundaries recorded by the report renderer.
-  // Published reports created before this change have no such metadata, so
-  // scan for a near-empty horizontal band before slicing them.
-  function whitespaceCut(source,width,from,limit,maxHeight){
-    var start=Math.max(from+Math.round(maxHeight*.70),limit-Math.round(maxHeight*.25));
-    if(!source||limit-start<24)return limit;
+  // Build room-aware pages. A fixed-width A4 cut used to create almost-empty
+  // spill pages when the last ~2-8% of one room exceeded the printable height.
+  // Keep every room independent; scale mild overflows to one A4 page and
+  // balance genuinely long rooms across multiple readable pages.
+  function whitespaceNear(source,width,ideal,minY,maxY){
+    if(!source||maxY-minY<16)return Math.round(ideal);
     var sample=document.createElement("canvas");
-    sample.width=Math.max(1,Math.min(280,Math.round(width)));
-    sample.height=Math.max(1,Math.min(220,Math.round((limit-start)/3)));
+    sample.width=Math.max(1,Math.min(320,Math.round(width)));
+    sample.height=Math.max(1,Math.min(140,Math.round((maxY-minY)/3)));
     try{
-      var ctx=sample.getContext("2d");if(!ctx||!ctx.getImageData)return limit;
-      ctx.drawImage(source,0,start,width,limit-start,0,0,sample.width,sample.height);
-      var pixels=ctx.getImageData(0,0,sample.width,sample.height).data;
-      var last=-1,run=0;
-      for(var y=0;y<sample.height;y++){
-        var blank=0;
+      var ctx=sample.getContext("2d");
+      if(!ctx||typeof ctx.getImageData!=="function")return Math.round(ideal);
+      ctx.drawImage(source,0,minY,width,maxY-minY,0,0,sample.width,sample.height);
+      var rgba=ctx.getImageData(0,0,sample.width,sample.height).data;
+      var best=Math.round(ideal),score=Infinity;
+      for(var y=1;y<sample.height-1;y++){
+        var light=0;
         for(var x=0;x<sample.width;x++){
-          var i=(y*sample.width+x)*4;
-          if(pixels[i]>=238&&pixels[i+1]>=238&&pixels[i+2]>=238)blank++;
+          var n=(y*sample.width+x)*4;
+          if(rgba[n]>=238&&rgba[n+1]>=238&&rgba[n+2]>=238)light++;
         }
-        if(blank/sample.width>=.975){run++;if(run>=3)last=y}
-        else run=0;
+        var ratio=light/sample.width;
+        if(ratio>=.987){
+          var found=minY+(y+.5)*(maxY-minY)/sample.height;
+          var distance=Math.abs(found-ideal);
+          if(distance<score){best=Math.round(found);score=distance}
+        }
       }
-      if(last<0)return limit;
-      var chosen=start+Math.floor((last+1)*(limit-start)/sample.height);
-      return chosen>from+32&&chosen<limit-8?chosen:limit;
-    }catch(_){return limit}
+      return best;
+    }catch(_){return Math.round(ideal)}
     finally{sample.width=0;sample.height=0}
   }
   function pageSlices(width,height,roomStartsPx,source){
@@ -71,20 +74,38 @@
       throw new Error("Неправильні розміри зображення звіту");
     var maxHeight=Math.max(1,Math.floor(281*width/194));
     var starts=(Array.isArray(roomStartsPx)?roomStartsPx:[])
-      .map(Number).filter(function(v){return Number.isFinite(v)&&v>0&&v<height})
+      .map(Number).filter(function(y){return Number.isFinite(y)&&y>maxHeight*.10&&y<height-maxHeight*.10})
       .sort(function(a,b){return a-b});
-    var pages=[],y=0;
-    while(y<height){
-      if(pages.length>=120)throw new Error("Звіт завеликий для PDF");
-      var limit=Math.min(height,y+maxHeight),next=limit;
-      // Even short rooms begin on a fresh A4 sheet.
-      for(var i=0;i<starts.length;i++){
-        if(starts[i]>y+24&&starts[i]<=limit){next=Math.round(starts[i]);break}
+    var boundaries=[0];
+    starts.forEach(function(value){
+      var y=Math.round(value);
+      if(y-boundaries[boundaries.length-1]>maxHeight*.10)boundaries.push(y);
+    });
+    boundaries.push(height);
+    var pages=[];
+    for(var index=0;index<boundaries.length-1;index++){
+      var from=boundaries[index],to=boundaries[index+1],roomHeight=to-from;
+      // Up to 18% shrinkage avoids a page consisting of a few trailing lines.
+      // For longer room sections split them into equally occupied sheets.
+      var count=Math.max(1,Math.ceil(roomHeight/(maxHeight*1.18)));
+      if(pages.length+count>120)throw new Error("Звіт завеликий для PDF");
+      var cursor=from;
+      for(var remaining=count;remaining>0;remaining--){
+        var finish=to;
+        if(remaining>1){
+          var desired=cursor+(to-cursor)/remaining;
+          var tolerance=Math.min(maxHeight*.08,(to-cursor)/remaining*.13);
+          finish=whitespaceNear(source,width,desired,
+            Math.round(desired-tolerance),Math.round(desired+tolerance));
+          finish=Math.max(cursor+1,Math.min(to-(remaining-1),Math.round(finish)));
+        }
+        var sliceHeight=finish-cursor;
+        pages.push({
+          y:cursor,height:sliceHeight,
+          scale:Math.min(1,maxHeight/sliceHeight)
+        });
+        cursor=finish;
       }
-      if(next===limit&&limit<height)next=whitespaceCut(source,width,y,limit,maxHeight);
-      if(next<=y||next>limit)next=limit;
-      pages.push({y:y,height:next-y});
-      y=next;
     }
     return pages;
   }
@@ -105,7 +126,10 @@
       if(!ctx)throw new Error("Не вдалося підготувати сторінку PDF");
       ctx.fillStyle="#fff";ctx.fillRect(0,0,targetWidth,targetHeight);
       ctx.drawImage(image,0,slice.y,width,srcHeight,0,0,targetWidth,targetHeight);
-      pdf.addImage(part.toDataURL("image/jpeg",0.92),"JPEG",margin,margin,contentWidth,srcHeight/pxPerMm,undefined,"FAST");
+      var drawScale=slice.scale||1,drawWidth=contentWidth*drawScale,
+        drawHeight=srcHeight/pxPerMm*drawScale,
+        drawX=margin+(contentWidth-drawWidth)/2;
+      pdf.addImage(part.toDataURL("image/jpeg",0.92),"JPEG",drawX,margin,drawWidth,drawHeight,undefined,"FAST");
       part.width=0;part.height=0;
     });
     return pdf.output("blob");

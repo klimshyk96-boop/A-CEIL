@@ -36,7 +36,7 @@ test('approved PNG image yields downloadable multi-page A4 PDF, never a PNG link
   assert.equal(blob.type,'application/pdf');
   const pdf=f.pdfs[0];assert(pdf.pages>=2,'tall report must paginate');
   assert.equal(pdf.images.length,pdf.pages,'each page must contain exactly one image slice');
-  assert(pdf.images.every(i=>i.kind==='JPEG'&&i.w===194&&i.h>0&&i.h<=281));
+  assert(pdf.images.every(i=>i.kind==='JPEG'&&i.w>0&&i.w<=194&&i.h>0&&i.h<=281));
   const button={textContent:'⬇ Завантажити PDF',disabled:false};
   const ok=await f.api.download('data:image/png;base64,aGVsbG8=','Соборна 11.11.png',button);
   assert.equal(ok,true);assert.equal(button.disabled,false);
@@ -51,11 +51,33 @@ test('each new room begins on its own A4 sheet; legacy image still paginates',as
   assert.deepEqual(Array.from(f.api.pageSlices(1200,3600,[1100,2200]),p=>[p.y,p.height]),
     [[0,1100],[1100,1100],[2200,1400]]);
   assert.deepEqual(Array.from(f.api.pageSlices(1200,3600,[],null),p=>p.y),
-    [0,1738,3476], 'legacy reports keep safe fixed-height fallback without pixel access');
+    [0,1800], 'legacy reports balance pages instead of making a nearly empty final sheet');
   await f.api.createBlob(url,{roomStartsPx:[1100,2200]});
   assert.equal(f.pdfs[0].pages,3);
   assert.equal(f.pdfs[0].images.length,3);
   assert(f.pdfs[0].images.every(p=>p.h>0&&p.h<=281));
+});
+
+test('no blank spill sheet when a room or total bar barely exceeds A4',async()=>{
+  const f=fixture(),maxHeight=Math.floor(281*1200/194);
+  const slices=Array.from(f.api.pageSlices(1200,3600,[1810]),p=>p);
+  assert.equal(slices.length,2,'two room sections must produce two useful pages, not three');
+  assert.deepEqual(slices.map(p=>[p.y,p.height]),[[0,1810],[1810,1790]]);
+  assert(slices.every(p=>p.height>maxHeight*.8&&p.scale>0.9&&p.scale<1),
+    'small overflows must fit without a tiny orphan page');
+  await f.api.createBlob('data:image/png;base64,aGVsbG8=',{roomStartsPx:[1810]});
+  const pdf=f.pdfs[0];
+  assert.equal(pdf.pages,2);
+  assert.equal(pdf.images.length,2);
+  assert(pdf.images.every(p=>p.w>0&&p.w<=194&&p.h>0&&p.h<=281));
+});
+test('long rooms balance printable regions rather than leaving a tiny last page',()=>{
+  const f=fixture(),slices=Array.from(f.api.pageSlices(1200,9000,[4200]));
+  assert(slices.length>=4);
+  assert.equal(slices[0].y,0);
+  assert.equal(slices.at(-1).y+slices.at(-1).height,9000);
+  assert(slices.every(p=>p.height>=900&&p.height<=Math.floor(281*1200/194)*1.18+1));
+  assert(slices.every(p=>p.scale>0&&p.scale<=1));
 });
 
 test('report UIs expose one-tap PDF downloads for iPhone, desktop and public viewer',()=>{
