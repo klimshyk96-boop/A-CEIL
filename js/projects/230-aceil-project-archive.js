@@ -153,7 +153,7 @@
       tile.style.cssText="min-width:0;padding:9px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;display:flex;flex-direction:column;gap:5px;";
       var heading=document.createElement("strong");
       heading.style.cssText="font-size:12px;line-height:1.3;color:#0f172a;overflow-wrap:anywhere;";
-      heading.textContent=variant.number===1?"① Основний — H":"② Безвставочний";
+      heading.textContent=variant.number===1?"① Основний — H":"② Варіант без вставки";
       tile.appendChild(heading);
       var name=document.createElement("span");
       name.style.cssText="color:#64748b;font-size:11px;line-height:1.35;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;";
@@ -225,7 +225,7 @@
           actions.insertBefore(copyButton,trash||null);
         }
         var alreadyCopied=!!activeAlternative(project,list());
-        copyButton.textContent=alreadyCopied?"⧉ Безвставочний":"⧉ Створити альтернативу";
+        copyButton.textContent=alreadyCopied?"⧉ Альтернатива":"⧉ Створити альтернативу";
         copyButton.title=alreadyCopied?"Відкрити наявний альтернативний кошторис":"Створити один незалежний варіант для безвставочного профілю";
         copyButton.setAttribute("aria-label",copyButton.title);
         copyButton.disabled=copyInFlight.has(String(project.id));
@@ -502,7 +502,21 @@
     }
     copyInFlight.add(sourceId);
     try{
-      var userId=String(window._sbUser.id),client=window._sb,copy=quoteCopy(source,userId),localId=copy.id;
+      var userId=String(window._sbUser.id),client=window._sb;
+      // A stale/offline local list may not contain an alternative already saved
+      // by the other device. Check cloud before creating another copy.
+      if(typeof client.from==="function"){
+        var check=await client.from("projects").select("id")
+          .eq("user_id",userId).contains("state",{comparisonSourceId:cloudId(source)})
+          .limit(1).maybeSingle();
+        if(!window._sbUser||String(window._sbUser.id)!==userId||window._sb!==client)return false;
+        if(check.error)throw new Error("Не вдалося перевірити наявні копії в хмарі. Нову не створювали.");
+        if(check.data&&check.data.id){
+          notify("Безвставочний варіант уже є в хмарі. Оновіть список проєктів; дубль не створено.");
+          return false;
+        }
+      }
+      var copy=quoteCopy(source,userId),localId=copy.id;
       repo.upsert(copy,{append:true});
       render();jumpToProject(localId);
       if(typeof window.addToPendingQueue!=="function"||typeof window.flushPendingQueue!=="function")
@@ -519,7 +533,7 @@
       // Do not auto-publish an estimate without first opening the report;
       // report snapshots must show precisely what the client approved.
       render();jumpToProject(saved.id);
-      notify("✅ Копія у списку. Відкрийте її для редагування.");
+      notify("✅ Альтернативу збережено. Відкрийте її й налаштуйте безвставочний профіль; основний H не змінювався.");
       return saved.id;
     }catch(error){
       notify("Копію не опубліковано: "+String(error&&error.message||error));
