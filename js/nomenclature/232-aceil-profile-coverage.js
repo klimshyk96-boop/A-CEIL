@@ -8,12 +8,13 @@
 window.A_CEIL_ProfileMarkCoverage=function(raw,lengths,familyOf){
   var bySide={},resolved=[],rank={noinsert_profile:0,shadow_profile:1,floating_profile:2};
   (Array.isArray(raw)?raw:[]).forEach(function(mark,index){
-    var family=familyOf(mark),side=Number(mark&&mark.sideIndex),
+    var family=familyOf(mark),hasSide=!!(mark&&mark.sideIndex!=null&&String(mark.sideIndex).trim()!==""),
+      side=hasSide?Number(mark.sideIndex):NaN,
       len=Math.max(0,Number(mark&&mark.lenCm)||0),
-      wallLen=Number((lengths||[])[side])||0;
+      wallLen=hasSide&&Number.isInteger(side)?Number((lengths||[])[side])||0:0;
     if(!family||!(len>0))return;
     // Legacy unpositioned marks have no reliable intersection to resolve.
-    if(!isFinite(side)||side<0||!(wallLen>0)){resolved.push(mark);return;}
+    if(!hasSide||!Number.isInteger(side)||side<0||!(wallLen>0)){resolved.push(mark);return;}
     var start=Math.min(Math.max(0,Number(mark.offsetCm)||0),wallLen),
       end=Math.min(wallLen,start+len);
     if(end<=start)return;
