@@ -161,7 +161,7 @@ async function open(id){
       var backup=btn("⬇ Зберегти обидві версії (JSON)");
       backup.onclick=function(){
         try{downloadBundle(local,cloud);downloaded=true;notice(section,"Перевірте збереження JSON у «Файлах» / «Завантаженнях».",false);
-          if(mine)mine.hidden=false;if(theirs)theirs.hidden=false;
+          if(mine)mine.hidden=false;if(theirs)theirs.hidden=false;}
         catch(e){notice(section,"Помилка завантаження: "+String(e.message||e),true)}
       };
     }
