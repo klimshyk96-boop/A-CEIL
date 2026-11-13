@@ -439,12 +439,14 @@
     var panel=document.getElementById("aceilSyncRescuePanel");
     if(!panel){panel=document.createElement("section");panel.id="aceilSyncRescuePanel";parent.insertBefore(panel,target)}
     panel.replaceChildren();
-    panel.style.cssText="margin:10px 0 14px;padding:14px;border:1px solid #fbbf24;border-radius:14px;background:#fffbeb;color:#78350f;";
-    var heading=document.createElement("strong");heading.textContent="☁️ Синхронізація: "+String(project.name||"Проєкт");
+    panel.style.cssText="margin:8px 0 12px;padding:12px;border:1px solid #e7b96b;border-radius:13px;background:#fffcf5;color:#713f12;max-width:100%;box-sizing:border-box;";
+    var heading=document.createElement("strong");heading.textContent="☁️ Збереження в хмарі · "+String(project.name||"Проєкт");
     panel.appendChild(heading);
     var issue=syncIssue(project),detail=document.createElement("p");
     detail.style.cssText="font-size:13px;line-height:1.5;margin:8px 0 12px";
-    detail.textContent=issue.description+" Не очищуйте дані браузера і не видаляйте цей проєкт, доки зміни не опиняться у хмарі.";
+    detail.textContent=issue.blocked
+      ?"Локальне креслення збережено. Хмарну версію не перезаписано. Не очищуйте дані браузера. Можна безпечно порівняти обидві версії."
+      :issue.description+" Не очищуйте дані браузера, доки зміни не збережуться у хмарі.";
     panel.appendChild(detail);
     var actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap";
     var retry=document.createElement("button");retry.type="button";retry.textContent="↻ Повторити синхронізацію";
@@ -454,7 +456,7 @@
     if(!issue.blocked)actions.appendChild(retry);
     else if(project._dbId){
       var reconcile=document.createElement("button");reconcile.type="button";
-      reconcile.textContent="🔎 Узгодити дві версії";
+      reconcile.textContent="🔎 Перевірити відмінності";
       reconcile.style.cssText="border:0;border-radius:9px;padding:11px 13px;background:#2563eb;color:#fff;font-weight:850;";
       reconcile.onclick=function(){
         if(window.A_CEIL_ConflictResolver)window.A_CEIL_ConflictResolver.open(project.id);
