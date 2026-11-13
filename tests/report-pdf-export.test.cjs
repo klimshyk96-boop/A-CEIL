@@ -51,7 +51,7 @@ test('each new room begins on its own A4 sheet; legacy image still paginates',as
   assert.deepEqual(Array.from(f.api.pageSlices(1200,3600,[1100,2200]),p=>[p.y,p.height]),
     [[0,1100],[1100,1100],[2200,1400]]);
   assert.deepEqual(Array.from(f.api.pageSlices(1200,3600,[],null),p=>p.y),
-    [0,1800], 'legacy reports balance pages instead of making a nearly empty final sheet');
+    [0,1738], 'legacy reports should fill the first A4 instead of balancing two half-empty sheets');
   await f.api.createBlob(url,{roomStartsPx:[1100,2200]});
   assert.equal(f.pdfs[0].pages,3);
   assert.equal(f.pdfs[0].images.length,3);
@@ -71,13 +71,34 @@ test('no blank spill sheet when a room or total bar barely exceeds A4',async()=>
   assert.equal(pdf.images.length,2);
   assert(pdf.images.every(p=>p.w>0&&p.w<=194&&p.h>0&&p.h<=281));
 });
-test('long rooms balance printable regions rather than leaving a tiny last page',()=>{
+test('long rooms fill A4 sheets in order rather than splitting evenly',()=>{
   const f=fixture(),slices=Array.from(f.api.pageSlices(1200,9000,[4200]));
   assert(slices.length>=4);
   assert.equal(slices[0].y,0);
   assert.equal(slices.at(-1).y+slices.at(-1).height,9000);
-  assert(slices.every(p=>p.height>=900&&p.height<=Math.floor(281*1200/194)*1.18+1));
+  assert(slices.every(p=>p.height>=Math.floor(281*1200/194)*.30&&p.height<=Math.floor(281*1200/194)*1.22+1));
   assert(slices.every(p=>p.scale>0&&p.scale<=1));
+});
+
+test('screenshot regression: one tall room fills page 1 before page 2',async()=>{
+  const f=fixture(),maxHeight=Math.floor(281*1200/194),height=2640;
+  const slices=Array.from(f.api.pageSlices(1200,height,[],null));
+  assert.equal(slices.length,2,'this report needs two A4 sheets');
+  assert.equal(slices[0].y,0);
+  assert(slices[0].height>=maxHeight*.95,'first A4 must not end half empty');
+  assert.equal(slices[1].y,slices[0].height,'no missing or repeated rows');
+  assert.equal(slices[1].y+slices[1].height,height);
+  assert(slices.every(p=>p.scale>0&&p.scale<=1));
+  assert.equal(slices.reduce((n,p)=>n+p.height,0),height);
+});
+test('small height overshoot remains one page and never shrinks more than necessary',()=>{
+  const f=fixture(),maxHeight=Math.floor(281*1200/194);
+  for(const factor of [1,1.01,1.13,1.21]){
+    const h=Math.floor(maxHeight*factor),s=Array.from(f.api.pageSlices(1200,h,[],null));
+    assert.equal(s.length,1,'single room within fit threshold '+factor);
+    assert(Math.abs(s[0].scale-Math.min(1,maxHeight/h))<1e-8);
+    assert(s[0].height===h);
+  }
 });
 
 test('report UIs expose one-tap PDF downloads for iPhone, desktop and public viewer',()=>{
