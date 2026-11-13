@@ -32,6 +32,11 @@ const languageMenuRegression=async function(win){
     assert(el.scrollWidth<=el.clientWidth+1,'Diagonal text overflows');
   }
   assert(doc.querySelector('.rspro-sheet').scrollWidth<=doc.querySelector('.rspro-sheet').clientWidth+1,'Report sheet has horizontal overflow');
+  options.find(el=>el.dataset.value==='none').click();
+  assert(!checkbox.checked,'No-diagonals button must disable drawings and the legend');
+  assert(!menu.hidden,'No-diagonals button must remain visible to restore');
+  options.find(el=>el.dataset.value==='all').click();
+  assert(checkbox.checked,'All-diagonals button must re-enable drawing');
   options.find(el=>el.dataset.value==='all').click();
   assert(doc.getElementById('rsDiagMode').value==='all','All diagonals selection failed');
   options.find(el=>el.dataset.value==='manual').click();
