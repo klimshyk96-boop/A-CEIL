@@ -11,7 +11,8 @@ node --check js/nomenclature/140-aceil-universal-autocount.js
 node --check js/projects/230-aceil-project-archive.js
 node --check js/projects/238-aceil-conflict-resolver.js
 node --check js/reports/237-aceil-image-report-pdf.js
-node --check js/projects/230-aceil-project-archive.js
+node --check js/nomenclature/163-aceil-price-stability.js
+node --check js/rooms/multiroom-lifecycle.js
 node --check js/auth/033-aceil-supabase-auth-offline-access.js
 
 for name in \
@@ -22,6 +23,8 @@ for name in \
   project-revision-content \
   project-mode \
   autocount-profile \
+  profile-coverage-stress \
+  price-stability \
   quote-copy-workflow \
   project-archive \
   demo-access-ui \
