@@ -41,8 +41,20 @@ const PENDING_KEY = "ceiling_pendingSync";
       if (!value || !value.type) return;
       const op = compact(value);
       const index = op.type === "save" ? out.findIndex(x => x.type === "save" && related(x.payload, op.payload)) : -1;
-      if (index >= 0) out[index] = op;
-      else out.push(op);
+      if (index >= 0) {
+        // A later local edit must NOT silently unblock a two-device conflict
+        // or a cloud-deleted object. Keep the newer operation payload/ID but
+        // retain the explicit human-resolution gate until it is cleared in
+        // the recovery UI. A new edit is not permission to overwrite cloud.
+        const blocked = out[index];
+        if (blocked._manualConflictRequired) op._manualConflictRequired = true;
+        if (blocked._manualRestoreRequired) op._manualRestoreRequired = true;
+        if (op._manualConflictRequired || op._manualRestoreRequired) {
+          if (!op._lastError && blocked._lastError) op._lastError = blocked._lastError;
+          if (!op._lastFailedAt && blocked._lastFailedAt) op._lastFailedAt = blocked._lastFailedAt;
+        }
+        out[index] = op;
+      } else out.push(op);
     });
     // Never discard unsynced projects just because the queue is long.
     return out;
