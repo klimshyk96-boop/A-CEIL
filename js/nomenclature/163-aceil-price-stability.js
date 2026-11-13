@@ -60,13 +60,17 @@ function stableTotal(){
     return liveRoomTotal();
   }
 
-  var activeIdx=null;
-  try{
-    if(typeof _activeRoomIdx!=="undefined"&&_activeRoomIdx!=null)activeIdx=Number(_activeRoomIdx);
-  }catch(_){}
+  // The room index can outlive a project switch. Only a stable room ID
+  // belonging to THIS object may use the live (unsaved) canvas total.
+  // Otherwise every room contributes its own saved estimate.
+  var activeRoomId=window._activeRoomId;
+  var activeIdx=activeRoomId==null||String(activeRoomId)===""
+    ?-1:obj.rooms.findIndex(function(room){
+      return room&&room.id!=null&&String(room.id)===String(activeRoomId);
+    });
 
   return obj.rooms.reduce(function(sum,room,idx){
-    if(activeIdx!==null&&idx===activeIdx){
+    if(activeIdx>=0&&idx===activeIdx){
       return sum+liveRoomTotal();
     }
     return sum+savedRoomTotal(room);
@@ -130,5 +134,14 @@ if(typeof oldRecalc==="function"&&!oldRecalc.__priceStabilityV2){
 /* Initial correction after all existing startup code has finished. */
 setTimeout(setTopTotal,250);
 setTimeout(setTopTotal,700);
+
+// Keep the price chip in sync when cloud edits arrive or Safari resumes;
+// never mutate the stored price list from this display-only module.
+if(typeof window.addEventListener==="function")
+  window.addEventListener("aceil:sync-status-change",setTopTotal);
+if(typeof document.addEventListener==="function")
+  document.addEventListener("visibilitychange",function(){
+    if(document.visibilityState==="visible")setTopTotal();
+  });
 
 })();
