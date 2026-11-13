@@ -64,12 +64,15 @@ test('report UIs expose one-tap PDF downloads for iPhone, desktop and public vie
   const pub=read('js/reports/092-aceil-public-report-page.js');
   const index=read('index.html');
   assert.match(mobile,/data-save>⬇ Завантажити PDF/);
-  assert.match(mobile,/A_CEIL_ReportPdf\.download\(dataUrl,fileName,btn\)/);
+  assert.match(mobile,/A_CEIL_ReportPdf\.download\(dataUrl,fileName,btn,\{roomStartsPx:canvas\.__aceilPdfRoomStartsPx\}\)/);
   assert.doesNotMatch(mobile,/data-save>Зберегти PNG/);
   assert.match(desktop,/id="png">⬇ PDF/);
   assert.match(desktop,/A·CEILPreparePdf\(id,pngBtn\)/);
   assert.match(pub,/id="rprPdfBtn">⬇ Завантажити PDF/);
   assert.match(pub,/A_CEIL_ReportPdf\.download\(data\.image,meta\.name/);
+  assert.match(pub,/roomStartsPx:data\.pdfRoomStartsPx/);
+  assert.match(desktop,/pageSlices\(c\.width,c\.height,c\.__aceilPdfRoomStartsPx,c\)/);
+  assert.match(read('js/reports/037-aceil-report-settings-generator.js'),/markPdfRoomStarts\(finalOut,roomStarts\)/);
   assert(index.indexOf('237-aceil-image-report-pdf.js')<index.indexOf('092-aceil-public-report-page.js'),
     'PDF runtime available before client report renderer');
 });
