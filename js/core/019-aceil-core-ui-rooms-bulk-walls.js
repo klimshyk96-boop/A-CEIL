@@ -532,7 +532,13 @@ function _wallSideEndName(m){return N(((Number(m?.sideIndex)||0)+1)%pts.length)}
       lengths:lengths,
       diagonals:diagonals,
       diagonalOverrides:diagonalOverrides
-    },"manual").map(function(d){return[d.a,d.b];});
+    },"manual").map(function(d){
+      var original=(Array.isArray(diagonals)?diagonals:[]).find(function(pair){
+        return Array.isArray(pair)&&Math.min(Number(pair[0]),Number(pair[1]))===d.a&&
+          Math.max(Number(pair[0]),Number(pair[1]))===d.b;
+      });
+      return original?[Number(original[0]),Number(original[1])]:[d.a,d.b];
+    });
   }catch(e){return[];}
 }
 window._formatReportCm=window._formatReportCm||function(value){
@@ -795,7 +801,14 @@ function _getReportDiagPairs(data,mode){
 }
 function _getReportDiagLines(data,mode){
   return _getReportDiagPairs(data,mode).map(function(d){
-    var key=NL(d.a,data)+NL(d.b,data),len=d.value;
+    // Report labels must keep the original endpoint order shown on canvas:
+    // EB remains EB, never silently becomes BE after pair normalization.
+    var original=mode!=='all'&&(data.diagonals||[]).find(function(pair){
+      return Array.isArray(pair)&&Math.min(Number(pair[0]),Number(pair[1]))===d.a&&
+        Math.max(Number(pair[0]),Number(pair[1]))===d.b;
+    });
+    var key=original?NL(Number(original[0]),data)+NL(Number(original[1]),data):
+      NL(d.a,data)+NL(d.b,data),len=d.value;
     var measured=_reportDiagOverrideValue((data||{}).diagonalOverrides,d.a,d.b)>0;
     var approximate=mode==='visible'&&!measured?'≈ ':'';
     return key+' — '+approximate+window._formatReportCm(len)+' см ('+(len/100).toFixed(2)+' м)';
