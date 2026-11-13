@@ -221,18 +221,48 @@
     catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
 
+  function assertPublishSession(expectedClient, expectedUid, projectId) {
+    var current=user(),selected=activeProject(projectId);
+    if(!current||String(current.id)!==expectedUid||sb()!==expectedClient)
+      throw new Error("Обліковий запис змінився під час створення звіту. Публікацію зупинено, посилання не перенесено до іншого акаунта.");
+    if(!selected||dbId(selected)!==projectId)
+      throw new Error("Проєкт змінився або недоступний. Повторно відкрийте потрібний проєкт перед публікацією.");
+  }
+
+  function copyHasPendingEdits(project) {
+    if(!project||!project._comparisonSourceId)return false;
+    if(project._dirty||project._localUpdatedAt||!project._dbId)return true;
+    try{
+      var ids=[project.id,project._dbId,project._localId].filter(function(x){return x!=null}).map(String),
+        queued=typeof window.getPendingQueue==="function"?window.getPendingQueue():[];
+      return Array.isArray(queued)&&queued.some(function(op){
+        if(!op||op.type!=="save")return false;
+        var refs=[op.payload&&op.payload.localId,op.payload&&op.payload.dbId]
+          .filter(function(x){return x!=null}).map(String);
+        return refs.some(function(ref){return ids.indexOf(ref)>=0;});
+      });
+    }catch(_){return true}
+  }
+
   async function publishPayload(payload, options) {
     options = options || {};
-    var client = sb();
-    if (!client || !user()) throw new Error("Для публікації КП потрібне підключення до хмари");
+    var client = sb(),currentUser=user();
+    if (!client || !currentUser) throw new Error("Для публікації КП потрібне підключення до хмари");
+    var expectedUid=String(currentUser.id);
     var project = activeProject(options.projectId);
     var projectId = dbId(project);
     if (!projectId) throw new Error("Спочатку збережіть активний проєкт у хмарі");
+    if(copyHasPendingEdits(project))
+      throw new Error("Альтернативний кошторис ще має незбережені зміни. Спочатку дочекайтеся підтвердження хмари перед публікацією.");
+    assertPublishSession(client,expectedUid,projectId);
 
     var value = token();
     var expires = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString();
     if (typeof options.onProgress === "function") options.onProgress("Оптимізація креслення…");
     var safePayload = Object.assign(await optimizePayload(payload, options), { expiresAt: expires });
+    assertPublishSession(client,expectedUid,projectId);
+    if(copyHasPendingEdits(project))
+      throw new Error("Копія змінилася під час підготовки звіту. Спочатку завершить хмарне збереження.");
     if (typeof options.onProgress === "function") options.onProgress("Завантаження звіту в хмару…");
     // Every publication is an immutable snapshot. The legacy project fields are
     // still refreshed below for the project list/CRM, but they are no longer
@@ -243,6 +273,7 @@
       p_payload: safePayload,
       p_expires_at: expires
     }), 30000, "Хмара не відповіла за 30 секунд. Перевірте інтернет і повторіть");
+    assertPublishSession(client,expectedUid,projectId);
     var snapshotReady = !snapshotResult.error;
     var snapshotUnavailable = snapshotResult.error && (
       snapshotResult.error.code === "PGRST202" ||
@@ -260,6 +291,7 @@
     // compatibility path. Once snapshots are available, a failure to refresh
     // the single "latest report" badge must not invalidate the new URL.
     if (result.error && !snapshotReady) throw result.error;
+    assertPublishSession(client,expectedUid,projectId);
     patchLocal(project, {
       report_token: value,
       report_published_at: new Date().toISOString(),
