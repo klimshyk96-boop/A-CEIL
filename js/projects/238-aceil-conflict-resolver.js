@@ -167,12 +167,14 @@ async function open(id){
     }else{
       var mine=btn("Залишити моє креслення у хмарі");
       var theirs=btn("Залишити хмарне креслення на пристрої");
+      var resolving=false;
       async function perform(choice,button){
+        if(resolving)return;
         if(!downloaded){notice(section,"Спочатку завантажте JSON із двома версіями.",true);return}
         if(typeof window.confirm==="function"&&!window.confirm(choice==="mine"?
           "Ви зберегли JSON із двома версіями? Локальне креслення стане новою хмарною версією, а попередня залишиться лише у файлі резерву.":
           "Ви зберегли JSON із двома версіями? Локальні зміни буде замінено хмарними. Відновити їх можна з JSON-файлу."))return;
-        button.disabled=true;
+        resolving=true;mine.disabled=true;theirs.disabled=true;
         try{
           var val=await verifyFresh(),p=val.latest;
           if(choice==="mine"){
@@ -181,9 +183,11 @@ async function open(id){
             p._dirty=true;p._syncStatus="pending_update";
             p._localUpdatedAt=Date.now();
             putLocal(p);unblocked(p);
-            var synced=await window.flushPendingQueue();
+            await window.flushPendingQueue();
             var fresh=project(id);
-            if(synced&&fresh&&!fresh._dirty&&!queueFor(fresh).length){
+            // Other projects may still be pending; judge this conflict only by
+            // this project's confirmed revision and its own queue.
+            if(fresh&&fresh._cloudRevision&&!fresh._dirty&&!queueFor(fresh).length){
               refreshProjectList();notice(section,"✅ Ваше креслення підтверджено в хмарі. Конфлікт усунуто.",false);
             }else{
               refreshProjectList();notice(section,"Хмара ще не підтвердила запис. Локальні правки збережені; повторно перевірте конфлікт.",true);
@@ -207,7 +211,7 @@ async function open(id){
             notice(section,"✅ Хмарну версію відновлено. Закрийте редактор і відкрийте проєкт заново, щоб креслення оновилося.",false);
           }
         }catch(e){notice(section,"Не завершено: "+String(e.message||e),true)}
-        finally{button.disabled=false}
+        finally{resolving=false;mine.disabled=false;theirs.disabled=false}
       }
       mine.onclick=function(){return perform("mine",mine)};
       theirs.onclick=function(){return perform("theirs",theirs)};
