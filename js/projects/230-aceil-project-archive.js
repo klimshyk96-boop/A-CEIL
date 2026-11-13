@@ -3,7 +3,7 @@
   if(window.__A_CEIL_PROJECT_ARCHIVE_V1)return;
   window.__A_CEIL_PROJECT_ARCHIVE_V1=true;
 
-  var view="active",baseRender=null,rendering=false,copyInFlight=new Set(),expandedReportGroups=new Set();
+  var view="active",baseRender=null,rendering=false,copyInFlight=new Set();
   // Project cards need only the archive date. Parse each unchanged JSON state
   // once, not several times per render. Invalidate on state replacement.
   var archiveDates=new WeakMap();
@@ -41,13 +41,64 @@
   function list(){try{return typeof getProjects==="function"?getProjects():[]}catch(_){return []}}
   function matches(project,id){return project&&[project.id,project._dbId,project._localId].some(function(value){return value!=null&&String(value)===String(id)})}
   function esc(value){return String(value==null?"":value).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]})}
-  function totals(){var all=list();return {active:all.filter(function(p){return !archivedAt(p)}).length,archive:all.filter(archivedAt).length}}
+  function isRecovery(project){
+    if(!project)return false;
+    if(project._recoverySourceId)return true;
+    // Older backup records sometimes lack the normalized recovery field, but
+    // the explicit name remains. Keep them available in the recovery tab.
+    return /(?:^| — )Резервна копія(?:$| — )/i.test(String(project.name||""));
+  }
+  function comparisonParent(project){
+    if(!project||isRecovery(project))return "";
+    return String(project._comparisonSourceId||"");
+  }
+  function alternativesFor(source,all){
+    var key=cloudId(source);
+    if(!key||isRecovery(source))return [];
+    return (all||list()).filter(function(p){
+      return p&&p!==source&&comparisonParent(p)===key;
+    }).sort(function(a,b){
+      // Keep a dirty/conflicted alternative visible rather than hiding work.
+      var editingA=(a._dirty||a._localUpdatedAt||queuedSave(a))?1:0,
+          editingB=(b._dirty||b._localUpdatedAt||queuedSave(b))?1:0;
+      if(editingA!==editingB)return editingB-editingA;
+      var activeA=archivedAt(a)?0:1,activeB=archivedAt(b)?0:1;
+      if(activeA!==activeB)return activeB-activeA;
+      var revA=Number(a._cloudRevision)||0,revB=Number(b._cloudRevision)||0;
+      if(revA!==revB)return revB-revA;
+      return (Number(b._cloudSavedAt)||0)-(Number(a._cloudSavedAt)||0);
+    });
+  }
+  function activeAlternative(source,all){return alternativesFor(source,all)[0]||null}
+  function isHistory(project,all){
+    if(isRecovery(project))return true;
+    var parentId=comparisonParent(project);
+    if(!parentId)return false;
+    var source=(all||list()).find(function(p){return cloudId(p)===parentId});
+    return !!(source&&activeAlternative(source,all)!==project);
+  }
+  function projectsForView(all,selected){
+    return all.filter(function(p){
+      if(selected==="archive")return !!archivedAt(p);
+      if(archivedAt(p))return false;
+      return selected==="history"?isHistory(p,all):!isHistory(p,all);
+    });
+  }
+  function totals(){
+    var all=list();
+    return {active:projectsForView(all,"active").length,
+      history:projectsForView(all,"history").length,
+      archive:projectsForView(all,"archive").length};
+  }
   function ensureTabs(){
     var projectsList=document.getElementById("projectsList");if(!projectsList)return;
     var tabs=document.getElementById("aceilProjectArchiveTabs");
     if(!tabs){tabs=document.createElement("div");tabs.id="aceilProjectArchiveTabs";tabs.className="aceil-project-archive-tabs";projectsList.parentNode.insertBefore(tabs,projectsList)}
     var count=totals();
-    tabs.innerHTML='<button type="button" data-project-view="active" class="'+(view==="active"?"active":"")+'"><span>Проєкти</span><b>'+count.active+'</b></button><button type="button" data-project-view="archive" class="'+(view==="archive"?"active":"")+'"><span>Архів</span><b>'+count.archive+'</b></button>';
+    var needsHelp=list().some(function(p){return !archivedAt(p)&&isHistory(p,list())&&(p._dirty||pending(p)||!p._dbId)});
+    tabs.innerHTML='<button type="button" data-project-view="active" class="'+(view==="active"?"active":"")+'"><span>Проєкти</span><b>'+count.active+'</b></button>'
+      +'<button type="button" data-project-view="history" class="'+(view==="history"?"active":"")+'"><span>'+(needsHelp?'⚠️ ':'')+'Резервні</span><b>'+count.history+'</b></button>'
+      +'<button type="button" data-project-view="archive" class="'+(view==="archive"?"active":"")+'"><span>Архів</span><b>'+count.archive+'</b></button>';
     tabs.querySelectorAll("[data-project-view]").forEach(function(button){button.onclick=function(){view=button.dataset.projectView;render()}});
   }
   function cardProject(card,byId){
@@ -66,14 +117,10 @@
     return {status:record.status==="expired"?"expired":"none",url:""};
   }
   function pairReports(project,all){
-    if(!project||project._comparisonSourceId)return [];
-    var sourceId=cloudId(project);
-    if(!sourceId)return [];
-    var copies=(Array.isArray(all)?all:[]).filter(function(p){
-      return p&&p!==project&&String(p._comparisonSourceId||"")===sourceId;
-    });
-    if(!copies.length)return [];
-    return [project].concat(copies).map(function(p,index){
+    if(!project||comparisonParent(project)||isRecovery(project))return [];
+    var alt=activeAlternative(project,Array.isArray(all)?all:list());
+    if(!alt)return [];
+    return [project,alt].map(function(p,index){
       var report=reportStatusFor(p);
       return {projectId:p.id,name:String(p.name||"Без назви"),number:index+1,
         status:report.status,url:report.url};
@@ -100,15 +147,13 @@
     group.appendChild(title);
     var grid=document.createElement("div");
     grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;max-width:880px;";
-    var key=cloudId(project),expanded=expandedReportGroups.has(key);
-    var displayed=expanded?variants:variants.slice(0,2);
-    displayed.forEach(function(variant){
+    variants.forEach(function(variant){
       var tile=document.createElement("div");
       tile.className="aceil-quote-report-option";
       tile.style.cssText="min-width:0;padding:9px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;display:flex;flex-direction:column;gap:5px;";
       var heading=document.createElement("strong");
       heading.style.cssText="font-size:12px;line-height:1.3;color:#0f172a;overflow-wrap:anywhere;";
-      heading.textContent=variant.number===1?"① Основний":(variant.number===2?"② Варіант 2":"№"+variant.number+" Варіант "+variant.number);
+      heading.textContent=variant.number===1?"① Основний — H":"② Варіант без вставки";
       tile.appendChild(heading);
       var name=document.createElement("span");
       name.style.cssText="color:#64748b;font-size:11px;line-height:1.35;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;";
@@ -145,17 +190,14 @@
       tile.appendChild(actions);grid.appendChild(tile);
     });
     group.appendChild(grid);
-    if(variants.length>2){
-      var toggle=document.createElement("button");
-      toggle.type="button";toggle.className="aceil-quote-reports-toggle";
-      toggle.textContent=expanded?"Згорнути зайві варіанти":"Показати ще "+(variants.length-2);
-      toggle.setAttribute("aria-expanded",expanded?"true":"false");
-      toggle.style.cssText="width:100%;margin-top:7px;padding:8px 10px;text-align:center;border:1px solid #bfdbfe;border-radius:9px;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:800;";
-      toggle.onclick=function(){
-        if(expanded)expandedReportGroups.delete(key);else expandedReportGroups.add(key);
-        decoratePairReports(card,project,list());
-      };
-      group.appendChild(toggle);
+    var older=Math.max(0,alternativesFor(project,all).length-1);
+    if(older){
+      var history=document.createElement("button");history.type="button";
+      history.className="aceil-quote-reports-history";
+      history.textContent="Попередні версії: "+older+" · Відкрити «Резервні»";
+      history.style.cssText="width:100%;margin-top:7px;padding:7px 10px;text-align:center;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#64748b;font-size:11px;font-weight:700;";
+      history.onclick=function(){view="history";render()};
+      group.appendChild(history);
     }
     if(!old)card.appendChild(group);
   }
@@ -173,7 +215,7 @@
       button.onclick=function(){window.A_CEIL_ProjectArchive.toggle(project.id,!isArchived)};
       // One action only: original → independent copy, shown directly in list.
       // A copy is already editable; never offer to copy it again here.
-      if(!project._comparisonSourceId){
+      if(!comparisonParent(project)&&!isRecovery(project)){
         var copyButton=actions.querySelector("[data-project-quote-copy]");
         if(!copyButton){
           copyButton=document.createElement("button");copyButton.type="button";
@@ -182,9 +224,9 @@
           var trash=actions.querySelector('[onclick*="deleteProject"]');
           actions.insertBefore(copyButton,trash||null);
         }
-        var alreadyCopied=list().some(function(p){return p&&p._comparisonSourceId===cloudId(project)});
-        copyButton.textContent=alreadyCopied?"⧉ Копія":"⧉ Копіювати";
-        copyButton.title=alreadyCopied?"Показати наявну копію":"Створити окрему копію проєкту";
+        var alreadyCopied=!!activeAlternative(project,list());
+        copyButton.textContent=alreadyCopied?"⧉ Альтернатива":"⧉ Створити альтернативу";
+        copyButton.title=alreadyCopied?"Відкрити наявний альтернативний кошторис":"Створити один незалежний варіант для безвставочного профілю";
         copyButton.setAttribute("aria-label",copyButton.title);
         copyButton.disabled=copyInFlight.has(String(project.id));
         copyButton.onclick=function(){window.A_CEIL_ProjectArchive.copyForQuote(project.id)};
@@ -242,14 +284,14 @@
     try{originalBinding=getProjects}catch(_){originalBinding=originalWindow}
     var filteredOnce=null;
     var filtered=function(){
-      if(!filteredOnce)filteredOnce=all.filter(function(project){return view==="archive"?!!archivedAt(project):!archivedAt(project)});
+      if(!filteredOnce)filteredOnce=projectsForView(all,view);
       return filteredOnce;
     };
     rendering=true;window.getProjects=filtered;try{getProjects=filtered}catch(_){}
     try{baseRender()}finally{window.getProjects=originalWindow;try{getProjects=originalBinding}catch(_){}rendering=false}
     ensureTabs();decorate();
     var listEl=document.getElementById("projectsList");
-    if(listEl&&!filtered().length)listEl.innerHTML='<div class="aceil-project-archive-empty">'+(view==="archive"?"Архів поки порожній":"Активних проєктів немає")+'</div>';
+    if(listEl&&!filtered().length)listEl.innerHTML='<div class="aceil-project-archive-empty">'+(view==="archive"?"Архів поки порожній":view==="history"?"Резервних і попередніх версій немає":"Активних проєктів немає")+'</div>';
   }
 
   function cloudId(project){return project&&String(project._dbId||"")}
@@ -257,7 +299,7 @@
   function jumpToProject(id){
     var project=projectBy(id);
     if(!project){notify("Проєкт не знайдено в списку.");return false;}
-    var destination=archivedAt(project)?"archive":"active";
+    var destination=archivedAt(project)?"archive":isHistory(project,list())?"history":"active";
     if(view!==destination){view=destination;render()}
     function scrollToCard(){
       var cards=typeof document.querySelectorAll==="function"?document.querySelectorAll("#projectsList .rp-project-card"):[];
@@ -331,8 +373,11 @@
     retry.disabled=issue.blocked;
     retry.onclick=function(){retryCloudSave(project.id)};
     actions.appendChild(retry);
-    var rescue=document.createElement("button");rescue.type="button";rescue.textContent="☁️ Зберегти окрему копію";
+    var rescue=document.createElement("button");rescue.type="button";
+    var existingRescue=list().find(function(p){return p&&p!==project&&String(p._recoverySourceId||"")===String(project._dbId||project.id)});
+    rescue.textContent=existingRescue?"☁️ Відкрити збережену резервну":isRecovery(project)?"☁️ Резервна — повторення вимкнено":"☁️ Створити захисну копію";
     rescue.style.cssText="border:1px solid #fdba74;border-radius:9px;padding:10px 12px;background:#fff;color:#9a3412;font-weight:800";
+    rescue.disabled=isRecovery(project)&&!existingRescue;
     rescue.onclick=function(){rescueCloudCopy(project.id)};
     actions.appendChild(rescue);panel.appendChild(actions);
     return true;
@@ -371,18 +416,27 @@
     if(!source||!repo||!window._sb||!window._sbUser||!navigator.onLine){notify("Для створення хмарної копії потрібні інтернет і вхід у акаунт");return false}
     if(source._shared){notify("Редагування цього проєкту обмежено власником");return false}
     var sourceKey=String(source._dbId||source.id);
-    var existing=list().find(function(p){return p&&p._recoverySourceId===sourceKey});
-    if(existing){notify("Резервна копія вже створена: "+String(existing.name||""));return false}
+    var existing=list().find(function(p){return p&&p!==source&&String(p._recoverySourceId||"")===sourceKey});
+    if(existing){
+      jumpToProject(existing.id);
+      notify("Резервна копія вже збережена. Відкрито наявну, нову не створювали.");
+      return existing.id;
+    }
+    if(isRecovery(source)){
+      notify("Це вже резервна копія. Не створюємо ланцюжок резервних копій. Збережіть локальний JSON перед вирішенням конфлікту.");
+      return false;
+    }
     if(copyInFlight.has(sourceKey))return false;
     if(typeof window.confirm==="function"&&!window.confirm("Створити окрему хмарну копію поточного локального креслення? Оригінал залишиться незмінним."))return false;
     copyInFlight.add(sourceKey);
     try{
       var uid=String(window._sbUser.id),client=window._sb,copy=quoteCopy(source,uid),localId=copy.id;
-      copy.name=String(source.name||"Проєкт")+" — Резервна копія";
+      copy.name=String(source.name||"Проєкт").replace(/(?: — (?:Копія|Резервна копія))+$/,"")+" — Резервна копія";
       delete copy._comparisonSourceId;
+      delete copy._recoverySourceId;
       copy._recoverySourceId=sourceKey;
       var st=stateOf(copy);
-      delete st.comparisonSourceId;st.recoverySourceId=sourceKey;
+      delete st.comparisonSourceId;delete st.recoverySourceId;st.recoverySourceId=sourceKey;
       copy.state=JSON.stringify(st);
       repo.upsert(copy,{append:true});
       if(typeof window.addToPendingQueue!=="function"||typeof window.flushPendingQueue!=="function")
@@ -401,7 +455,7 @@
     }finally{copyInFlight.delete(sourceKey);render()}
   }
 
-  function safeCopyName(name){return String(name||"Без назви").replace(/ — Копія$/,"")+" — Копія"}
+  function safeCopyName(name){return String(name||"Без назви").replace(/(?: — (?:Копія|Безвставочний))+$/,"")+" — Безвставочний"}
   function quoteCopy(source,userId){
     // Deep copy preserves rooms, measurements, material prices and drawing.
     // All identity / publication state is new; never change the source record.
@@ -413,9 +467,11 @@
      "_activeEstimateVariantId","_roomRevision"].forEach(function(key){delete copy[key]});
     copy._ownerId=userId;copy._shared=false;copy._comparisonSourceId=cloud;
     copy.name=safeCopyName(source.name);
+    delete copy._recoverySourceId;
     copy.archivedAt=null;copy._dirty=true;copy._syncStatus="pending_create";copy._localUpdatedAt=Date.now();
     var state=stateOf(source);delete state.archivedAt;
     ["report_token","report_published_at","report_expires_at","calcLinks","estimateVariants","_activeEstimateVariantId"].forEach(function(key){delete state[key]});
+    delete state.recoverySourceId;
     state.comparisonSourceId=cloud;
     if(Array.isArray(copy.rooms)){
       copy.rooms.forEach(function(room){if(room&&typeof room==="object")delete room._aceilVariantsShadow});
@@ -428,12 +484,12 @@
   async function copyForQuote(id){
     var source=projectBy(id),sourceId=source&&String(source.id),repo=window.A·CEIL&&window.A·CEIL.ProjectRepository;
     if(!source||!repo)return false;
-    if(source._comparisonSourceId){
+    if(comparisonParent(source)||isRecovery(source)){
       jumpToProject(source.id);
-      notify("Копія вже є у списку. Відкрийте її для змін.");
+      notify("Це вже альтернативний або резервний проєкт. Створювати копію його копії не потрібно.");
       return source.id;
     }
-    var prior=list().find(function(p){return p&&p._comparisonSourceId===cloudId(source)});
+    var prior=activeAlternative(source,list());
     if(prior){
       jumpToProject(prior.id);
       notify("Копія вже є у списку, нову не створювали.");
@@ -446,7 +502,21 @@
     }
     copyInFlight.add(sourceId);
     try{
-      var userId=String(window._sbUser.id),client=window._sb,copy=quoteCopy(source,userId),localId=copy.id;
+      var userId=String(window._sbUser.id),client=window._sb;
+      // A stale/offline local list may not contain an alternative already saved
+      // by the other device. Check cloud before creating another copy.
+      if(typeof client.from==="function"){
+        var check=await client.from("projects").select("id")
+          .eq("user_id",userId).contains("state",{comparisonSourceId:cloudId(source)})
+          .limit(1).maybeSingle();
+        if(!window._sbUser||String(window._sbUser.id)!==userId||window._sb!==client)return false;
+        if(check.error)throw new Error("Не вдалося перевірити наявні копії в хмарі. Нову не створювали.");
+        if(check.data&&check.data.id){
+          notify("Безвставочний варіант уже є в хмарі. Оновіть список проєктів; дубль не створено.");
+          return false;
+        }
+      }
+      var copy=quoteCopy(source,userId),localId=copy.id;
       repo.upsert(copy,{append:true});
       render();jumpToProject(localId);
       if(typeof window.addToPendingQueue!=="function"||typeof window.flushPendingQueue!=="function")
@@ -463,7 +533,7 @@
       // Do not auto-publish an estimate without first opening the report;
       // report snapshots must show precisely what the client approved.
       render();jumpToProject(saved.id);
-      notify("✅ Копія у списку. Відкрийте її для редагування.");
+      notify("✅ Альтернативу збережено. Відкрийте її й налаштуйте безвставочний профіль; основний H не змінювався.");
       return saved.id;
     }catch(error){
       notify("Копію не опубліковано: "+String(error&&error.message||error));
@@ -484,7 +554,7 @@
     baseRender=current;var wrapped=function(){return render()};wrapped.__projectArchiveV1=true;window.renderProjects=wrapped;try{renderProjects=wrapped}catch(_){}
     if(document.getElementById("projectsModal")&&document.getElementById("projectsModal").classList.contains("open"))render();
   }
-  window.A_CEIL_ProjectArchive={toggle:toggle,copyForQuote:copyForQuote,syncHelp:syncHelp,retryCloudSave:retryCloudSave,rescueCloudCopy:rescueCloudCopy,syncIssue:syncIssue,arrangeQuotePairs:arrangeQuotePairs,pairReports:pairReports,jumpToProject:jumpToProject,setView:function(next){view=next==="archive"?"archive":"active";render()},count:function(){return totals().archive},isArchived:function(project){return !!archivedAt(project)}};
+  window.A_CEIL_ProjectArchive={toggle:toggle,copyForQuote:copyForQuote,syncHelp:syncHelp,retryCloudSave:retryCloudSave,rescueCloudCopy:rescueCloudCopy,syncIssue:syncIssue,arrangeQuotePairs:arrangeQuotePairs,pairReports:pairReports,projectsForView:projectsForView,jumpToProject:jumpToProject,setView:function(next){view=next==="archive"?"archive":next==="history"?"history":"active";render()},count:function(){return totals().archive},isArchived:function(project){return !!archivedAt(project)}};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
   [100,700,1800].forEach(function(delay){setTimeout(install,delay)});
 })();

@@ -48,7 +48,7 @@ const rows=()=>[
         const modal=document.querySelector('#projectsModal .modal')||document.getElementById('projectsModal');
         return {
           count:cards.length,hasGroup:!!group,visible:tiles.length,
-          showMore:group?.querySelector('.aceil-quote-reports-toggle')?.textContent||'',
+          history:group?.querySelector('.aceil-quote-reports-history')?.textContent||'',
           statuses:tiles.map(tile=>tile.textContent),
           links:openLinks,
           bodyOverflow:document.documentElement.scrollWidth>innerWidth+2,
@@ -60,10 +60,10 @@ const rows=()=>[
           modalBox:{left:modal.getBoundingClientRect().left,right:modal.getBoundingClientRect().right}
         };
       });
-      assert.equal(data.count,6,'all 6 source and copy cards remain in list');
+      assert.equal(data.count,2,'only original plus one alternative in normal Projects; old copies are in recovery history');
       assert.equal(data.hasGroup,true,'source must display report links');
       assert.equal(data.visible,2,'compact display shows only 2 links');
-      assert.match(data.showMore,/Показати ще 4/);
+      assert.match(data.history,/Попередні версії: 4/);
       assert.equal(data.links[0],'https://a-ceil.pp.ua/r/'+'a'.repeat(20),'legacy 64-hex token is compacted for the public URL');
       assert.equal(data.links[1],'https://a-ceil.pp.ua/r/'+'b'.repeat(20),'second report has its own compact public URL');
       assert.equal(data.bodyOverflow,false,'no horizontal page overflow');
@@ -72,23 +72,23 @@ const rows=()=>[
       assert(data.groupBox.top>=data.actionBottom-3,'report panel must appear below project actions, not beside them');
       assert(data.gridWidth<=883,'desktop report tiles must remain compact instead of stretching 1400px');
       assert(data.modalBox.left>=-2&&data.modalBox.right<=width+2,'project modal fits viewport');
-      const more=page.locator('#projectsList .aceil-quote-reports-toggle').first();
-      await more.click();
+      const historyButton=page.locator('#projectsList .aceil-quote-reports-history').first();
+      await historyButton.click();
       data=await page.evaluate(()=>{
-        const group=document.querySelector('#projectsList .aceil-quote-reports');
+        const cards=[...document.querySelectorAll('#projectsList .rp-project-card')];
+        const tabs=document.getElementById('aceilProjectArchiveTabs');
         return {
-          count:group?.querySelectorAll('.aceil-quote-report-option').length||0,
-          expired:group?.textContent.includes('Посилання прострочене'),
-          unpublished:group?.textContent.includes('Звіт ще не сформовано'),
-          accessible:[...group.querySelectorAll('.aceil-quote-report-option')].map(tile=>Boolean(tile.querySelector('a[href]')))
+          count:cards.length,
+          activeTab:tabs?.querySelector('[data-project-view="history"]')?.classList.contains('active'),
+          names:cards.map(card=>card.textContent),
+          reportStrips:document.querySelectorAll('#projectsList .aceil-quote-reports').length
         };
       });
-      assert.equal(data.count,6,'old copies expand instead of disappearing');
-      assert.equal(data.expired,true);
-      assert.equal(data.unpublished,true);
-      assert.equal(data.accessible.filter(Boolean).length,2,'never invent URLs for 4 unavailable links');
-      await more.click();
-      assert.equal(await page.locator('#projectsList .aceil-quote-report-option').count(),2,'collapse returns to two tiles');
+      assert.equal(data.count,4,'four distinct historic drawings remain accessible, none silently deleted');
+      assert.equal(data.activeTab,true,'history tab is active after clicking the previous versions control');
+      assert.equal(data.reportStrips,0,'historic copies are not advertised as a third/fourth live quote');
+      await page.locator('#aceilProjectArchiveTabs [data-project-view="active"]').click();
+      assert.equal(await page.locator('#projectsList .aceil-quote-report-option').count(),2,'main view returns to exactly two quote tiles');
       await page.evaluate(()=>{
         const list=document.getElementById('projectsList');
         if(list)list.scrollTop=0;

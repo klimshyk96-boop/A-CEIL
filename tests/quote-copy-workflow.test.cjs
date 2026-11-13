@@ -57,7 +57,7 @@ test('independent quote copy never overwrites original or inherits its report li
   assert.equal(p._comparisonSourceId,'original-uuid');
   assert.equal(raw.comparisonSourceId,'original-uuid');
   assert.equal(raw.multiRoom,true);
-  assert.equal(p.name,'Вітальня — Копія');
+  assert.equal(p.name,'Вітальня — Безвставочний');
   assert.equal(p.report_token,undefined,'copy requires its own publication');
   assert.equal(p.calcLinks,undefined);
   assert.equal(p.rooms[0]._aceilVariantsShadow,undefined,'no inherited estimate links');
@@ -84,7 +84,7 @@ test('one copy means two visible editable projects, each with its own cloud repo
   assert.notEqual(f.projects()[0].report_token,f.projects()[1].report_token,
     'original and edited copy keep independent immutable report links');
   assert.doesNotMatch(source,/data-project-quote-links|Два незалежні кошториси/);
-  assert.match(source,/copyButton\.textContent=alreadyCopied\?"⧉ Копія":"⧉ Копіювати"/);
+  assert.match(source,/copyButton\.textContent=alreadyCopied\?"⧉ Альтернатива":"⧉ Створити альтернативу"/);
   assert.match(source,/render\(\);jumpToProject\(localId\)/,
     'copy becomes a visible card before cloud sync has completed');
 });
@@ -126,8 +126,8 @@ test('stuck local project can be rescued as a separate cloud record, original un
   assert.equal(state.comparisonSourceId,undefined);
   assert.equal(copy.report_token,undefined);
   assert.equal(f.queue.length,1,'original conflict queue is preserved after rescue');
-  assert.equal(await f.c.A_CEIL_ProjectArchive.rescueCloudCopy('original-uuid'),false,
-    'repeat tap must not create a second emergency copy');
+  assert.equal(await f.c.A_CEIL_ProjectArchive.rescueCloudCopy('original-uuid'),'new-cloud-uuid',
+    'repeat tap must reopen the existing safe copy instead of making another');
   assert.equal(f.projects().length,2);
 });
 test('cloud recovery lineage survives login, and blocked saves are visibly distinguishable',()=>{
@@ -193,16 +193,18 @@ test('expired and legacy reports stay distinct; never expose unavailable links',
     report_expires_at:'2020-01-01T00:00:00Z'};
   const copy2={id:'copy-2',_dbId:'copy-2',_comparisonSourceId:origin.id,
     name:'Вітальня — Копія',report_token:'c'.repeat(20)};
-  const pair=api.pairReports(origin,[origin,copy1,copy2]);
-  assert.equal(pair.length,3,'old extra copies remain accessible rather than silently removed');
-  assert.equal(pair[0].status,'active');
-  // Supply legacy rows through the same project repository so status lookup is realistic.
+  copy1._cloudRevision='4';copy2._cloudRevision='8';
+  // Both historical drawings survive, but a customer-facing comparison shows
+  // exactly the original and the selected current alternative.
   f.replaceProjects([origin,copy1,copy2]);
   const states=api.pairReports(origin,f.projects());
-  assert.equal(states[1].status,'expired');
-  assert.equal(states[1].url,'','expired report must not open');
-  assert.equal(states[2].status,'active');
-  assert.equal(states[2].url,'https://a-ceil.pp.ua/r/'+ 'c'.repeat(20));
+  assert.equal(states.length,2);
+  assert.equal(states[0].status,'active');
+  assert.equal(states[1].projectId,'copy-2','newer cloud revision is current variant');
+  assert.equal(states[1].status,'active');
+  assert.equal(states[1].url,'https://a-ceil.pp.ua/r/'+ 'c'.repeat(20));
+  assert.equal(f.projects().length,3,'older distinct drawing is not deleted');
+  assert.equal(api.projectsForView(f.projects(),'history').length,1,'older variant goes to recoverable history');
 });
 test('report buttons use independent URLs and do not recreate removed oversized panel',()=>{
   assert.match(source,/className="aceil-quote-reports"/);
@@ -214,7 +216,7 @@ test('report buttons use independent URLs and do not recreate removed oversized 
 });
 
 
-test('compact report section limits 5 old copies to 2 tiles and expands without deleting projects',()=>{
+test('one current alternative stays visible; older versions are in recovery history without deletion',()=>{
   const all=[{id:'source',_dbId:'source',name:'Дім',report_token:'a'.repeat(20)}]
     .concat(Array.from({length:5},(_,index)=>({
       id:'copy-'+index,_dbId:'copy-'+index,_comparisonSourceId:'source',
@@ -279,26 +281,64 @@ test('compact report section limits 5 old copies to 2 tiles and expands without 
   let grid=group.children.find(child=>child.children.length===2);
   assert(grid,'there must be a responsive tile grid');
   assert.equal(grid.children.length,2,'only the original and first alternative are initially visible');
-  assert.match(group.children[0].textContent,/6 варіантів/);
+  assert.match(group.children[0].textContent,/2 варіанти/);
   assert.match(group.children[0].textContent,/опубліковано 1/);
-  let more=group.children.find(child=>child.className==='aceil-quote-reports-toggle');
-  assert(more,'old variants remain accessible using a disclosure control');
-  assert.equal(more.textContent,'Показати ще 4');
-  assert.equal(more.attrs['aria-expanded'],'false');
-  more.onclick();
-  group=reportGroup();grid=group.children.find(child=>child.children.length===6);
-  assert(grid,'expansion restores all six report options');
-  assert.equal(group.children.find(child=>child.className==='aceil-quote-reports-toggle').attrs['aria-expanded'],'true');
-  group.children.find(child=>child.className==='aceil-quote-reports-toggle').onclick();
-  group=reportGroup();grid=group.children.find(child=>child.children.length===2);
-  assert(grid,'collapse removes the extra tiles again');
+  assert.equal(screen.cards.length,2,'only the current quote pair appears in normal Projects');
+  const history=group.children.find(child=>child.className==='aceil-quote-reports-history');
+  assert(history,'four old copies must be clearly accessible in the history section');
+  assert.match(history.textContent,/Попередні версії: 4/);
+  history.onclick();
+  assert.equal(screen.cards.length,4,'historical copies are available under Reserves');
   assert.equal(all.length,6,'show/hide actions must not mutate the cloud/project collection');
+  c.A_CEIL_ProjectArchive.setView('active');
+  assert.equal(screen.cards.length,2,'returning to Projects only shows the current pair');
   // Search may hide the source. Jump to its card should clear only the search,
   // and must not require the user to guess which search filter was active.
   search.value='Копія 5';c.renderProjects();
-  assert.equal(screen.cards.length,1);
+  assert.equal(screen.cards.length,0);
   assert.equal(c.A_CEIL_ProjectArchive.jumpToProject('source'),true);
   assert.equal(search.value,'');
-  assert.equal(screen.cards.length,6);
+  assert.equal(screen.cards.length,2);
   assert.equal(screen.scrolled,true);
+});
+
+test('backup copies never become quote alternatives or spawn nested rescue chains',async()=>{
+  const f=fixture(),api=f.c.A_CEIL_ProjectArchive;
+  const source=f.projects()[0];
+  source._recoverySourceId='prior-cloud-original';
+  source.state=JSON.stringify({...JSON.parse(source.state),recoverySourceId:'prior-cloud-original'});
+  const size=f.projects().length;
+  assert.equal(await api.copyForQuote(source.id),source.id,'cannot make an alternative quote from a backup');
+  assert.equal(await api.rescueCloudCopy(source.id),false,'cannot recursively back up an existing backup');
+  assert.equal(f.projects().length,size,'no new project rows created');
+  const another={id:'historic-backup',_dbId:'historic-backup',_recoverySourceId:source.id,
+    _comparisonSourceId:source.id,name:'Вітальня — Копія — Резервна копія'};
+  f.replaceProjects([source,another]);
+  assert.deepEqual(Array.from(api.pairReports(source,f.projects())),[],
+    'backup rows are never labelled as the main/alternative public quote pair');
+  assert.equal(api.projectsForView(f.projects(),'history').length,2,
+    'even mixed legacy quote+backup links remain visible in recovery area');
+});
+test('new alternative strips old inherited recovery identity from both project and cloud state',async()=>{
+  const f=fixture(),original=f.projects()[0];
+  original._recoverySourceId='old-recovery';
+  original.state=JSON.stringify({...JSON.parse(original.state),recoverySourceId:'old-recovery'});
+  // A copy from this record is intentionally blocked; inspect the copy helper
+  // contract without changing real project data or making a cloud request.
+  assert.match(source,/delete copy\._recoverySourceId/);
+  assert.match(source,/delete state\.recoverySourceId/);
+});
+test('cloud check blocks duplicate alternatives missing from this device cache',async()=>{
+  const f=fixture(),api=f.c.A_CEIL_ProjectArchive;
+  let checked=false;
+  f.c._sb.from=function(table){
+    assert.equal(table,'projects');
+    return {select(){return this},eq(){return this},contains(field,value){
+      checked=true;assert.equal(field,'state');assert.equal(value.comparisonSourceId,'original-uuid');return this
+    },limit(){return this},async maybeSingle(){return {data:{id:'remote-existing-quote'},error:null}}};
+  };
+  assert.equal(await api.copyForQuote('original-uuid'),false);
+  assert.equal(checked,true);
+  assert.equal(f.projects().length,1,'remote alternative must not spawn a local duplicate');
+  assert(f.messages.some(m=>/дубль не створено/.test(m)));
 });
