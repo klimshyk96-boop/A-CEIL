@@ -48,6 +48,8 @@ async function publishImageReport(canvas,fileName,dataUrl){
   }
   var payload={version:2,createdAt:new Date().toISOString(),meta:structured&&structured.meta||currentMeta(fileName),location:activeLocation(),structured:structured,presentation:"generated-report"};
   payload.image=dataUrl||canvas.toDataURL("image/png");
+  if(canvas&&canvas.dataset&&canvas.dataset.aceilPdfBreaks)
+    payload.pdfBreaks=canvas.dataset.aceilPdfBreaks;
   return window.A_CEIL_ReportLinks.publishPayload(payload,{projectId:activeProjectReference()});
 }
 function openReportInsideApp(canvas,fileName){
@@ -70,7 +72,7 @@ function openReportInsideApp(canvas,fileName){
   function save(){
     var btn=layer.querySelector("[data-save]");
     if(!window.A_CEIL_ReportPdf){try{showToast("Модуль PDF ще не завантажено")}catch(_){}return}
-    window.A_CEIL_ReportPdf.download(dataUrl,fileName,btn).catch(function(e){
+    window.A_CEIL_ReportPdf.download(dataUrl,fileName,btn,{breaks:canvas&&canvas.dataset&&canvas.dataset.aceilPdfBreaks}).catch(function(e){
       try{showToast("PDF: "+String(e&&e.message||e))}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     });
   }

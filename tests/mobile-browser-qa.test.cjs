@@ -119,6 +119,15 @@ const rows=()=>[
       },baseId);
       assert.deepEqual(jump,{hidden:true,found:true,search:'',restored:true,projects:6});
       if(width===390){
+        // A4 PDF pages must stop before another room's header rather than
+        // arbitrarily slicing the long printed report in the middle.
+        const pageSlices=await page.evaluate(()=>{
+          return window.A_CEIL_ReportPdf.planPages({naturalWidth:800,naturalHeight:1900},
+            Math.floor(281*800/194),[0.5]);
+        });
+        assert.equal(pageSlices.length,2);
+        assert.equal(pageSlices[0].end,950,'room #2 begins on an independent A4 sheet');
+        assert.equal(pageSlices[1].start,950);
         // Real browser and real bundled jsPDF: verify download from the image,
         // without any account, cloud write or external conversion service.
         const downloadWait=page.waitForEvent('download',{timeout:20000});
@@ -129,7 +138,8 @@ const rows=()=>[
           ctx.fillStyle='#fff';ctx.fillRect(0,0,800,1900);
           ctx.fillStyle='#0f172a';ctx.font='bold 32px Arial';
           ctx.fillText('A-CEIL PDF REPORT',50,110);
-          await window.A_CEIL_ReportPdf.download(canvas.toDataURL('image/png'),'A-CEIL-qa-report.png');
+          await window.A_CEIL_ReportPdf.download(canvas.toDataURL('image/png'),
+            'A-CEIL-qa-report.png',null,{breaks:[0.5]});
         });
         const file=await downloadWait;
         assert.equal(file.suggestedFilename(),'A-CEIL-qa-report.pdf');

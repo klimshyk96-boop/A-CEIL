@@ -240,7 +240,7 @@
     if(!alt){
       var create=document.createElement("button");create.type="button";
       create.className="aceil-variant-create";
-      create.textContent="＋ Створити варіант без вставки";
+      create.textContent="＋ Додати прорахунок";
       create.style.cssText="padding:12px;border:1px dashed #93c5fd;border-radius:12px;background:#eff6ff;color:#1d4ed8;font-weight:850;font-size:13px;";
       create.onclick=function(){closeVariantPicker();copyForQuote(source.id)};
       dialog.appendChild(create);
@@ -267,7 +267,7 @@
     var badge=main.querySelector(".aceil-variants-badge");
     if(!badge){badge=document.createElement("button");badge.type="button";
       badge.className="aceil-variants-badge";main.appendChild(badge)}
-    badge.textContent=alt?"◫ 2 варіанти · Обрати":"＋ Варіант без вставки";
+    badge.textContent=alt?"◫ 2 варіанти · Обрати":"＋ Додати прорахунок";
     badge.style.cssText="align-self:flex-start;margin-top:8px;padding:7px 10px;border:1px solid #bfdbfe;border-radius:10px;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:850;cursor:pointer;";
     badge.setAttribute("aria-label",alt?"Обрати основний або безвставочний розрахунок":"Відкрити вибір розрахунку");
     badge.onclick=function(e){e.stopPropagation();openVariantPicker(project.id)};

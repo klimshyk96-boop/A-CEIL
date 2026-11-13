@@ -640,7 +640,9 @@ async function alphaObject(obj,rs){
   c.fillStyle="#f8fafc";c.fillRect(0,0,W,H);
   header(c,W,28,rs,obj.name||"Звіт обʼєкта",obj.addr||"");
   let y=126;
+  const pdfRoomStarts=[126];
   for(const rd of data){
+    pdfRoomStarts.push(y);
     const showTable=(showPrice||showTech)&&!1!==rs.nomenclature;
     const titles=reportSectionTitles({dimensions:!1!==rs.dimensionsList,showTech,ceilings:rd.ceilings.length,exhausts:rd.exhausts.length,cornices:rd.cornices.length,diags:rd.diags.length,legend:!0===rs.showLegend,table:showTable});
     Object.assign(titles,{plan:"1. План приміщення",info:"2. Основна інформація",dimensions:"3. Розміри стін",placement:"4. Розташування елементів",light:"5. Світло",legend:"6. Умовні позначення",table:"7. Кошторис"});
@@ -670,8 +672,10 @@ async function alphaObject(obj,rs){
     y=Math.max(ly,ry)+28;
   }
   let contentBottom=y;
-  if(showPrice)contentBottom=totalBar(c,24,y,W,totalAll,rs);
+  if(showPrice){pdfRoomStarts.push(y);contentBottom=totalBar(c,24,y,W,totalAll,rs)}
   const finalOut=_finalizeReportCanvas(out,W,contentBottom,rs);
+  if(finalOut.dataset)finalOut.dataset.aceilPdfBreaks=JSON.stringify(
+    pdfRoomStarts.map(v=>v/Number(finalOut.dataset.logicalHeight||finalOut.height)));
   _modernOpenPreview(finalOut,`A·CEIL_pro_${audience(rs)}_${(obj.name||"obekt").replace(/\s+/g,"_")}.png`);
 }
 function ensureAddRoomButton(){return A·CEILUtils.ensureAddRoom()};generateModernSingleReport=alphaSingle,generateModernObjectReport=alphaObject,window.generateModernSingleReport=alphaSingle,window.generateModernObjectReport=alphaObject,document.addEventListener("click",e=>{e.target&&"cv"===e.target.id&&setTimeout(ensureAddRoomButton,250)},!0),setTimeout(ensureAddRoomButton,500)}()
