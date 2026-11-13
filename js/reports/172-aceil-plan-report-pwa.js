@@ -47,6 +47,7 @@ async function publishImageReport(canvas,fileName,dataUrl){
     try{structured.drawing=window.A_CEIL_cloudPlanImage(canvas)}catch(_){window.__diagSilent&&window.__diagSilent(_)}
   }
   var payload={version:2,createdAt:new Date().toISOString(),meta:structured&&structured.meta||currentMeta(fileName),location:activeLocation(),structured:structured,presentation:"generated-report"};
+  if(Array.isArray(canvas.__aceilPdfRoomStartsPx))payload.pdfRoomStartsPx=canvas.__aceilPdfRoomStartsPx.slice();
   payload.image=dataUrl||canvas.toDataURL("image/png");
   return window.A_CEIL_ReportLinks.publishPayload(payload,{projectId:activeProjectReference()});
 }
@@ -70,7 +71,7 @@ function openReportInsideApp(canvas,fileName){
   function save(){
     var btn=layer.querySelector("[data-save]");
     if(!window.A_CEIL_ReportPdf){try{showToast("Модуль PDF ще не завантажено")}catch(_){}return}
-    window.A_CEIL_ReportPdf.download(dataUrl,fileName,btn).catch(function(e){
+    window.A_CEIL_ReportPdf.download(dataUrl,fileName,btn,{roomStartsPx:canvas.__aceilPdfRoomStartsPx}).catch(function(e){
       try{showToast("PDF: "+String(e&&e.message||e))}catch(_){window.__diagSilent&&window.__diagSilent(_)}
     });
   }

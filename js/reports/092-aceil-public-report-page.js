@@ -326,7 +326,7 @@
     var pdfButton=document.getElementById("rprPdfBtn");
     if(pdfButton)pdfButton.onclick=function(){
       if(!window.A_CEIL_ReportPdf){pdfButton.textContent="Модуль PDF недоступний";return}
-      window.A_CEIL_ReportPdf.download(data.image,meta.name||"A-CEIL-report",pdfButton).catch(function(error){
+      window.A_CEIL_ReportPdf.download(data.image,meta.name||"A-CEIL-report",pdfButton,{roomStartsPx:data.pdfRoomStartsPx}).catch(function(error){
         pdfButton.textContent="⚠️ "+String(error&&error.message||error||"PDF");
         setTimeout(function(){pdfButton.textContent="⬇ Завантажити PDF"},4500);
       });

@@ -45,18 +45,34 @@ test('approved PNG image yields downloadable multi-page A4 PDF, never a PNG link
   assert.match(f.files[0].href,/^blob:pdf/);
   assert.equal(f.urls.at(-1).type,'application/pdf');
 });
+
+test('each new room begins on its own A4 sheet; legacy image still paginates',async()=>{
+  const f=fixture(),url='data:image/png;base64,aGVsbG8=';
+  assert.deepEqual(Array.from(f.api.pageSlices(1200,3600,[1100,2200]),p=>[p.y,p.height]),
+    [[0,1100],[1100,1100],[2200,1400]]);
+  assert.deepEqual(Array.from(f.api.pageSlices(1200,3600,[],null),p=>p.y),
+    [0,1738,3476], 'legacy reports keep safe fixed-height fallback without pixel access');
+  await f.api.createBlob(url,{roomStartsPx:[1100,2200]});
+  assert.equal(f.pdfs[0].pages,3);
+  assert.equal(f.pdfs[0].images.length,3);
+  assert(f.pdfs[0].images.every(p=>p.h>0&&p.h<=281));
+});
+
 test('report UIs expose one-tap PDF downloads for iPhone, desktop and public viewer',()=>{
   const mobile=read('js/reports/172-aceil-plan-report-pwa.js');
   const desktop=read('js/reports/091-aceil-pdf-cloud-report.js');
   const pub=read('js/reports/092-aceil-public-report-page.js');
   const index=read('index.html');
   assert.match(mobile,/data-save>⬇ Завантажити PDF/);
-  assert.match(mobile,/A_CEIL_ReportPdf\.download\(dataUrl,fileName,btn\)/);
+  assert.match(mobile,/A_CEIL_ReportPdf\.download\(dataUrl,fileName,btn,\{roomStartsPx:canvas\.__aceilPdfRoomStartsPx\}\)/);
   assert.doesNotMatch(mobile,/data-save>Зберегти PNG/);
   assert.match(desktop,/id="png">⬇ PDF/);
   assert.match(desktop,/A·CEILPreparePdf\(id,pngBtn\)/);
   assert.match(pub,/id="rprPdfBtn">⬇ Завантажити PDF/);
   assert.match(pub,/A_CEIL_ReportPdf\.download\(data\.image,meta\.name/);
+  assert.match(pub,/roomStartsPx:data\.pdfRoomStartsPx/);
+  assert.match(desktop,/pageSlices\(c\.width,c\.height,c\.__aceilPdfRoomStartsPx,c\)/);
+  assert.match(read('js/reports/037-aceil-report-settings-generator.js'),/markPdfRoomStarts\(finalOut,roomStarts\)/);
   assert(index.indexOf('237-aceil-image-report-pdf.js')<index.indexOf('092-aceil-public-report-page.js'),
     'PDF runtime available before client report renderer');
 });

@@ -515,6 +515,15 @@ function reportSectionTitles(flags){
   return titles;
 }
 
+function markPdfRoomStarts(canvas,logicalStarts){
+  // New multi-room reports carry exact room boundaries in canvas pixels.
+  // Older public PNGs still use the safe whitespace fallback.
+  if(!canvas||!Array.isArray(logicalStarts)||logicalStarts.length<2)return canvas;
+  const scale=Math.max(1,Number(canvas.dataset&&canvas.dataset.hdScale)||1);
+  canvas.__aceilPdfRoomStartsPx=logicalStarts.slice(1)
+    .map(y=>Math.round(y*scale)).filter(y=>y>0&&y<canvas.height);
+  return canvas;
+}
 function rmReportCreateHQCanvas(W,H){
   const requested=3,maxPixels=24e6,maxDimension=12000;
   const byPixels=Math.sqrt(maxPixels/Math.max(1,W*H)),byWidth=maxDimension/Math.max(1,W),byHeight=maxDimension/Math.max(1,H);
@@ -587,7 +596,7 @@ function contractorMaterialCard(c,x,y,w,h,ceilingColor,harpoonColor,ceilingSwatc
   c.fillStyle="#0f172a";c.font="bold 18px Arial";c.fillText(black?"Чорний":"Білий",x+60,y+225);
 }
 async function alphaContractorObject(obj,rs){
-  const W=1080,PAD=24,GAP=16,PLAN_H=660,rooms=Array.isArray(obj.rooms)?obj.rooms:[],prepared=[];
+  const W=1080,PAD=24,GAP=16,PLAN_H=660,rooms=Array.isArray(obj.rooms)?obj.rooms:[],prepared=[],roomStarts=[];
   let H=126;
   for(const r of rooms){
     let st={};try{st=r&&r.state?(typeof r.state==="string"?JSON.parse(r.state):r.state):{}}catch(_e){st={}}
@@ -601,6 +610,7 @@ async function alphaContractorObject(obj,rs){
   header(c,W,28,rs,obj.name||"Новий обʼєкт",rooms.length===1?String(rooms[0].name||"Кімната"):String(rooms.length)+" кімнат");
   let y=126;
   for(const rd of prepared){
+    roomStarts.push(y);
     c.fillStyle="#0f172a";c.font="bold 25px Arial";c.textAlign="left";c.fillText(String(rd.r.name||"Кімната"),PAD,y+30);y+=48;
     contractorProductionBadge(c,W-PAD,y-43,rs.productionTime);
     const drawing=!1!==rs.drawing?_renderRoomForReport(rd.r,rs):null;
@@ -613,12 +623,13 @@ async function alphaContractorObject(obj,rs){
     y+=rd.bottomH+30;
   }
   const finalOut=_finalizeReportCanvas(out,W,y+24,rs);
+  markPdfRoomStarts(finalOut,roomStarts);
   _modernOpenPreview(finalOut,`A·CEIL_blank_vykonavtsiu_${(obj.name||"obekt").replace(/\s+/g,"_")}.png`);
 }
 async function alphaObject(obj,rs){
   rs=rs||((typeof window._loadRS==="function"&&window._loadRS())||window.reportSettings||{});
   if(rs.reportAudience==="contractor-sheet")return alphaContractorObject(obj,rs);
-  const W=1080,rooms=obj.rooms||[];let data=[],totalAll=0,H=180;
+  const W=1080,rooms=obj.rooms||[];let data=[],totalAll=0,H=180,roomStarts=[];
   const showTech=!isClient(rs),showPrice=!isInstaller(rs)||isFull(rs);
   for(const r of rooms){
     let st=null;try{st=r.state?"string"==typeof r.state?JSON.parse(r.state):r.state:null}catch(__diagE913){window.__diagSilent&&window.__diagSilent(__diagE913)}
@@ -641,6 +652,7 @@ async function alphaObject(obj,rs){
   header(c,W,28,rs,obj.name||"Звіт обʼєкта",obj.addr||"");
   let y=126;
   for(const rd of data){
+    roomStarts.push(y);
     const showTable=(showPrice||showTech)&&!1!==rs.nomenclature;
     const titles=reportSectionTitles({dimensions:!1!==rs.dimensionsList,showTech,ceilings:rd.ceilings.length,exhausts:rd.exhausts.length,cornices:rd.cornices.length,diags:rd.diags.length,legend:!0===rs.showLegend,table:showTable});
     Object.assign(titles,{plan:"1. План приміщення",info:"2. Основна інформація",dimensions:"3. Розміри стін",placement:"4. Розташування елементів",light:"5. Світло",legend:"6. Умовні позначення",table:"7. Кошторис"});
@@ -672,6 +684,7 @@ async function alphaObject(obj,rs){
   let contentBottom=y;
   if(showPrice)contentBottom=totalBar(c,24,y,W,totalAll,rs);
   const finalOut=_finalizeReportCanvas(out,W,contentBottom,rs);
+  markPdfRoomStarts(finalOut,roomStarts);
   _modernOpenPreview(finalOut,`A·CEIL_pro_${audience(rs)}_${(obj.name||"obekt").replace(/\s+/g,"_")}.png`);
 }
 function ensureAddRoomButton(){return A·CEILUtils.ensureAddRoom()};generateModernSingleReport=alphaSingle,generateModernObjectReport=alphaObject,window.generateModernSingleReport=alphaSingle,window.generateModernObjectReport=alphaObject,document.addEventListener("click",e=>{e.target&&"cv"===e.target.id&&setTimeout(ensureAddRoomButton,250)},!0),setTimeout(ensureAddRoomButton,500)}()
