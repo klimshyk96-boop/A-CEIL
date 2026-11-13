@@ -35,6 +35,7 @@ for name in \
   report-link-snapshots \
   report-publication-session \
   report-pdf-export \
+  report-diagonal-choices \
   sync-conflict-resolver \
   legacy-report-privacy \
   pwa-icon \
