@@ -231,6 +231,40 @@ test('rooms changed only on another device are adopted instead of overwritten', 
   assert.equal(f.items()[0].rooms[0].state,remote1.state);
   assert.equal(f.items()[0]._cloudBase.r1,JSON.stringify(['Hall',remote1.state]));
 });
+test('later cloud revision with exact same drawing is acknowledged without overwrite',async()=>{
+  const r={id:'r1',name:'Кімната',state:drawn(5)};
+  const base={r1:JSON.stringify([r.name,r.state])};
+  const f=roomsFixture([r],base);f.enqueue();
+  const done=f.c.flushPendingQueue();await tick();
+  assert.equal(f.requests[0].method,undefined,'read revision without changing cloud');
+  f.requests[0].resolve({data:{state:{rooms:[r]},sync_revision:12},error:null});
+  await tick();
+  assert.equal(f.requests.length,2,'verify all editable fields on stale revision');
+  assert.equal(f.requests[1].method,undefined,'verification is read only');
+  const data={id:'db-a',sync_revision:12,name:'Flat',addr:'',phone:'',comment:'',
+    area:'',per:'',in_corners:'',out_corners:'',thumb:'',
+    state:{schemaVersion:3,projectType:'apartment',multiRoom:true,rooms:[r]}};
+  f.requests[1].resolve({data,error:null});
+  assert.equal(await done,true,'server already contains exactly the local content');
+  assert.equal(f.requests.length,2,'no destructive CAS UPDATE');
+  assert.equal(f.c.getPendingQueue().length,0);
+  assert.equal(f.items()[0]._cloudRevision,'12');
+  assert.equal(f.items()[0].rooms[0].state,r.state);
+});
+test('newer revision with even one real room difference still blocks any overwrite',async()=>{
+  const r={id:'r1',name:'Кімната',state:drawn(5)};
+  const f=roomsFixture([r],{r1:JSON.stringify([r.name,r.state])});f.enqueue();
+  const done=f.c.flushPendingQueue();await tick();
+  f.requests[0].resolve({data:{state:{rooms:[r]},sync_revision:12},error:null});await tick();
+  f.requests[1].resolve({data:{id:'db-a',sync_revision:12,name:'Flat',
+    addr:'',phone:'',comment:'',area:'',per:'',in_corners:'',out_corners:'',thumb:'',
+    state:{schemaVersion:3,projectType:'apartment',multiRoom:true,
+      rooms:[{...r,state:drawn(9)}]}},error:null});
+  assert.equal(await done,false);
+  assert.equal(f.requests.length,2,'no CAS attempt for real conflict');
+  assert.equal(f.c.getPendingQueue()[0]._manualConflictRequired,true);
+  assert.equal(f.items()[0].rooms[0].state,r.state,'local copy preserved');
+});
 test('a room changed on two devices must remain queued without overwriting either drawing', async () => {
   const orig={id:'r1',name:'Hall',state:drawn(1)};
   const base={r1:JSON.stringify([orig.name,orig.state])};
