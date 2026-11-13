@@ -262,7 +262,7 @@
     var safePayload = Object.assign(await optimizePayload(payload, options), { expiresAt: expires });
     assertPublishSession(client,expectedUid,projectId);
     if(copyHasPendingEdits(project))
-      throw new Error("Копія змінилася під час підготовки звіту. Спочатку завершить хмарне збереження.");
+      throw new Error("Копія змінилася під час підготовки звіту. Спочатку завершіть хмарне збереження.");
     if (typeof options.onProgress === "function") options.onProgress("Завантаження звіту в хмару…");
     // Every publication is an immutable snapshot. The legacy project fields are
     // still refreshed below for the project list/CRM, but they are no longer
