@@ -8,10 +8,10 @@
   }
   function labels(){
     var all={
-      uk:{title:"Діагоналі у звіті",none:"Без діагоналей",manual:"Тільки виміряні",all:"Усі можливі"},
-      en:{title:"Report diagonals",none:"No diagonals",manual:"Measured only",all:"All possible"},
-      pl:{title:"Przekątne w raporcie",none:"Bez przekątnych",manual:"Tylko zmierzone",all:"Wszystkie możliwe"},
-      ru:{title:"Диагонали в отчёте",none:"Без диагоналей",manual:"Только измеренные",all:"Все возможные"}
+      uk:{title:"Діагоналі у звіті",none:"Без діагоналей",manual:"Тільки виміряні",visible:"Як на кресленні",all:"Усі можливі"},
+      en:{title:"Report diagonals",none:"No diagonals",manual:"Measured only",visible:"As drawn",all:"All possible"},
+      pl:{title:"Przekątne w raporcie",none:"Bez przekątnych",manual:"Tylko zmierzone",visible:"Jak na rysunku",all:"Wszystkie możliwe"},
+      ru:{title:"Диагонали в отчёте",none:"Без диагоналей",manual:"Только измеренные",visible:"Как на чертеже",all:"Все возможные"}
     };
     return all[language()]||all.uk;
   }
@@ -19,7 +19,7 @@
     if(document.getElementById("aceilReportDiagonalsMenuStyle"))return;
     var style=document.createElement("style");
     style.id="aceilReportDiagonalsMenuStyle";
-    style.textContent="#reportSettingsModal .rsdiag-menu{grid-column:1/-1;min-width:0;max-width:100%;box-sizing:border-box;margin:8px 0 2px;padding:10px;border:1px solid #bfdbfe;border-radius:15px;background:#eff6ff}#reportSettingsModal .rsdiag-menu[hidden]{display:none!important}#reportSettingsModal .rsdiag-title{margin-bottom:8px;color:#1e3a8a;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;overflow-wrap:anywhere}#reportSettingsModal .rsdiag-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;min-width:0}#reportSettingsModal .rsdiag-option{width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box;white-space:normal!important;overflow-wrap:anywhere;min-height:42px!important;padding:8px!important;border:1px solid #cbd5e1!important;border-radius:12px!important;background:#fff!important;color:#334155!important;box-shadow:none!important;font-size:11px!important;font-weight:850!important}#reportSettingsModal .rsdiag-option.active{border-color:#2563eb!important;background:#2563eb!important;color:#fff!important}";
+    style.textContent="#reportSettingsModal .rsdiag-menu{grid-column:1/-1;min-width:0;max-width:100%;box-sizing:border-box;margin:8px 0 2px;padding:10px;border:1px solid #bfdbfe;border-radius:15px;background:#eff6ff}#reportSettingsModal .rsdiag-menu[hidden]{display:none!important}#reportSettingsModal .rsdiag-title{margin-bottom:8px;color:#1e3a8a;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;overflow-wrap:anywhere}#reportSettingsModal .rsdiag-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;min-width:0}#reportSettingsModal .rsdiag-option{width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box;white-space:normal!important;overflow-wrap:anywhere;min-height:42px!important;padding:8px!important;border:1px solid #cbd5e1!important;border-radius:12px!important;background:#fff!important;color:#334155!important;box-shadow:none!important;font-size:11px!important;font-weight:850!important}#reportSettingsModal .rsdiag-option.active{border-color:#2563eb!important;background:#2563eb!important;color:#fff!important}";
     document.head.appendChild(style);
   }
   function enhance(){
@@ -28,11 +28,22 @@
     installStyle();
     var oldCard=select.closest(".rspro-card"),toggle=checkbox.closest(".rspro-toggle"),text=labels(),menu=document.createElement("div");
     menu.id="rsDiagInlineMenu";menu.className="rsdiag-menu";
-    menu.innerHTML='<div class="rsdiag-title"></div><div class="rsdiag-options"><button type="button" class="rsdiag-option" data-value="none"></button><button type="button" class="rsdiag-option" data-value="manual"></button><button type="button" class="rsdiag-option" data-value="all"></button></div>';
+    menu.innerHTML='<div class="rsdiag-title"></div><div class="rsdiag-options"><button type="button" class="rsdiag-option" data-value="none"></button><button type="button" class="rsdiag-option" data-value="manual"></button><button type="button" class="rsdiag-option" data-value="visible"></button><button type="button" class="rsdiag-option" data-value="all"></button></div>';
     menu.querySelector(".rsdiag-title").textContent=text.title;
     menu.querySelector('[data-value="none"]').textContent=text.none;
     menu.querySelector('[data-value="manual"]').textContent=text.manual;
+    menu.querySelector('[data-value="visible"]').textContent=text.visible;
     menu.querySelector('[data-value="all"]').textContent=text.all;
+    // The legacy <select> has only manual/all. Add a real option so
+    // saveReportSettings() cannot silently fall back to 'manual'.
+    if(!select.querySelector('option[value="visible"]')){
+      var option=document.createElement("option");option.value="visible";
+      option.textContent=text.visible;select.appendChild(option);
+    }
+    try{
+      var saved=typeof window._loadRS==="function"?window._loadRS():window.reportSettings||{};
+      if(saved.diagMode==="visible")select.value="visible";
+    }catch(_){}
     select.hidden=true;menu.appendChild(select);
     if(toggle)toggle.insertAdjacentElement("afterend",menu);else modal.querySelector(".rspro-body").appendChild(menu);
     if(oldCard&&oldCard.isConnected)oldCard.remove();
