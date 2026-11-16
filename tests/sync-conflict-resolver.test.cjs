@@ -11,7 +11,7 @@ function fixture(options={}){
     name:'Сьогодні — Копія',state:{closed:true,lengths:[300,300,300,300]}},options.cloud||{});
   let projects=[local],queue=[{type:'save',payload:{localId:'project-1',dbId:'project-1'},
     _manualConflictRequired:true,_lastError:'Немає ревізії'}];
-  let reads=0,flushes=0,downloads=0,updated=0;
+  let reads=0,flushes=0,downloads=0,updated=0,closed=false,toasts=[];
   function element(tag='div'){
     const o={tagName:tag,className:'',children:[],dataset:{},style:{cssText:''},textContent:'',
       appendChild(x){this.children.push(x);return x},
@@ -25,7 +25,8 @@ function fixture(options={}){
     };
     return o;
   }
-  const host=element(),document={getElementById(id){return id==='aceilSyncRescuePanel'?host:null},
+  const host=element();host.dataset.projectId='project-1';host.remove=()=>{closed=true};
+  const document={getElementById(id){return id==='aceilSyncRescuePanel'&&!closed?host:null},
     createElement:element,body:{appendChild(){}}
   };
   const client={from(table){
@@ -46,7 +47,7 @@ function fixture(options={}){
       queue=[];projects[0]._cloudRevision='8';delete projects[0]._dirty;
       delete projects[0]._localUpdatedAt;return true;
     },
-    renderProjects(){},_updatePendingBadge(){}
+    renderProjects(){},_updatePendingBadge(){},showToast(text){toasts.push(text)}
   };
   w.window=w;w['A·CEIL']={ProjectRepository:{
     list(){return copy(projects)},replaceAll(next){updated++;projects=copy(next)}
@@ -58,6 +59,7 @@ function fixture(options={}){
     return section?section.children.filter(x=>x.tagName==='button'):[]}
   return {w,host,buttons,local:()=>copy(projects[0]),queue:()=>copy(queue),
     reads:()=>reads,flushes:()=>flushes,downloads:()=>downloads,updated:()=>updated,
+    closed:()=>closed,toasts:()=>toasts.slice(),
     setCloud(next){cloud=Object.assign({},cloud,next)},api:w.A_CEIL_ConflictResolver};
 }
 test('missing revision resolves automatically only when local and cloud contents are identical',async()=>{
@@ -70,6 +72,8 @@ test('missing revision resolves automatically only when local and cloud contents
   assert.equal(f.local()._dirty,undefined);
   assert.equal(f.queue().length,0);
   assert.equal(f.flushes(),0,'no remote write for exactly equal project');
+  assert.equal(f.closed(),true,'successful exact-match acknowledgement must dismiss stale panel');
+  assert.match(f.toasts().at(-1),/Синхронізацію підтверджено/);
 });
 test('same drawing with local inC/outC aliases and cloud-only metadata is not a false conflict',async()=>{
   const f=fixture({local:{inC:6,outC:2},
@@ -98,6 +102,7 @@ test('different versions cannot overwrite without a downloaded backup and explic
   assert.equal(f.queue().length,0);
   assert.equal(f.local()._cloudRevision,'8');
   assert.equal(f.local().state,JSON.stringify({closed:true,lengths:[300,300,300,300]}));
+  assert.equal(f.closed(),true,'confirmed CAS write should dismiss sync panel');
 });
 test('cloud version changed during confirmation: CAS is not even attempted',async()=>{
   const f=fixture({cloud:{state:{closed:true,lengths:[333,300,300,300]}}});
@@ -107,6 +112,7 @@ test('cloud version changed during confirmation: CAS is not even attempted',asyn
   assert.equal(f.flushes(),0);
   assert.equal(f.queue()[0]._manualConflictRequired,true);
   assert.equal(f.local()._cloudRevision,null);
+  assert.equal(f.closed(),false,'unresolved conflict must not be dismissed');
 });
 test('explicit cloud choice restores latest server drawing and leaves downloaded two-way JSON backup',async()=>{
   const f=fixture({cloud:{state:{closed:true,lengths:[333,300,300,300]}}});
@@ -117,7 +123,16 @@ test('explicit cloud choice restores latest server drawing and leaves downloaded
   assert.equal(f.local()._dirty,undefined);
   assert.equal(f.queue().length,0);
   assert.equal(f.flushes(),0,'choosing cloud must not send another cloud write');
+  assert.equal(f.closed(),true,'replaced local drawing must close old helper panel');
 });
+test('resolution never closes a panel for a different project',async()=>{
+  const f=fixture();f.host.dataset.projectId='different-project';
+  await f.api.open('project-1');
+  await f.buttons()[0].onclick();
+  assert.equal(f.local()._cloudRevision,'7');
+  assert.equal(f.closed(),false);
+});
+
 test('conflict resolver keeps changes when logged-in user switches before second read',async()=>{
   const f=fixture({cloud:{state:{closed:true,lengths:[333,300,300,300]}}});
   await f.api.open('project-1');const b=f.buttons();b[0].onclick();
