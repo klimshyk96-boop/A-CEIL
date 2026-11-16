@@ -32,6 +32,7 @@ for name in \
   price-stability \
   quote-copy-workflow \
   project-archive \
+  project-compact-cards \
   demo-access-ui \
   demo-support-visible \
   demo-existing-user \
