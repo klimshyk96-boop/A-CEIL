@@ -293,6 +293,90 @@
       if(pen){pen.onclick=function(e){e.stopPropagation();openVariantPicker(project.id)};pen.title="Обрати варіант для редагування";}
     }
   }
+  function ensureCompactProjectCards(){
+    if(document.getElementById("aceilProjectCompactCardStyle"))return;
+    var sheet=document.createElement("style");sheet.id="aceilProjectCompactCardStyle";
+    sheet.textContent=`
+      /* Compact mobile project rows: one information block, one action bar.
+         Keep button handlers/links unchanged and do not touch project data. */
+      @media(max-width:700px){
+        #projectsList .rp-project-card{
+          display:grid!important;grid-template-columns:76px minmax(0,1fr)!important;
+          grid-template-rows:auto auto!important;gap:7px 10px!important;
+          padding:9px!important;min-height:0!important;box-sizing:border-box!important;
+          border:1px solid #e7edf5!important;border-radius:14px!important;
+          margin-bottom:8px!important;box-shadow:0 2px 7px rgba(15,23,42,.055)!important;
+        }
+        #projectsList .rp-project-thumb{
+          grid-column:1!important;grid-row:1!important;align-self:start!important;
+          width:76px!important;min-width:76px!important;height:82px!important;
+          min-height:82px!important;max-height:82px!important;
+          border-radius:10px!important;margin:0!important;
+        }
+        #projectsList .rp-project-thumb img,
+        #projectsList .rp-project-thumb>div{height:100%!important;min-height:0!important}
+        #projectsList .rp-project-thumb span[title="Кількість кімнат"]{display:none!important}
+        #projectsList .rp-project-main{
+          grid-column:2!important;grid-row:1!important;padding:0!important;
+          margin:0!important;min-width:0!important;justify-content:flex-start!important;
+          gap:3px!important;
+        }
+        #projectsList .rp-project-head{
+          display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:4px!important;
+        }
+        #projectsList .rp-project-title{
+          flex:1 0 100%!important;min-width:0!important;font-size:15px!important;
+          line-height:1.22!important;font-weight:850!important;
+        }
+        #projectsList .rp-project-head>span{
+          padding:3px 6px!important;font-size:10px!important;
+          border-radius:7px!important;line-height:1.1!important;box-shadow:none!important;
+        }
+        #projectsList .rp-project-metrics{
+          margin-top:3px!important;gap:4px!important;flex-wrap:wrap!important;
+        }
+        #projectsList .rp-project-metrics>span{
+          padding:3px 6px!important;font-size:11px!important;border-radius:7px!important;
+        }
+        #projectsList .rp-project-main>div:has(>span[style*="#f3e8ff"]){
+          display:none!important;
+        }
+        #projectsList .aceil-variants-badge{
+          align-self:flex-start!important;margin-top:3px!important;
+          padding:5px 8px!important;border-radius:8px!important;
+          font-size:11px!important;line-height:1.2!important;
+        }
+        #projectsList .rp-project-actions{
+          grid-column:1/-1!important;grid-row:2!important;
+          display:flex!important;flex-direction:row!important;align-items:stretch!important;
+          justify-content:flex-start!important;gap:6px!important;
+          width:100%!important;min-width:0!important;
+          padding:7px 0 0!important;margin:0!important;
+          border-top:1px solid #edf2f8!important;
+        }
+        #projectsList .rp-project-actions>button{
+          min-height:40px!important;height:40px!important;
+          padding:7px!important;border-radius:10px!important;
+          font-size:14px!important;line-height:1!important;
+          box-shadow:none!important;box-sizing:border-box!important;
+        }
+        #projectsList .rp-project-actions>button:first-child{
+          flex:1 1 auto!important;min-width:0!important;font-size:13px!important;
+        }
+        #projectsList .rp-project-actions>button:not(:first-child){
+          flex:0 0 40px!important;min-width:40px!important;width:40px!important;
+        }
+      }
+    `;
+    document.head.appendChild(sheet);
+  }
+  function dismissFinishedSyncHelp(){
+    var panel=document.getElementById("aceilSyncRescuePanel");
+    if(!panel||!panel.dataset||!panel.dataset.projectId)return false;
+    var p=list().find(function(row){return matches(row,panel.dataset.projectId)});
+    if(!p||!p._cloudRevision||p._dirty||p._localUpdatedAt||queuedSave(p))return false;
+    panel.remove();return true;
+  }
   function decorate(){
     var all=list(),byId=new Map();
     all.forEach(function(project){
@@ -363,7 +447,7 @@
     };
     rendering=true;window.getProjects=filtered;try{getProjects=filtered}catch(_){}
     try{baseRender()}finally{window.getProjects=originalWindow;try{getProjects=originalBinding}catch(_){}rendering=false}
-    ensureTabs();decorate();
+    ensureTabs();ensureCompactProjectCards();decorate();dismissFinishedSyncHelp();
     var listEl=document.getElementById("projectsList");
     if(listEl&&!filtered().length)listEl.innerHTML='<div class="aceil-project-archive-empty">'+(view==="archive"?"Архів поки порожній":view==="history"?"Резервних і попередніх версій немає":"Активних проєктів немає")+'</div>';
   }
@@ -438,15 +522,22 @@
     if(!parent)return false;
     var panel=document.getElementById("aceilSyncRescuePanel");
     if(!panel){panel=document.createElement("section");panel.id="aceilSyncRescuePanel";parent.insertBefore(panel,target)}
+    panel.dataset.projectId=String(project._dbId||project.id);
     panel.replaceChildren();
     panel.style.cssText="margin:8px 0 12px;padding:12px;border:1px solid #e7b96b;border-radius:13px;background:#fffcf5;color:#713f12;max-width:100%;box-sizing:border-box;";
-    var heading=document.createElement("strong");heading.textContent="☁️ Збереження в хмарі · "+String(project.name||"Проєкт");
-    panel.appendChild(heading);
+    var bar=document.createElement("div");bar.style.cssText="display:flex;align-items:center;gap:8px;justify-content:space-between";
+    var heading=document.createElement("strong");heading.textContent="☁️ "+String(project.name||"Проєкт")+" · синхронізація";
+    heading.style.cssText="font-size:14px;line-height:1.25;min-width:0;overflow-wrap:anywhere";
+    var dismiss=document.createElement("button");dismiss.type="button";
+    dismiss.textContent="✕";dismiss.setAttribute("aria-label","Закрити повідомлення про синхронізацію");
+    dismiss.style.cssText="border:0;background:#fef3c7;color:#713f12;border-radius:8px;min-width:32px;min-height:32px;font-size:16px;flex-shrink:0";
+    dismiss.onclick=function(){panel.remove()};
+    bar.appendChild(heading);bar.appendChild(dismiss);panel.appendChild(bar);
     var issue=syncIssue(project),detail=document.createElement("p");
-    detail.style.cssText="font-size:13px;line-height:1.5;margin:8px 0 12px";
+    detail.style.cssText="font-size:12px;line-height:1.35;margin:6px 0 9px";
     detail.textContent=issue.blocked
-      ?"Локальне креслення збережено. Хмарну версію не перезаписано. Не очищуйте дані браузера. Можна безпечно порівняти обидві версії."
-      :issue.description+" Не очищуйте дані браузера, доки зміни не збережуться у хмарі.";
+      ?"Креслення збережено на телефоні; хмара не перезаписана. Перевірте версії перед вибором."
+      :issue.description+" Локальні дані збережені.";
     panel.appendChild(detail);
     var actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap";
     var retry=document.createElement("button");retry.type="button";retry.textContent="↻ Повторити синхронізацію";
@@ -457,7 +548,7 @@
     else if(project._dbId){
       var reconcile=document.createElement("button");reconcile.type="button";
       reconcile.textContent="🔎 Перевірити відмінності";
-      reconcile.style.cssText="border:0;border-radius:9px;padding:11px 13px;background:#2563eb;color:#fff;font-weight:850;";
+      reconcile.style.cssText="border:0;border-radius:9px;padding:8px 10px;background:#2563eb;color:#fff;font-size:12px;font-weight:800;";
       reconcile.onclick=function(){
         if(window.A_CEIL_ConflictResolver)window.A_CEIL_ConflictResolver.open(project.id);
         else notify("Модуль узгодження ще завантажується.");
@@ -467,7 +558,7 @@
     var rescue=document.createElement("button");rescue.type="button";
     var existingRescue=list().find(function(p){return p&&p!==project&&String(p._recoverySourceId||"")===String(project._dbId||project.id)});
     rescue.textContent=existingRescue?"☁️ Відкрити збережену резервну":isRecovery(project)?"☁️ Резервна — повторення вимкнено":"☁️ Створити захисну копію";
-    rescue.style.cssText="border:1px solid #fdba74;border-radius:9px;padding:10px 12px;background:#fff;color:#9a3412;font-weight:800";
+    rescue.style.cssText="border:1px solid #fdba74;border-radius:9px;padding:8px 10px;background:#fff;color:#9a3412;font-size:12px;font-weight:800";
     rescue.disabled=isRecovery(project)&&!existingRescue;
     rescue.onclick=function(){rescueCloudCopy(project.id)};
     actions.appendChild(rescue);panel.appendChild(actions);
