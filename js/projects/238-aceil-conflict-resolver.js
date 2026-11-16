@@ -127,6 +127,19 @@ function refreshProjectList(){
   try{if(typeof window.renderProjects==="function")window.renderProjects()}catch(_){}
   try{if(typeof window._updatePendingBadge==="function")window._updatePendingBadge()}catch(_){}
 }
+function finishResolved(original,message){
+  // Do not dismiss the warning unless this exact project is fully
+  // acknowledged with no local changes or queued operations.
+  refreshProjectList();
+  var current=project(original&&String(original._dbId||original.id));
+  if(!current||!current._cloudRevision||current._dirty||current._localUpdatedAt||queueFor(current).length)
+    return false;
+  var panel=document.getElementById("aceilSyncRescuePanel");
+  if(panel&&panel.dataset&&ids(current).includes(String(panel.dataset.projectId||"")))
+    panel.remove();
+  try{if(typeof window.showToast==="function")window.showToast(message,3500)}catch(_){}
+  return true;
+}
 async function open(id){
   var local=project(id);
   if(!supportedLocal(local))return false;
@@ -186,7 +199,8 @@ async function open(id){
           removeQueued(p);
           delete p._dirty;delete p._localUpdatedAt;delete p._syncStatus;
           p._cloudSavedAt=Date.now();putLocal(p);
-          refreshProjectList();notice(section,"✅ Обидві версії однакові. Конфлікт вирішено без нового запису в хмару.",false);
+          if(!finishResolved(p,"✅ Креслення збігаються. Синхронізацію підтверджено."))
+            notice(section,"Дані оновилися, але збереження ще очікує завершення. Перевірте статус.",true);
         }catch(e){notice(section,String(e.message||e),true)}
         finally{equalButton.disabled=false}
       };
@@ -214,7 +228,8 @@ async function open(id){
             // Other projects may still be pending; judge this conflict only by
             // this project's confirmed revision and its own queue.
             if(fresh&&fresh._cloudRevision&&!fresh._dirty&&!queueFor(fresh).length){
-              refreshProjectList();notice(section,"✅ Ваше креслення підтверджено в хмарі. Конфлікт усунуто.",false);
+              if(!finishResolved(fresh,"✅ Локальне креслення підтверджено в хмарі."))
+                notice(section,"Запис очікує підтвердження. Локальні правки збережено.",true);
             }else{
               refreshProjectList();notice(section,"Хмара ще не підтвердила запис. Локальні правки збережені; повторно перевірте конфлікт.",true);
             }
@@ -233,8 +248,8 @@ async function open(id){
             p._cloudSavedAt=Date.now();
             delete p._dirty;delete p._localUpdatedAt;delete p._syncStatus;
             removeQueued(p);putLocal(p);
-            refreshProjectList();
-            notice(section,"✅ Хмарну версію відновлено. Закрийте редактор і відкрийте проєкт заново, щоб креслення оновилося.",false);
+            if(!finishResolved(p,"✅ Хмарну версію відновлено. Відкрийте проєкт заново."))
+              notice(section,"Проєкт збережено локально; перевірте статус синхронізації.",true);
           }
         }catch(e){notice(section,"Не завершено: "+String(e.message||e),true)}
         finally{resolving=false;mine.disabled=false;theirs.disabled=false}
