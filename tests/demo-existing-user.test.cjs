@@ -22,7 +22,9 @@ const dummies={
   initials:()=>'U',workspaceBox:()=>'<div>workspace</div>',
   wallCatalogBox:()=>'',filmCatalogBox:()=>'',toggle:()=>'',
   projectScope:()=>'',tempAccess:()=>'<div>SHARED_EXPIRY_SECTION</div>',
-  foldSummary:()=>'',mailFeatureReady:false,Date,adminRows:[]
+  foldSummary:()=>'',mailFeatureReady:false,Date,adminRows:[],
+  userListView:'current',
+  userBucket:r=>r.approval_status==='rejected'||(r.is_active===false&&r.approval_status!=='pending')?'inactive':'current'
 };
 const render=new Function(...Object.keys(dummies),src.slice(start,end)+';return render')(...Object.values(dummies));
 const base={user_id:'test-user',app_role:'user',email:'test@example.test',

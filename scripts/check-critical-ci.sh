@@ -10,6 +10,7 @@ node --check js/nomenclature/232-aceil-profile-coverage.js
 node --check js/nomenclature/140-aceil-universal-autocount.js
 node --check js/projects/230-aceil-project-archive.js
 node --check js/projects/238-aceil-conflict-resolver.js
+node --check js/admin/166-aceil-admin.js
 node --check js/canvas/135-aceil-curve-fixed-ends.js
 node --check js/reports/237-aceil-image-report-pdf.js
 node --check js/core/019-aceil-core-ui-rooms-bulk-walls.js
@@ -36,6 +37,7 @@ for name in \
   demo-access-ui \
   demo-support-visible \
   demo-existing-user \
+  admin-user-lists \
   support-contacts \
   report-link-snapshots \
   report-publication-session \

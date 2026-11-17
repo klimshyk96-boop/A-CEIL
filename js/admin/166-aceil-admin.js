@@ -182,25 +182,65 @@ async function loadActivityData(){
   try{var r=await c.rpc('admin_user_activity');if(r.error)throw r.error;(Array.isArray(r.data)?r.data:[]).forEach(function(a){activityByUser[String(a.user_id||'')]=a})}catch(e){window.__diagSilent&&window.__diagSilent(e)}
   renderActivity();
 }
+// These are presentation-only groups; Supabase approval/access flags remain authoritative.
+// Pending registrations are kept with the main list so they cannot be missed.
+var userListView="current";
+function userBucket(row){
+  var status=String(row&&row.approval_status||"").toLowerCase();
+  return status==="rejected"||(row&&row.is_active===false&&status!=="pending")
+    ?"inactive":"current";
+}
+function setUserListView(view){
+  var next=view==="inactive"?"inactive":"current";
+  if(userListView===next)return;
+  userListView=next;
+  render(adminRows);
+}
 function renderSummary(rows){
   var box=document.getElementById('aceilAdminSummary');if(!box)return;
-  var total=rows.length,active=rows.filter(function(r){return r.is_active!==false}).length,blocked=total-active;
-  box.innerHTML='<div class="aceil-admin-dashboard"><div class="aceil-stat"><b>'+total+'</b><span>Користувачів</span></div><div class="aceil-stat good"><b>'+active+'</b><span>Активних</span></div><div class="aceil-stat bad"><b>'+blocked+'</b><span>Заблоковано</span></div></div>';
+  var total=rows.length,active=rows.filter(function(r){
+    var status=String(r.approval_status||"").toLowerCase();
+    return userBucket(r)==="current"&&status!=="pending";
+  }).length,blocked=rows.filter(function(r){return userBucket(r)==="inactive"}).length;
+  box.innerHTML='<div class="aceil-admin-dashboard"><div class="aceil-stat"><b>'+total+'</b><span>Користувачів</span></div><div class="aceil-stat good"><b>'+active+'</b><span>Активних</span></div><div class="aceil-stat bad"><b>'+blocked+'</b><span>Відхилених / заблокованих</span></div></div>';
 }
 function render(rows){
   rows=(Array.isArray(rows)?rows:[]).filter(function(r){
   return String(r.app_role||'').toLowerCase()!=='owner';
 });adminRows=rows.slice();renderSummary(rows);
-  if(!rows.length){content('<div class="aceil-admin-empty">Користувачів не знайдено.</div>');return}
-  content(rows.map(function(r){
+  var current=rows.filter(function(r){return userBucket(r)==="current"}),
+      inactive=rows.filter(function(r){return userBucket(r)==="inactive"}),
+      showInactive=userListView==="inactive",
+      displayed=showInactive?inactive:current;
+  // Small two-list switcher, not an additional database status.
+  var switcher='<nav class="aceil-admin-user-lists" aria-label="Списки користувачів" '+
+    'style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;'+
+    'padding:5px;margin:0 0 12px;background:#eef2f7;border-radius:13px">'+
+    '<button type="button" data-user-list="current" aria-pressed="'+(!showInactive)+'" '+
+    'onclick="A_CEIL_Admin.setUserListView(\'current\')" style="min-width:0;min-height:43px;'+
+    'padding:8px;border:0;border-radius:10px;font-size:12px;font-weight:850;'+
+    'background:'+(!showInactive?'#fff':'transparent')+';color:'+(!showInactive?'#1d4ed8':'#64748b')+'">'+
+    'Активні та нові <b>('+current.length+')</b></button>'+
+    '<button type="button" data-user-list="inactive" aria-pressed="'+showInactive+'" '+
+    'onclick="A_CEIL_Admin.setUserListView(\'inactive\')" style="min-width:0;min-height:43px;'+
+    'padding:8px;border:0;border-radius:10px;font-size:12px;font-weight:850;'+
+    'background:'+(showInactive?'#fff':'transparent')+';color:'+(showInactive?'#9a3412':'#64748b')+'">'+
+    'Відхилені / заблоковані <b>('+inactive.length+')</b></button></nav>';
+  if(!rows.length){content(switcher+'<div class="aceil-admin-empty">Користувачів не знайдено.</div>');return}
+  if(!displayed.length){
+    content(switcher+'<div class="aceil-admin-empty">'+
+      (showInactive?'Відхилених і заблокованих користувачів немає.':'Активних користувачів та нових заявок немає.')+
+      '</div>');return;
+  }
+  content(switcher+displayed.map(function(r){
       var uid=String(r.user_id||r.id||""), active=r.is_active!==false, approval=String(r.approval_status||'').toLowerCase(), pending=approval==='pending', rejected=approval==='rejected';
       var demoExpired=!!r.demo_enabled&&!!r.demo_expires_at&&Date.parse(r.demo_expires_at)<=Date.now();
-      var badge=r.demo_enabled
-        ?'<span class="aceil-admin-badge '+(demoExpired?'off':'pending')+'">'+(demoExpired?'ДЕМО завершено':'ДЕМО')+'</span>'
-        :active?'<span class="aceil-admin-badge">Активний</span>'
+      var badge=rejected?'<span class="aceil-admin-badge off">Відхилено</span>'
         :pending?'<span class="aceil-admin-badge pending">Очікує</span>'
-        :rejected?'<span class="aceil-admin-badge off">Відхилено</span>'
-        :'<span class="aceil-admin-badge off">Заблоковано</span>';
+        :!active?'<span class="aceil-admin-badge off">Заблоковано</span>'
+        :r.demo_enabled
+          ?'<span class="aceil-admin-badge '+(demoExpired?'off':'pending')+'">'+(demoExpired?'ДЕМО завершено':'ДЕМО')+'</span>'
+          :'<span class="aceil-admin-badge">Активний</span>';
       var quick='<div class="aceil-quick-rights"><span class="aceil-quick-pill '+(r.workspace_initialized?'on':'')+'">Власний кабінет</span><span class="aceil-quick-pill '+(r.workspace_copied?'on':'')+'">'+(r.workspace_copied?'Копія надана':'Без копії')+'</span><span class="aceil-quick-pill edit '+(r.projects_access?'on':'')+'">Спільні проєкти</span></div>';
       var displayName=String(r.name||r.email||'Користувач').trim(),email=String(r.email||'').trim(),phone=String(r.contact_phone||'').trim();
       var mail=email&&displayName.toLowerCase()!==email.toLowerCase()?'<span class="aceil-admin-mail">'+esc(email)+'</span>':'';
@@ -619,7 +659,7 @@ function setDebugCount(value){var count=Math.max(0,Number(value)||0),label=count
 function open(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.add("open");m.setAttribute("aria-hidden","false");load()}
 function close(){var m=document.getElementById("aceilAdminModal");if(!m)return;m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 
-window.A_CEIL_Admin={open:open,close:close,load:load,saveSupportEditor:saveSupportEditor,upgradeDemo:upgradeDemo,startDemo:startDemo,resendRegistrationEmail:resendRegistrationEmail,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,setFilmAccess:setFilmAccess,replaceFilmCatalog:replaceFilmCatalog,restoreFilmCatalog:restoreFilmCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,showTab:showTab,setDebugCount:setDebugCount};
+window.A_CEIL_Admin={open:open,close:close,load:load,saveSupportEditor:saveSupportEditor,upgradeDemo:upgradeDemo,startDemo:startDemo,resendRegistrationEmail:resendRegistrationEmail,setAccess:setAccess,approve:approve,reject:reject,initializeWorkspace:initializeWorkspace,copyWallCatalog:copyWallCatalog,setFilmAccess:setFilmAccess,replaceFilmCatalog:replaceFilmCatalog,restoreFilmCatalog:restoreFilmCatalog,deleteUser:deleteUser,setScope:setScope,toggleProjects:toggleProjects,setProject:setProject,setExpiry:setExpiry,clearExpiry:clearExpiry,refreshOwner:refreshOwner,reset:reset,toggleCard:toggleCard,filterUsers:filterUsers,setUserListView:setUserListView,showTab:showTab,setDebugCount:setDebugCount};
 
 function boot(){
   removeLegacyMenuItem();
