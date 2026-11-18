@@ -40,6 +40,7 @@ for name in \
   admin-user-lists \
   support-contacts \
   report-link-snapshots \
+  report-trash-preservation \
   report-publication-session \
   report-pdf-export \
   report-diagonal-choices \
