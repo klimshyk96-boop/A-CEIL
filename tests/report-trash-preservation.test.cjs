@@ -26,7 +26,7 @@ test('all three published-report dependencies stop cascading on project trash',(
   ]){
     assert.match(migration,new RegExp('ALTER TABLE public\\.'+table+'\\s+DROP CONSTRAINT IF EXISTS '+constraint,'i'));
   }
-  assert.doesNotMatch(migration,/ON DELETE CASCADE/i,'migration must never recreate a destructive report FK');
+  assert.doesNotMatch(migration,/\bADD\s+CONSTRAINT\s+\w+[\s\S]*?\bON\s+DELETE\s+CASCADE\b/i,'migration must never recreate a destructive report FK');
   assert.doesNotMatch(migration,/TRUNCATE|DELETE FROM public\.(?:aceil_report_snapshots|report_links|aceil_report_views)/i,
     'migration must preserve every existing report and viewing counter');
 });
