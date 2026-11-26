@@ -201,10 +201,18 @@ function requiredFilmWidthMetersFromRoom(room){
    (m^2, canonical). Only falls back to the shoelace formula on stored
    realPts if that field is somehow missing. */
 function roomAreaM2(room){
+  // Saved room.area may belong to an older fully measured drawing. Inspect
+  // this exact room's lengths before trusting the cached m² in any variant.
+  var st=parseMaybeJSON(room && room.state);
+  var geometry=window["A·CEILGeometry"];
+  if(geometry&&typeof geometry.dimensionsStatus==="function"){
+    if(!geometry.dimensionsStatus(st).ok)return 0;
+  }else if(st&&!st.circleMode&&Array.isArray(st.pts)&&Array.isArray(st.lengths)&&
+           (st.lengths.length!==st.pts.length||
+            st.lengths.some(function(n){return !(Number(n)>0)})))return 0;
   var a=num(room && room.area);
   if(a>0) return a;
   try{
-    var st=parseMaybeJSON(room && room.state);
     if(st && st.circleMode && num(st.circleDiamCm)>0){ var r=num(st.circleDiamCm)/200; return Math.PI*r*r; }
     var pts=st && Array.isArray(st.realPts) ? st.realPts : [];
     if(pts.length>=3){
@@ -608,7 +616,23 @@ function baseItemsForRoom(room){
 
 function computeRoomItems(project, room, variantId){
   var base=baseItemsForRoom(room);
-  if(variantId==null) return {items:base.items, groups:base.groups, warnings:[]};
+  function protectUnmeasuredFilm(items,warnings){
+    if(roomAreaM2(room)>0)return;
+    var blocked=0;
+    (items||[]).forEach(function(it){
+      if(!it||it.manualQtyOverride===true)return;
+      if(it.filmPickerManaged===true||it.roomScopedKind==="film-color"){
+        if(num(it.qty)>0){it.qty=0;blocked++;}
+      }
+    });
+    if(blocked&&warnings)warnings.push(
+      "Кімната «"+String(room&&room.name||"Кімната")+
+      "»: не всі сторони виміряні. Автоматичну площу плівки не включено до суми.");
+  }
+  if(variantId==null){
+    var initialWarnings=[];protectUnmeasuredFilm(base.items,initialWarnings);
+    return {items:base.items,groups:base.groups,warnings:initialWarnings};
+  }
   var chain=resolveChain(project, variantId);
   var items=clone(base.items);
   var groups=base.groups;
@@ -622,6 +646,7 @@ function computeRoomItems(project, room, variantId){
     });
     if(catChanges.film) applyFilmChange(items, groups, catChanges.film, room, warnings);
   });
+  protectUnmeasuredFilm(items,warnings);
   return {items:items, groups:groups, warnings:warnings};
 }
 
