@@ -245,7 +245,28 @@
       if(previous&&previous.signature===pointSignature(pts))source=copyPoints(previous.source);
       // Diagnostics belong to the current set of dimensions, never the last build.
       window.A_CEIL_HonestGeometry.lastResult=null;setWarning(null);
-      for(var i=0;i<n;i++){var value=Number(lengths[i]);if(!(value>0)){realPts=[];finishUi();return}}
+      for(var i=0;i<n;i++){
+        var value=Number(lengths[i]);
+        if(!(Number.isFinite(value)&&value>0)){
+          var missing=[];
+          for(var m=0;m<n;m++)if(!(Number(lengths[m])>0))missing.push(labelPoint(m)+labelPoint((m+1)%n));
+          realPts=[];
+          // Never keep the former room's displayed area: every automatic
+          // film/estimate reader must see an incomplete, not billable contour.
+          var pendingArea=document.getElementById("area");
+          if(pendingArea)pendingArea.textContent="—";
+          var warning={pendingMeasurements:true,unconfirmedGeometry:true,
+            missingSides:missing.slice(),warning:"⚠️ Не введені розміри "+missing.join(", ")+
+              ". Площа й автоматичний прорахунок полотна ще недоступні."};
+          window.A_CEIL_HonestGeometry.lastResult=warning;
+          setWarning(warning);finishUi();
+          try{
+            if(typeof autoFillNomenclature==="function")autoFillNomenclature({silent:true});
+            if(typeof recalcElemTotal==="function")recalcElemTotal();
+          }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+          return warning;
+        }
+      }
       for(var j=0;j<n;j++)target.push(Number(lengths[j]));
       var beforeClosure=legacyClosure(source,target),feasible=polygonFeasibility(target),extra=diagonalConstraints(n);
       if(!feasible.ok){
@@ -286,6 +307,14 @@
         result.warning="⚠️ Косі стіни не підтверджені діагоналлю — площа орієнтовна";
       }
       window.A_CEIL_HonestGeometry.lastResult=result;
+      if(result.invalid){
+        var invalidArea=document.getElementById("area");
+        if(invalidArea)invalidArea.textContent="—";
+        try{
+          if(typeof autoFillNomenclature==="function")autoFillNomenclature({silent:true});
+          if(typeof recalcElemTotal==="function")recalcElemTotal();
+        }catch(_){window.__diagSilent&&window.__diagSilent(_)}
+      }
       /* Guidance is available on tap from the canvas icon.  Only a truly
          contradictory measurement interrupts the measurer with a toast. */
       setWarning(result);finishUi();if(result.invalid)notifyWarning(result);
