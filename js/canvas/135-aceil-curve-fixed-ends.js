@@ -258,6 +258,12 @@ function updateStats(){
     updateCurveWarning();
     if(!closed||circleMode||!Array.isArray(pts)||pts.length<3)return;
     var per=document.getElementById("per"),area=document.getElementById("area");
+    var geometry=window["A·CEILGeometry"];
+    if(geometry&&typeof geometry.dimensionsStatus==="function"&&
+       !geometry.dimensionsStatus({closed:closed,pts:pts,lengths:lengths}).ok){
+      if(area&&area.textContent!=="—")area.textContent="—";
+      return; // never reconstruct a fictitious area from scaled canvas points
+    }
     var perText=(_totalPerimeterCm()/100).toFixed(2);
     if(per&&per.textContent!==perText)per.textContent=perText;
     var value=areaCm2(),areaText=(value/1e4).toFixed(2);
