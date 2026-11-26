@@ -15,6 +15,7 @@ node --check js/core/098-aceil-geometry-core.js
 node --check js/canvas/190-aceil-honest-geometry.js
 node --check js/nomenclature/025-aceil-state-persistence-nomenclature.js
 node --check js/reports/184-aceil-estimate-variants-ui.js
+node --check js/canvas/wall-elements-parallel.js
 node --check js/canvas/135-aceil-curve-fixed-ends.js
 node --check js/reports/237-aceil-image-report-pdf.js
 node --check js/core/019-aceil-core-ui-rooms-bulk-walls.js
@@ -55,6 +56,7 @@ for name in \
   stability-regression \
   honest-geometry \
   incomplete-measurement-no-price \
+  wall-inward-offset-concave \
   curve-corrupt-geometry
 do
   echo "▶ Checking: $name"
