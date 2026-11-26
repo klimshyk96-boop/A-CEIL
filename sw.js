@@ -1,8 +1,8 @@
 /* A·CEIL offline shell — fast activation and versioned runtime cache. */
 "use strict";
 
-const BUILD_ID="20261117-admin-inactive-users-list1";
-const SHELL_CACHE="aceil-shell-20261117-admin-inactive-users-list1";
+const BUILD_ID="20261126-area-safety-18-walls1";
+const SHELL_CACHE="aceil-shell-20261126-area-safety-18-walls1";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
   "/index.html",
