@@ -40,10 +40,29 @@
     var nx=-dy/L, ny=dx/L;
     var x1=num(a.x)+dx*t1, y1=num(a.y)+dy*t1, x2=num(a.x)+dx*t2, y2=num(a.y)+dy*t2;
     var mx=(x1+x2)/2, my=(y1+y2)/2;
-    var cx=p.reduce(function(s,q){return s+num(q.x)},0)/(p.length||1);
-    var cy=p.reduce(function(s,q){return s+num(q.y)},0)/(p.length||1);
-    // nx/ny points OUTSIDE the room. We draw wall elements inside so they stay visible on mobile.
-    if((cx-mx)*nx+(cy-my)*ny>0){ nx=-nx; ny=-ny; }
+    // The mean of polygon VERTICES is not guaranteed to lie inside a
+    // concave ceiling. On a recessed wall (e.g. HI on the 18-sided plan),
+    // using that point silently puts the positive 10 cm distance OUTSIDE.
+    // The signed shoelace area fixes the interior side of EVERY directed
+    // edge of a simple polygon, irrespective of concave/re-entrant corners.
+    // Canvas Y grows downward: positive signed area means left normal
+    // (-dy, dx) points INWARD; negative signed area means right normal.
+    var twiceArea=0;
+    if(p.length>=3){
+      for(var k=0;k<p.length;k++){
+        var v=p[k],w=p[(k+1)%p.length];
+        twiceArea+=num(v.x)*num(w.y)-num(w.x)*num(v.y);
+      }
+    }
+    if(Math.abs(twiceArea)>1e-4){
+      if(twiceArea>0){nx=-nx;ny=-ny;} // keep nx/ny as OUTWARD normals
+    }else{
+      // For an open/degenerate figure there is no reliable interior.
+      // Preserve the old approximate placement rather than inventing one.
+      var cx=p.reduce(function(s,q){return s+num(q.x)},0)/(p.length||1);
+      var cy=p.reduce(function(s,q){return s+num(q.y)},0)/(p.length||1);
+      if((cx-mx)*nx+(cy-my)*ny>0){nx=-nx;ny=-ny;}
+    }
     return {i:i,x1:x1,y1:y1,x2:x2,y2:y2,mx:mx,my:my,nx:nx,ny:ny,dx:dx,dy:dy,len:len,pxPerCm:L/sideLen};
   }
   function laneIndex(list, mark, geom){
