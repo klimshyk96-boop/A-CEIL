@@ -67,6 +67,29 @@
     if(sideLengths(pts).some(v=>v<=0)) issues.push('Контур містить сторону нульової довжини');
     return issues;
   }
+  // One unfinished side means the room polygon is only a sketch. The
+  // perimeter of entered sides is useful while measuring, but its area must
+  // never be used to automatically price film or full-contour services.
+  function dimensionsStatus(source){
+    let data=source&&typeof source==='object'?source:{};
+    if(data.state&&typeof data.state==='object')data=data.state;
+    else if(typeof data.state==='string'){try{data=JSON.parse(data.state)}catch(_){return {ok:false,missing:[],reason:'invalid_state'}}}
+    if(data.circleMode||data.geometry&&data.geometry.type==='circle'){
+      const d=Number(data.circleDiamCm||data.circleDiameterCm||data.geometry&&data.geometry.diameterCm);
+      return {ok:Number.isFinite(d)&&d>0,missing:[],reason:d>0?'':'missing_circle_diameter'};
+    }
+    const pts=Array.isArray(data.pts)?data.pts:Array.isArray(data.points)?data.points:Array.isArray(data.realPts)?data.realPts:[];
+    const lengths=Array.isArray(data.lengths)?data.lengths:[];
+    if(data.closed===false||pts.length<3||lengths.length!==pts.length){
+      return {ok:false,missing:[],reason:'unfinished_polygon'};
+    }
+    const missing=[];
+    for(let i=0;i<lengths.length;i++){
+      const val=Number(lengths[i]);
+      if(!Number.isFinite(val)||val<=0)missing.push(i);
+    }
+    return {ok:missing.length===0,missing,reason:missing.length?'missing_dimensions':''};
+  }
   function parseState(project){
     if(!project||typeof project!=='object') return null;
     let state=project.state;
@@ -94,5 +117,5 @@
     const divisor=unitScale>0?unitScale:100;
     return Object.freeze({type,points:data.points.slice(),sideLengthsCm:sides,perimeterCm:rawPerimeter,perimeterM:rawPerimeter/divisor,areaCm2:rawArea,areaM2:rawArea/(divisor*divisor),boundsCm:b,boundsM:b?{minX:b.minX/divisor,maxX:b.maxX/divisor,minY:b.minY/divisor,maxY:b.maxY/divisor,width:b.width/divisor,height:b.height/divisor}:null,cornerCount,centroidCm:type==='polygon'?centroid(data.points):type==='circle'?{x:data.diameterCm/2,y:data.diameterCm/2}:null,issues:type==='polygon'?validate(data.points):[]});
   }
-  window.A·CEILGeometry=Object.freeze({normalizePoints,distance,sideLengths,perimeter,signedArea,area,bounds,centroid,pointInPolygon,validate,extract,calculate});
+  window.A·CEILGeometry=Object.freeze({normalizePoints,distance,sideLengths,perimeter,signedArea,area,bounds,centroid,pointInPolygon,validate,extract,calculate,dimensionsStatus});
 })();
