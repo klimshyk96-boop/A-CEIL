@@ -7,17 +7,26 @@ var LANGS=[["uk","🇺🇦 Українська"],["en","🇬🇧 English"],["pl
 function i18n(){return window.A·CEIL&&window.A·CEIL.i18n;}
 
 
-function activateLanguage(code){
+var changeRequest=0;
+async function activateLanguage(code){
   var api=i18n();
   if(!api||typeof api.setLanguage!=="function")return false;
+  var request=++changeRequest;
   try{
+    // Wait for the on-demand pack BEFORE saving the new choice or reloading.
+    // On a first offline switch, keep the prior language intact.
+    if(typeof api.ensureLanguage==="function")await api.ensureLanguage(code);
+    if(request!==changeRequest)return false;
     api.setLanguage(code);
     updateLangButtons();
     /* Reload from the Ukrainian source DOM. This reliably restores UK and
        applies EN/PL after dynamic UI patches have already modified text nodes. */
     setTimeout(function(){ location.reload(); },40);
   }catch(e){
-    try{showToast("Помилка мови: "+String(e&&e.message||e));}catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
+    if(request===changeRequest){
+      try{if(typeof showToast==="function")showToast("Мову не завантажено. Перевірте інтернет та спробуйте ще раз.");}
+      catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
+    }
     return false;
   }
   return true;
