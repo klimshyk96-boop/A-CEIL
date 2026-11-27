@@ -1,8 +1,8 @@
 /* A·CEIL offline shell — fast activation and versioned runtime cache. */
 "use strict";
 
-const BUILD_ID="20261127-svg-on-demand3";
-const SHELL_CACHE="aceil-shell-20261127-svg-on-demand3";
+const BUILD_ID="20261127-lazy-admin-module4";
+const SHELL_CACHE="aceil-shell-20261127-lazy-admin-module4";
 const STATIC_DESTINATIONS=new Set(["script","style","image","font"]);
 const CORE_SHELL=[
   "/index.html",
@@ -17,6 +17,7 @@ const CORE_SHELL=[
   "/assets/theme-mode.css?v="+BUILD_ID,
   "/js/core/229-aceil-theme-selector.js?v="+BUILD_ID,
   "/js/projects/230-aceil-project-archive.js?v="+BUILD_ID,
+  "/js/admin/166-aceil-admin.js?v="+BUILD_ID,
   "/vendor/jspdf-2.5.2.umd.min.js"
 ];
 

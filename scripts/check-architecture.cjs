@@ -33,12 +33,18 @@ const loaded=new Set(order);
 const lazy=new Set([
  'js/i18n/015-aceil-lang-en.js',
  'js/i18n/016-aceil-lang-pl.js',
- 'js/i18n/017-aceil-lang-ru.js'
+ 'js/i18n/017-aceil-lang-ru.js',
+ 'js/admin/166-aceil-admin.js'
 ]);
-const loader=read('js/i18n/013-aceil-i18n-core.js');
+const owners={
+ 'js/i18n/015-aceil-lang-en.js':'js/i18n/013-aceil-i18n-core.js',
+ 'js/i18n/016-aceil-lang-pl.js':'js/i18n/013-aceil-i18n-core.js',
+ 'js/i18n/017-aceil-lang-ru.js':'js/i18n/013-aceil-i18n-core.js',
+ 'js/admin/166-aceil-admin.js':'js/admin/admin-lazy-loader.js'
+};
 for(const file of lazy){
  if(!files.includes(file))errors.push('missing on-demand dictionary: '+file);
- if(!loader.includes(file))errors.push('on-demand dictionary not owned by i18n core: '+file);
+ if(!read(owners[file]).includes(file))errors.push('on-demand module lacks an owning loader: '+file);
  if(loaded.has(file))errors.push('on-demand dictionary loaded eagerly: '+file);
 }
 files.filter(f=>!loaded.has(f)&&!lazy.has(f))

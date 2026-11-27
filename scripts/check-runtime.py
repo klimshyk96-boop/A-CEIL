@@ -37,12 +37,18 @@ for i,body in enumerate(page.inline):
 on_demand={
     'js/i18n/015-aceil-lang-en.js',
     'js/i18n/016-aceil-lang-pl.js',
-    'js/i18n/017-aceil-lang-ru.js'
+    'js/i18n/017-aceil-lang-ru.js',
+    'js/admin/166-aceil-admin.js'
 }
-loader=(ROOT/'js/i18n/013-aceil-i18n-core.js').read_text()
+loaders={
+    'js/i18n/015-aceil-lang-en.js':'js/i18n/013-aceil-i18n-core.js',
+    'js/i18n/016-aceil-lang-pl.js':'js/i18n/013-aceil-i18n-core.js',
+    'js/i18n/017-aceil-lang-ru.js':'js/i18n/013-aceil-i18n-core.js',
+    'js/admin/166-aceil-admin.js':'js/admin/admin-lazy-loader.js'
+}
 for name in on_demand:
     if not (ROOT/name).is_file():errors.append('Missing lazy script: '+name)
-    if name not in loader:errors.append('Lazy script not declared in loader: '+name)
+    if name not in (ROOT/loaders[name]).read_text():errors.append('Lazy script not declared in loader: '+name)
     if name in local:errors.append('Lazy script must not block initial HTML: '+name)
 for f in (ROOT/'js').rglob('*.js'):
     name=f.relative_to(ROOT).as_posix()
