@@ -40,7 +40,7 @@ const owners={
  'js/i18n/015-aceil-lang-en.js':'js/i18n/013-aceil-i18n-core.js',
  'js/i18n/016-aceil-lang-pl.js':'js/i18n/013-aceil-i18n-core.js',
  'js/i18n/017-aceil-lang-ru.js':'js/i18n/013-aceil-i18n-core.js',
- 'js/admin/166-aceil-admin.js':'js/admin/166-aceil-admin-loader.js'
+ 'js/admin/166-aceil-admin.js':'js/admin/admin-lazy-loader.js'
 };
 for(const file of lazy){
  if(!files.includes(file))errors.push('missing on-demand dictionary: '+file);
