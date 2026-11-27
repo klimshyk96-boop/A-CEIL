@@ -6,7 +6,7 @@ const doc={body:null,readyState:'loading',documentElement:{setAttribute:(k,v)=>a
 function Canvas(){}
 Canvas.prototype.fillText=Canvas.prototype.strokeText=function(t){canvasText=t;};
 Canvas.prototype.measureText=t=>({text:t,width:t.length});
-const ctx={document:doc,localStorage:{getItem:k=>stored.get(k),setItem:(k,v)=>stored.set(k,v)},CanvasRenderingContext2D:Canvas,NodeFilter:{SHOW_ELEMENT:1,SHOW_TEXT:4,FILTER_REJECT:2,FILTER_ACCEPT:1},MutationObserver:function(fn){mutation=fn;this.observe=()=>{};this.takeRecords=()=>[];},CustomEvent:function(){},setTimeout:fn=>fn(),alert:t=>t,confirm:t=>t,prompt:(t,d)=>[t,d]};
+const ctx={document:doc,localStorage:{getItem:k=>stored.get(k),setItem:(k,v)=>stored.set(k,v)},CanvasRenderingContext2D:Canvas,NodeFilter:{SHOW_ELEMENT:1,SHOW_TEXT:4,FILTER_REJECT:2,FILTER_ACCEPT:1},MutationObserver:function(fn){mutation=fn;this.observe=()=>{};this.disconnect=()=>{};this.takeRecords=()=>[];},CustomEvent:function(){},setTimeout:fn=>fn(),alert:t=>t,confirm:t=>t,prompt:(t,d)=>[t,d]};
 ctx.window=ctx;vm.createContext(ctx);
 for(const name of ['013-aceil-i18n-core','014-aceil-lang-uk','015-aceil-lang-en','016-aceil-lang-pl','017-aceil-lang-ru'])vm.runInContext(fs.readFileSync('js/i18n/'+name+'.js','utf8'),ctx);
 const api=ctx['A·CEIL'].i18n;
