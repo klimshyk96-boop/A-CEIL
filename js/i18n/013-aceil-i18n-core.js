@@ -299,14 +299,18 @@ window.A·CEIL.i18n=api;
 function boot(){
   try{document.documentElement.lang=current;}catch(e){window.__diagSilent&&window.__diagSilent(e)}
   if(current!=="uk"){
-    // A previously selected language is loaded on demand on startup.
-    // If offline and not cached, keep the original UI rather than losing
-    // a measurement or throwing during application initialization.
-    ensureLanguage(current).then(function(){
-      if(dicts[current]){startObserver();translatePage();}
-    }).catch(function(e){
-      try{window.__diagSilent&&window.__diagSilent(e)}catch(_){}
-    });
+    // If the dictionary was already registered by a legacy integration,
+    // preserve synchronous DOM translation/observer initialization.
+    if(dicts[current]){startObserver();translatePage();}
+    else{
+      // Previously selected language: fetch only that dictionary. Offline
+      // failure leaves the source UI intact until it can be loaded.
+      ensureLanguage(current).then(function(){
+        if(dicts[current]){startObserver();translatePage();}
+      }).catch(function(e){
+        try{window.__diagSilent&&window.__diagSilent(e)}catch(_){}
+      });
+    }
   }
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});
