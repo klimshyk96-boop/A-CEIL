@@ -5,11 +5,14 @@ on:
     paths:
       - 'index.html'
       - 'js/i18n/**'
+      - 'js/admin/166-aceil-admin-loader.js'
+      - 'js/admin/166-aceil-admin.js'
       - 'sw.js'
       - 'VERSION'
       - 'tests/mobile-browser-qa.test.cjs'
       - 'tests/startup-defer-browser.test.cjs'
       - 'tests/i18n-lazy-browser.test.cjs'
+      - 'tests/admin-lazy-browser.test.cjs'
       - '.github/workflows/aceil-mobile-qa.yml'
   workflow_dispatch:
 
@@ -40,6 +43,8 @@ jobs:
         run: node tests/startup-defer-browser.test.cjs
       - name: Mobile JavaScript coverage and CPU profile (synthetic)
         run: node tests/startup-profile-browser.test.cjs
+      - name: Admin and support lazy module, real mobile Chromium
+        run: node tests/admin-lazy-browser.test.cjs
       - name: Lazy language packs and saved choice, real Chromium
         run: node tests/i18n-lazy-browser.test.cjs
       - name: Real Chromium browser QA, synthetic projects
