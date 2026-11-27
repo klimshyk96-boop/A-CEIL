@@ -21,7 +21,8 @@
       var date=null;
       try{var parsed=JSON.parse(project.state||"{}");date=parsed&&parsed.archivedAt||null}
       catch(_){}
-      archiveDates.set(project,{source:project.state,value:date});
+      archiveDates.set(project,{source:project.state,value:date,
+        recoverySourceId:parsed&&parsed.recoverySourceId||""});
       return date;
     }
     var state=stateOf(project);return state.archivedAt||null;
@@ -43,10 +44,21 @@
   function esc(value){return String(value==null?"":value).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]})}
   function recoveryParent(project){
     if(!project)return "";
-    // Older cloud-loaded rows may have lineage inside state only.
-    // Never recursively back them up.
-    var state=stateOf(project);
-    return String(project._recoverySourceId||state.recoverySourceId||"").trim();
+    if(project._recoverySourceId)return String(project._recoverySourceId).trim();
+    // Shared metadata cache: do not repeatedly JSON.parse full 80+ wall
+    // drawings each time a 100-project list is rendered.
+    if(typeof project.state==="string"){
+      var cached=archiveDates.get(project);
+      if(!cached||cached.source!==project.state){
+        var state={};
+        try{state=JSON.parse(project.state||"{}")}catch(_){}
+        cached={source:project.state,value:state&&state.archivedAt||null,
+          recoverySourceId:state&&state.recoverySourceId||""};
+        archiveDates.set(project,cached);
+      }
+      return String(cached.recoverySourceId||"").trim();
+    }
+    return String(project.state&&project.state.recoverySourceId||"").trim();
   }
   function isRecovery(project){
     if(!project)return false;
