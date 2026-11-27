@@ -31,9 +31,23 @@ if local!=expected:errors.append('Script order changed: review dependencies, the
 for i,body in enumerate(page.inline):
     check=subprocess.run(['node','--check'],input=body,text=True,capture_output=True)
     if check.returncode:errors.append('Inline script %d: %s'%(i,check.stderr))
+# Explicit opt-in for dynamically loaded language dictionaries. Still verify
+# existence and a literal reference from the language loader; never turn this
+# into a generic unused-script bypass.
+on_demand={
+    'js/i18n/015-aceil-lang-en.js',
+    'js/i18n/016-aceil-lang-pl.js',
+    'js/i18n/017-aceil-lang-ru.js'
+}
+loader=(ROOT/'js/i18n/013-aceil-i18n-core.js').read_text()
+for name in on_demand:
+    if not (ROOT/name).is_file():errors.append('Missing lazy script: '+name)
+    if name not in loader:errors.append('Lazy script not declared in loader: '+name)
+    if name in local:errors.append('Lazy script must not block initial HTML: '+name)
 for f in (ROOT/'js').rglob('*.js'):
     name=f.relative_to(ROOT).as_posix()
-    if name not in local:errors.append('Unreferenced JS: '+name)
+    if name not in local and name not in on_demand:
+        errors.append('Unreferenced JS: '+name)
     if re.search(r'\bwindow\.draw\s*=(?!=)',f.read_text()):errors.append('Do not wrap draw(): '+name)
 if errors:
     print('\n'.join(errors));sys.exit(1)
