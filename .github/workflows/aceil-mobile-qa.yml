@@ -5,7 +5,7 @@ on:
     paths:
       - 'index.html'
       - 'js/i18n/**'
-      - 'js/admin/166-aceil-admin-loader.js'
+      - 'js/admin/admin-lazy-loader.js'
       - 'js/admin/166-aceil-admin.js'
       - 'sw.js'
       - 'VERSION'
@@ -35,6 +35,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Fast critical smoke gate before browser install
+        run: bash scripts/check-critical-ci.sh
+        env:
+          CI: 'true'
       - name: Install pinned browser harness (not part of app runtime)
         run: |
           npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
