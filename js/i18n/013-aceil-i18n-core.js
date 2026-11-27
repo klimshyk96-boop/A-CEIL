@@ -5,6 +5,17 @@ if(window.A·CEIL&&window.A·CEIL.i18n)return;
 var STORAGE_KEY="A·CEIL_language";
 var SUPPORTED=["uk","en","pl","ru"];
 var dicts={};
+var languageLoads=Object.create(null);
+var languageFiles={
+  en:"js/i18n/015-aceil-lang-en.js",
+  pl:"js/i18n/016-aceil-lang-pl.js",
+  ru:"js/i18n/017-aceil-lang-ru.js"
+};
+var buildVersion="";
+try{
+  var script=document.currentScript;
+  if(script&&script.src)buildVersion=new URL(script.src,document.baseURI).searchParams.get("v")||"";
+}catch(_){/* older browser: local script URL is still safe */}
 var listeners=[];
 var observer=null;
 var current="uk";
@@ -197,6 +208,28 @@ function startObserver(){
 })();
 
 /* ---- API ---- */
+function ensureLanguage(lang){
+  if(!lang||SUPPORTED.indexOf(lang)<0)return Promise.reject(new Error("Unsupported language"));
+  if(lang==="uk"||dicts[lang])return Promise.resolve(lang);
+  if(languageLoads[lang])return languageLoads[lang];
+  var file=languageFiles[lang];
+  if(!file)return Promise.reject(new Error("Missing language pack"));
+  // No remote CDN. Use the same version as the current offline shell.
+  languageLoads[lang]=new Promise(function(resolve,reject){
+    var node=document.createElement("script"),url=new URL(file,document.baseURI);
+    if(buildVersion)url.searchParams.set("v",buildVersion);
+    node.src=url.href;
+    node.async=true;
+    node.onload=function(){
+      if(dicts[lang])resolve(lang);
+      else reject(new Error("Language pack did not register"));
+    };
+    node.onerror=function(){reject(new Error("Language pack is unavailable offline"))};
+    try{(document.head||document.documentElement).appendChild(node)}
+    catch(error){reject(error)}
+  }).catch(function(error){delete languageLoads[lang];throw error});
+  return languageLoads[lang];
+}
 function register(lang,dict){
   dict=dict||{};
   var strings={};
@@ -212,15 +245,30 @@ function register(lang,dict){
   });
   dicts[lang]={strings:strings,patterns:patterns,separators:dict.separators===true};
   if(SUPPORTED.indexOf(lang)<0)SUPPORTED.push(lang);
-  if(lang===current&&document.body)translatePage();
+  if(lang===current&&document.body){
+    startObserver();
+    translatePage();
+  }
 }
 
 function setLanguage(lang){
   if(!lang||SUPPORTED.indexOf(lang)<0)lang="uk";
+  // Legacy callers expect a synchronous setter. If a foreign dictionary is
+  // still absent, its registration will apply the translation automatically.
+  if(lang!=="uk"&&!dicts[lang])
+    ensureLanguage(lang).catch(function(e){
+      try{window.__diagSilent&&window.__diagSilent(e)}catch(_){}
+    });
   var changed=lang!==current;
   current=lang;
   try{localStorage.setItem(STORAGE_KEY,lang);}catch(e){window.__diagSilent&&window.__diagSilent(e)}
   try{document.documentElement.setAttribute("lang",lang);}catch(e){window.__diagSilent&&window.__diagSilent(e)}
+  // Ukrainian is the native source; observing every DOM mutation while the
+  // user stays in Ukrainian wastes work during drawing and project updates.
+  if(lang==="uk"){
+    if(observer){observer.disconnect();observer=null;}
+    pending=[];scheduled=false;
+  }else if(dicts[lang])startObserver();
   try{if(document.body)translatePage();}catch(e){
     try{window.A·CEIL&&window.A·CEIL.DebugLog&&window.A·CEIL.DebugLog.error("i18n.translate_failed",{message:String(e&&e.message||e),lang:lang});}catch(_e){window.__diagSilent&&window.__diagSilent(_e)}
   }
@@ -235,6 +283,7 @@ function onChange(fn){if(typeof fn==="function")listeners.push(fn);}
 window.A·CEIL=window.A·CEIL||{};
 var api={
   register:register,
+  ensureLanguage:ensureLanguage,
   setLanguage:setLanguage,
   getLanguage:getLanguage,
   t:t,
@@ -249,8 +298,20 @@ window.A·CEIL.i18n=api;
 
 function boot(){
   try{document.documentElement.lang=current;}catch(e){window.__diagSilent&&window.__diagSilent(e)}
-  startObserver();
-  if(current!=="uk")translatePage();
+  if(current!=="uk"){
+    // If the dictionary was already registered by a legacy integration,
+    // preserve synchronous DOM translation/observer initialization.
+    if(dicts[current]){startObserver();translatePage();}
+    else{
+      // Previously selected language: fetch only that dictionary. Offline
+      // failure leaves the source UI intact until it can be loaded.
+      ensureLanguage(current).then(function(){
+        if(dicts[current]){startObserver();translatePage();}
+      }).catch(function(e){
+        try{window.__diagSilent&&window.__diagSilent(e)}catch(_){}
+      });
+    }
+  }
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});
 else boot();

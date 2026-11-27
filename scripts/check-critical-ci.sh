@@ -11,6 +11,8 @@ node --check js/nomenclature/140-aceil-universal-autocount.js
 node --check js/projects/230-aceil-project-archive.js
 node --check js/projects/238-aceil-conflict-resolver.js
 node --check js/admin/166-aceil-admin.js
+node --check js/i18n/013-aceil-i18n-core.js
+node --check js/i18n/117-aceil-lang-switchers.js
 node --check js/core/098-aceil-geometry-core.js
 node --check js/canvas/190-aceil-honest-geometry.js
 node --check js/nomenclature/025-aceil-state-persistence-nomenclature.js
@@ -29,6 +31,7 @@ node --check js/auth/033-aceil-supabase-auth-offline-access.js
 for name in \
   security-config \
   startup-nonblocking \
+  i18n-lazy \
   p0-hardening \
   pending-sync-queue \
   project-sync-revision \
@@ -64,5 +67,6 @@ do
   node "tests/$name.test.cjs"
 done
 
+node tests/i18n-runtime.test.cjs
 node scripts/check-architecture.cjs
 echo "A·CEIL critical smoke checks: PASS"

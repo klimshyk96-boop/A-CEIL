@@ -1,5 +1,5 @@
 'use strict';
-/* Browser-level assurance for parser-safe deferring of the 176 classic scripts.
+/* Browser-level assurance for parser-safe deferring of the initial 173 classic scripts.
    All network responses use local repository files; no users/cloud/credentials. */
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
@@ -34,7 +34,7 @@ const {open}=require('./browser-review.cjs');
           viewport:document.querySelector('meta[name="viewport"]')?.content
         };
       });
-      assert.equal(result.scriptCount,176);
+      assert.equal(result.scriptCount,173);
       assert.deepEqual(result.blockingScripts,[]);
       assert.equal(result.ready,'complete');
       assert.equal(result.hasCanvas,true);

@@ -26,8 +26,23 @@ const nums={};files.forEach(f=>{const m=path.basename(f).match(/^(\d{3})-/);if(m
 Object.entries(nums).filter(([,v])=>v.length>1).forEach(([k,v])=>errors.push('duplicate number '+k+': '+v.join(', ')));
 /* R3 no dynamic code */
 files.forEach(f=>{if(/(?<![\w.$])eval\s*\(|new\s+Function\s*\(/.test(read(f)))errors.push('eval/new Function in '+f);});
-/* R4 every file on disk is loaded, every loaded file exists */
-const loaded=new Set(order);files.filter(f=>!loaded.has(f)).forEach(f=>errors.push('file is not loaded by index.html: '+f));
+/* R4 every file is either statically loaded OR explicitly loaded on demand.
+   The only allowed dynamic files are the three language dictionaries declared
+   literally in the owner loader. This preserves the unused-file ratchet. */
+const loaded=new Set(order);
+const lazy=new Set([
+ 'js/i18n/015-aceil-lang-en.js',
+ 'js/i18n/016-aceil-lang-pl.js',
+ 'js/i18n/017-aceil-lang-ru.js'
+]);
+const loader=read('js/i18n/013-aceil-i18n-core.js');
+for(const file of lazy){
+ if(!files.includes(file))errors.push('missing on-demand dictionary: '+file);
+ if(!loader.includes(file))errors.push('on-demand dictionary not owned by i18n core: '+file);
+ if(loaded.has(file))errors.push('on-demand dictionary loaded eagerly: '+file);
+}
+files.filter(f=>!loaded.has(f)&&!lazy.has(f))
+ .forEach(f=>errors.push('file is not loaded by index.html: '+f));
 order.filter(f=>!fs.existsSync(path.join(root,f))).forEach(f=>errors.push('missing file: '+f));
 /* R5 public API seam present */
 if(!order.includes('js/core/225-aceil-public-api.js'))errors.push('public API facade is not loaded');
