@@ -28,6 +28,7 @@ node --check js/auth/033-aceil-supabase-auth-offline-access.js
 
 for name in \
   security-config \
+  startup-nonblocking \
   p0-hardening \
   pending-sync-queue \
   project-sync-revision \
