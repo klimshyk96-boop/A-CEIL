@@ -150,7 +150,7 @@
   "js/nomenclature/179-aceil-insert-choice-guard.js",
   "js/auth/178-aceil-google-oauth-canonical.js",
   "js/canvas/wall-elements-parallel.js",
-  "js/admin/166-aceil-admin-loader.js",
+  "js/admin/admin-lazy-loader.js",
   "js/reports/184-aceil-estimate-variants-ui.js",
   "js/projects/186-aceil-projects-menu-clean.js",
   "js/canvas/187-aceil-ceiling-cornices.js",
