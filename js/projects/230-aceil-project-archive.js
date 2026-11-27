@@ -41,12 +41,25 @@
   function list(){try{return typeof getProjects==="function"?getProjects():[]}catch(_){return []}}
   function matches(project,id){return project&&[project.id,project._dbId,project._localId].some(function(value){return value!=null&&String(value)===String(id)})}
   function esc(value){return String(value==null?"":value).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]})}
+  function recoveryParent(project){
+    if(!project)return "";
+    // Older cloud-loaded rows may have lineage inside state only.
+    // Never recursively back them up.
+    var state=stateOf(project);
+    return String(project._recoverySourceId||state.recoverySourceId||"").trim();
+  }
   function isRecovery(project){
     if(!project)return false;
-    if(project._recoverySourceId)return true;
-    // Older backup records sometimes lack the normalized recovery field, but
-    // the explicit name remains. Keep them available in the recovery tab.
+    if(recoveryParent(project))return true;
+    // Historical copies may lack both fields but retain the suffix.
     return /(?:^| — )Резервна копія(?:$| — )/i.test(String(project.name||""));
+  }
+  function existingRecovery(source,all){
+    if(!source)return null;
+    var id=String(source._dbId||source.id||"");
+    return (all||list()).find(function(p){
+      return p&&p!==source&&recoveryParent(p)===id;
+    })||null;
   }
   function comparisonParent(project){
     if(!project||isRecovery(project))return "";
@@ -556,7 +569,7 @@
       actions.appendChild(reconcile);
     }
     var rescue=document.createElement("button");rescue.type="button";
-    var existingRescue=list().find(function(p){return p&&p!==project&&String(p._recoverySourceId||"")===String(project._dbId||project.id)});
+    var existingRescue=existingRecovery(project);
     rescue.textContent=existingRescue?"☁️ Відкрити збережену резервну":isRecovery(project)?"☁️ Резервна — повторення вимкнено":"☁️ Створити захисну копію";
     rescue.style.cssText="border:1px solid #fdba74;border-radius:9px;padding:8px 10px;background:#fff;color:#9a3412;font-size:12px;font-weight:800";
     rescue.disabled=isRecovery(project)&&!existingRescue;
@@ -598,21 +611,45 @@
     if(!source||!repo||!window._sb||!window._sbUser||!navigator.onLine){notify("Для створення хмарної копії потрібні інтернет і вхід у акаунт");return false}
     if(source._shared){notify("Редагування цього проєкту обмежено власником");return false}
     var sourceKey=String(source._dbId||source.id);
-    var existing=list().find(function(p){return p&&p!==source&&String(p._recoverySourceId||"")===sourceKey});
-    if(existing){
-      jumpToProject(existing.id);
-      notify("Резервна копія вже збережена. Відкрито наявну, нову не створювали.");
-      return existing.id;
-    }
+    // Backup-of-backup is never valid, even when top-level lineage was lost.
     if(isRecovery(source)){
-      notify("Це вже резервна копія. Не створюємо ланцюжок резервних копій. Збережіть локальний JSON перед вирішенням конфлікту.");
+      notify("Це вже резервна копія. Нову копію з неї не створюємо.");
       return false;
     }
+    var existing=existingRecovery(source);
+    if(existing){
+      jumpToProject(existing.id);
+      notify("Резервна копія вже існує. Відкрито наявну, нову не створено.");
+      return existing.id;
+    }
     if(copyInFlight.has(sourceKey))return false;
-    if(typeof window.confirm==="function"&&!window.confirm("Створити окрему хмарну копію поточного локального креслення? Оригінал залишиться незмінним."))return false;
+    if(typeof window.confirm==="function"&&!window.confirm("Створити одну захисну копію? Повторне копіювання не потрібне, оригінал не зміниться."))return false;
     copyInFlight.add(sourceKey);
     try{
-      var uid=String(window._sbUser.id),client=window._sb,copy=quoteCopy(source,uid),localId=copy.id;
+      var uid=String(window._sbUser.id),client=window._sb;
+      // The local list may not contain a cloud copy created in another
+      // session. Verify cloud ownership and lineage before any new insert.
+      if(typeof client.from==="function"){
+        var check=await client.from("projects").select("id")
+          .eq("user_id",uid).contains("state",{recoverySourceId:sourceKey})
+          .limit(1).maybeSingle();
+        if(!window._sbUser||String(window._sbUser.id)!==uid||window._sb!==client)return false;
+        if(check.error)throw new Error("Не вдалося перевірити резервні копії в хмарі. Нову не створено.");
+        if(check.data&&check.data.id){
+          var available=list().find(function(p){return matches(p,check.data.id)});
+          if(available)jumpToProject(available.id);
+          notify("У хмарі вже є захисна копія цього проєкту. Нову не створено.");
+          return check.data.id;
+        }
+      }
+      // Check again in case the local list was refreshed during the query.
+      existing=existingRecovery(source);
+      if(existing){
+        jumpToProject(existing.id);
+        notify("Резервна копія вже є у списку. Нову не створено.");
+        return existing.id;
+      }
+      var copy=quoteCopy(source,uid),localId=copy.id;
       copy.name=String(source.name||"Проєкт").replace(/(?: — (?:Копія|Резервна копія))+$/,"")+" — Резервна копія";
       delete copy._comparisonSourceId;
       delete copy._recoverySourceId;
