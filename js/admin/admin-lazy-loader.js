@@ -132,7 +132,7 @@ function ownerButton(yes){
   button.title="Адміністрування";
   button.setAttribute("aria-label","Адміністрування");
   button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 16h7M14 19h4M19 14v4"/></svg><span id="aceilAdminDebugBadge" class="aceil-admin-debug-badge" hidden>0</span>';
-  button.onclick=function(){window.A_CEIL_Admin.open()};
+  button.onclick=function(){return window.A_CEIL_Admin.open()};
   actions.insertBefore(button,actions.firstChild);
 }
 function refreshOwner(authUser){
