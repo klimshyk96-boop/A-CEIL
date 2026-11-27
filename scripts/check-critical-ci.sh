@@ -67,5 +67,6 @@ do
   node "tests/$name.test.cjs"
 done
 
+node tests/i18n-runtime.test.cjs
 node scripts/check-architecture.cjs
 echo "A·CEIL critical smoke checks: PASS"
