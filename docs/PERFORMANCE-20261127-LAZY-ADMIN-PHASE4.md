@@ -12,7 +12,7 @@ The owner/admin module also includes the public support dialog.
   approval/rejection, cloud RPC authorization, support contacts, activity,
   debug, and editing behavior.
 - Replace its default script tag with
-  `js/admin/166-aceil-admin-loader.js`, a small compatibility facade.
+  `js/admin/admin-lazy-loader.js`, a small compatibility facade.
 - After auth, existing `A_CEIL_Admin.refreshOwner(user)` automatically
   loads the full script and invokes the original method. Admin UI access
   remains determined by the backend's protected `admin_list_users` RPC,
