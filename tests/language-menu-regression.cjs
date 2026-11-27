@@ -2,6 +2,7 @@ const languageMenuRegression=async function(win){
   const wait=ms=>new Promise(resolve=>win.setTimeout(resolve,ms));
   const assert=(ok,message)=>{if(!ok)throw new Error(message);};
   const doc=win.document,api=win['A·CEIL'].i18n;
+  if(typeof api.ensureLanguage==='function')await api.ensureLanguage('ru');
   api.setLanguage('ru');win.openRmLightStart();await wait(400);
   const host=doc.getElementById('rmLightStartModal'),grid=host.querySelector('.rm-ce-grid');
   const title=()=>host.querySelector('.rm-ce-title')?.textContent;
