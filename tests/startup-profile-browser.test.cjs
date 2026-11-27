@@ -34,21 +34,24 @@ const path=require('node:path');
     const coverage=await page.coverage.stopJSCoverage();
     const own=coverage.filter(e=>/\/js\/|\/calculator\/|\/vendor\//.test(e.url));
     const rows=own.map(e=>{
-      // Playwright's CoverageEntry exposes {source, functions:[{ranges}]}
-      // (unlike Puppeteer's {text,ranges}). Only count executed ranges.
+      // V8 precise coverage includes the executed script TOP-LEVEL range,
+      // often spanning the entire source. Counting that as all "used" is
+      // wrong: nested zero-hit function ranges override the parent. Merge
+      // all non-executed ranges to calculate meaningful unused bytes.
       const size=(e.source||'').length;
       const intervals=(e.functions||[]).flatMap(fn=>
-        (fn.ranges||[]).filter(r=>r.count>0)
+        (fn.ranges||[]).filter(r=>r.count===0)
           .map(r=>({start:r.startOffset,end:r.endOffset})))
         .sort((a,b)=>a.start-b.start);
-      let used=0,start=-1,end=-1;
+      let unused=0,start=-1,end=-1;
       for(const r of intervals){
         if(start<0){start=r.start;end=r.end}
         else if(r.start<=end){end=Math.max(end,r.end)}
-        else{used+=end-start;start=r.start;end=r.end}
+        else{unused+=end-start;start=r.start;end=r.end}
       }
-      if(start>=0)used+=end-start;
-      return {file:new URL(e.url).pathname,bytes:size,used:Math.min(size,used)};
+      if(start>=0)unused+=end-start;
+      return {file:new URL(e.url).pathname,bytes:size,
+        used:size-Math.min(size,unused)};
     }).sort((a,b)=>(b.bytes-b.used)-(a.bytes-a.used));
     const nameById=new Map(profile.nodes.map(n=>[n.id,n.callFrame.url||'']));
     const byUrl=new Map();
