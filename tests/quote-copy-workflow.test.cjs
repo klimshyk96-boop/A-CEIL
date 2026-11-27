@@ -135,6 +135,68 @@ test('stuck local project can be rescued as a separate cloud record, original un
     'repeat tap must reopen the existing safe copy instead of making another');
   assert.equal(f.projects().length,2);
 });
+test('cloud preflight prevents repeated recovery backup after login when local cache is stale',async()=>{
+  const f=fixture(),api=f.c.A_CEIL_ProjectArchive;
+  let reads=0;
+  f.c._sb.from=table=>{
+    assert.equal(table,'projects');
+    return {select(fields){assert.equal(fields,'id');return this},
+      eq(k,value){assert.equal(k,'user_id');assert.equal(value,'user-1');return this},
+      contains(k,value){reads++;assert.equal(k,'state');
+        assert.equal(value.recoverySourceId,'original-uuid');return this},
+      limit(n){assert.equal(n,1);return this},
+      async maybeSingle(){return{data:{id:'previous-cloud-copy'},error:null}}};
+  };
+  const result=await api.rescueCloudCopy('original-uuid');
+  assert.equal(result,'previous-cloud-copy');
+  assert.equal(reads,1);
+  assert.equal(f.copies.length,0,'no new local project created after cloud match');
+  assert.equal(f.queue.length,0,'no extra sync write');
+  assert.equal(f.projects().length,1);
+  assert(f.messages.some(msg=>/У хмарі вже є захисна копія/.test(msg)));
+});
+test('cloud lookup failure refuses to make a new backup rather than guessing',async()=>{
+  const f=fixture();
+  f.c._sb.from=()=>({
+    select(){return this},eq(){return this},contains(){return this},limit(){return this},
+    async maybeSingle(){return {data:null,error:{message:'offline lookup failure'}}}
+  });
+  assert.equal(await f.c.A_CEIL_ProjectArchive.rescueCloudCopy('original-uuid'),false);
+  assert.equal(f.copies.length,0);
+  assert.equal(f.queue.length,0);
+  assert(f.messages.some(msg=>/Не вдалося перевірити резервні копії в хмарі/.test(msg)));
+});
+test('backup identity stored only in state prevents backup-of-backup even after a rename',async()=>{
+  const f=fixture(),p=f.projects()[0],api=f.c.A_CEIL_ProjectArchive;
+  p.state=JSON.stringify({...JSON.parse(p.state),recoverySourceId:'prior-cloud-id'});
+  p.name='Перейменований об’єкт';delete p._recoverySourceId;
+  assert.equal(await api.rescueCloudCopy(p.id),false);
+  assert.equal(f.copies.length,0);
+  assert.deepEqual(Array.from(api.projectsForView(f.projects(),'history'),row=>row.id),[p.id]);
+});
+test('a backup with recoverySourceId only in JSON state is reused',async()=>{
+  const f=fixture(),p=f.projects()[0],api=f.c.A_CEIL_ProjectArchive;
+  const prior={id:'prior-backup',_dbId:'prior-backup',name:'Інша назва',
+    state:JSON.stringify({recoverySourceId:p.id})};
+  f.replaceProjects([p,prior]);
+  assert.equal(await api.rescueCloudCopy(p.id),'prior-backup');
+  assert.equal(f.copies.length,0);
+  assert(f.messages.some(msg=>/Резервна копія вже існує/.test(msg)));
+});
+test('parallel taps during cloud preflight cannot create two copies',async()=>{
+  const f=fixture(),api=f.c.A_CEIL_ProjectArchive;
+  let resolveCheck;
+  f.c._sb.from=()=>({select(){return this},eq(){return this},
+    contains(){return this},limit(){return this},
+    maybeSingle(){return new Promise(resolve=>{resolveCheck=resolve})}});
+  const first=api.rescueCloudCopy('original-uuid');
+  const duplicate=await api.rescueCloudCopy('original-uuid');
+  assert.equal(duplicate,false);
+  resolveCheck({data:null,error:null});
+  assert.equal(await first,'new-cloud-uuid');
+  assert.equal(f.copies.length,1);
+  assert.equal(f.projects().length,2);
+});
 test('cloud recovery lineage survives login, and blocked saves are visibly distinguishable',()=>{
   assert.match(sync,/state\.recoverySourceId=String\(local\._recoverySourceId\)/);
   assert.match(auth,/_recoverySourceId:stateObj\.recoverySourceId\|\|null/);
