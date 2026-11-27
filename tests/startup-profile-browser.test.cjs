@@ -34,8 +34,12 @@ const path=require('node:path');
     const coverage=await page.coverage.stopJSCoverage();
     const own=coverage.filter(e=>/\/js\/|\/calculator\/|\/vendor\//.test(e.url));
     const rows=own.map(e=>{
-      const size=e.text.length;
-      const intervals=e.ranges.map(r=>({start:r.start,end:r.end}))
+      // Playwright's CoverageEntry exposes {source, functions:[{ranges}]}
+      // (unlike Puppeteer's {text,ranges}). Only count executed ranges.
+      const size=(e.source||'').length;
+      const intervals=(e.functions||[]).flatMap(fn=>
+        (fn.ranges||[]).filter(r=>r.count>0)
+          .map(r=>({start:r.startOffset,end:r.endOffset})))
         .sort((a,b)=>a.start-b.start);
       let used=0,start=-1,end=-1;
       for(const r of intervals){
