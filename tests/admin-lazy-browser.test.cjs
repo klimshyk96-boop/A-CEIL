@@ -26,6 +26,32 @@ const {open}=require('./browser-review.cjs');
   assert.equal(initial.projects,'function');
   assert.equal(initial.scripts,173);
   assert.equal(requests.filter(p=>p===heavy).length,0,'full admin should not block startup');
+  // Simulate a signed-in non-owner without using real credentials or cloud.
+  // The old #121 facade downloaded full admin for EVERY user here.
+  const regular=await page.evaluate(async()=>{
+    _sbUser={id:'synthetic-regular',email:'regular@example.test'};
+    window._sbUser=_sbUser;
+    _sb={rpc:async()=>({data:[],error:null})};
+    return window.A_CEIL_Admin.refreshOwner(_sbUser);
+  });
+  assert.equal(regular,false);
+  assert.equal(requests.filter(p=>p===heavy).length,0,
+    'signed-in non-owner must not download admin code');
+  const owner=await page.evaluate(async()=>{
+    _sbUser={id:'synthetic-owner',email:'owner@example.test'};
+    window._sbUser=_sbUser;
+    _sb={rpc:async(name)=>({data:name==='admin_list_users'?
+      [{user_id:'synthetic-owner',app_role:'owner',is_active:true}]:[],error:null})};
+    return window.A_CEIL_Admin.refreshOwner(_sbUser);
+  });
+  assert.equal(owner,true,'protected RPC grants owner UI');
+  assert.equal(requests.filter(p=>p===heavy).length,0,
+    'even owner should not download full module until opening admin');
+  const ownerControl=await page.evaluate(()=>
+    !!document.getElementById('A_CEIL_OwnerAdminButton'));
+  assert.equal(ownerControl,true,'owner must retain admin launch button');
+  // Reset synthetic session so the support-only flow remains isolated.
+  await page.evaluate(()=>{_sbUser=null;window._sbUser=null;});
   await page.evaluate(()=>window.A_CEIL_Support.open());
   await page.waitForFunction(()=>!!document.getElementById('aceilSupportModal'),{timeout:5000});
   assert.equal(requests.filter(p=>p===heavy).length,1,'support loads the original module once');
