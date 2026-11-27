@@ -38,6 +38,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Nonblocking boot browser QA and navigation timings
         run: node tests/startup-defer-browser.test.cjs
+      - name: Mobile JavaScript coverage and CPU profile (synthetic)
+        run: node tests/startup-profile-browser.test.cjs
       - name: Lazy language packs and saved choice, real Chromium
         run: node tests/i18n-lazy-browser.test.cjs
       - name: Real Chromium browser QA, synthetic projects

@@ -11,6 +11,7 @@ node --check js/nomenclature/140-aceil-universal-autocount.js
 node --check js/projects/230-aceil-project-archive.js
 node --check js/projects/238-aceil-conflict-resolver.js
 node --check js/admin/166-aceil-admin.js
+node --check js/rooms/060-aceil-light-svg-icons.js
 node --check js/i18n/013-aceil-i18n-core.js
 node --check js/i18n/117-aceil-lang-switchers.js
 node --check js/core/098-aceil-geometry-core.js
@@ -32,6 +33,7 @@ for name in \
   security-config \
   startup-nonblocking \
   i18n-lazy \
+  light-svg-idle-start \
   p0-hardening \
   pending-sync-queue \
   project-sync-revision \
