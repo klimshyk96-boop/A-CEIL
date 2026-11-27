@@ -2,13 +2,13 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-const source=fs.readFileSync(path.join(__dirname,'../js/admin/166-aceil-admin-loader.js'),'utf8');
+const source=fs.readFileSync(path.join(__dirname,'../js/admin/admin-lazy-loader.js'),'utf8');
 const version=fs.readFileSync(path.join(__dirname,'../VERSION'),'utf8').trim();
 function fixture(){
   const scripts=[],messages=[];
   const win={__diagSilent(e){messages.push(String(e))},showToast(t){messages.push(t)}};
   const doc={
-    currentScript:{src:'https://a-ceil.pp.ua/js/admin/166-aceil-admin-loader.js?v='+version},
+    currentScript:{src:'https://a-ceil.pp.ua/js/admin/admin-lazy-loader.js?v='+version},
     baseURI:'https://a-ceil.pp.ua/',
     head:{appendChild(node){scripts.push(node)}},
     createElement(tag){
