@@ -26,7 +26,7 @@ function fixture(saved='uk'){
   };
   const context={window,document,localStorage:{
       getItem(k){return storage[k]||null},setItem(k,v){storage[k]=v}
-    },URL,Promise,Math,Number,String,Object,Array,RegExp,
+    },URL,Promise,Math,Number,String,Object,Array,RegExp,MutationObserver:window.MutationObserver,
     setTimeout(fn){fn()},CustomEvent:class{constructor(type){this.type=type}}
   };
   vm.createContext(context);vm.runInContext(source,context);
