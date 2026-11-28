@@ -65,6 +65,22 @@ const {open}=require('./browser-review.cjs');
           viewport:{width:innerWidth,height:innerHeight}};
       });
       console.log('STARTUP_PAINT_AUDIT '+JSON.stringify({width,...paintAudit}));
+      const authControls=await page.evaluate(()=>{
+        const reset=document.getElementById('aceilPwResetLink');
+        return {resetCount:document.querySelectorAll('#aceilPwResetLink').length,
+          resetBound:typeof reset?.onclick==='function',
+          editorVisibility:getComputedStyle(document.getElementById('main-area')).visibility};
+      });
+      assert.equal(authControls.resetCount,1,'one pre-rendered reset link');
+      assert.equal(authControls.resetBound,true,'reset link must retain its handler');
+      if(paintAudit.authVisible)assert.equal(authControls.editorVisibility,'hidden');
+      // Test the existing reset UI without making any network calls.
+      if(paintAudit.authVisible){
+        await page.locator('#aceilPwResetLink').evaluate(el=>el.click());
+        assert.equal(await page.locator('#aceilPwResetOverlay').count(),1);
+        await page.locator('#aceilPwResetCancel').evaluate(el=>el.click());
+        assert.equal(await page.locator('#aceilPwResetOverlay').count(),0);
+      }
       const result=await page.evaluate(()=>{
         const nav=performance.getEntriesByType('navigation')[0];
         const painted=performance.getEntriesByType('paint')
