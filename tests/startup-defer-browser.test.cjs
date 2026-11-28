@@ -10,7 +10,77 @@ const {open}=require('./browser-review.cjs');
     executablePath:process.env.ACEIL_CHROMIUM_PATH||undefined});
   try{
     for(const width of [390,1440]){
-      const {page,errors,missing}=await open(browser,width);
+      const {page,errors,missing}=await open(browser,width,1,undefined,async p=>{
+        if(width===390){
+          const cdp=await p.context().newCDPSession(p);
+          await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
+        }
+        await p.addInitScript(()=>{
+          const describe=node=>{
+            if(!node||node.nodeType!==1)return null;
+            return node.tagName.toLowerCase()+(node.id?'#'+node.id:'')+
+              [...node.classList].slice(0,4).map(c=>'.'+c).join('');
+          };
+          const rect=r=>r?{x:r.x,y:r.y,width:r.width,height:r.height}:null;
+          const data=window.__aceilPaintAudit={lcp:[],shifts:[],overlay:[]};
+          const observe=(type,fn)=>{
+            if(!PerformanceObserver.supportedEntryTypes.includes(type))return;
+            new PerformanceObserver(list=>list.getEntries().forEach(fn))
+              .observe({type,buffered:true});
+          };
+          observe('largest-contentful-paint',e=>data.lcp.push({
+            time:Math.round(e.startTime),renderTime:Math.round(e.renderTime),
+            loadTime:Math.round(e.loadTime),size:e.size,element:describe(e.element)
+          }));
+          observe('layout-shift',e=>{
+            if(!e.hadRecentInput)data.shifts.push({
+              time:Math.round(e.startTime),value:e.value,
+              sources:(e.sources||[]).map(s=>({node:describe(s.node),
+                previous:rect(s.previousRect),current:rect(s.currentRect)}))
+            });
+          });
+          let state;
+          const record=()=>{
+            const el=document.getElementById('aceilBootOverlay');
+            const next=el?(el.classList.contains('aceil-hide')?'hiding':'visible'):'absent';
+            if(next!==state){state=next;data.overlay.push({time:Math.round(performance.now()),state:next});}
+          };
+          new MutationObserver(record).observe(document,{subtree:true,childList:true,
+            attributes:true,attributeFilter:['class']});
+          record();
+        });
+      });
+      // Observe late startup changes past the existing 4s overlay watchdog.
+      const remaining=await page.evaluate(()=>Math.max(0,8000-performance.now()));
+      if(remaining)await page.waitForTimeout(remaining);
+      const paintAudit=await page.evaluate(()=>{
+        const audit=window.__aceilPaintAudit;
+        let best=0,sum=0,first=-1,last=-1;
+        for(const e of audit.shifts){
+          if(first<0||e.time-last>=1000||e.time-first>=5000){first=e.time;sum=0;}
+          sum+=e.value;last=e.time;best=Math.max(best,sum);
+        }
+        return {lcp:audit.lcp,cls:best,shifts:audit.shifts,overlay:audit.overlay,
+          authVisible:!!document.querySelector('#authScreen:not(.hidden)'),
+          viewport:{width:innerWidth,height:innerHeight}};
+      });
+      console.log('STARTUP_PAINT_AUDIT '+JSON.stringify({width,...paintAudit}));
+      const authControls=await page.evaluate(()=>{
+        const reset=document.getElementById('aceilPwResetLink');
+        return {resetCount:document.querySelectorAll('#aceilPwResetLink').length,
+          resetBound:typeof reset?.onclick==='function',
+          editorVisibility:getComputedStyle(document.getElementById('main-area')).visibility};
+      });
+      assert.equal(authControls.resetCount,1,'one pre-rendered reset link');
+      assert.equal(authControls.resetBound,true,'reset link must retain its handler');
+      if(paintAudit.authVisible)assert.equal(authControls.editorVisibility,'hidden');
+      // Test the existing reset UI without making any network calls.
+      if(paintAudit.authVisible){
+        await page.locator('#aceilPwResetLink').evaluate(el=>el.click());
+        assert.equal(await page.locator('#aceilPwResetOverlay').count(),1);
+        await page.locator('#aceilPwResetCancel').evaluate(el=>el.click());
+        assert.equal(await page.locator('#aceilPwResetOverlay').count(),0);
+      }
       const result=await page.evaluate(()=>{
         const nav=performance.getEntriesByType('navigation')[0];
         const painted=performance.getEntriesByType('paint')

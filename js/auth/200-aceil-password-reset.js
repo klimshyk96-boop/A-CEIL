@@ -103,7 +103,8 @@
   }
 
   function inject() {
-    if (document.getElementById("aceilPwResetLink")) return;
+    var existing = document.getElementById("aceilPwResetLink");
+    if (existing) { existing.onclick = requestForm; return; }
     var row = document.getElementById("rememberRow");
     if (!row || !row.parentNode) return;
     var link = document.createElement("button");

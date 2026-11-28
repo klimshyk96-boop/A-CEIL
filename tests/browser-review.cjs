@@ -21,6 +21,7 @@ async function open(browser,width=1440,dpr=1,sourceRoot=root,beforeGoto){
 }
 async function reveal(page){await page.evaluate(()=>{
  for(const e of document.querySelectorAll('[id]'))if(/login|authScreen|auth.*overlay|bootOverlay/i.test(e.id)&&getComputedStyle(e).position==='fixed')e.style.setProperty('display','none','important');
+ document.getElementById('authScreen')?.classList.add('hidden');
  document.body.classList.remove('auth-locked');
 });}
 module.exports={open,reveal,stub};
